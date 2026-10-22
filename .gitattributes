@@ -1,0 +1,22 @@
+* text=auto
+
+# LabVIEW binary files: never diff or merge as text.
+# For merges, configure LVCompare/LVMerge as a diff/merge driver locally.
+*.vi    binary
+*.vit   binary
+*.vim   binary
+*.ctl   binary
+*.ctt   binary
+*.llb   binary
+*.rtm   binary
+*.lvsc  binary
+*.mnu   binary
+
+# LabVIEW XML files: text, but LabVIEW rewrites them; keep its line endings.
+*.lvproj -text
+*.lvlib  -text
+*.lvclass -text
+*.xctl   -text
+*.vipb   -text
+
+tests/vectors/*.json text eol=lf linguist-generated

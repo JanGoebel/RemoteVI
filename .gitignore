@@ -1,0 +1,18 @@
+# LabVIEW
+*.aliases
+*.lvlps
+*.lvbitx.bak
+*.vi.bak
+*.vit.bak
+.cache/
+builds/
+reports/
+
+# Node (dev tooling only)
+node_modules/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp

@@ -1,0 +1,15 @@
+{
+  "name": "remotevi-dev-tools",
+  "private": true,
+  "description": "Development tooling for the RemoteVI LabVIEW toolkit: browser-client tests, reference server, shared test vectors. Not needed to use the toolkit.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test \"tests/js/*.test.mjs\"",
+    "vectors": "node tools/gen-vectors.mjs",
+    "vectors:check": "node tools/gen-vectors.mjs --check",
+    "mock": "node tools/mock-server/server.mjs"
+  }
+}

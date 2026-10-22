@@ -1,0 +1,68 @@
+{
+ "description": "Request heads (latin1 text) and the expected parse result or HTTP error status.",
+ "limits": {
+  "maxHeadBytes": 8192,
+  "maxHeaders": 32,
+  "maxPathBytes": 1024
+ },
+ "cases": [
+  {
+   "name": "websocket upgrade",
+   "head": "GET /ws HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n",
+   "path": "/ws",
+   "upgrade": true
+  },
+  {
+   "name": "static file with query",
+   "head": "GET /js/client.js?v=1 HTTP/1.1\r\nHost: x\r\n\r\n",
+   "path": "/js/client.js",
+   "upgrade": false
+  },
+  {
+   "name": "POST rejected",
+   "head": "POST / HTTP/1.1\r\nHost: x\r\n\r\n",
+   "status": 405
+  },
+  {
+   "name": "HTTP/2 preface rejected",
+   "head": "PRI * HTTP/2.0\r\n\r\n",
+   "status": 505
+  },
+  {
+   "name": "absolute-form rejected",
+   "head": "GET http://evil/ HTTP/1.1\r\nHost: x\r\n\r\n",
+   "status": 400
+  },
+  {
+   "name": "garbage request line",
+   "head": "GET\r\n\r\n",
+   "status": 400
+  },
+  {
+   "name": "header without colon",
+   "head": "GET / HTTP/1.1\r\nHost x\r\n\r\n",
+   "status": 400
+  },
+  {
+   "name": "duplicate Host",
+   "head": "GET / HTTP/1.1\r\nHost: a\r\nHost: b\r\n\r\n",
+   "status": 400
+  },
+  {
+   "name": "too many headers",
+   "head": "GET / HTTP/1.1\r\nX-H0: v\r\nX-H1: v\r\nX-H2: v\r\nX-H3: v\r\nX-H4: v\r\nX-H5: v\r\nX-H6: v\r\nX-H7: v\r\nX-H8: v\r\nX-H9: v\r\nX-H10: v\r\nX-H11: v\r\nX-H12: v\r\nX-H13: v\r\nX-H14: v\r\nX-H15: v\r\nX-H16: v\r\nX-H17: v\r\nX-H18: v\r\nX-H19: v\r\nX-H20: v\r\nX-H21: v\r\nX-H22: v\r\nX-H23: v\r\nX-H24: v\r\nX-H25: v\r\nX-H26: v\r\nX-H27: v\r\nX-H28: v\r\nX-H29: v\r\nX-H30: v\r\nX-H31: v\r\nX-H32: v\r\n\r\n",
+   "status": 431
+  },
+  {
+   "name": "URI too long",
+   "head": "GET /aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa HTTP/1.1\r\nHost: x\r\n\r\n",
+   "status": 414
+  },
+  {
+   "name": "path traversal is just an unknown path",
+   "head": "GET /../../etc/passwd HTTP/1.1\r\nHost: x\r\n\r\n",
+   "path": "/../../etc/passwd",
+   "upgrade": false
+  }
+ ]
+}

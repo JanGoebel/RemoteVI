@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web-client:
+    name: Browser client and reference implementation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test vectors are up to date
+        run: npm run vectors:check
+      - name: Unit and end-to-end tests
+        run: npm test
+
+  labview:
+    name: Caraya (LabVIEW ${{ matrix.lv }})
+    # Needs a self-hosted Windows runner labelled "labview" with LabVIEW, Caraya and G-CLI installed.
+    # Enable by setting the repository variable LABVIEW_RUNNER=true.
+    if: vars.LABVIEW_RUNNER == 'true'
+    runs-on: [self-hosted, windows, labview]
+    strategy:
+      fail-fast: false
+      matrix:
+        lv: ['2020']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Caraya
+        shell: pwsh
+        run: .\scripts\run-caraya.ps1 -LabVIEWVersion ${{ matrix.lv }}
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: caraya-${{ matrix.lv }}
+          path: reports/caraya.xml

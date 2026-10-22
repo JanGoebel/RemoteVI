@@ -1,0 +1,175 @@
+// A simulated LabVIEW front panel: a software-rendered bitmap plus the control
+// metadata the real toolkit derives via VI Server. Input semantics here are the
+// reference behaviour for the G ControlAdapter classes.
+
+import { drawText } from './font5x7.mjs';
+
+const PANEL_BG = 0xe6e6e6;
+const CTRL_BG = 0xffffff;
+const FRAME = 0x8c8c8c;
+const TEXT = 0x000000;
+const LED_ON = 0x2ecc40;
+const LED_OFF = 0x1f4d24;
+const CHART_BG = 0x101418;
+const CHART_FG = 0xf0c419;
+
+export class SimulatedPanel {
+  constructor() {
+    this.width = 520;
+    this.height = 300;
+    this.pixels = new Uint32Array(this.width * this.height);
+    this.t0 = Date.now();
+    this.dragging = null;
+    this.state = { pump: false, setpoint: 2.5, gain: 4, mode: 1, operator: 'JANE', history: [] };
+    this.controls = [
+      { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30] },
+      { id: 'c2', label: 'Setpoint', kind: 'numeric', bounds: [24, 104, 120, 22], edit: [24, 104, 104, 22], min: -10, max: 10 },
+      { id: 'c3', label: 'Gain', kind: 'slider', bounds: [24, 160, 220, 22], min: 0, max: 10 },
+      { id: 'c4', label: 'Mode', kind: 'enum', bounds: [24, 216, 120, 22], items: ['IDLE', 'RUN', 'CALIBRATE'] },
+      { id: 'c5', label: 'Operator', kind: 'string', bounds: [24, 264, 160, 22] },
+      { id: 'c6', label: 'Signal', kind: 'chart', readonly: true, bounds: [280, 40, 216, 146] },
+      { id: 'c7', label: 'Status', kind: 'string', readonly: true, bounds: [280, 216, 216, 22] },
+    ];
+  }
+
+  byId(id) {
+    return this.controls.find((c) => c.id === id);
+  }
+
+  /** Layout with current values for overlay-editable controls. */
+  layout() {
+    const values = { c2: this.state.setpoint, c4: this.state.mode, c5: this.state.operator };
+    return this.controls.map((c) => (c.id in values ? { ...c, value: values[c.id] } : c));
+  }
+
+  // --- input (returns list of {id, value} changes for overlay-visible values) ---
+
+  set(id, value) {
+    const c = this.byId(id);
+    if (!c || c.readonly) throw new Error(`control ${id} is not writable`);
+    switch (id) {
+      case 'c2':
+        if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('numeric expected');
+        this.state.setpoint = Math.min(c.max, Math.max(c.min, value));
+        return [{ id, value: this.state.setpoint }];
+      case 'c4':
+        if (!Number.isInteger(value) || value < 0 || value >= c.items.length) throw new Error('bad enum index');
+        this.state.mode = value;
+        return [{ id, value }];
+      case 'c5':
+        if (typeof value !== 'string') throw new Error('string expected');
+        this.state.operator = value.slice(0, 24);
+        return [{ id, value: this.state.operator }];
+      default:
+        throw new Error(`control ${id} cannot be set directly`);
+    }
+  }
+
+  mouse(ev) {
+    const hit = this.hit(ev.x, ev.y);
+    if (ev.e === 'down' && ev.b === 0) {
+      if (hit?.id === 'c1') this.state.pump = !this.state.pump; // switch when pressed
+      if (hit?.id === 'c3') {
+        this.dragging = 'c3';
+        this.slide(ev.x);
+      }
+    } else if (ev.e === 'move' && this.dragging === 'c3') {
+      this.slide(ev.x);
+    } else if (ev.e === 'up') {
+      this.dragging = null;
+    } else if (ev.e === 'wheel' && hit?.id === 'c2') {
+      return this.set('c2', Math.round((this.state.setpoint - ev.dy * 0.1) * 10) / 10);
+    }
+    return [];
+  }
+
+  slide(x) {
+    const c = this.byId('c3');
+    const [bx, , bw] = c.bounds;
+    const f = Math.min(1, Math.max(0, (x - bx - 6) / (bw - 12)));
+    this.state.gain = Math.round(f * (c.max - c.min) * 10) / 10 + c.min;
+  }
+
+  hit(x, y) {
+    for (let i = this.controls.length - 1; i >= 0; i--) {
+      const [bx, by, bw, bh] = this.controls[i].bounds;
+      if (x >= bx && y >= by && x < bx + bw && y < by + bh) return this.controls[i];
+    }
+    return null;
+  }
+
+  // --- rendering ----------------------------------------------------------
+
+  /** Advance the simulation and redraw; returns the pixel buffer (0x00RRGGBB). */
+  render() {
+    const s = this.state;
+    const t = (Date.now() - this.t0) / 1000;
+    if (s.pump) {
+      const amp = s.setpoint * (s.gain / 10);
+      s.history.push(Math.sin(t * 2 * Math.PI * 0.5) * amp + Math.sin(t * 13) * 0.2 * (s.mode === 2 ? 1 : 0));
+      if (s.history.length > 210) s.history.shift();
+    }
+
+    const px = this.pixels;
+    px.fill(PANEL_BG);
+    for (const c of this.controls) this.label(c);
+    const [b, n, sl, en, st, ch, stat] = this.controls;
+
+    this.box(b.bounds, s.pump ? 0xd9f2dc : 0xd4d4d4);
+    this.rect(b.bounds[0] + 8, b.bounds[1] + 9, 12, 12, s.pump ? LED_ON : LED_OFF);
+    drawText(px, this.width, b.bounds[0] + 28, b.bounds[1] + 12, s.pump ? 'ON' : 'OFF', TEXT);
+
+    this.box(n.bounds, CTRL_BG);
+    drawText(px, this.width, n.bounds[0] + 6, n.bounds[1] + 8, s.setpoint.toFixed(2), TEXT);
+    this.rect(n.bounds[0] + 104, n.bounds[1], 16, 22, 0xd4d4d4);
+
+    const [sx, sy, sw] = sl.bounds;
+    this.rect(sx + 6, sy + 9, sw - 12, 4, FRAME);
+    const knob = sx + 6 + Math.round(((s.gain - sl.min) / (sl.max - sl.min)) * (sw - 12));
+    this.rect(knob - 5, sy + 1, 10, 20, 0x5b8def);
+    drawText(px, this.width, sx + sw - 30, sy - 12, s.gain.toFixed(1), TEXT);
+
+    this.box(en.bounds, CTRL_BG);
+    drawText(px, this.width, en.bounds[0] + 6, en.bounds[1] + 8, en.items[s.mode], TEXT);
+
+    this.box(st.bounds, CTRL_BG);
+    drawText(px, this.width, st.bounds[0] + 6, st.bounds[1] + 8, s.operator, TEXT);
+
+    this.chart(ch.bounds);
+
+    this.box(stat.bounds, 0xf4f4f4);
+    const status = s.pump ? `${en.items[s.mode]} T ${t.toFixed(1)}` : 'STOPPED';
+    drawText(px, this.width, stat.bounds[0] + 6, stat.bounds[1] + 8, status, TEXT);
+    return px;
+  }
+
+  chart([x, y, w, h]) {
+    this.box([x, y, w, h], CHART_BG);
+    const mid = y + Math.floor(h / 2);
+    this.rect(x + 2, mid, w - 4, 1, 0x2a3138);
+    const hist = this.state.history;
+    let prevY = null;
+    for (let i = 0; i < hist.length; i++) {
+      const py = Math.max(y + 2, Math.min(y + h - 3, Math.round(mid - (hist[i] / 10) * (h / 2 - 4))));
+      const lo = prevY === null ? py : Math.min(prevY, py);
+      const hi = prevY === null ? py : Math.max(prevY, py);
+      this.rect(x + 3 + i, lo, 1, hi - lo + 1, CHART_FG);
+      prevY = py;
+    }
+  }
+
+  label(c) {
+    drawText(this.pixels, this.width, c.bounds[0], c.bounds[1] - 12, c.label, TEXT);
+  }
+
+  box([x, y, w, h], fill) {
+    this.rect(x, y, w, h, FRAME);
+    this.rect(x + 1, y + 1, w - 2, h - 2, fill);
+  }
+
+  rect(x, y, w, h, color) {
+    const x0 = Math.max(0, x), y0 = Math.max(0, y);
+    const x1 = Math.min(this.width, x + w), y1 = Math.min(this.height, y + h);
+    for (let yy = y0; yy < y1; yy++) this.pixels.fill(color, yy * this.width + x0, yy * this.width + x1);
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RemoteVI</title>
+  <link rel="stylesheet" href="css/remotevi.css">
+  <script type="module" src="js/client.js"></script>
+</head>
+<body data-state="connecting" data-role="viewer">
+  <header class="bar">
+    <span class="dot" aria-hidden="true"></span>
+    <strong id="vi-name">RemoteVI</strong>
+    <span id="status" role="status">Connecting…</span>
+    <span class="spacer"></span>
+    <span id="stats" class="stats"></span>
+    <button id="fit-btn" type="button" aria-pressed="false" title="Fit panel to window">Fit</button>
+    <button id="control-btn" type="button" hidden>Request control</button>
+  </header>
+  <main id="stage" class="stage">
+    <div class="panel-wrap">
+      <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
+    </div>
+  </main>
+</body>
+</html>

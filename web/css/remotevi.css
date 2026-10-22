@@ -1,0 +1,105 @@
+:root {
+  --bg: #e9ebee;
+  --bar-bg: #ffffff;
+  --bar-fg: #1d2330;
+  --muted: #667085;
+  --accent: #1f6feb;
+  --ok: #1a7f37;
+  --warn: #bf8700;
+  --err: #cf222e;
+  --border: #d0d7de;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15181e;
+    --bar-bg: #1e232b;
+    --bar-fg: #e6edf3;
+    --muted: #8d96a0;
+    --border: #30363d;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; margin: 0; }
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--bar-fg);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--bar-bg);
+  border-bottom: 1px solid var(--border);
+}
+.bar .spacer { flex: 1; }
+.bar .stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar button {
+  font: inherit;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.bar button[aria-pressed="true"], #control-btn { border-color: var(--accent); color: var(--accent); }
+
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+body[data-state="online"] .dot { background: var(--ok); }
+body[data-state="offline"] .dot,
+body[data-state="error"] .dot { background: var(--err); }
+
+.stage {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+.panel-wrap {
+  position: relative;
+  width: max-content;
+  margin: 0 auto;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+}
+
+#panel {
+  display: block;
+  outline: none;
+  /* 1:1 by default: every LabVIEW pixel is one CSS pixel. */
+  image-rendering: pixelated;
+}
+body[data-role="viewer"] #panel { cursor: default; }
+body[data-role="controller"] #panel { cursor: crosshair; }
+
+/* Fit mode scales the whole wrapper so overlays stay aligned with the bitmap. */
+.stage.fit { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.stage.fit .panel-wrap { width: auto; }
+.stage.fit #panel {
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 80px);
+  width: auto;
+  height: auto;
+  image-rendering: auto;
+}
+
+.overlay {
+  position: absolute;
+  margin: 0;
+  padding: 0 3px;
+  border: 2px solid var(--accent);
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+  font: 13px "Segoe UI", Tahoma, sans-serif;
+  outline: none;
+}
+.overlay.invalid { border-color: var(--err); }

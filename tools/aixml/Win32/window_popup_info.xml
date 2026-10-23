@@ -1,0 +1,32 @@
+<VI _name="RemoteVI Window Popup Info.vi" description="Reads the class\2C style and screen rectangle of the top-level window hWnd and decides whether it looks like a LabVIEW popup that FP.Get Image cannot see\3A visible AND (class LVMenuWnd OR (style has WS_POPUP 0x80000000 AND no WS_CAPTION 0x00C00000 AND a non-empty rectangle)). Win32 calls only (IsWindowVisible\2C GetClassNameW\2C GetWindowLongPtrW GWL_STYLE\2C GetWindowRect)\2C no VI Server\2C so it works while LabVIEW's UI thread is blocked. Used by RemoteVI Find Popups.vi for each of LabVIEW's own windows.">
+  <Control _name="hWnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The top-level window to examine." outputs="value:hw.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error no DLL is called and popup? is FALSE." outputs="value:errin.value" />
+  <Indicator _name="popup?" type="bool" uid="opop" uid_parent="root" value="false" conIdx="4" connection="recommended" description="TRUE when the window is visible and looks like a popup (see the VI description)." inputs="value:isp.x .and. y?" />
+  <Indicator _name="window" type="cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}" uid="owin" uid_parent="root" value="[0,0,0,0,0,]" conIdx="6" connection="recommended" description="hWnd\2C its screen rectangle (x\2C y\2C width\2C height) and its class name - filled in whether or not it is a popup." inputs="value:bw.output cluster" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:rect.error out" />
+  <Call uid="vis" uid_parent="root" target="user32 IsWindowVisible.vi" inputs="hWnd:hw.value,error in:errin.value" outputs="visible?:vis.visible?,error out:vis.error out" />
+  <Call uid="cls" uid_parent="root" target="user32 GetClassNameW.vi" inputs="hWnd:hw.value,error in:vis.error out" outputs="class name:cls.class name,return value:,error out:cls.error out" />
+  <Constant _name="GWL_STYLE" type="int32" uid="gwl" uid_parent="root" value="-16" outputs="value:gwl.value" />
+  <Call uid="sty" uid_parent="root" target="user32 GetWindowLongPtrW.vi" inputs="hWnd:hw.value,nIndex:gwl.value,error in:cls.error out" outputs="return value:sty.return value,error out:sty.error out" />
+  <Call uid="rect" uid_parent="root" target="user32 GetWindowRect.vi" inputs="hWnd:hw.value,error in:sty.error out" outputs="RECT:rect.RECT,return value:,error out:rect.error out" />
+  <Node _name="Unbundle By Name" uid="ur" uid_parent="root" fields="left,top,right,bottom" inputs="input cluster:rect.RECT" outputs="left:ur.left,top:ur.top,right:ur.right,bottom:ur.bottom" />
+  <Node _name="Subtract" uid="w" uid_parent="root" inputs="x:ur.right,y:ur.left" outputs="x-y:w.x-y" />
+  <Node _name="Subtract" uid="h" uid_parent="root" inputs="x:ur.bottom,y:ur.top" outputs="x-y:h.x-y" />
+  <Node _name="Bundle" uid="bw" uid_parent="root" inputs="element:hw.value,element:ur.left,element:ur.top,element:w.x-y,element:h.x-y,element:cls.class name" outputs="output cluster:bw.output cluster" />
+  <Constant _name="menu class" type="string" uid="kmenu" uid_parent="root" value="LVMenuWnd" outputs="value:kmenu.value" />
+  <Node _name="Equal?" uid="ismenu" uid_parent="root" inputs="x:cls.class name,y:kmenu.value" outputs="x = y?:ismenu.x = y?" />
+  <Constant _name="WS_POPUP" type="int64" uid="kpop" uid_parent="root" value="2147483648" outputs="value:kpop.value" />
+  <Constant _name="WS_CAPTION" type="int64" uid="kcap" uid_parent="root" value="12582912" outputs="value:kcap.value" />
+  <Node _name="And" uid="apop" uid_parent="root" inputs="x:sty.return value,y:kpop.value" outputs="x .and. y?:apop.x .and. y?" />
+  <Node _name="And" uid="acap" uid_parent="root" inputs="x:sty.return value,y:kcap.value" outputs="x .and. y?:acap.x .and. y?" />
+  <Node _name="Not Equal To 0?" uid="haspop" uid_parent="root" inputs="x:apop.x .and. y?" outputs="x != 0?:haspop.x != 0?" />
+  <Node _name="Equal To 0?" uid="nocap" uid_parent="root" inputs="x:acap.x .and. y?" outputs="x = 0?:nocap.x = 0?" />
+  <Node _name="Greater Than 0?" uid="wpos" uid_parent="root" inputs="x:w.x-y" outputs="x &gt; 0?:wpos.x &gt; 0?" />
+  <Node _name="Greater Than 0?" uid="hpos" uid_parent="root" inputs="x:h.x-y" outputs="x &gt; 0?:hpos.x &gt; 0?" />
+  <Node _name="And" uid="a1" uid_parent="root" inputs="x:haspop.x != 0?,y:nocap.x = 0?" outputs="x .and. y?:a1.x .and. y?" />
+  <Node _name="And" uid="a2" uid_parent="root" inputs="x:wpos.x &gt; 0?,y:hpos.x &gt; 0?" outputs="x .and. y?:a2.x .and. y?" />
+  <Node _name="And" uid="a3" uid_parent="root" inputs="x:a1.x .and. y?,y:a2.x .and. y?" outputs="x .and. y?:a3.x .and. y?" />
+  <Node _name="Or" uid="o1" uid_parent="root" inputs="x:ismenu.x = y?,y:a3.x .and. y?" outputs="x .or. y?:o1.x .or. y?" />
+  <Node _name="And" uid="isp" uid_parent="root" inputs="x:vis.visible?,y:o1.x .or. y?" outputs="x .and. y?:isp.x .and. y?" />
+  <FreeLabel comment="Visible and (LVMenuWnd or captionless popup)" uid="cmt" uid_parent="root" />
+</VI>

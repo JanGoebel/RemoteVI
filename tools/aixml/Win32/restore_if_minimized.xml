@@ -1,0 +1,25 @@
+<VI _name="RemoteVI Restore If Minimized.vi" description="Restores the window hWnd when it is minimized - a minimized front panel ignores posted input - with ShowWindow(hWnd\2C 4 SW_SHOWNOACTIVATE)\2C which brings it back WITHOUT activating it or taking the focus. A window that is not minimized is left alone. Win32 calls only (IsIconic\2C ShowWindow)\2C no VI Server\2C so it also works while LabVIEW's UI thread is blocked.">
+  <Control _name="hWnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The window\2C typically the served front panel (Front Panel Window\3AOS Window)." outputs="value:hw.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is called and was minimized? is FALSE." outputs="value:errin.value" />
+  <Indicator _name="was minimized?" type="bool" uid="omin" uid_parent="root" value="false" conIdx="4" connection="recommended" description="TRUE when the window was minimized and ShowWindow was called to restore it." inputs="value:icon.minimized?" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:cerr.value" />
+  <Call uid="icon" uid_parent="root" target="user32 IsIconic.vi" inputs="hWnd:hw.value,error in:errin.value" outputs="minimized?:icon.minimized?,error out:icon.error out" />
+  <Structure _name="Case Structure" uid="cs" uid_parent="root" selectin="icon.minimized?">
+    <Tunnel _id="In1" uid="ci1" uid_parent="cs" inputs="value:hw.value" />
+    <Tunnel _id="In2" uid="ci2" uid_parent="cs" inputs="value:icon.error out" />
+    <CaseFrame selector="True" uid="ct" uid_parent="cs" selectout="" label="Minimized - restore without activating">
+      <Tunnel _id="In1" uid="ct1" uid_parent="ct" outputs="value:ct1.value" />
+      <Tunnel _id="In2" uid="ct2" uid_parent="ct" outputs="value:ct2.value" />
+      <Constant _name="SW_SHOWNOACTIVATE" type="int32" uid="k4" uid_parent="ct" value="4" outputs="value:k4.value" />
+      <Call uid="show" uid_parent="ct" target="user32 ShowWindow.vi" inputs="hWnd:ct1.value,nCmdShow:k4.value,error in:ct2.value" outputs="return value:,error out:show.error out" />
+      <Tunnel _id="Out1" uid="cto1" uid_parent="ct" inputs="value:show.error out" />
+    </CaseFrame>
+    <CaseFrame selector="False" uid="cf" uid_parent="cs" selectout="" label="Not minimized - nothing to do">
+      <Tunnel _id="In1" uid="cf1" uid_parent="cf" outputs="value:" />
+      <Tunnel _id="In2" uid="cf2" uid_parent="cf" outputs="value:cf2.value" />
+      <Tunnel _id="Out1" uid="cfo1" uid_parent="cf" inputs="value:cf2.value" />
+    </CaseFrame>
+    <Tunnel _id="Out1" uid="cerr" uid_parent="cs" outputs="value:cerr.value" />
+  </Structure>
+  <FreeLabel comment="SW_SHOWNOACTIVATE keeps the focus" uid="cmt" uid_parent="root" />
+</VI>

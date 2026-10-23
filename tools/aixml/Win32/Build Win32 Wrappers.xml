@@ -1,32 +1,77 @@
-<VI _name="Build Win32 Wrappers.vi" description="Creates or overwrites the two thin user32.dll wrapper VIs of the RemoteVI toolkit by VI scripting\3A source\5CWin32\5Cuser32 PostMessageW.vi and source\5CWin32\5Cuser32 ScreenToClient.vi. Each one starts as a copy of its template in scripts\5CWin32 Wrapper Templates (front panel\2C connector pane\2C icon\2C descriptions)\2C then gets a Call Library Function Node placed\2C configured (user32.dll\2C stdcall\2C run in any thread\2C typed parameters) and wired by VI Server - the one node AIXML cannot author. Each wrapper is spelled as text (see W32B Parse Spec.vi for the line format). Run it from the IDE whenever a template or a spec changes. Paths are found relative to this VI\2C so the repository may live anywhere.">
-  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="8" connection="recommended" description="Nothing is built when this carries an error." outputs="value:errin.value" />
-  <Indicator _name="PostMessageW wrapper" type="path" uid="opost" uid_parent="root" value="" conIdx="3" connection="recommended" description="Path of the generated user32 PostMessageW.vi." inputs="value:bpost.wrapper path" />
-  <Indicator _name="ScreenToClient wrapper" type="path" uid="ostc" uid_parent="root" value="" conIdx="2" connection="recommended" description="Path of the generated user32 ScreenToClient.vi." inputs="value:bstc.wrapper path" />
-  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="0" connection="recommended" description="error in or the first error of either build." inputs="value:bstc.error out" />
+<VI _name="Build Win32 Wrappers.vi" description="Creates or overwrites the Win32 wrapper VIs of the RemoteVI toolkit in source\5CWin32 by VI scripting - one VI per DLL function\2C each listed in the wrapper specs constant on this diagram (wrapper name\2C template\2C DLL\2C function\2C parameter lines\2C link lines - see W32B Parse Spec.vi for the line format). Each wrapper starts as a copy of its template in scripts\5CWin32 Wrapper Templates (front panel\2C connector pane\2C icon\2C descriptions\2C helper nodes)\2C then gets a Call Library Function Node placed\2C configured (stdcall\2C run in any thread\2C typed parameters) and wired by VI Server - the one node AIXML cannot author. only these wrappers limits the run to the named wrapper VIs (empty = all)\3B a wrapper that is loaded in LabVIEW (called by a running VI) cannot be overwritten. Run it from the IDE whenever a template or a spec changes. Paths are found relative to this VI\2C so the repository may live anywhere. The AIXML sources of the templates are in tools\5Caixml\5CWin32.">
+  <Control _name="only these wrappers" type="array{string}" uid="filt" uid_parent="root" value="[]" conIdx="0" connection="recommended" description="Wrapper VI names to build\2C e.g. user32 GetDC.vi. Empty builds every wrapper in the spec list." outputs="value:filt.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="Nothing is built when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="wrappers" type="array{path}" uid="owr" uid_parent="root" value="[]" conIdx="4" connection="recommended" description="Path of every wrapper built\2C in spec order\3B an empty path for a spec that was skipped." inputs="value:lout.value" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the first error of any build. The builds after a failed one are skipped." inputs="value:srR.value" />
   <Node _name="Property Node" uid="pself" uid_parent="root" fields="read+VI Path" type="{LV.VI}" inputs="reference:" outputs="VI Path:pself.VI Path" />
   <Node _name="Strip Path" uid="strip1" uid_parent="root" inputs="path:pself.VI Path" outputs="stripped path:strip1.stripped path,name:strip1.name" />
   <Node _name="Strip Path" uid="strip2" uid_parent="root" inputs="path:strip1.stripped path" outputs="stripped path:strip2.stripped path,name:strip2.name" />
   <Constant _name="output folder" type="path" uid="relout" uid_parent="root" value="source\5CWin32" outputs="value:relout.value" />
   <Node _name="Build Path" uid="bpout" uid_parent="root" inputs="base path:strip2.stripped path,name or relative path:relout.value" outputs="appended path:bpout.appended path" />
   <Call uid="ensure" uid_parent="root" target="W32B Ensure Folder.vi" inputs="folder:bpout.appended path,error in:errin.value" outputs="folder out:ensure.folder out,error out:ensure.error out" />
-  <Constant _name="PostMessageW template" type="path" uid="rtpost" uid_parent="root" value="Win32 Wrapper Templates\5CPostMessageW Wrapper Template.vi" outputs="value:rtpost.value" />
-  <Constant _name="ScreenToClient template" type="path" uid="rtstc" uid_parent="root" value="Win32 Wrapper Templates\5CScreenToClient Wrapper Template.vi" outputs="value:rtstc.value" />
-  <Node _name="Build Path" uid="bptpost" uid_parent="root" inputs="base path:strip1.stripped path,name or relative path:rtpost.value" outputs="appended path:bptpost.appended path" />
-  <Node _name="Build Path" uid="bptstc" uid_parent="root" inputs="base path:strip1.stripped path,name or relative path:rtstc.value" outputs="appended path:bptstc.appended path" />
-  <Constant _name="PostMessageW wrapper name" type="string" uid="npost" uid_parent="root" value="user32 PostMessageW.vi" outputs="value:npost.value" />
-  <Constant _name="ScreenToClient wrapper name" type="string" uid="nstc" uid_parent="root" value="user32 ScreenToClient.vi" outputs="value:nstc.value" />
-  <Node _name="Build Path" uid="bppost" uid_parent="root" inputs="base path:ensure.folder out,name or relative path:npost.value" outputs="appended path:bppost.appended path" />
-  <Node _name="Build Path" uid="bpstc" uid_parent="root" inputs="base path:ensure.folder out,name or relative path:nstc.value" outputs="appended path:bpstc.appended path" />
-  <Constant _name="library" type="path" uid="dll" uid_parent="root" value="user32.dll" outputs="value:dll.value" />
-  <Constant _name="PostMessageW function" type="string" uid="fpost" uid_parent="root" value="PostMessageW" outputs="value:fpost.value" />
-  <Constant _name="PostMessageW parameters" type="string" uid="ppost" uid_parent="root" value="return value;0;2;0;0\0AhWnd;0;11;0;0\0AMsg;0;6;0;0\0AwParam;0;11;0;0\0AlParam;0;10;0;0" outputs="value:ppost.value" />
-  <Constant _name="PostMessageW links" type="string" uid="lpost" uid_parent="root" value="2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;Msg;;0\0A10;wParam;;0\0A12;lParam;;0" outputs="value:lpost.value" />
-  <Constant _name="ScreenToClient function" type="string" uid="fstc" uid_parent="root" value="ScreenToClient" outputs="value:fstc.value" />
-  <Constant _name="ScreenToClient parameters" type="string" uid="pstc" uid_parent="root" value="return value;0;2;0;0\0AhWnd;0;11;0;0\0AlpPoint;7;2;0;0" outputs="value:pstc.value" />
-  <Constant _name="ScreenToClient links" type="string" uid="lstc" uid_parent="root" value="2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;;Bundler;1\0A9;;Unbundler;0" outputs="value:lstc.value" />
-  <Call uid="spost" uid_parent="root" target="W32B Parse Spec.vi" inputs="function name:fpost.value,library path:dll.value,parameters:ppost.value,links:lpost.value" outputs="CLFN:spost.CLFN,links out:spost.links out" />
-  <Call uid="sstc" uid_parent="root" target="W32B Parse Spec.vi" inputs="function name:fstc.value,library path:dll.value,parameters:pstc.value,links:lstc.value" outputs="CLFN:sstc.CLFN,links out:sstc.links out" />
-  <Call uid="bpost" uid_parent="root" target="W32B Build Wrapper.vi" inputs="template path:bptpost.appended path,target path:bppost.appended path,CLFN:spost.CLFN,links:spost.links out,error in:ensure.error out" outputs="wrapper path:bpost.wrapper path,error out:bpost.error out" />
-  <Call uid="bstc" uid_parent="root" target="W32B Build Wrapper.vi" inputs="template path:bptstc.appended path,target path:bpstc.appended path,CLFN:sstc.CLFN,links:sstc.links out,error in:bpost.error out" outputs="wrapper path:bstc.wrapper path,error out:bstc.error out" />
-  <FreeLabel comment="Rebuilds both wrappers from their templates" uid="cmt" uid_parent="root" />
+  <Constant _name="templates folder" type="path" uid="reltpl" uid_parent="root" value="Win32 Wrapper Templates" outputs="value:reltpl.value" />
+  <Node _name="Build Path" uid="bptpl" uid_parent="root" inputs="base path:strip1.stripped path,name or relative path:reltpl.value" outputs="appended path:bptpl.appended path" />
+  <Constant _name="wrapper specs" type="array{cluster{string.wrapper name,string.template,path.library,string.function,string.parameters,string.links}}" uid="specs" uid_parent="root" value="[[user32 PostMessageW.vi,PostMessageW Wrapper Template.vi,user32.dll,PostMessageW,return value;0;2;0;0\0AhWnd;0;11;0;0\0AMsg;0;6;0;0\0AwParam;0;11;0;0\0AlParam;0;10;0;0,2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;Msg;;0\0A10;wParam;;0\0A12;lParam;;0],[user32 ScreenToClient.vi,ScreenToClient Wrapper Template.vi,user32.dll,ScreenToClient,return value;0;2;0;0\0AhWnd;0;11;0;0\0AlpPoint;7;2;0;0,2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;;Bundler;1\0A9;;Unbundler;0],[user32 FindWindowExW.vi,FindWindowExW Wrapper Template.vi,user32.dll,FindWindowExW,return value;0;11;0;0\0AhWndParent;0;11;0;0\0AhWndChildAfter;0;11;0;0\0AlpszClass;1;5;0;0;1\0AlpszWindow;1;5;0;0;1,2;error in;;0\0A3;error out;;0\0A5;hWnd;;0\0A6;hWndParent;;0\0A8;hWndChildAfter;;0\0A10;lpszClass;;0\0A12;lpszWindow;;0],[user32 GetWindowThreadProcessId.vi,GetWindowThreadProcessId Wrapper Template.vi,user32.dll,GetWindowThreadProcessId,return value;0;6;0;0\0AhWnd;0;11;0;0\0AlpdwProcessId;0;6;1;0,2;error in;;0\0A3;error out;;0\0A5;thread ID;;0\0A6;hWnd;;0\0A9;process ID;;0],[user32 IsWindowVisible.vi,IsWindowVisible Wrapper Template.vi,user32.dll,IsWindowVisible,return value;0;2;0;0\0AhWnd;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;;Function;0\0A6;hWnd;;0],[user32 IsIconic.vi,IsIconic Wrapper Template.vi,user32.dll,IsIconic,return value;0;2;0;0\0AhWnd;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;;Function;0\0A6;hWnd;;0],[user32 ShowWindow.vi,ShowWindow Wrapper Template.vi,user32.dll,ShowWindow,return value;0;2;0;0\0AhWnd;0;11;0;0\0AnCmdShow;0;2;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;nCmdShow;;0],[user32 GetWindowRect.vi,GetWindowRect Wrapper Template.vi,user32.dll,GetWindowRect,return value;0;2;0;0\0AhWnd;0;11;0;0\0AlpRect;7;2;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;;Bundler;1\0A9;RECT;;0],[user32 GetClassNameW.vi,GetClassNameW Wrapper Template.vi,user32.dll,GetClassNameW,return value;0;2;0;0\0AhWnd;0;11;0;0\0AlpClassName;1;5;0;0;1\0AnMaxCount;0;2;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;;Unbundler;1\0A9;;BuildArray;0\0A10;nMaxCount;;0],[user32 GetWindowLongPtrW.vi,GetWindowLongPtrW Wrapper Template.vi,user32.dll,GetWindowLongPtrW,return value;0;10;0;0\0AhWnd;0;11;0;0\0AnIndex;0;2;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;nIndex;;0],[user32 SetCursorPos.vi,SetCursorPos Wrapper Template.vi,user32.dll,SetCursorPos,return value;0;2;0;0\0AX;0;2;0;0\0AY;0;2;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;X;;0\0A8;Y;;0],[user32 GetDC.vi,GetDC Wrapper Template.vi,user32.dll,GetDC,return value;0;11;0;0\0AhWnd;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;HDC;;0\0A6;hWnd;;0],[user32 ReleaseDC.vi,ReleaseDC Wrapper Template.vi,user32.dll,ReleaseDC,return value;0;2;0;0\0AhWnd;0;11;0;0\0AhDC;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;hDC;;0],[kernel32 GetCurrentProcessId.vi,GetCurrentProcessId Wrapper Template.vi,kernel32.dll,GetCurrentProcessId,return value;0;6;0;0,2;error in;;0\0A3;error out;;0\0A5;process ID;;0],[gdi32 CreateCompatibleDC.vi,CreateCompatibleDC Wrapper Template.vi,gdi32.dll,CreateCompatibleDC,return value;0;11;0;0\0Ahdc;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;HDC;;0\0A6;hdc;;0],[gdi32 CreateCompatibleBitmap.vi,CreateCompatibleBitmap Wrapper Template.vi,gdi32.dll,CreateCompatibleBitmap,return value;0;11;0;0\0Ahdc;0;11;0;0\0Acx;0;2;0;0\0Acy;0;2;0;0,2;error in;;0\0A3;error out;;0\0A5;HBITMAP;;0\0A6;hdc;;0\0A8;cx;;0\0A10;cy;;0],[gdi32 SelectObject.vi,SelectObject Wrapper Template.vi,gdi32.dll,SelectObject,return value;0;11;0;0\0Ahdc;0;11;0;0\0Ah;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;previous object;;0\0A6;hdc;;0\0A8;h;;0],[gdi32 BitBlt.vi,BitBlt Wrapper Template.vi,gdi32.dll,BitBlt,return value;0;2;0;0\0Ahdc;0;11;0;0\0Ax;0;2;0;0\0Ay;0;2;0;0\0Acx;0;2;0;0\0Acy;0;2;0;0\0AhdcSrc;0;11;0;0\0Ax1;0;2;0;0\0Ay1;0;2;0;0\0Arop;0;6;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hdc;;0\0A8;x;;0\0A10;y;;0\0A12;cx;;0\0A14;cy;;0\0A16;hdcSrc;;0\0A18;x1;;0\0A20;y1;;0\0A22;rop;;0],[gdi32 GetDIBits.vi,GetDIBits Wrapper Template.vi,gdi32.dll,GetDIBits,return value;0;2;0;0\0Ahdc;0;11;0;0\0Ahbm;0;11;0;0\0Astart;0;6;0;0\0AcLines;0;6;0;0\0AlpvBits;1;6;0;0;1\0Alpbmi;7;2;0;0\0Ausage;0;6;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hdc;;0\0A8;hbm;;0\0A10;start;;0\0A12;cLines;;0\0A14;lpvBits;;0\0A15;lpvBits out;;0\0A16;lpbmi;;0\0A18;usage;;0],[gdi32 DeleteObject.vi,DeleteObject Wrapper Template.vi,gdi32.dll,DeleteObject,return value;0;2;0;0\0Aho;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;ho;;0],[gdi32 DeleteDC.vi,DeleteDC Wrapper Template.vi,gdi32.dll,DeleteDC,return value;0;2;0;0\0Ahdc;0;11;0;0,2;error in;;0\0A3;error out;;0\0A5;return value;;0\0A6;hdc;;0]]" outputs="value:specs.value" />
+  <Node _name="Array Size" uid="fsz" uid_parent="root" inputs="array:filt.value" outputs="size(s):fsz.size(s)" />
+  <Node _name="Equal To 0?" uid="all" uid_parent="root" inputs="x:fsz.size(s)" outputs="x = 0?:all.x = 0?" />
+  <Structure _name="For Loop" uid="loop" uid_parent="root" count="" maxin="" maxout="" label="One wrapper per spec">
+    <Tunnel _id="In1" uid="lspec" uid_parent="loop" mode="index" inputs="value:specs.value" outputs="value:lspec.value" />
+    <Tunnel _id="In2" uid="lout1" uid_parent="loop" inputs="value:ensure.folder out" outputs="value:lout1.value" />
+    <Tunnel _id="In3" uid="ltpl" uid_parent="loop" inputs="value:bptpl.appended path" outputs="value:ltpl.value" />
+    <Tunnel _id="In4" uid="lfilt" uid_parent="loop" inputs="value:filt.value" outputs="value:lfilt.value" />
+    <Tunnel _id="In5" uid="lall" uid_parent="loop" inputs="value:all.x = 0?" outputs="value:lall.value" />
+    <ShiftReg uid="sr" uid_parent="loop">
+      <Left uid="srL" uid_parent="sr" inputs="value:ensure.error out" outputs="value:srL.value" />
+      <Right uid="srR" uid_parent="sr" inputs="value:cse.value" outputs="value:srR.value" />
+    </ShiftReg>
+    <Node _name="Unbundle By Name" uid="ub" uid_parent="loop" fields="wrapper name,template,library,function,parameters,links" inputs="input cluster:lspec.value" outputs="wrapper name:ub.wrapper name,template:ub.template,library:ub.library,function:ub.function,parameters:ub.parameters,links:ub.links" />
+    <Node _name="Search 1D Array" uid="find" uid_parent="loop" inputs="1D array:lfilt.value,element:ub.wrapper name" outputs="index of element:find.index of element" />
+    <Node _name="Greater Or Equal To 0?" uid="hit" uid_parent="loop" inputs="x:find.index of element" outputs="x &gt;= 0?:hit.x &gt;= 0?" />
+    <Node _name="Or" uid="sel" uid_parent="loop" inputs="x:lall.value,y:hit.x &gt;= 0?" outputs="x .or. y?:sel.x .or. y?" />
+    <Structure _name="Case Structure" uid="cs" uid_parent="loop" selectin="sel.x .or. y?">
+      <Tunnel _id="In1" uid="ci1" uid_parent="cs" inputs="value:srL.value" />
+      <Tunnel _id="In2" uid="ci2" uid_parent="cs" inputs="value:ub.wrapper name" />
+      <Tunnel _id="In3" uid="ci3" uid_parent="cs" inputs="value:ub.template" />
+      <Tunnel _id="In4" uid="ci4" uid_parent="cs" inputs="value:ub.library" />
+      <Tunnel _id="In5" uid="ci5" uid_parent="cs" inputs="value:ub.function" />
+      <Tunnel _id="In6" uid="ci6" uid_parent="cs" inputs="value:ub.parameters" />
+      <Tunnel _id="In7" uid="ci7" uid_parent="cs" inputs="value:ub.links" />
+      <Tunnel _id="In8" uid="ci8" uid_parent="cs" inputs="value:lout1.value" />
+      <Tunnel _id="In9" uid="ci9" uid_parent="cs" inputs="value:ltpl.value" />
+      <CaseFrame selector="True" uid="ct" uid_parent="cs" selectout="" label="Build this wrapper">
+        <Tunnel _id="In1" uid="ct1" uid_parent="ct" outputs="value:ct1.value" />
+        <Tunnel _id="In2" uid="ct2" uid_parent="ct" outputs="value:ct2.value" />
+        <Tunnel _id="In3" uid="ct3" uid_parent="ct" outputs="value:ct3.value" />
+        <Tunnel _id="In4" uid="ct4" uid_parent="ct" outputs="value:ct4.value" />
+        <Tunnel _id="In5" uid="ct5" uid_parent="ct" outputs="value:ct5.value" />
+        <Tunnel _id="In6" uid="ct6" uid_parent="ct" outputs="value:ct6.value" />
+        <Tunnel _id="In7" uid="ct7" uid_parent="ct" outputs="value:ct7.value" />
+        <Tunnel _id="In8" uid="ct8" uid_parent="ct" outputs="value:ct8.value" />
+        <Tunnel _id="In9" uid="ct9" uid_parent="ct" outputs="value:ct9.value" />
+        <Node _name="Build Path" uid="bpt" uid_parent="ct" inputs="base path:ct9.value,name or relative path:ct3.value" outputs="appended path:bpt.appended path" />
+        <Node _name="Build Path" uid="bpw" uid_parent="ct" inputs="base path:ct8.value,name or relative path:ct2.value" outputs="appended path:bpw.appended path" />
+        <Call uid="spec" uid_parent="ct" target="W32B Parse Spec.vi" inputs="function name:ct5.value,library path:ct4.value,parameters:ct6.value,links:ct7.value" outputs="CLFN:spec.CLFN,links out:spec.links out" />
+        <Call uid="build" uid_parent="ct" target="W32B Build Wrapper.vi" inputs="template path:bpt.appended path,target path:bpw.appended path,CLFN:spec.CLFN,links:spec.links out,error in:ct1.value" outputs="wrapper path:build.wrapper path,error out:build.error out" />
+        <Tunnel _id="Out1" uid="cto1" uid_parent="ct" inputs="value:build.error out" />
+        <Tunnel _id="Out2" uid="cto2" uid_parent="ct" inputs="value:build.wrapper path" />
+      </CaseFrame>
+      <CaseFrame selector="False" uid="cf" uid_parent="cs" selectout="" label="Not selected - skip">
+        <Tunnel _id="In1" uid="cf1" uid_parent="cf" outputs="value:cf1.value" />
+        <Tunnel _id="In2" uid="cf2" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In3" uid="cf3" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In4" uid="cf4" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In5" uid="cf5" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In6" uid="cf6" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In7" uid="cf7" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In8" uid="cf8" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="In9" uid="cf9" uid_parent="cf" outputs="value:" />
+        <Tunnel _id="Out1" uid="cfo1" uid_parent="cf" inputs="value:cf1.value" />
+        <Tunnel _id="Out2" uid="cfo2" uid_parent="cf" inputs="value:" />
+      </CaseFrame>
+      <Tunnel _id="Out1" uid="cse" uid_parent="cs" outputs="value:cse.value" />
+      <Tunnel _id="Out2" uid="csp" uid_parent="cs" cond="true" outputs="value:csp.value" />
+    </Structure>
+    <Tunnel _id="Out1" uid="lout" uid_parent="loop" mode="index" inputs="value:csp.value" outputs="value:lout.value" />
+  </Structure>
+  <FreeLabel comment="Rebuilds the selected wrappers from templates" uid="cmt" uid_parent="root" />
 </VI>

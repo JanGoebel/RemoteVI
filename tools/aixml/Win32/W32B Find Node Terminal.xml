@@ -1,0 +1,26 @@
+<VI _name="W32B Find Node Terminal.vi" description="Finds the first node of class node class on the top-level block diagram of the VI behind VI reference and returns its first terminal whose direction matches source? - TRUE for an output terminal\2C FALSE for an input terminal.">
+  <Control _name="VI reference" type="ref{LV.VI}" uid="viref" uid_parent="root" value="" conIdx="0" connection="required" description="The VI whose block diagram is searched." outputs="value:viref.value" />
+  <Control _name="node class" type="string" uid="cls" uid_parent="root" value="" conIdx="5" connection="required" description="VI Server class name of the node\2C e.g. Bundler or Unbundler." outputs="value:cls.value" />
+  <Control _name="source?" type="bool" uid="src" uid_parent="root" value="false" conIdx="7" connection="required" description="TRUE returns the node's first output terminal\2C FALSE its first input terminal." outputs="value:src.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="Nothing is read when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="terminal" type="ref{LV.Terminal}" uid="term" uid_parent="root" value="" conIdx="4" connection="recommended" description="The matching terminal of the node." inputs="value:tidx.element" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the first VI Server error." inputs="value:pnode.error out" />
+  <Node _name="Property Node" uid="pvi" uid_parent="root" fields="read+Block Diagram" type="{LV.VI}" inputs="reference:viref.value,error in (no error):errin.value" outputs="reference out:pvi.reference out,error out:pvi.error out,Block Diagram:pvi.Block Diagram" />
+  <Node _name="Property Node" uid="pbd" uid_parent="root" fields="read+Nodes[]" type="{LV.Diagram}" inputs="reference:pvi.Block Diagram,error in (no error):pvi.error out" outputs="reference out:pbd.reference out,error out:pbd.error out,Nodes[]:pbd.Nodes[]" />
+  <Structure _name="For Loop" uid="loop1" uid_parent="root" count="" maxin="" maxout="" label="Class of every node">
+    <Tunnel _id="In1" uid="l1in" uid_parent="loop1" mode="index" inputs="value:pbd.Nodes[]" outputs="value:l1in.value" />
+    <Node _name="Property Node" uid="pcls" uid_parent="loop1" fields="read+Class Name" type="{LV.GObject}" inputs="reference:l1in.value" outputs="Class Name:pcls.Class Name" />
+    <Tunnel _id="Out1" uid="l1out" uid_parent="loop1" mode="index" inputs="value:pcls.Class Name" outputs="value:l1out.value" />
+  </Structure>
+  <Node _name="Search 1D Array" uid="s1" uid_parent="root" inputs="1D array:l1out.value,element:cls.value" outputs="index of element:s1.index of element" />
+  <Node _name="Index Array" uid="nidx" uid_parent="root" inputs="array:pbd.Nodes[],index:s1.index of element" outputs="element:nidx.element" />
+  <Node _name="Property Node" uid="pnode" uid_parent="root" fields="read+Terminals[]" type="{LV.Node}" inputs="reference:nidx.element,error in (no error):pbd.error out" outputs="reference out:pnode.reference out,error out:pnode.error out,Terminals[]:pnode.Terminals[]" />
+  <Structure _name="For Loop" uid="loop2" uid_parent="root" count="" maxin="" maxout="" label="Direction of every terminal">
+    <Tunnel _id="In1" uid="l2in" uid_parent="loop2" mode="index" inputs="value:pnode.Terminals[]" outputs="value:l2in.value" />
+    <Node _name="Property Node" uid="psrc" uid_parent="loop2" fields="read+Is Source?" type="{LV.Terminal}" inputs="reference:l2in.value" outputs="Is Source?:psrc.Is Source?" />
+    <Tunnel _id="Out1" uid="l2out" uid_parent="loop2" mode="index" inputs="value:psrc.Is Source?" outputs="value:l2out.value" />
+  </Structure>
+  <Node _name="Search 1D Array" uid="s2" uid_parent="root" inputs="1D array:l2out.value,element:src.value" outputs="index of element:s2.index of element" />
+  <Node _name="Index Array" uid="tidx" uid_parent="root" inputs="array:pnode.Terminals[],index:s2.index of element" outputs="element:tidx.element" />
+  <FreeLabel comment="Node by class name to one of its terminals" uid="cmt" uid_parent="root" />
+</VI>

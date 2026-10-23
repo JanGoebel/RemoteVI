@@ -1,0 +1,24 @@
+<VI _name="W32B Ensure Folder.vi" description="Creates folder when it does not exist yet (one level - its parent must exist) and passes the path on. Nothing happens when error in carries an error.">
+  <Control _name="folder" type="path" uid="fold" uid_parent="root" value="" conIdx="0" connection="required" description="The folder that must exist." outputs="value:fold.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="Nothing is created when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="folder out" type="path" uid="foldout" uid_parent="root" value="" conIdx="4" connection="recommended" description="folder\2C for chaining." inputs="value:fold.value" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the Create Folder error." inputs="value:cfo1.value" />
+  <Node _name="File/Directory Info" uid="finfo" uid_parent="root" inputs="path:fold.value" outputs="error out:finfo.error out,path out:" />
+  <Structure _name="Case Structure" uid="cfold" uid_parent="root" selectin="finfo.error out">
+    <Tunnel _id="In1" uid="cfi1" uid_parent="cfold" inputs="value:errin.value" />
+    <Tunnel _id="In2" uid="cfi2" uid_parent="cfold" inputs="value:fold.value" />
+    <CaseFrame selector="No Error" uid="cfno" uid_parent="cfold" selectout="" label="Folder exists">
+      <Tunnel _id="In1" uid="cfno1" uid_parent="cfno" outputs="value:cfno1.value" />
+      <Tunnel _id="In2" uid="cfno2" uid_parent="cfno" outputs="value:" />
+      <Tunnel _id="Out1" uid="cfnoo" uid_parent="cfno" inputs="value:cfno1.value" />
+    </CaseFrame>
+    <CaseFrame selector="Error" uid="cfer" uid_parent="cfold" selectout="" label="Create it">
+      <Tunnel _id="In1" uid="cfer1" uid_parent="cfer" outputs="value:cfer1.value" />
+      <Tunnel _id="In2" uid="cfer2" uid_parent="cfer" outputs="value:cfer2.value" />
+      <Node _name="Create Folder" uid="mkdir" uid_parent="cfer" inputs="error in:cfer1.value,path (use dialog):cfer2.value" outputs="error out:mkdir.error out" />
+      <Tunnel _id="Out1" uid="cfero" uid_parent="cfer" inputs="value:mkdir.error out" />
+    </CaseFrame>
+    <Tunnel _id="Out1" uid="cfo1" uid_parent="cfold" outputs="value:cfo1.value" />
+  </Structure>
+  <FreeLabel comment="Missing folder is created\2C existing one kept" uid="cmt" uid_parent="root" />
+</VI>

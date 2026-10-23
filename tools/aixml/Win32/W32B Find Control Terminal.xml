@@ -1,0 +1,18 @@
+<VI _name="W32B Find Control Terminal.vi" description="Returns the block-diagram terminal of the front-panel control or indicator whose label is label\2C on the VI behind VI reference. A label the panel does not carry leaves terminal invalid and error out set by the property read.">
+  <Control _name="VI reference" type="ref{LV.VI}" uid="viref" uid_parent="root" value="" conIdx="0" connection="required" description="The VI whose front panel is searched." outputs="value:viref.value" />
+  <Control _name="label" type="string" uid="label" uid_parent="root" value="" conIdx="5" connection="required" description="Exact label text of the control or indicator." outputs="value:label.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="Nothing is read when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="terminal" type="ref{LV.Terminal}" uid="term" uid_parent="root" value="" conIdx="4" connection="recommended" description="The control's terminal on the block diagram." inputs="value:pterm.Terminal" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the first VI Server error." inputs="value:pterm.error out" />
+  <Node _name="Property Node" uid="pvi" uid_parent="root" fields="read+Front Panel" type="{LV.VI}" inputs="reference:viref.value,error in (no error):errin.value" outputs="reference out:pvi.reference out,error out:pvi.error out,Front Panel:pvi.Front Panel" />
+  <Node _name="Property Node" uid="pfp" uid_parent="root" fields="read+Controls[]" type="{LV.Panel}" inputs="reference:pvi.Front Panel,error in (no error):pvi.error out" outputs="reference out:pfp.reference out,error out:pfp.error out,Controls[]:pfp.Controls[]" />
+  <Structure _name="For Loop" uid="loop" uid_parent="root" count="" maxin="" maxout="" label="Label of every control">
+    <Tunnel _id="In1" uid="loopin" uid_parent="loop" mode="index" inputs="value:pfp.Controls[]" outputs="value:loopin.value" />
+    <Node _name="Property Node" uid="plbl" uid_parent="loop" fields="read+Label.Text" type="{LV.Control}" inputs="reference:loopin.value" outputs="Label.Text:plbl.Label.Text" />
+    <Tunnel _id="Out1" uid="loopout" uid_parent="loop" mode="index" inputs="value:plbl.Label.Text" outputs="value:loopout.value" />
+  </Structure>
+  <Node _name="Search 1D Array" uid="search" uid_parent="root" inputs="1D array:loopout.value,element:label.value" outputs="index of element:search.index of element" />
+  <Node _name="Index Array" uid="idx" uid_parent="root" inputs="array:pfp.Controls[],index:search.index of element" outputs="element:idx.element" />
+  <Node _name="Property Node" uid="pterm" uid_parent="root" fields="read+Terminal" type="{LV.Control}" inputs="reference:idx.element,error in (no error):pfp.error out" outputs="reference out:pterm.reference out,error out:pterm.error out,Terminal:pterm.Terminal" />
+  <FreeLabel comment="Front-panel label to its diagram terminal" uid="cmt" uid_parent="root" />
+</VI>

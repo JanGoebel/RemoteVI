@@ -1,0 +1,86 @@
+<VI _name="W32B Build Wrapper.vi" description="Builds one Win32 wrapper VI by scripting. Opens the template VI and saves it as target path (the template file is not changed)\2C resolves every link endpoint - a front-panel terminal by label\2C or the first input or output terminal of a node by class name\2C removing the template's placeholder wire at a node OUTPUT - then places a Call Library Function Node configured from CLFN and wires each link's CLFN terminal to its endpoint\2C cleans up its block diagram\2C saves and closes the VI. CLFN terminal indices\3A 2 error in\2C 3 error out\2C 5 return value out\2C then input/output pairs from 6 per parameter.">
+  <Control _name="template path" type="path" uid="tpl" uid_parent="root" value="" conIdx="0" connection="required" description="Template VI holding the finished front panel\2C connector pane\2C icon and every node except the Call Library Function Node." outputs="value:tpl.value" />
+  <Control _name="target path" type="path" uid="tgt" uid_parent="root" value="" conIdx="5" connection="required" description="Where the wrapper VI is written. An existing file is overwritten. Its folder must exist." outputs="value:tgt.value" />
+  <Control _name="CLFN" type="cluster{string.function name,path.library path,array{cluster{string.Parameter Name,int32.Num Dimensions,uint16{Numeric,Array,String,Waveform,Digital Waveform,Digital Table,ActiveX,Any,Instance Data Pointer,Void}.Parameter Type,uint16{I8,I16,I32,I64,U8,U16,U32,U64,SGL,DBL,PTR INT,PTR UINT}.Numeric Type,uint16{By Value,Pointer To Value}.Param Passing,uint16{Array Data Pointer,Array Handle,Array Handle Pointer}.Array Passing,uint16{C String Pointer,Pascal String Pointer,String Handle,String Handle Pointer}.String Passing,uint16{By Value,Pointer To Value}.Adapt Format,uint16{ActiveX Variant Pointer,IDispatch* Pointer,IUnknown* Pointer}.ActiveX Types,bool.Const (unused),string.Minimum Size}.Parameter Info}.parameter info}" uid="clfn" uid_parent="root" value="[,,[]]" conIdx="7" connection="required" description="Function name\2C DLL and ParamInfo (element 0 is the return value) of the node to place." outputs="value:clfn.value" />
+  <Control _name="links" type="array{cluster{int32.CLFN terminal,string.control label,string.node class,bool.node source?}}" uid="links" uid_parent="root" value="[]" conIdx="9" connection="required" description="One wire per element\3A the CLFN terminal index and its endpoint - a control label\2C or (when node class is not empty) a node class with node source? choosing its output (TRUE) or input (FALSE) terminal." outputs="value:links.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="Nothing is built when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="wrapper path" type="path" uid="wpath" uid_parent="root" value="" conIdx="4" connection="recommended" description="target path\2C for chaining." inputs="value:tgt.value" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the first error of the build." inputs="value:close.error out" />
+  <Node _name="Open VI Reference" uid="open" uid_parent="root" inputs="vi path:tpl.value,error in (no error):errin.value" outputs="vi reference:open.vi reference,error out:open.error out" />
+  <Node _name="Invoke Node" uid="saveas" uid_parent="root" target="Save.Instrument" type="{LV.VI}" inputs="reference:open.vi reference,error in (no error):open.error out,Path to saved file:tgt.value" outputs="reference out:saveas.reference out,error out:saveas.error out" />
+  <Structure _name="For Loop" uid="loop1" uid_parent="root" count="" maxin="" maxout="" label="Resolve each link endpoint">
+    <Tunnel _id="In1" uid="l1link" uid_parent="loop1" mode="index" inputs="value:links.value" outputs="value:l1link.value" />
+    <Tunnel _id="In2" uid="l1vi" uid_parent="loop1" inputs="value:saveas.reference out" outputs="value:l1vi.value" />
+    <ShiftReg uid="l1sr" uid_parent="loop1">
+      <Left uid="l1srL" uid_parent="l1sr" inputs="value:saveas.error out" outputs="value:l1srL.value" />
+      <Right uid="l1srR" uid_parent="l1sr" inputs="value:c1o2.value" outputs="value:l1srR.value" />
+    </ShiftReg>
+    <Node _name="Unbundle By Name" uid="ub1" uid_parent="loop1" fields="control label,node class,node source?" inputs="input cluster:l1link.value" outputs="control label:ub1.control label,node class:ub1.node class,node source?:ub1.node source?" />
+    <Node _name="Empty String/Path?" uid="isempty" uid_parent="loop1" inputs="string/path:ub1.node class" outputs="empty?:isempty.empty?" />
+    <Structure _name="Case Structure" uid="c1" uid_parent="loop1" selectin="isempty.empty?">
+      <Tunnel _id="In1" uid="c1i1" uid_parent="c1" inputs="value:l1vi.value" />
+      <Tunnel _id="In2" uid="c1i2" uid_parent="c1" inputs="value:ub1.control label" />
+      <Tunnel _id="In3" uid="c1i3" uid_parent="c1" inputs="value:ub1.node class" />
+      <Tunnel _id="In4" uid="c1i4" uid_parent="c1" inputs="value:ub1.node source?" />
+      <Tunnel _id="In5" uid="c1i5" uid_parent="c1" inputs="value:l1srL.value" />
+      <CaseFrame selector="True" uid="c1t" uid_parent="c1" selectout="" label="Front-panel terminal by label">
+        <Tunnel _id="In1" uid="c1t1" uid_parent="c1t" outputs="value:c1t1.value" />
+        <Tunnel _id="In2" uid="c1t2" uid_parent="c1t" outputs="value:c1t2.value" />
+        <Tunnel _id="In3" uid="c1t3" uid_parent="c1t" outputs="value:" />
+        <Tunnel _id="In4" uid="c1t4" uid_parent="c1t" outputs="value:" />
+        <Tunnel _id="In5" uid="c1t5" uid_parent="c1t" outputs="value:c1t5.value" />
+        <Call uid="findctl" uid_parent="c1t" target="W32B Find Control Terminal.vi" inputs="VI reference:c1t1.value,label:c1t2.value,error in:c1t5.value" outputs="terminal:findctl.terminal,error out:findctl.error out" />
+        <Tunnel _id="Out1" uid="c1to1" uid_parent="c1t" inputs="value:findctl.terminal" />
+        <Tunnel _id="Out2" uid="c1to2" uid_parent="c1t" inputs="value:findctl.error out" />
+      </CaseFrame>
+      <CaseFrame selector="False" uid="c1f" uid_parent="c1" selectout="" label="Node terminal by class">
+        <Tunnel _id="In1" uid="c1f1" uid_parent="c1f" outputs="value:c1f1.value" />
+        <Tunnel _id="In2" uid="c1f2" uid_parent="c1f" outputs="value:" />
+        <Tunnel _id="In3" uid="c1f3" uid_parent="c1f" outputs="value:c1f3.value" />
+        <Tunnel _id="In4" uid="c1f4" uid_parent="c1f" outputs="value:c1f4.value" />
+        <Tunnel _id="In5" uid="c1f5" uid_parent="c1f" outputs="value:c1f5.value" />
+        <Call uid="findnode" uid_parent="c1f" target="W32B Find Node Terminal.vi" inputs="VI reference:c1f1.value,node class:c1f3.value,source?:c1f4.value,error in:c1f5.value" outputs="terminal:findnode.terminal,error out:findnode.error out" />
+        <Structure _name="Case Structure" uid="c2" uid_parent="c1f" selectin="c1f4.value">
+          <Tunnel _id="In1" uid="c2i1" uid_parent="c2" inputs="value:findnode.terminal" />
+          <Tunnel _id="In2" uid="c2i2" uid_parent="c2" inputs="value:findnode.error out" />
+          <CaseFrame selector="True" uid="c2t" uid_parent="c2" selectout="" label="Remove the placeholder wire">
+            <Tunnel _id="In1" uid="c2t1" uid_parent="c2t" outputs="value:c2t1.value" />
+            <Tunnel _id="In2" uid="c2t2" uid_parent="c2t" outputs="value:c2t2.value" />
+            <Node _name="Property Node" uid="pwire" uid_parent="c2t" fields="read+Connected Wire" type="{LV.Terminal}" inputs="reference:c2t1.value,error in (no error):c2t2.value" outputs="reference out:pwire.reference out,error out:pwire.error out,Connected Wire:pwire.Connected Wire" />
+            <Node _name="Invoke Node" uid="delwire" uid_parent="c2t" target="Delete" type="{LV.Wire}" inputs="reference:pwire.Connected Wire,error in (no error):pwire.error out" outputs="error out:delwire.error out" />
+            <Tunnel _id="Out1" uid="c2to1" uid_parent="c2t" inputs="value:delwire.error out" />
+          </CaseFrame>
+          <CaseFrame selector="False" uid="c2f" uid_parent="c2" selectout="">
+            <Tunnel _id="In1" uid="c2f1" uid_parent="c2f" outputs="value:" />
+            <Tunnel _id="In2" uid="c2f2" uid_parent="c2f" outputs="value:c2f2.value" />
+            <Tunnel _id="Out1" uid="c2fo1" uid_parent="c2f" inputs="value:c2f2.value" />
+          </CaseFrame>
+          <Tunnel _id="Out1" uid="c2o1" uid_parent="c2" outputs="value:c2o1.value" />
+        </Structure>
+        <Tunnel _id="Out1" uid="c1fo1" uid_parent="c1f" inputs="value:findnode.terminal" />
+        <Tunnel _id="Out2" uid="c1fo2" uid_parent="c1f" inputs="value:c2o1.value" />
+      </CaseFrame>
+      <Tunnel _id="Out1" uid="c1o1" uid_parent="c1" outputs="value:c1o1.value" />
+      <Tunnel _id="Out2" uid="c1o2" uid_parent="c1" outputs="value:c1o2.value" />
+    </Structure>
+    <Tunnel _id="Out1" uid="l1ends" uid_parent="loop1" mode="index" inputs="value:c1o1.value" outputs="value:l1ends.value" />
+  </Structure>
+  <Node _name="Unbundle By Name" uid="ubclfn" uid_parent="root" fields="function name,library path,parameter info" inputs="input cluster:clfn.value" outputs="function name:ubclfn.function name,library path:ubclfn.library path,parameter info:ubclfn.parameter info" />
+  <Call uid="mkclfn" uid_parent="root" target="W32B Create CLFN.vi" inputs="VI reference:saveas.reference out,function name:ubclfn.function name,library path:ubclfn.library path,parameter info:ubclfn.parameter info,error in:l1srR.value" outputs="CLFN terminals:mkclfn.CLFN terminals,error out:mkclfn.error out" />
+  <Structure _name="For Loop" uid="loop2" uid_parent="root" count="" maxin="" maxout="" label="Wire each CLFN terminal">
+    <Tunnel _id="In1" uid="l2link" uid_parent="loop2" mode="index" inputs="value:links.value" outputs="value:l2link.value" />
+    <Tunnel _id="In2" uid="l2end" uid_parent="loop2" mode="index" inputs="value:l1ends.value" outputs="value:l2end.value" />
+    <Tunnel _id="In3" uid="l2terms" uid_parent="loop2" inputs="value:mkclfn.CLFN terminals" outputs="value:l2terms.value" />
+    <ShiftReg uid="l2sr" uid_parent="loop2">
+      <Left uid="l2srL" uid_parent="l2sr" inputs="value:mkclfn.error out" outputs="value:l2srL.value" />
+      <Right uid="l2srR" uid_parent="l2sr" inputs="value:conn.error out" outputs="value:l2srR.value" />
+    </ShiftReg>
+    <Node _name="Unbundle By Name" uid="ub2" uid_parent="loop2" fields="CLFN terminal" inputs="input cluster:l2link.value" outputs="CLFN terminal:ub2.CLFN terminal" />
+    <Node _name="Index Array" uid="tix" uid_parent="loop2" inputs="array:l2terms.value,index:ub2.CLFN terminal" outputs="element:tix.element" />
+    <Node _name="Invoke Node" uid="conn" uid_parent="loop2" target="Connect Wire" type="{LV.Terminal}" inputs="reference:tix.element,error in (no error):l2srL.value,Wire Source:l2end.value" outputs="error out:conn.error out" />
+  </Structure>
+  <Node _name="Invoke Node" uid="tidy" uid_parent="root" target="BD.CleanUp" type="{LV.VI}" inputs="reference:saveas.reference out,error in (no error):l2srR.value" outputs="reference out:tidy.reference out,error out:tidy.error out" />
+  <Node _name="Invoke Node" uid="save" uid_parent="root" target="Save.Instrument" type="{LV.VI}" inputs="reference:tidy.reference out,error in (no error):tidy.error out" outputs="reference out:save.reference out,error out:save.error out" />
+  <Node _name="Close Reference" uid="close" uid_parent="root" inputs="reference:save.reference out,error in (no error):save.error out" outputs="error out:close.error out" />
+  <FreeLabel comment="Template plus one scripted CLFN" uid="cmt" uid_parent="root" />
+</VI>

@@ -1,0 +1,32 @@
+<VI _name="Build Win32 Wrappers.vi" description="Creates or overwrites the two thin user32.dll wrapper VIs of the RemoteVI toolkit by VI scripting\3A source\5CWin32\5Cuser32 PostMessageW.vi and source\5CWin32\5Cuser32 ScreenToClient.vi. Each one starts as a copy of its template in scripts\5CWin32 Wrapper Templates (front panel\2C connector pane\2C icon\2C descriptions)\2C then gets a Call Library Function Node placed\2C configured (user32.dll\2C stdcall\2C run in any thread\2C typed parameters) and wired by VI Server - the one node AIXML cannot author. Each wrapper is spelled as text (see W32B Parse Spec.vi for the line format). Run it from the IDE whenever a template or a spec changes. Paths are found relative to this VI\2C so the repository may live anywhere.">
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="8" connection="recommended" description="Nothing is built when this carries an error." outputs="value:errin.value" />
+  <Indicator _name="PostMessageW wrapper" type="path" uid="opost" uid_parent="root" value="" conIdx="3" connection="recommended" description="Path of the generated user32 PostMessageW.vi." inputs="value:bpost.wrapper path" />
+  <Indicator _name="ScreenToClient wrapper" type="path" uid="ostc" uid_parent="root" value="" conIdx="2" connection="recommended" description="Path of the generated user32 ScreenToClient.vi." inputs="value:bstc.wrapper path" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="0" connection="recommended" description="error in or the first error of either build." inputs="value:bstc.error out" />
+  <Node _name="Property Node" uid="pself" uid_parent="root" fields="read+VI Path" type="{LV.VI}" inputs="reference:" outputs="VI Path:pself.VI Path" />
+  <Node _name="Strip Path" uid="strip1" uid_parent="root" inputs="path:pself.VI Path" outputs="stripped path:strip1.stripped path,name:strip1.name" />
+  <Node _name="Strip Path" uid="strip2" uid_parent="root" inputs="path:strip1.stripped path" outputs="stripped path:strip2.stripped path,name:strip2.name" />
+  <Constant _name="output folder" type="path" uid="relout" uid_parent="root" value="source\5CWin32" outputs="value:relout.value" />
+  <Node _name="Build Path" uid="bpout" uid_parent="root" inputs="base path:strip2.stripped path,name or relative path:relout.value" outputs="appended path:bpout.appended path" />
+  <Call uid="ensure" uid_parent="root" target="W32B Ensure Folder.vi" inputs="folder:bpout.appended path,error in:errin.value" outputs="folder out:ensure.folder out,error out:ensure.error out" />
+  <Constant _name="PostMessageW template" type="path" uid="rtpost" uid_parent="root" value="Win32 Wrapper Templates\5CPostMessageW Wrapper Template.vi" outputs="value:rtpost.value" />
+  <Constant _name="ScreenToClient template" type="path" uid="rtstc" uid_parent="root" value="Win32 Wrapper Templates\5CScreenToClient Wrapper Template.vi" outputs="value:rtstc.value" />
+  <Node _name="Build Path" uid="bptpost" uid_parent="root" inputs="base path:strip1.stripped path,name or relative path:rtpost.value" outputs="appended path:bptpost.appended path" />
+  <Node _name="Build Path" uid="bptstc" uid_parent="root" inputs="base path:strip1.stripped path,name or relative path:rtstc.value" outputs="appended path:bptstc.appended path" />
+  <Constant _name="PostMessageW wrapper name" type="string" uid="npost" uid_parent="root" value="user32 PostMessageW.vi" outputs="value:npost.value" />
+  <Constant _name="ScreenToClient wrapper name" type="string" uid="nstc" uid_parent="root" value="user32 ScreenToClient.vi" outputs="value:nstc.value" />
+  <Node _name="Build Path" uid="bppost" uid_parent="root" inputs="base path:ensure.folder out,name or relative path:npost.value" outputs="appended path:bppost.appended path" />
+  <Node _name="Build Path" uid="bpstc" uid_parent="root" inputs="base path:ensure.folder out,name or relative path:nstc.value" outputs="appended path:bpstc.appended path" />
+  <Constant _name="library" type="path" uid="dll" uid_parent="root" value="user32.dll" outputs="value:dll.value" />
+  <Constant _name="PostMessageW function" type="string" uid="fpost" uid_parent="root" value="PostMessageW" outputs="value:fpost.value" />
+  <Constant _name="PostMessageW parameters" type="string" uid="ppost" uid_parent="root" value="return value;0;2;0;0\0AhWnd;0;11;0;0\0AMsg;0;6;0;0\0AwParam;0;11;0;0\0AlParam;0;10;0;0" outputs="value:ppost.value" />
+  <Constant _name="PostMessageW links" type="string" uid="lpost" uid_parent="root" value="2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;Msg;;0\0A10;wParam;;0\0A12;lParam;;0" outputs="value:lpost.value" />
+  <Constant _name="ScreenToClient function" type="string" uid="fstc" uid_parent="root" value="ScreenToClient" outputs="value:fstc.value" />
+  <Constant _name="ScreenToClient parameters" type="string" uid="pstc" uid_parent="root" value="return value;0;2;0;0\0AhWnd;0;11;0;0\0AlpPoint;7;2;0;0" outputs="value:pstc.value" />
+  <Constant _name="ScreenToClient links" type="string" uid="lstc" uid_parent="root" value="2;error in (no error);;0\0A3;error out;;0\0A5;return value;;0\0A6;hWnd;;0\0A8;;Bundler;1\0A9;;Unbundler;0" outputs="value:lstc.value" />
+  <Call uid="spost" uid_parent="root" target="W32B Parse Spec.vi" inputs="function name:fpost.value,library path:dll.value,parameters:ppost.value,links:lpost.value" outputs="CLFN:spost.CLFN,links out:spost.links out" />
+  <Call uid="sstc" uid_parent="root" target="W32B Parse Spec.vi" inputs="function name:fstc.value,library path:dll.value,parameters:pstc.value,links:lstc.value" outputs="CLFN:sstc.CLFN,links out:sstc.links out" />
+  <Call uid="bpost" uid_parent="root" target="W32B Build Wrapper.vi" inputs="template path:bptpost.appended path,target path:bppost.appended path,CLFN:spost.CLFN,links:spost.links out,error in:ensure.error out" outputs="wrapper path:bpost.wrapper path,error out:bpost.error out" />
+  <Call uid="bstc" uid_parent="root" target="W32B Build Wrapper.vi" inputs="template path:bptstc.appended path,target path:bpstc.appended path,CLFN:sstc.CLFN,links:sstc.links out,error in:bpost.error out" outputs="wrapper path:bstc.wrapper path,error out:bstc.error out" />
+  <FreeLabel comment="Rebuilds both wrappers from their templates" uid="cmt" uid_parent="root" />
+</VI>

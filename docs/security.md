@@ -27,14 +27,14 @@ The HTTP side is deliberately tiny, so writing it on IG HTTP Utils plus our own 
 `GET /` sends:
 
 ```
-Content-Security-Policy: default-src 'none'; connect-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'
+Content-Security-Policy: default-src 'none'; connect-src 'self'; img-src blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'
 X-Content-Type-Options: nosniff
 X-Frame-Options: DENY
 Referrer-Policy: no-referrer
 Cache-Control: no-store
 ```
 
-Inline script and style are allowed because the client is a single self-contained file. Nothing can be loaded from elsewhere, the page can only connect back to its own origin, and it cannot be framed (no clickjacking).
+Inline script and style are allowed because the client is a single self-contained file. `img-src blob:` lets the client show popups, which arrive as PNG blobs. Nothing can be loaded from elsewhere, the page can only connect back to its own origin, and it cannot be framed (no clickjacking).
 
 ## Encryption and exposure beyond a lab network
 

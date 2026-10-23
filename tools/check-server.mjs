@@ -104,6 +104,13 @@ const index = await raw(`GET / HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
 check(/^HTTP\/1\.[01] 200/.test(index), 'GET / -> 200', index.split('\r\n')[0]);
 check(/<canvas id="panel"/.test(index), 'GET / serves the web client');
 check(/content-security-policy:/i.test(index) && /x-content-type-options: nosniff/i.test(index), 'security headers present');
+const csp = /content-security-policy: ([^\r\n]*)/i.exec(index)?.[1] ?? '';
+check(/img-src[^;]*blob:/.test(csp), 'CSP lets the client show popup images (img-src blob:)', csp);
+// The toolkit serves an EMBEDDED copy of web/index.html; it must be regenerated when the file changes.
+const body = index.slice(index.indexOf('\r\n\r\n') + 4);
+const local = fs.readFileSync(new URL('../web/index.html', import.meta.url), 'latin1');
+check(body === local, 'served client is the current web/index.html',
+  body === local ? '' : `served ${body.length} bytes, file ${local.length} - run scripts/gen-index-html-vi.mjs --compose`);
 
 const notFound = await raw(`GET /nope HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
 check(/^HTTP\/1\.[01] 404/.test(notFound), 'GET /nope -> 404', notFound.split('\r\n')[0]);

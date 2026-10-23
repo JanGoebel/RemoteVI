@@ -1,0 +1,68 @@
+<VI _name="RemoteVI Start.vi" description="Publishes the front panel of VI at http\3A//&lt;this computer&gt;\3A&lt;port&gt;/ and returns immediately. Leave VI unwired to publish the CALLER (the VI one level up in the call chain\2C opened by name). Launches ..\5CServer\5CRemoteVI Server Loop.vi (found next to this VI's own folder) asynchronously through VI Server\3A Open VI Reference\2C Set Control Value [Variant] for VI\2C port\2C fps and the stop notifier name RemoteVI\3A&lt;port&gt;\2C then Run VI without waiting and with Auto Dispose Ref. The server stops on RemoteVI Stop.vi with the same port\2C or by itself once VI is no longer running. One server per LabVIEW application instance (the Server Loop is not reentrant)\3B errors that happen inside the server\2C such as a port already in use\2C are not reported here.">
+  <FreeLabel comment="Launch the server loop and return" uid="lbl" uid_parent="root"/>
+  <Control _name="VI" conIdx="0" connection="recommended" description="The VI to publish. Unwired (not a valid refnum)\3A the VI that calls RemoteVI Start.vi." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="port" conIdx="5" connection="recommended" description="TCP port\2C all interfaces." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8080"/>
+  <Control _name="fps" conIdx="7" connection="recommended" description="Most frames per second sent to a client." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is started on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+  <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:vi.value" outputs="NaN/Path/Refnum?:inv.NaN/Path/Refnum?" uid="inv" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="inv.NaN/Path/Refnum?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:ei.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="Unwired\3A open the caller by name" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Node _name="Call Chain" outputs="call chain:cc.call chain" uid="cc" uid_parent="cst"/>
+      <Constant outputs="value:one.value" type="int32" uid="one" uid_parent="cst" value="1"/>
+      <Node _name="Index Array" inputs="array:cc.call chain,index:one.value" outputs="element:caller.element" uid="caller" uid_parent="cst"/>
+      <Node _name="Open VI Reference" inputs="vi path:caller.element,error in (no error):t_ei.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:ov.vi reference" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:ov.error out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_vi.value" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_vi.value" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_ei.value" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:target.value" uid="target" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:e1.value" uid="e1" uid_parent="cs"/>
+  </Structure>
+
+  <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):e1.value" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:api.stripped path" uid="api" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:api.stripped path" outputs="stripped path:src.stripped path" uid="src" uid_parent="root"/>
+  <Constant outputs="value:sub.value" type="string" uid="sub" uid_parent="root" value="Server"/>
+  <Constant outputs="value:svi.value" type="string" uid="svi" uid_parent="root" value="RemoteVI Server Loop.vi"/>
+  <Node _name="Build Path" inputs="base path:src.stripped path,name or relative path:sub.value" outputs="appended path:sdir.appended path" uid="sdir" uid_parent="root"/>
+  <Node _name="Build Path" inputs="base path:sdir.appended path,name or relative path:svi.value" outputs="appended path:spath.appended path" uid="spath" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:spath.appended path,error in (no error):me.error out" outputs="vi reference:os.vi reference,error out:os.error out" uid="os" uid_parent="root"/>
+
+  <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>
+  <Node _name="Number To Decimal String" inputs="number:port.value" outputs="decimal integer string:ps.decimal integer string" uid="ps" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
+
+  <Constant outputs="value:nVI.value" type="string" uid="nVI" uid_parent="root" value="VI"/>
+  <Constant outputs="value:nport.value" type="string" uid="nport" uid_parent="root" value="port"/>
+  <Constant outputs="value:nfps.value" type="string" uid="nfps" uid_parent="root" value="fps"/>
+  <Constant outputs="value:nname.value" type="string" uid="nname" uid_parent="root" value="stop notifier name"/>
+  <Node _name="To Variant" inputs="anything:target.value" outputs="Variant:v1.Variant" uid="v1" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:port.value" outputs="Variant:v2.Variant" uid="v2" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:fps.value" outputs="Variant:v3.Variant" uid="v3" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:nn.concatenated string" outputs="Variant:v4.Variant" uid="v4" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:os.vi reference,error in (no error):os.error out,Control Name:nVI.value,Value:v1.Variant" outputs="reference out:s1.reference out,error out:s1.error out" uid="s1" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s1.reference out,error in (no error):s1.error out,Control Name:nport.value,Value:v2.Variant" outputs="reference out:s2.reference out,error out:s2.error out" uid="s2" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s2.reference out,error in (no error):s2.error out,Control Name:nfps.value,Value:v3.Variant" outputs="reference out:s3.reference out,error out:s3.error out" uid="s3" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s3.reference out,error in (no error):s3.error out,Control Name:nname.value,Value:v4.Variant" outputs="reference out:s4.reference out,error out:s4.error out" uid="s4" uid_parent="root"/>
+  <Constant outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:s4.reference out,error in (no error):s4.error out,Wait until done:fls.value,Auto Dispose Ref:tru.value" outputs="reference out:,error out:run.error out" uid="run" uid_parent="root"/>
+
+  <Constant outputs="value:http.value" type="string" uid="http" uid_parent="root" value="http\3A//127.0.0.1"/>
+  <Constant outputs="value:colon.value" type="string" uid="colon" uid_parent="root" value="\3A"/>
+  <Constant outputs="value:slash.value" type="string" uid="slash" uid_parent="root" value="/"/>
+  <Node _name="Concatenate Strings" inputs="string:http.value,string:colon.value,string:ps.decimal integer string,string:slash.value" outputs="concatenated string:url.concatenated string" uid="url" uid_parent="root"/>
+
+  <Indicator _name="URL" conIdx="4" connection="recommended" description="Where the panel is served\2C http\3A//127.0.0.1\3A&lt;port&gt;/. The server listens on all interfaces\3B from another computer use this computer's name or address. (The name is not looked up here\3A reverse DNS took 5 s on a test machine.)" inputs="value:url.concatenated string" type="string" uid="o_url" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors opening the caller or the Server Loop\2C setting its controls or running it." inputs="value:run.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

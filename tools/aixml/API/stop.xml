@@ -1,0 +1,69 @@
+<VI _name="RemoteVI Stop.vi" description="Stops the server that RemoteVI Start.vi launched on port\3A obtains the notifier RemoteVI\3A&lt;port&gt; without creating it\2C sends a notification and releases it\2C then waits up to 2 s for ..\5CServer\5CRemoteVI Server Loop.vi to go idle\2C so the port is free when this VI returns. No server on that port is not an error. Runs even when error in carries an error\2C and merges its own errors after it.">
+  <FreeLabel comment="Notify the server loop and wait for it" uid="lbl" uid_parent="root"/>
+  <Control _name="port" conIdx="0" connection="recommended" description="The port given to RemoteVI Start.vi." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8080"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+  <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>
+  <Node _name="Number To Decimal String" inputs="number:port.value" outputs="decimal integer string:ps.decimal integer string" uid="ps" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
+  <Constant outputs="value:ntype.value" type="string" uid="ntype" uid_parent="root" value=""/>
+  <Constant outputs="value:nocreate.value" type="bool" uid="nocreate" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.concatenated string,notification data type:ntype.value,create if not found? (T):nocreate.value" outputs="notifier out:on.notifier out,error out:on.error out" uid="on" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:on.error out" outputs="status:ons.status" uid="ons" uid_parent="root"/>
+
+  <Structure _name="Case Structure" selectin="ons.status" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" uid="cs_i1" uid_parent="cs"/>
+    <CaseFrame label="No server on this port" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_n" uid_parent="cst"/>
+      <Constant outputs="value:noerr.value" type="cluster{bool.status,int32.code,string.source}" uid="noerr" uid_parent="cst" value="[false,0,]"/>
+      <Tunnel _id="Out1" inputs="value:noerr.value" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Notify\2C then wait for the loop to end" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_n.value" uid="f_n" uid_parent="csf"/>
+      <Constant outputs="value:msg.value" type="string" uid="msg" uid_parent="csf" value="stop"/>
+      <Node _name="Send Notification" inputs="notifier:f_n.value,notification:msg.value" outputs="notifier out:sn.notifier out,error out:sn.error out" uid="sn" uid_parent="csf"/>
+      <Node _name="Release Notifier" inputs="notifier:sn.notifier out,error in (no error):sn.error out" outputs="error out:rn.error out" uid="rn" uid_parent="csf"/>
+      <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):rn.error out" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="csf"/>
+      <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:api.stripped path" uid="api" uid_parent="csf"/>
+      <Node _name="Strip Path" inputs="path:api.stripped path" outputs="stripped path:src.stripped path" uid="src" uid_parent="csf"/>
+      <Constant outputs="value:sub.value" type="string" uid="sub" uid_parent="csf" value="Server"/>
+      <Constant outputs="value:svi.value" type="string" uid="svi" uid_parent="csf" value="RemoteVI Server Loop.vi"/>
+      <Node _name="Build Path" inputs="base path:src.stripped path,name or relative path:sub.value" outputs="appended path:sdir.appended path" uid="sdir" uid_parent="csf"/>
+      <Node _name="Build Path" inputs="base path:sdir.appended path,name or relative path:svi.value" outputs="appended path:spath.appended path" uid="spath" uid_parent="csf"/>
+      <Node _name="Open VI Reference" inputs="vi path:spath.appended path,error in (no error):me.error out" outputs="vi reference:os.vi reference,error out:os.error out" uid="os" uid_parent="csf"/>
+      <Constant outputs="value:k40.value" type="int32" uid="k40" uid_parent="csf" value="40"/>
+      <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="csf" value="1"/>
+      <Constant outputs="value:k50.value" type="int32" uid="k50" uid_parent="csf" value="50"/>
+      <Structure _name="While Loop" count="wl.value" label="Up to 2 s until the Server Loop is idle" uid="wl" uid_parent="csf">
+        <Tunnel _id="In1" inputs="value:os.vi reference" outputs="value:w_ref.value" uid="w_ref" uid_parent="wl"/>
+        <Tunnel _id="In2" inputs="value:k40.value" outputs="value:w_40.value" uid="w_40" uid_parent="wl"/>
+        <Tunnel _id="In3" inputs="value:k1.value" outputs="value:w_1.value" uid="w_1" uid_parent="wl"/>
+        <Tunnel _id="In4" inputs="value:k50.value" outputs="value:w_50.value" uid="w_50" uid_parent="wl"/>
+        <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:w_ref.value" outputs="error out:es.error out,Execution\3AState:es.Execution\3AState" type="{LV.VI}" uid="es" uid_parent="wl"/>
+        <Node _name="To Long Integer" inputs="number:es.Execution\3AState" outputs="32bit integer:st.32bit integer" uid="st" uid_parent="wl"/>
+        <Node _name="Less Or Equal?" inputs="x:st.32bit integer,y:w_1.value" outputs="x &lt;= y?:idle.x &lt;= y?" uid="idle" uid_parent="wl"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:es.error out" outputs="status:ess.status" uid="ess" uid_parent="wl"/>
+        <Node _name="Greater Or Equal?" inputs="x:wl.value,y:w_40.value" outputs="x &gt;= y?:late.x &gt;= y?" uid="late" uid_parent="wl"/>
+        <Node _name="Or" inputs="x:idle.x &lt;= y?,y:ess.status" outputs="x .or. y?:o1.x .or. y?" uid="o1" uid_parent="wl"/>
+        <Node _name="Or" inputs="x:o1.x .or. y?,y:late.x &gt;= y?" outputs="x .or. y?:done.x .or. y?" uid="done" uid_parent="wl"/>
+        <Structure _name="Case Structure" selectin="done.x .or. y?" uid="cw" uid_parent="wl">
+          <Tunnel _id="In1" inputs="value:w_50.value" uid="cw_i1" uid_parent="cw"/>
+          <CaseFrame selector="True" selectout="" uid="cwt" uid_parent="cw">
+            <Tunnel _id="In1" outputs="value:" uid="cw_t1" uid_parent="cwt"/>
+          </CaseFrame>
+          <CaseFrame label="Still running\3A wait 50 ms" selector="False" selectout="" uid="cwf" uid_parent="cw">
+            <Tunnel _id="In1" outputs="value:cw_f1.value" uid="cw_f1" uid_parent="cwf"/>
+            <Node _name="Wait (ms)" inputs="milliseconds to wait:cw_f1.value" outputs="" uid="wt" uid_parent="cwf"/>
+          </CaseFrame>
+        </Structure>
+        <Tunnel _id="Out1" inputs="value:w_ref.value" outputs="value:ref_end.value" uid="ref_end" uid_parent="wl"/>
+        <Condition inputs="value:done.x .or. y?" uid="wlc" uid_parent="wl" value="stop"/>
+      </Structure>
+      <Node _name="Close Reference" inputs="reference:ref_end.value,error in (no error):os.error out" outputs="error out:cr.error out" uid="cr" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:cr.error out" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Node _name="Merge Errors" inputs="error in:ei.value,error in:cs_o1.value" outputs="error out:mg.error out" uid="mg" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with errors notifying or waiting for the server." inputs="value:mg.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

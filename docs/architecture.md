@@ -63,7 +63,9 @@ The first version (protocol v1, see git history) modelled each control through V
 Ring and enum menus, right-click menus, combo-box lists and graph-palette popups are separate top-level windows (`LVMenuWnd` and others) owned by LabVIEW. They are not part of `FP.Get Image`. While one is open, LabVIEW's UI thread runs a modal loop, and every VI Server UI call (`FP.Get Image`, `Panel Bounds`, `OS Window`, …) blocks until it closes. The server therefore watches for popups with Win32 only (`RemoteVI Find Popups.vi`, which uses no VI Server calls) every loop iteration:
 
 * **No popup:** normal path. The server caches panel geometry and `hWnd` for the popup case.
-* **Popup open:** the server makes no VI Server UI calls. The frame is the last panel capture with each popup's screen pixels pasted over it (`RemoteVI Capture Screen Rect.vi`, GDI `BitBlt` from the screen DC; popups are topmost, so the screen shows them). Mouse input moves the **host cursor** to the screen point (`SetCursorPos`, because the popup reads the real cursor), then posts the message to the panel window with screen coordinates. Measured: this selects ring items. The host's cursor therefore jumps while a remote user works in a popup.
+* **Popup open:** the server makes no VI Server UI calls. Panel frames keep coming from the cached capture (the panel does not change while the UI thread is held). The popups go to the clients as **OVERLAY** messages ([protocol.md](protocol.md#32-overlay-binary-message)): each popup is captured with `PrintWindow(PW_RENDERFULLCONTENT)` (`RemoteVI Capture Window.vi`), which sees its own pixels even when it is hidden, covered or on another monitor, and is placed at its window rectangle minus the panel origin, **not clipped** - a context menu may overflow the panel. An OVERLAY is sent at most every 1000/fps ms and only when it differs from the last one; an empty one clears it, and a client that connects meanwhile gets the current one. `SysShadow` (a menu's drop shadow) is left out.
+* **Remote popups are invisible on the host.** A popup (shadow included) that appears within 1 s after a remote button or key message is made layered with alpha 0 (`RemoteVI Hide Window.vi`) and kept that way while it is open, because a menu's fade-in animation sets its alpha back to 255 (measured). It stays open and clickable. A popup the person at the host opens stays visible and is streamed too.
+* **Clicks on a popup borrow the host cursor.** The popup reads the real cursor, so `RemoteVI Post Input.vi` saves it (`GetCursorPos`), moves it to the point (`SetCursorPos`), posts `WM_MOUSEMOVE` (needed, measured) and the button message with screen coordinates, waits until the popups change (`RemoteVI Wait Popups Change.vi`: a known popup no longer visible or a new `LVMenuWnd` visible, polled every 5 ms) - at most 300 ms after a button-up, 50 ms after a button-down - and puts the cursor back. Measured on the demo: 45-100 ms away per click, the cursor back exactly where it was. Moves and the wheel are dropped while a popup is open, so there is no hover highlight; click a submenu entry to open it.
 * **A click can open a popup a moment later.** The posted message is handled by LabVIEW's UI thread after the server has moved on, so a `FP.Get Image` issued in the same breath would land inside the popup's modal loop and freeze the server until someone closes the menu on the host (measured). After any posted message other than `WM_MOUSEMOVE`/`WM_MOUSEWHEEL` (`clicked?` from `RemoteVI Service Client.vi`) the server therefore makes no VI Server UI call for 300 ms and re-sends the cached panel instead.
 * **Minimized panel:** LabVIEW ignores input to it. The server restores it with `ShowWindow(SW_SHOWNOACTIVATE)`, without taking focus.
 
@@ -82,10 +84,11 @@ source/
 ├── API/        RemoteVI Start.vi, RemoteVI Stop.vi           (what you put in your VI)
 ├── Server/     Server Loop.vi, Handle Connection.vi, Index HTML.vi, client state
 ├── Capture/    RemoteVI Capture Panel.vi, RemoteVI Dirty Rects.vi, RemoteVI Encode Rect PNG.vi
-├── Protocol/   RemoteVI Frame Encode.vi, RemoteVI Parse Input.vi,
+├── Protocol/   RemoteVI Frame Encode.vi, RemoteVI Overlay Encode.vi, RemoteVI Parse Input.vi,
 │               RemoteVI WS Encode Server Frame.vi, RemoteVI WS Decode Client Frame.vi
-├── Input/      Post Input.vi (allow list, coordinate mapping)
-└── Win32/      user32 PostMessageW.vi, user32 ScreenToClient.vi   (generated, do not edit by hand)
+├── Input/      Translate Input.vi, Post Input.vi (allow list, coordinate mapping, popup clicks)
+└── Win32/      Find Popups.vi, Capture Window.vi, Hide Window.vi, Wait Popups Change.vi, ...
+                user32/gdi32/kernel32 *.vi wrappers   (generated, do not edit by hand)
 scripts/        Build Win32 Wrappers.vi (+ builder subVIs and templates)
 tools/aixml/    AIXML sources of the generated VIs, for regeneration
 tools/lib, tools/mock-server   JS reference implementation + reference server

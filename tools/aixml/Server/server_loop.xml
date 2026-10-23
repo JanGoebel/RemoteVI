@@ -1,5 +1,5 @@
-<VI _name="RemoteVI Server Loop.vi" description="The RemoteVI server: ONE While Loop\2C no event structure (docs\5Carchitecture.md\2C tools\5Cmock-server\5Cserver.mjs). Before the loop it creates a TCP listener on port (all interfaces)\2C obtains the notifier named stop notifier name and reads the name of VI for the title. Each iteration waits at most 5 ms for a connection and hands it to RemoteVI Handle Connection.vi (at most 8 WebSocket clients)\3B an upgraded connection gets the text messages title and viewonly 0 and joins the client list. POPUPS (docs\5Carchitecture.md\2C section Popups)\3A while a LabVIEW popup (menu\2C drop-down\2C graph palette popup) is open\2C LabVIEW's UI thread is in a modal loop and every VI Server UI call blocks\2C so each iteration first lists the popups with RemoteVI Find Popups.vi (Win32 only\3B class SysShadow\2C a menu's drop shadow\2C is ignored) - whenever a client is connected\2C a popup was open last time or the geometry is due. The loop caches the panel's geometry and window handle (RemoteVI Get Panel Geometry.vi before the loop\2C then every 500 ms and right after a popup closes\2C but only while NO popup is open) and the last panel capture. Every client is serviced (RemoteVI Service Client.vi) with the cached geometry\2C handle and the popup state\3B when at least one client is connected and 1000/fps ms have passed\2C a frame is made once and RemoteVI Send Frame.vi runs for each client. Without a popup the frame is a fresh capture (RemoteVI Capture Panel.vi)\2C which also becomes the cache. With a popup open NO VI Server call is made\3A the frame is the cached capture with each popup's screen pixels (RemoteVI Capture Screen Rect.vi) pasted in at its position relative to the panel origin\2C clipped to the panel\2C bottom-most popup first. After a client posted a message that may open a popup (Service Client's clicked?) the loop also makes no VI Server UI call for 300 ms\2C so a popup that is still opening cannot catch FP.Get Image in its modal loop (measured\3A that froze the loop until the menu was closed on the host). A minimized panel is restored (RemoteVI Restore If Minimized.vi) when a client connects. Closed clients are dropped and their connections closed. The loop stops when the notifier delivers anything\2C when VI is no longer running (Execution\3AState checked once a second while no popup is open - so the server ends with your application)\2C or on a listener error other than a timeout. Then every connection and the listener are closed and the notifier released. Launched asynchronously by RemoteVI Start.vi.">
-  <FreeLabel comment="Accept\2C service\2C capture\2C send - one loop" uid="lbl" uid_parent="root"/>
+<VI _name="RemoteVI Server Loop.vi" description="The RemoteVI server: ONE While Loop\2C no event structure (docs\5Carchitecture.md\2C tools\5Cmock-server\5Cserver.mjs). Before the loop it creates a TCP listener on port (all interfaces)\2C obtains the notifier named stop notifier name and reads the name of VI for the title. Each iteration waits at most 5 ms for a connection and hands it to RemoteVI Handle Connection.vi (at most 8 WebSocket clients)\3B an upgraded connection gets the text messages title and viewonly 0 and joins the client list. POPUPS (docs\5Carchitecture.md\2C section Popups)\3A while a LabVIEW popup (menu\2C drop-down\2C graph palette popup) is open\2C LabVIEW's UI thread is in a modal loop and every VI Server UI call blocks\2C so each iteration first lists the popups with RemoteVI Find Popups.vi (Win32 only\3B class SysShadow\2C a menu's drop shadow\2C is left out of the overlay) - whenever a client is connected\2C a popup was open last time or the geometry is due. A popup (SysShadow included) that appears within 1 s after a client posted a button or key message was opened by a REMOTE user and is hidden on the host (RemoteVI Hide Window.vi\2C layered with alpha 0 - it stays open and clickable) and is hidden again on every iteration while it is open\2C because a menu's fade-in animation sets its alpha back to 255 (measured)\3B a popup opened at the host stays visible. The popups travel to the clients as OVERLAY messages (docs\5Cprotocol.md section 3.2)\3A at most every 1000/fps ms while a popup is open (or one was\2C to clear it) each popup is captured with RemoteVI Capture Window.vi (PrintWindow\2C so hidden\2C covered or off-screen popups are captured too)\2C PNG-encoded and placed at its window rectangle minus the panel origin - NOT clipped to the panel\2C bottom-most first\3B RemoteVI Overlay Encode.vi builds the message and it is written to every client only when it differs from the last one\2C an empty OVERLAY when the last popup has closed. A client that connects while a popup is open gets the current OVERLAY after its greeting. The loop caches the panel's geometry and window handle (RemoteVI Get Panel Geometry.vi before the loop\2C then every 500 ms and right after a popup closes\2C but only while NO popup is open) and the last panel capture. Every client is serviced (RemoteVI Service Client.vi) with the cached geometry\2C handle and the window handles of the open popups (a click on a popup borrows the host cursor until the popups change\2C RemoteVI Post Input.vi)\3B when at least one client is connected and 1000/fps ms have passed\2C a frame is made once and RemoteVI Send Frame.vi runs for each client. Without a popup the frame is a fresh capture (RemoteVI Capture Panel.vi)\2C which also becomes the cache. With a popup open NO VI Server call is made and the frame is the cached capture (the panel does not change while LabVIEW's UI thread is held). After a client posted a message that may open a popup (Service Client's clicked?) the loop also makes no VI Server UI call for 300 ms\2C so a popup that is still opening cannot catch FP.Get Image in its modal loop (measured\3A that froze the loop until the menu was closed on the host). A minimized panel is restored (RemoteVI Restore If Minimized.vi) when a client connects. Closed clients are dropped and their connections closed. The loop stops when the notifier delivers anything\2C when VI is no longer running (Execution\3AState checked once a second while no popup is open - so the server ends with your application)\2C or on a listener error other than a timeout. Then every connection and the listener are closed and the notifier released. Launched asynchronously by RemoteVI Start.vi.">
+  <FreeLabel comment="Accept\2C service\2C capture\2C send\2C overlay" uid="lbl" uid_parent="root"/>
   <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel is published." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="port" conIdx="5" connection="recommended" description="TCP port to listen on\2C all interfaces." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8080"/>
   <Control _name="fps" conIdx="7" connection="recommended" description="Most captures per second while a client is connected." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
@@ -33,6 +33,8 @@
   <Node _name="Divide" inputs="x:k1000.value,y:fps.value" outputs="x/y:period.x/y" uid="period" uid_parent="root"/>
   <Constant outputs="value:noclients.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}}" uid="noclients" uid_parent="root" value="[]"/>
   <Constant outputs="value:u0.value" type="uint32" uid="u0" uid_parent="root" value="0"/>
+  <Constant _name="no overlay sent" outputs="value:es0.value" type="string" uid="es0" uid_parent="root" value=""/>
+  <Constant _name="no popup windows" outputs="value:noh.value" type="array{uint64}" uid="noh" uid_parent="root" value="[]"/>
 
   <Structure _name="While Loop" count="" label="Serve until stopped" uid="sl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:lis.listener ID" outputs="value:l_lis.value" uid="l_lis" uid_parent="sl"/>
@@ -88,6 +90,26 @@
       <Left inputs="value:u0.value" outputs="value:lastclk.value" uid="sr_lcl" uid_parent="sr_lc"/>
       <Right inputs="value:nlc.s? t\3Af" outputs="value:" uid="sr_lcr" uid_parent="sr_lc"/>
     </ShiftReg>
+    <ShiftReg uid="sr_ovm" uid_parent="sl">
+      <Left inputs="value:es0.value" outputs="value:ovprev.value" uid="sr_ovml" uid_parent="sr_ovm"/>
+      <Right inputs="value:ov_o2.value" outputs="value:" uid="sr_ovmr" uid_parent="sr_ovm"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_ovf" uid_parent="sl">
+      <Left inputs="value:es0.value" outputs="value:ovfprev.value" uid="sr_ovfl" uid_parent="sr_ovf"/>
+      <Right inputs="value:ov_o3.value" outputs="value:" uid="sr_ovfr" uid_parent="sr_ovf"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_ovt" uid_parent="sl">
+      <Left inputs="value:u0.value" outputs="value:lastov.value" uid="sr_ovtl" uid_parent="sr_ovt"/>
+      <Right inputs="value:ov_o4.value" outputs="value:" uid="sr_ovtr" uid_parent="sr_ovt"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_all" uid_parent="sl">
+      <Left inputs="value:noh.value" outputs="value:prevall.value" uid="sr_alll" uid_parent="sr_all"/>
+      <Right inputs="value:allhw.value" outputs="value:" uid="sr_allr" uid_parent="sr_all"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_hid" uid_parent="sl">
+      <Left inputs="value:noh.value" outputs="value:prevhid.value" uid="sr_hidl" uid_parent="sr_hid"/>
+      <Right inputs="value:hidhw.value" outputs="value:" uid="sr_hidr" uid_parent="sr_hid"/>
+    </ShiftReg>
     <ShiftReg uid="sr_err" uid_parent="sl">
       <Left inputs="value:pn.error out" outputs="value:err.value" uid="sr_errl" uid_parent="sr_err"/>
       <Right inputs="value:nerr.s? t\3Af" outputs="value:err_end.value" uid="sr_errr" uid_parent="sr_err"/>
@@ -109,12 +131,14 @@
       <Tunnel _id="In3" inputs="value:l_html.value" uid="ca_i3" uid_parent="ca"/>
       <Tunnel _id="In4" inputs="value:l_hello.value" uid="ca_i4" uid_parent="ca"/>
       <Tunnel _id="In5" inputs="value:hw.value" uid="ca_i5" uid_parent="ca"/>
+      <Tunnel _id="In6" inputs="value:ovfprev.value" uid="ca_i6" uid_parent="ca"/>
       <CaseFrame label="New connection\3A one HTTP request" selector="True" selectout="" uid="cat" uid_parent="ca">
         <Tunnel _id="In1" outputs="value:a_conn.value" uid="a_conn" uid_parent="cat"/>
         <Tunnel _id="In2" outputs="value:a_cl.value" uid="a_cl" uid_parent="cat"/>
         <Tunnel _id="In3" outputs="value:a_html.value" uid="a_html" uid_parent="cat"/>
         <Tunnel _id="In4" outputs="value:a_hello.value" uid="a_hello" uid_parent="cat"/>
         <Tunnel _id="In5" outputs="value:a_hw.value" uid="a_hw" uid_parent="cat"/>
+        <Tunnel _id="In6" outputs="value:a_ovf.value" uid="a_ovf" uid_parent="cat"/>
         <Constant outputs="value:u32t.value" type="uint32" uid="u32t" uid_parent="cat" value="0"/>
         <Node _name="Type Cast" inputs="x:a_conn.value,type:u32t.value" outputs="*(type *) &amp;x:cu.*(type *) &amp;x" uid="cu" uid_parent="cat"/>
         <Node _name="Array Size" inputs="array:a_cl.value" outputs="size(s):n.size(s)" uid="n" uid_parent="cat"/>
@@ -127,15 +151,18 @@
           <Tunnel _id="In3" inputs="value:a_hello.value" uid="cw_i3" uid_parent="cw"/>
           <Tunnel _id="In4" inputs="value:cu.*(type *) &amp;x" uid="cw_i4" uid_parent="cw"/>
           <Tunnel _id="In5" inputs="value:a_hw.value" uid="cw_i5" uid_parent="cw"/>
+          <Tunnel _id="In6" inputs="value:a_ovf.value" uid="cw_i6" uid_parent="cw"/>
           <CaseFrame label="WebSocket\3A greet and add the client" selector="True" selectout="" uid="cwt" uid_parent="cw">
             <Tunnel _id="In1" outputs="value:w_conn.value" uid="w_conn" uid_parent="cwt"/>
             <Tunnel _id="In2" outputs="value:w_cl.value" uid="w_cl" uid_parent="cwt"/>
             <Tunnel _id="In3" outputs="value:w_hello.value" uid="w_hello" uid_parent="cwt"/>
             <Tunnel _id="In4" outputs="value:w_cu.value" uid="w_cu" uid_parent="cwt"/>
             <Tunnel _id="In5" outputs="value:w_hw.value" uid="w_hw" uid_parent="cwt"/>
+            <Tunnel _id="In6" outputs="value:w_ovf.value" uid="w_ovf" uid_parent="cwt"/>
+            <Node _name="Concatenate Strings" inputs="string:w_hello.value,string:w_ovf.value" outputs="concatenated string:hov.concatenated string" uid="hov" uid_parent="cwt"/>
             <Call inputs="hWnd:w_hw.value" outputs="was minimized?:,error out:" target="RemoteVI Restore If Minimized.vi" uid="rim" uid_parent="cwt"/>
             <Constant outputs="value:wto.value" type="int32" uid="wto" uid_parent="cwt" value="2000"/>
-            <Node _name="TCP Write" inputs="connection ID:w_conn.value,data in:w_hello.value,?parm9:wto.value" outputs="error out:tw.error out" uid="tw" uid_parent="cwt"/>
+            <Node _name="TCP Write" inputs="connection ID:w_conn.value,data in:hov.concatenated string,?parm9:wto.value" outputs="error out:tw.error out" uid="tw" uid_parent="cwt"/>
             <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tw.error out" outputs="status:tws.status" uid="tws" uid_parent="cwt"/>
             <Constant outputs="value:cl0.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="cl0" uid_parent="cwt" value="[0,,0,0,[],false,false]"/>
             <Node _name="Bundle By Name" fields="connection,closed" inputs="connection:w_cu.value,closed:tws.status,input cluster:cl0.value" outputs="output cluster:nc.output cluster" uid="nc" uid_parent="cwt"/>
@@ -148,6 +175,7 @@
             <Tunnel _id="In3" outputs="value:" uid="v_hello" uid_parent="cwf"/>
             <Tunnel _id="In4" outputs="value:" uid="v_cu" uid_parent="cwf"/>
             <Tunnel _id="In5" outputs="value:" uid="v_hw" uid_parent="cwf"/>
+            <Tunnel _id="In6" outputs="value:" uid="v_ovf" uid_parent="cwf"/>
             <Tunnel _id="Out1" inputs="value:v_cl.value" uid="v_o1" uid_parent="cwf"/>
           </CaseFrame>
           <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
@@ -160,6 +188,7 @@
         <Tunnel _id="In3" outputs="value:" uid="b_html" uid_parent="caf"/>
         <Tunnel _id="In4" outputs="value:" uid="b_hello" uid_parent="caf"/>
         <Tunnel _id="In5" outputs="value:" uid="b_hw" uid_parent="caf"/>
+        <Tunnel _id="In6" outputs="value:" uid="b_ovf" uid_parent="caf"/>
         <Tunnel _id="Out1" inputs="value:b_cl.value" uid="b_o1" uid_parent="caf"/>
       </CaseFrame>
       <Tunnel _id="Out1" outputs="value:ca_o1.value" uid="ca_o1" uid_parent="ca"/>
@@ -208,15 +237,50 @@
           </Structure>
         </Structure>
         <Tunnel _id="Out1" inputs="value:pkept.value" uid="fpt_o1" uid_parent="fpt"/>
+        <Tunnel _id="Out2" inputs="value:fnd.popups" uid="fpt_o2" uid_parent="fpt"/>
       </CaseFrame>
       <CaseFrame selector="False" selectout="" uid="fpf" uid_parent="fp">
         <Tunnel _id="In1" outputs="value:" uid="u_hw" uid_parent="fpf"/>
         <Tunnel _id="In2" outputs="value:u_none.value" uid="u_none" uid_parent="fpf"/>
         <Tunnel _id="Out1" inputs="value:u_none.value" uid="fpf_o1" uid_parent="fpf"/>
+        <Tunnel _id="Out2" inputs="value:u_none.value" uid="fpf_o2" uid_parent="fpf"/>
       </CaseFrame>
       <Tunnel _id="Out1" outputs="value:fp_o1.value" uid="fp_o1" uid_parent="fp"/>
+      <Tunnel _id="Out2" outputs="value:fp_o2.value" uid="fp_o2" uid_parent="fp"/>
     </Structure>
     <Node _name="Empty Array?" inputs="array:fp_o1.value" outputs="empty?:npop.empty?" uid="npop" uid_parent="sl"/>
+    <Constant _name="hide popups up to 1 s after a remote click" outputs="value:k1000c.value" type="uint32" uid="k1000c" uid_parent="sl" value="1000"/>
+    <Node _name="Less?" inputs="x:elk.x-y,y:k1000c.value" outputs="x &lt; y?:rclk.x &lt; y?" uid="rclk" uid_parent="sl"/>
+    <Structure _name="For Loop" count="" label="Hide popups a remote click opened" maxin="" maxout="" uid="fh" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:fp_o2.value" mode="index" outputs="value:h_p.value" uid="h_p" uid_parent="fh"/>
+      <Tunnel _id="In2" inputs="value:prevall.value" outputs="value:h_prev.value" uid="h_prev" uid_parent="fh"/>
+      <Tunnel _id="In3" inputs="value:rclk.x &lt; y?" outputs="value:h_rc.value" uid="h_rc" uid_parent="fh"/>
+      <Tunnel _id="In4" inputs="value:prevhid.value" outputs="value:h_hid.value" uid="h_hid" uid_parent="fh"/>
+      <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:h_p.value" outputs="hwnd:hu.hwnd" uid="hu" uid_parent="fh"/>
+      <Node _name="Search 1D Array" inputs="1D array:h_prev.value,element:hu.hwnd" outputs="index of element:hs.index of element" uid="hs" uid_parent="fh"/>
+      <Node _name="Less Than 0?" inputs="x:hs.index of element" outputs="x &lt; 0?:hn.x &lt; 0?" uid="hn" uid_parent="fh"/>
+      <Node _name="And" inputs="x:hn.x &lt; 0?,y:h_rc.value" outputs="x .and. y?:hnew.x .and. y?" uid="hnew" uid_parent="fh"/>
+      <Node _name="Search 1D Array" inputs="1D array:h_hid.value,element:hu.hwnd" outputs="index of element:hh.index of element" uid="hh" uid_parent="fh"/>
+      <Node _name="Greater Or Equal To 0?" inputs="x:hh.index of element" outputs="x &gt;= 0?:hwas.x &gt;= 0?" uid="hwas" uid_parent="fh"/>
+      <Node _name="Or" inputs="x:hnew.x .and. y?,y:hwas.x &gt;= 0?" outputs="x .or. y?:hdo.x .or. y?" uid="hdo" uid_parent="fh"/>
+      <Structure _name="Case Structure" selectin="hdo.x .or. y?" uid="hcs" uid_parent="fh">
+        <Tunnel _id="In1" inputs="value:hu.hwnd" uid="hc_i1" uid_parent="hcs"/>
+        <CaseFrame label="Opened by a remote click\3A keep it hidden" selector="True" selectout="" uid="hct" uid_parent="hcs">
+          <Tunnel _id="In1" outputs="value:hc_w.value" uid="hc_w" uid_parent="hct"/>
+          <Call inputs="hwnd:hc_w.value" outputs="hidden?:,error out:" target="RemoteVI Hide Window.vi" uid="hide" uid_parent="hct"/>
+        </CaseFrame>
+        <CaseFrame selector="False" selectout="" uid="hcf" uid_parent="hcs">
+          <Tunnel _id="In1" outputs="value:" uid="hc_x" uid_parent="hcf"/>
+        </CaseFrame>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:hu.hwnd" mode="index" outputs="value:allhw.value" uid="allhw" uid_parent="fh"/>
+      <Tunnel _id="Out2" inputs="value:hu.hwnd" mode="index" cond="hdo.x .or. y?" outputs="value:hidhw.value" uid="hidhw" uid_parent="fh"/>
+    </Structure>
+    <Structure _name="For Loop" count="" label="Popup window handles" maxin="" maxout="" uid="fw" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:fp_o1.value" mode="index" outputs="value:w_p.value" uid="w_p" uid_parent="fw"/>
+      <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:w_p.value" outputs="hwnd:wu.hwnd" uid="wu" uid_parent="fw"/>
+      <Tunnel _id="Out1" inputs="value:wu.hwnd" mode="index" outputs="value:pophw.value" uid="pophw" uid_parent="fw"/>
+    </Structure>
     <Node _name="Not" inputs="x:npop.empty?" outputs=".not. x?:popup..not. x?" uid="popup" uid_parent="sl"/>
     <Node _name="And" inputs="x:prevpop.value,y:npop.empty?" outputs="x .and. y?:pclosed.x .and. y?" uid="pclosed" uid_parent="sl"/>
     <Node _name="Or" inputs="x:gtime.x &gt;= y?,y:pclosed.x .and. y?" outputs="x .or. y?:gdue.x .or. y?" uid="gdue" uid_parent="sl"/>
@@ -265,12 +329,12 @@
       <Tunnel _id="In1" inputs="value:ca_o1.value" mode="index" outputs="value:s_cl.value" uid="s_cl" uid_parent="fs"/>
       <Tunnel _id="In2" inputs="value:cg_o1.value" outputs="value:s_geo.value" uid="s_geo" uid_parent="fs"/>
       <Tunnel _id="In3" inputs="value:cg_o2.value" outputs="value:s_hw.value" uid="s_hw" uid_parent="fs"/>
-      <Tunnel _id="In4" inputs="value:popup..not. x?" outputs="value:s_pop.value" uid="s_pop" uid_parent="fs"/>
+      <Tunnel _id="In4" inputs="value:pophw.value" outputs="value:s_ph.value" uid="s_ph" uid_parent="fs"/>
       <ShiftReg uid="sr_ac" uid_parent="fs">
         <Left inputs="value:l_bf.value" outputs="value:acl.value" uid="sr_acl" uid_parent="sr_ac"/>
         <Right inputs="value:aco.x .or. y?" outputs="value:anyclk.value" uid="sr_acr" uid_parent="sr_ac"/>
       </ShiftReg>
-      <Call inputs="Client:s_cl.value,geo:s_geo.value,hWnd:s_hw.value,popup:s_pop.value" outputs="Client out:sc.Client out,clicked?:sc.clicked?,error out:" target="RemoteVI Service Client.vi" uid="sc" uid_parent="fs"/>
+      <Call inputs="Client:s_cl.value,geo:s_geo.value,hWnd:s_hw.value,popup hWnds:s_ph.value" outputs="Client out:sc.Client out,clicked?:sc.clicked?,error out:" target="RemoteVI Service Client.vi" uid="sc" uid_parent="fs"/>
       <Node _name="Or" inputs="x:acl.value,y:sc.clicked?" outputs="x .or. y?:aco.x .or. y?" uid="aco" uid_parent="fs"/>
       <Tunnel _id="Out1" inputs="value:sc.Client out" mode="index" outputs="value:serviced.value" uid="serviced" uid_parent="fs"/>
     </Structure>
@@ -297,8 +361,6 @@
       <Tunnel _id="In6" inputs="value:cwid.value" uid="cc_i6" uid_parent="cc"/>
       <Tunnel _id="In7" inputs="value:chei.value" uid="cc_i7" uid_parent="cc"/>
       <Tunnel _id="In8" inputs="value:novis.x .or. y?" uid="cc_i8" uid_parent="cc"/>
-      <Tunnel _id="In9" inputs="value:fp_o1.value" uid="cc_i9" uid_parent="cc"/>
-      <Tunnel _id="In10" inputs="value:cg_o1.value" uid="cc_i10" uid_parent="cc"/>
       <CaseFrame label="Capture once\2C send to each client" selector="True" selectout="" uid="cct" uid_parent="cc">
         <Tunnel _id="In1" outputs="value:c_cl.value" uid="c_cl" uid_parent="cct"/>
         <Tunnel _id="In2" outputs="value:c_vi.value" uid="c_vi" uid_parent="cct"/>
@@ -308,55 +370,17 @@
         <Tunnel _id="In6" outputs="value:c_w.value" uid="c_w" uid_parent="cct"/>
         <Tunnel _id="In7" outputs="value:c_h.value" uid="c_h" uid_parent="cct"/>
         <Tunnel _id="In8" outputs="value:c_pop.value" uid="c_pop" uid_parent="cct"/>
-        <Tunnel _id="In9" outputs="value:c_pops.value" uid="c_pops" uid_parent="cct"/>
-        <Tunnel _id="In10" outputs="value:c_geo.value" uid="c_geo" uid_parent="cct"/>
         <Structure _name="Case Structure" selectin="c_pop.value" uid="cq" uid_parent="cct">
           <Tunnel _id="In1" inputs="value:c_vi.value" uid="cq_i1" uid_parent="cq"/>
           <Tunnel _id="In2" inputs="value:c_pm.value" uid="cq_i2" uid_parent="cq"/>
           <Tunnel _id="In3" inputs="value:c_w.value" uid="cq_i3" uid_parent="cq"/>
           <Tunnel _id="In4" inputs="value:c_h.value" uid="cq_i4" uid_parent="cq"/>
-          <Tunnel _id="In5" inputs="value:c_pops.value" uid="cq_i5" uid_parent="cq"/>
-          <Tunnel _id="In6" inputs="value:c_geo.value" uid="cq_i6" uid_parent="cq"/>
-          <CaseFrame label="Popup or click\3A cached panel + popups" selector="True" selectout="" uid="cqt" uid_parent="cq">
+          <CaseFrame label="Popup or click\3A cached panel" selector="True" selectout="" uid="cqt" uid_parent="cq">
             <Tunnel _id="In1" outputs="value:" uid="m_vi" uid_parent="cqt"/>
             <Tunnel _id="In2" outputs="value:m_pm.value" uid="m_pm" uid_parent="cqt"/>
             <Tunnel _id="In3" outputs="value:m_w.value" uid="m_w" uid_parent="cqt"/>
             <Tunnel _id="In4" outputs="value:m_h.value" uid="m_h" uid_parent="cqt"/>
-            <Tunnel _id="In5" outputs="value:m_pops.value" uid="m_pops" uid_parent="cqt"/>
-            <Tunnel _id="In6" outputs="value:m_geo.value" uid="m_geo" uid_parent="cqt"/>
-            <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:m_geo.value" outputs="panelX:mg.panelX,panelY:mg.panelY" uid="mg" uid_parent="cqt"/>
-            <Node _name="Array Size" inputs="array:m_pops.value" outputs="size(s):npp.size(s)" uid="npp" uid_parent="cqt"/>
-            <Node _name="Decrement" inputs="x:npp.size(s)" outputs="x-1:lastp.x-1" uid="lastp" uid_parent="cqt"/>
-            <Constant outputs="value:rect0.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="rect0" uid_parent="cqt" value="[0,0,0,0]"/>
-            <Constant outputs="value:z0.value" type="int32" uid="z0" uid_parent="cqt" value="0"/>
-            <Structure _name="For Loop" count="fpp.value" label="Paste each popup\2C bottom-most first" maxin="npp.size(s)" maxout="" uid="fpp" uid_parent="cqt">
-              <Tunnel _id="In1" inputs="value:m_pops.value" outputs="value:pall.value" uid="pall" uid_parent="fpp"/>
-              <Tunnel _id="In6" inputs="value:lastp.x-1" outputs="value:e_last.value" uid="e_last" uid_parent="fpp"/>
-              <Node _name="Subtract" inputs="x:e_last.value,y:fpp.value" outputs="x-y:ri.x-y" uid="ri" uid_parent="fpp"/>
-              <Node _name="Index Array" inputs="array:pall.value,index:ri.x-y" outputs="element:pe.element" uid="pe" uid_parent="fpp"/>
-              <Tunnel _id="In2" inputs="value:mg.panelX" outputs="value:e_px.value" uid="e_px" uid_parent="fpp"/>
-              <Tunnel _id="In3" inputs="value:mg.panelY" outputs="value:e_py.value" uid="e_py" uid_parent="fpp"/>
-              <Tunnel _id="In4" inputs="value:rect0.value" outputs="value:e_r0.value" uid="e_r0" uid_parent="fpp"/>
-              <Tunnel _id="In5" inputs="value:z0.value" outputs="value:e_z.value" uid="e_z" uid_parent="fpp"/>
-              <ShiftReg uid="sr_cm" uid_parent="fpp">
-                <Left inputs="value:m_pm.value" outputs="value:comp.value" uid="sr_cml" uid_parent="sr_cm"/>
-                <Right inputs="value:ras.output array" outputs="value:comp_end.value" uid="sr_cmr" uid_parent="sr_cm"/>
-              </ShiftReg>
-              <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:pe.element" outputs="x:pu.x,y:pu.y,w:pu.w,h:pu.h" uid="pu" uid_parent="fpp"/>
-              <Node _name="Bundle By Name" fields="x,y,w,h" inputs="x:pu.x,y:pu.y,w:pu.w,h:pu.h,input cluster:e_r0.value" outputs="output cluster:prc.output cluster" uid="prc" uid_parent="fpp"/>
-              <Call inputs="rect:prc.output cluster" outputs="pixmap:csr.pixmap,error out:" target="RemoteVI Capture Screen Rect.vi" uid="csr" uid_parent="fpp"/>
-              <Node _name="Subtract" inputs="x:pu.x,y:e_px.value" outputs="x-y:dx.x-y" uid="dx" uid_parent="fpp"/>
-              <Node _name="Subtract" inputs="x:pu.y,y:e_py.value" outputs="x-y:dy.x-y" uid="dy" uid_parent="fpp"/>
-              <Node _name="Subtract" inputs="x:e_z.value,y:dx.x-y" outputs="x-y:ndx.x-y" uid="ndx" uid_parent="fpp"/>
-              <Node _name="Subtract" inputs="x:e_z.value,y:dy.x-y" outputs="x-y:ndy.x-y" uid="ndy" uid_parent="fpp"/>
-              <Node _name="Max &amp; Min" inputs="x:ndx.x-y,y:e_z.value" outputs="max(x\2Cy):c0.max(x\2Cy)" uid="c0" uid_parent="fpp"/>
-              <Node _name="Max &amp; Min" inputs="x:ndy.x-y,y:e_z.value" outputs="max(x\2Cy):r0.max(x\2Cy)" uid="r0" uid_parent="fpp"/>
-              <Node _name="Max &amp; Min" inputs="x:dx.x-y,y:e_z.value" outputs="max(x\2Cy):dcol.max(x\2Cy)" uid="dcol" uid_parent="fpp"/>
-              <Node _name="Max &amp; Min" inputs="x:dy.x-y,y:e_z.value" outputs="max(x\2Cy):drow.max(x\2Cy)" uid="drow" uid_parent="fpp"/>
-              <Node _name="Array Subset" dimensions="2" inputs="array:csr.pixmap,index:r0.max(x\2Cy),length:pu.h,index:c0.max(x\2Cy),length:pu.w" outputs="subarray:clip.subarray" uid="clip" uid_parent="fpp"/>
-              <Node _name="Replace Array Subset" dimensions="2" inputs="array:comp.value,index (row):drow.max(x\2Cy),index (col):dcol.max(x\2Cy),new element/subarray:clip.subarray" outputs="output array:ras.output array" uid="ras" uid_parent="fpp"/>
-            </Structure>
-            <Tunnel _id="Out1" inputs="value:comp_end.value" uid="m_o1" uid_parent="cqt"/>
+            <Tunnel _id="Out1" inputs="value:m_pm.value" uid="m_o1" uid_parent="cqt"/>
             <Tunnel _id="Out2" inputs="value:m_w.value" uid="m_o2" uid_parent="cqt"/>
             <Tunnel _id="Out3" inputs="value:m_h.value" uid="m_o3" uid_parent="cqt"/>
             <Tunnel _id="Out4" inputs="value:m_pm.value" uid="m_o4" uid_parent="cqt"/>
@@ -366,8 +390,6 @@
             <Tunnel _id="In2" outputs="value:" uid="n_pm" uid_parent="cqf"/>
             <Tunnel _id="In3" outputs="value:" uid="n_w" uid_parent="cqf"/>
             <Tunnel _id="In4" outputs="value:" uid="n_h" uid_parent="cqf"/>
-            <Tunnel _id="In5" outputs="value:" uid="n_pops" uid_parent="cqf"/>
-            <Tunnel _id="In6" outputs="value:" uid="n_geo" uid_parent="cqf"/>
             <Call inputs="VI:n_vi.value" outputs="pixmap:cp.pixmap,width:cp.width,height:cp.height,error out:" target="RemoteVI Capture Panel.vi" uid="cp" uid_parent="cqf"/>
             <Tunnel _id="Out1" inputs="value:cp.pixmap" uid="n_o1" uid_parent="cqf"/>
             <Tunnel _id="Out2" inputs="value:cp.width" uid="n_o2" uid_parent="cqf"/>
@@ -402,8 +424,6 @@
         <Tunnel _id="In6" outputs="value:d_w.value" uid="d_w" uid_parent="ccf"/>
         <Tunnel _id="In7" outputs="value:d_h.value" uid="d_h" uid_parent="ccf"/>
         <Tunnel _id="In8" outputs="value:" uid="d_pop" uid_parent="ccf"/>
-        <Tunnel _id="In9" outputs="value:" uid="d_pops" uid_parent="ccf"/>
-        <Tunnel _id="In10" outputs="value:" uid="d_geo" uid_parent="ccf"/>
         <Tunnel _id="Out1" inputs="value:d_cl.value" uid="d_o1" uid_parent="ccf"/>
         <Tunnel _id="Out2" inputs="value:d_last.value" uid="d_o2" uid_parent="ccf"/>
         <Tunnel _id="Out3" inputs="value:d_pm.value" uid="d_o3" uid_parent="ccf"/>
@@ -417,8 +437,153 @@
       <Tunnel _id="Out5" outputs="value:cc_o5.value" uid="cc_o5" uid_parent="cc"/>
     </Structure>
 
+    <Node _name="String Length" inputs="string:ovprev.value" outputs="length:ovl.length" uid="ovl" uid_parent="sl"/>
+    <Node _name="Greater Than 0?" inputs="x:ovl.length" outputs="x &gt; 0?:ovhad.x &gt; 0?" uid="ovhad" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:popup..not. x?,y:ovhad.x &gt; 0?" outputs="x .or. y?:ovany.x .or. y?" uid="ovany" uid_parent="sl"/>
+    <Node _name="Subtract" inputs="x:now.millisecond timer value,y:lastov.value" outputs="x-y:elo.x-y" uid="elo" uid_parent="sl"/>
+    <Node _name="Greater Or Equal?" inputs="x:elo.x-y,y:l_per.value" outputs="x &gt;= y?:ovtime.x &gt;= y?" uid="ovtime" uid_parent="sl"/>
+    <Node _name="Empty Array?" inputs="array:cc_o1.value" outputs="empty?:ovnoc.empty?" uid="ovnoc" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:ovnoc.empty?" outputs=".not. x?:ovcl..not. x?" uid="ovcl" uid_parent="sl"/>
+    <Node _name="And" inputs="x:ovany.x .or. y?,y:ovtime.x &gt;= y?" outputs="x .and. y?:ov0.x .and. y?" uid="ov0" uid_parent="sl"/>
+    <Node _name="And" inputs="x:ov0.x .and. y?,y:ovcl..not. x?" outputs="x .and. y?:ovdue.x .and. y?" uid="ovdue" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="ovdue.x .and. y?" uid="ov" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:cc_o1.value" uid="ov_i1" uid_parent="ov"/>
+      <Tunnel _id="In2" inputs="value:fp_o1.value" uid="ov_i2" uid_parent="ov"/>
+      <Tunnel _id="In3" inputs="value:cg_o1.value" uid="ov_i3" uid_parent="ov"/>
+      <Tunnel _id="In4" inputs="value:ovprev.value" uid="ov_i4" uid_parent="ov"/>
+      <Tunnel _id="In5" inputs="value:ovfprev.value" uid="ov_i5" uid_parent="ov"/>
+      <Tunnel _id="In6" inputs="value:now.millisecond timer value" uid="ov_i6" uid_parent="ov"/>
+      <Tunnel _id="In7" inputs="value:lastov.value" uid="ov_i7" uid_parent="ov"/>
+      <Tunnel _id="In8" inputs="value:l_tpl.value" uid="ov_i8" uid_parent="ov"/>
+      <CaseFrame label="Popups open or just closed\3A OVERLAY if changed" selector="True" selectout="" uid="ovt" uid_parent="ov">
+        <Tunnel _id="In1" outputs="value:o_cl.value" uid="o_cl" uid_parent="ovt"/>
+        <Tunnel _id="In2" outputs="value:o_pops.value" uid="o_pops" uid_parent="ovt"/>
+        <Tunnel _id="In3" outputs="value:o_geo.value" uid="o_geo" uid_parent="ovt"/>
+        <Tunnel _id="In4" outputs="value:o_prev.value" uid="o_prev" uid_parent="ovt"/>
+        <Tunnel _id="In5" outputs="value:o_fprev.value" uid="o_fprev" uid_parent="ovt"/>
+        <Tunnel _id="In6" outputs="value:o_now.value" uid="o_now" uid_parent="ovt"/>
+        <Tunnel _id="In7" outputs="value:" uid="o_last" uid_parent="ovt"/>
+        <Tunnel _id="In8" outputs="value:o_tpl.value" uid="o_tpl" uid_parent="ovt"/>
+        <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:o_geo.value" outputs="panelX:og.panelX,panelY:og.panelY" uid="og" uid_parent="ovt"/>
+        <Node _name="Array Size" inputs="array:o_pops.value" outputs="size(s):onp.size(s)" uid="onp" uid_parent="ovt"/>
+        <Node _name="Decrement" inputs="x:onp.size(s)" outputs="x-1:olast.x-1" uid="olast" uid_parent="ovt"/>
+        <Constant _name="whole window" outputs="value:orz.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="orz" uid_parent="ovt" value="[0,0,0,0]"/>
+        <Constant _name="popup" outputs="value:op0.value" type="cluster{int16.x,int16.y,string.png}" uid="op0" uid_parent="ovt" value="[0,0,]"/>
+        <Structure _name="For Loop" count="oc.value" label="Capture each popup\2C bottom-most first" maxin="onp.size(s)" maxout="" uid="oc" uid_parent="ovt">
+          <Tunnel _id="In1" inputs="value:o_pops.value" outputs="value:q_all.value" uid="q_all" uid_parent="oc"/>
+          <Tunnel _id="In6" inputs="value:olast.x-1" outputs="value:q_last.value" uid="q_last" uid_parent="oc"/>
+          <Node _name="Subtract" inputs="x:q_last.value,y:oc.value" outputs="x-y:qri.x-y" uid="qri" uid_parent="oc"/>
+          <Node _name="Index Array" inputs="array:q_all.value,index:qri.x-y" outputs="element:q_p.element" uid="q_p" uid_parent="oc"/>
+          <Tunnel _id="In2" inputs="value:og.panelX" outputs="value:q_px.value" uid="q_px" uid_parent="oc"/>
+          <Tunnel _id="In3" inputs="value:og.panelY" outputs="value:q_py.value" uid="q_py" uid_parent="oc"/>
+          <Tunnel _id="In4" inputs="value:orz.value" outputs="value:q_rz.value" uid="q_rz" uid_parent="oc"/>
+          <Tunnel _id="In5" inputs="value:op0.value" outputs="value:q_p0.value" uid="q_p0" uid_parent="oc"/>
+          <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:q_p.element" outputs="hwnd:qu.hwnd" uid="qu" uid_parent="oc"/>
+          <Call inputs="hwnd:qu.hwnd" outputs="pixmap:cwin.pixmap,rect:cwin.rect,error out:cwin.error out" target="RemoteVI Capture Window.vi" uid="cwin" uid_parent="oc"/>
+          <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:cwin.rect" outputs="x:qr.x,y:qr.y,w:qr.w,h:qr.h" uid="qr" uid_parent="oc"/>
+          <Node _name="Bundle By Name" fields="w,h" inputs="w:qr.w,h:qr.h,input cluster:q_rz.value" outputs="output cluster:qwr.output cluster" uid="qwr" uid_parent="oc"/>
+          <Call inputs="pixmap:cwin.pixmap,rect:qwr.output cluster,error in:cwin.error out" outputs="png:qpng.png,error out:qpng.error out" target="RemoteVI Encode Rect PNG.vi" uid="qpng" uid_parent="oc"/>
+          <Node _name="Subtract" inputs="x:qr.x,y:q_px.value" outputs="x-y:qx.x-y" uid="qx" uid_parent="oc"/>
+          <Node _name="Subtract" inputs="x:qr.y,y:q_py.value" outputs="x-y:qy.x-y" uid="qy" uid_parent="oc"/>
+          <Node _name="Bundle By Name" fields="x,y,png" inputs="x:qx.x-y,y:qy.x-y,png:qpng.png,input cluster:q_p0.value" outputs="output cluster:qb.output cluster" uid="qb" uid_parent="oc"/>
+          <Node _name="Unbundle By Name" fields="status" inputs="input cluster:qpng.error out" outputs="status:qes.status" uid="qes" uid_parent="oc"/>
+          <Node _name="Not" inputs="x:qes.status" outputs=".not. x?:qok..not. x?" uid="qok" uid_parent="oc"/>
+          <Tunnel _id="Out1" inputs="value:qb.output cluster" mode="index" cond="qok..not. x?" outputs="value:oarr.value" uid="oarr" uid_parent="oc"/>
+        </Structure>
+        <Call inputs="popups:oarr.value" outputs="message:oenc.message" target="RemoteVI Overlay Encode.vi" uid="oenc" uid_parent="ovt"/>
+        <Node _name="Not Equal?" inputs="x:oenc.message,y:o_prev.value" outputs="x != y?:ochg.x != y?" uid="ochg" uid_parent="ovt"/>
+        <Structure _name="Case Structure" selectin="ochg.x != y?" uid="os" uid_parent="ovt">
+          <Tunnel _id="In1" inputs="value:o_cl.value" uid="os_i1" uid_parent="os"/>
+          <Tunnel _id="In2" inputs="value:oenc.message" uid="os_i2" uid_parent="os"/>
+          <Tunnel _id="In3" inputs="value:o_fprev.value" uid="os_i3" uid_parent="os"/>
+          <Tunnel _id="In4" inputs="value:o_tpl.value" uid="os_i4" uid_parent="os"/>
+          <CaseFrame label="Changed\3A send to every client" selector="True" selectout="" uid="ost" uid_parent="os">
+            <Tunnel _id="In1" outputs="value:s1_cl.value" uid="s1_cl" uid_parent="ost"/>
+            <Tunnel _id="In2" outputs="value:s1_msg.value" uid="s1_msg" uid_parent="ost"/>
+            <Tunnel _id="In3" outputs="value:" uid="s1_fp" uid_parent="ost"/>
+            <Tunnel _id="In4" outputs="value:s1_tpl.value" uid="s1_tpl" uid_parent="ost"/>
+            <Constant _name="binary" outputs="value:op2.value" type="uint8" uid="op2" uid_parent="ost" value="2"/>
+            <Call inputs="opcode:op2.value,payload:s1_msg.value" outputs="frame:ofr.frame" target="RemoteVI WS Encode Server Frame.vi" uid="ofr" uid_parent="ost"/>
+            <Constant outputs="value:oto.value" type="int32" uid="oto" uid_parent="ost" value="500"/>
+            <Structure _name="For Loop" count="" label="Write the OVERLAY to each client" maxin="" maxout="" uid="ow" uid_parent="ost">
+              <Tunnel _id="In1" inputs="value:s1_cl.value" mode="index" outputs="value:r_cl.value" uid="r_cl" uid_parent="ow"/>
+              <Tunnel _id="In2" inputs="value:ofr.frame" outputs="value:r_fr.value" uid="r_fr" uid_parent="ow"/>
+              <Tunnel _id="In3" inputs="value:s1_tpl.value" outputs="value:r_tpl.value" uid="r_tpl" uid_parent="ow"/>
+              <Tunnel _id="In4" inputs="value:oto.value" outputs="value:r_to.value" uid="r_to" uid_parent="ow"/>
+              <Node _name="Unbundle By Name" fields="connection,closed" inputs="input cluster:r_cl.value" outputs="connection:ru.connection,closed:ru.closed" uid="ru" uid_parent="ow"/>
+              <Structure _name="Case Structure" selectin="ru.closed" uid="rw" uid_parent="ow">
+                <Tunnel _id="In1" inputs="value:ru.connection" uid="rw_i1" uid_parent="rw"/>
+                <Tunnel _id="In2" inputs="value:r_fr.value" uid="rw_i2" uid_parent="rw"/>
+                <Tunnel _id="In3" inputs="value:r_tpl.value" uid="rw_i3" uid_parent="rw"/>
+                <Tunnel _id="In4" inputs="value:r_to.value" uid="rw_i4" uid_parent="rw"/>
+                <CaseFrame label="Closed\3A skip" selector="True" selectout="" uid="rwt" uid_parent="rw">
+                  <Tunnel _id="In1" outputs="value:" uid="rt_c" uid_parent="rwt"/>
+                  <Tunnel _id="In2" outputs="value:" uid="rt_f" uid_parent="rwt"/>
+                  <Tunnel _id="In3" outputs="value:" uid="rt_t" uid_parent="rwt"/>
+                  <Tunnel _id="In4" outputs="value:" uid="rt_o" uid_parent="rwt"/>
+                  <Constant outputs="value:rtt.value" type="bool" uid="rtt" uid_parent="rwt" value="true"/>
+                  <Tunnel _id="Out1" inputs="value:rtt.value" uid="rt_o1" uid_parent="rwt"/>
+                </CaseFrame>
+                <CaseFrame selector="False" selectout="" uid="rwf" uid_parent="rw">
+                  <Tunnel _id="In1" outputs="value:rf_c.value" uid="rf_c" uid_parent="rwf"/>
+                  <Tunnel _id="In2" outputs="value:rf_f.value" uid="rf_f" uid_parent="rwf"/>
+                  <Tunnel _id="In3" outputs="value:rf_t.value" uid="rf_t" uid_parent="rwf"/>
+                  <Tunnel _id="In4" outputs="value:rf_o.value" uid="rf_o" uid_parent="rwf"/>
+                  <Node _name="Type Cast" inputs="x:rf_c.value,type:rf_t.value" outputs="*(type *) &amp;x:rc.*(type *) &amp;x" uid="rc" uid_parent="rwf"/>
+                  <Node _name="TCP Write" inputs="connection ID:rc.*(type *) &amp;x,data in:rf_f.value,?parm9:rf_o.value" outputs="error out:rtw.error out" uid="rtw" uid_parent="rwf"/>
+                  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:rtw.error out" outputs="status:rts.status" uid="rts" uid_parent="rwf"/>
+                  <Tunnel _id="Out1" inputs="value:rts.status" uid="rf_o1" uid_parent="rwf"/>
+                </CaseFrame>
+                <Tunnel _id="Out1" outputs="value:rw_o1.value" uid="rw_o1" uid_parent="rw"/>
+              </Structure>
+              <Node _name="Bundle By Name" fields="closed" inputs="closed:rw_o1.value,input cluster:r_cl.value" outputs="output cluster:orb.output cluster" uid="orb" uid_parent="ow"/>
+              <Tunnel _id="Out1" inputs="value:orb.output cluster" mode="index" outputs="value:ow_o1.value" uid="ow_o1" uid_parent="ow"/>
+            </Structure>
+            <Tunnel _id="Out1" inputs="value:ow_o1.value" uid="st_o1" uid_parent="ost"/>
+            <Tunnel _id="Out2" inputs="value:ofr.frame" uid="st_o2" uid_parent="ost"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="osf" uid_parent="os">
+            <Tunnel _id="In1" outputs="value:s0_cl.value" uid="s0_cl" uid_parent="osf"/>
+            <Tunnel _id="In2" outputs="value:" uid="s0_msg" uid_parent="osf"/>
+            <Tunnel _id="In3" outputs="value:s0_fp.value" uid="s0_fp" uid_parent="osf"/>
+            <Tunnel _id="In4" outputs="value:" uid="s0_tpl" uid_parent="osf"/>
+            <Tunnel _id="Out1" inputs="value:s0_cl.value" uid="sf_o1" uid_parent="osf"/>
+            <Tunnel _id="Out2" inputs="value:s0_fp.value" uid="sf_o2" uid_parent="osf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:os_o1.value" uid="os_o1" uid_parent="os"/>
+          <Tunnel _id="Out2" outputs="value:os_o2.value" uid="os_o2" uid_parent="os"/>
+        </Structure>
+        <Node _name="Empty Array?" inputs="array:o_pops.value" outputs="empty?:onone.empty?" uid="onone" uid_parent="ovt"/>
+        <Constant outputs="value:oes.value" type="string" uid="oes" uid_parent="ovt" value=""/>
+        <Node _name="Select" inputs="t:oes.value,s:onone.empty?,f:oenc.message" outputs="s? t\3Af:okeep.s? t\3Af" uid="okeep" uid_parent="ovt"/>
+        <Node _name="Select" inputs="t:oes.value,s:onone.empty?,f:os_o2.value" outputs="s? t\3Af:ofkeep.s? t\3Af" uid="ofkeep" uid_parent="ovt"/>
+        <Tunnel _id="Out1" inputs="value:os_o1.value" uid="ot_o1" uid_parent="ovt"/>
+        <Tunnel _id="Out2" inputs="value:okeep.s? t\3Af" uid="ot_o2" uid_parent="ovt"/>
+        <Tunnel _id="Out3" inputs="value:ofkeep.s? t\3Af" uid="ot_o3" uid_parent="ovt"/>
+        <Tunnel _id="Out4" inputs="value:o_now.value" uid="ot_o4" uid_parent="ovt"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="ovf" uid_parent="ov">
+        <Tunnel _id="In1" outputs="value:p_cl.value" uid="p_cl" uid_parent="ovf"/>
+        <Tunnel _id="In2" outputs="value:" uid="p_pops" uid_parent="ovf"/>
+        <Tunnel _id="In3" outputs="value:" uid="p_geo" uid_parent="ovf"/>
+        <Tunnel _id="In4" outputs="value:p_prev.value" uid="p_prev" uid_parent="ovf"/>
+        <Tunnel _id="In5" outputs="value:p_fprev.value" uid="p_fprev" uid_parent="ovf"/>
+        <Tunnel _id="In6" outputs="value:" uid="p_now" uid_parent="ovf"/>
+        <Tunnel _id="In7" outputs="value:p_last.value" uid="p_last" uid_parent="ovf"/>
+        <Tunnel _id="In8" outputs="value:" uid="p_tpl" uid_parent="ovf"/>
+        <Tunnel _id="Out1" inputs="value:p_cl.value" uid="pf_o1" uid_parent="ovf"/>
+        <Tunnel _id="Out2" inputs="value:p_prev.value" uid="pf_o2" uid_parent="ovf"/>
+        <Tunnel _id="Out3" inputs="value:p_fprev.value" uid="pf_o3" uid_parent="ovf"/>
+        <Tunnel _id="Out4" inputs="value:p_last.value" uid="pf_o4" uid_parent="ovf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:ov_o1.value" uid="ov_o1" uid_parent="ov"/>
+      <Tunnel _id="Out2" outputs="value:ov_o2.value" uid="ov_o2" uid_parent="ov"/>
+      <Tunnel _id="Out3" outputs="value:ov_o3.value" uid="ov_o3" uid_parent="ov"/>
+      <Tunnel _id="Out4" outputs="value:ov_o4.value" uid="ov_o4" uid_parent="ov"/>
+    </Structure>
+
     <Structure _name="For Loop" count="" label="Drop closed clients" maxin="" maxout="" uid="fd" uid_parent="sl">
-      <Tunnel _id="In1" inputs="value:cc_o1.value" mode="index" outputs="value:k_cl.value" uid="k_cl" uid_parent="fd"/>
+      <Tunnel _id="In1" inputs="value:ov_o1.value" mode="index" outputs="value:k_cl.value" uid="k_cl" uid_parent="fd"/>
       <Tunnel _id="In2" inputs="value:l_tpl.value" outputs="value:k_tpl.value" uid="k_tpl" uid_parent="fd"/>
       <ShiftReg uid="sr_k" uid_parent="fd">
         <Left inputs="value:l_none.value" outputs="value:acc.value" uid="sr_kl" uid_parent="sr_k"/>

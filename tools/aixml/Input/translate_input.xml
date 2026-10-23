@@ -1,5 +1,5 @@
-<VI _name="RemoteVI Translate Input.vi" description="Turns one parsed client input message (the outputs of RemoteVI Parse Input.vi) into the Win32 messages the server posts to the panel window (docs/protocol.md section 4). Only the allowed messages of section 4.3 produce posts; anything else - ack\2C invalid\2C WM_CLOSE\2C WM_SYSKEYDOWN - gives an empty posts array and leaves tracking unchanged. WM_CHAR becomes three posts: WM_KEYDOWN(0xE8\2C1)\2C WM_CHAR(wParam\2C1)\2C WM_KEYUP(0xE8\2C0xC0000001). Other key messages pass through unchanged. Mouse lParam = ((y and 0xFFFF) shl 16) or (x and 0xFFFF) of CLIENT coordinates (screen point minus client origin) or of SCREEN coordinates (panel origin plus x/y): the wheel always uses screen; a button-down uses client and starts tracking; a button-up uses screen while tracking\2C else client\2C and ends tracking; a move uses screen while tracking\2C else client. While a LabVIEW popup is open (popup TRUE) every mouse message uses SCREEN coordinates and cursor asks the caller to move the host cursor to that screen point first (popup menus read the real cursor)\3B tracking follows the same button rules. Key messages are unaffected by popup. Pure function\2C cannot fail. Reference: translateInput() in tools\5Clib\5Cinput.mjs.">
-  <FreeLabel comment="Allowed only. Mouse: client or screen point" uid="lbl" uid_parent="root"/>
+<VI _name="RemoteVI Translate Input.vi" description="Turns one parsed client input message (the outputs of RemoteVI Parse Input.vi) into the Win32 messages the server posts to the panel window (docs/protocol.md section 4). Only the allowed messages of section 4.3 produce posts; anything else - ack\2C invalid\2C WM_CLOSE\2C WM_SYSKEYDOWN - gives an empty posts array and leaves tracking unchanged. WM_CHAR becomes three posts: WM_KEYDOWN(0xE8\2C1)\2C WM_CHAR(wParam\2C1)\2C WM_KEYUP(0xE8\2C0xC0000001). Other key messages pass through unchanged. Mouse lParam = ((y and 0xFFFF) shl 16) or (x and 0xFFFF) of CLIENT coordinates (screen point minus client origin) or of SCREEN coordinates (panel origin plus x/y): the wheel always uses screen; a button-down uses client and starts tracking; a button-up uses screen while tracking\2C else client\2C and ends tracking; a move uses screen while tracking\2C else client. While a LabVIEW popup is open (popup TRUE) only BUTTON messages are posted\3A with SCREEN coordinates\2C and cursor asks the caller to move the host cursor to that screen point just for the click (popup menus read the real cursor)\3B tracking follows the same button rules. Moves and the wheel are DROPPED while a popup is open (no posts\2C tracking unchanged\2C no cursor)\2C so the host cursor stays where the host user left it. Key messages are unaffected by popup. Pure function\2C cannot fail. Reference: translateInput() in tools\5Clib\5Cinput.mjs.">
+  <FreeLabel comment="Allowed only. Popup open: buttons only" uid="lbl" uid_parent="root"/>
   <Control _name="kind" conIdx="0" connection="required" description="Message kind from RemoteVI Parse Input.vi. Only mouse and key produce posts." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack}" uid="kind" uid_parent="root" value="0"/>
   <Control _name="msg" conIdx="1" connection="required" description="Windows message number from RemoteVI Parse Input.vi." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
   <Control _name="x" conIdx="2" connection="recommended" description="Panel pixel x (mouse)." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
@@ -7,7 +7,7 @@
   <Control _name="wParam" conIdx="4" connection="recommended" description="wParam (mouse and key)\2C posted unchanged." outputs="value:wp.value" type="uint64" uid="wp" uid_parent="root" value="0"/>
   <Control _name="lParam" conIdx="5" connection="recommended" description="lParam (key)\2C posted unchanged for key messages other than WM_CHAR." outputs="value:lpin.value" type="int64" uid="lpin" uid_parent="root" value="0"/>
   <Control _name="geo" conIdx="6" connection="required" description="Screen coordinates of the panel origin (Panel Bounds left/top) and of the client-area origin\2C from RemoteVI Get Panel Geometry.vi." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
-  <Control _name="popup" conIdx="8" connection="optional" description="A LabVIEW popup window (menu\2C drop-down\2C graph palette popup) is open\3A mouse messages then use screen coordinates and cursor.move? is TRUE." outputs="value:pop.value" type="bool" uid="pop" uid_parent="root" value="false"/>
+  <Control _name="popup" conIdx="8" connection="optional" description="A LabVIEW popup window (menu\2C drop-down\2C graph palette popup) is open\3A button messages then use screen coordinates and cursor.move? is TRUE\3B moves and the wheel are dropped." outputs="value:pop.value" type="bool" uid="pop" uid_parent="root" value="false"/>
   <Control _name="tracking in" conIdx="7" connection="recommended" description="A mouse button is held (per-client state\2C from the previous call's tracking out)." outputs="value:tin.value" type="bool" uid="tin" uid_parent="root" value="false"/>
 
   <Constant outputs="value:kM.value" type="uint16{invalid,mouse,key,ack}" uid="kM" uid_parent="root" value="1"/>
@@ -30,6 +30,11 @@
   <Node _name="Equal?" inputs="x:msg.value,y:kC.value" outputs="x = y?:isC.x = y?" uid="isC" uid_parent="root"/>
   <Node _name="And" inputs="x:isM.x = y?,y:okA.x &gt;= 0?" outputs="x .and. y?:mAct.x .and. y?" uid="mAct" uid_parent="root"/>
   <Node _name="And" inputs="x:isK.x = y?,y:okA.x &gt;= 0?" outputs="x .and. y?:kAct.x .and. y?" uid="kAct" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isD.x &gt;= 0?,y:isU.x &gt;= 0?" outputs="x .or. y?:isB.x .or. y?" uid="isB" uid_parent="root"/>
+  <Node _name="Not" inputs="x:isB.x .or. y?" outputs=".not. x?:nB..not. x?" uid="nB" uid_parent="root"/>
+  <Node _name="And" inputs="x:pop.value,y:nB..not. x?" outputs="x .and. y?:drop.x .and. y?" uid="drop" uid_parent="root"/>
+  <Node _name="Not" inputs="x:drop.x .and. y?" outputs=".not. x?:keepM..not. x?" uid="keepM" uid_parent="root"/>
+  <Node _name="And" inputs="x:mAct.x .and. y?,y:keepM..not. x?" outputs="x .and. y?:mPost.x .and. y?" uid="mPost" uid_parent="root"/>
 
   <Node _name="Unbundle By Name" fields="panelX,panelY,clientX,clientY" inputs="input cluster:geo.value" outputs="panelX:ug.panelX,panelY:ug.panelY,clientX:ug.clientX,clientY:ug.clientY" uid="ug" uid_parent="root"/>
   <Node _name="Subtract" inputs="x:ug.panelX,y:ug.clientX" outputs="x-y:ox.x-y" uid="ox" uid_parent="root"/>
@@ -66,14 +71,14 @@
   <Node _name="Build Array" inputs="element:cd.value,element:bc.output cluster,element:cu.value" outputs="appended array:ac.appended array" uid="ac" uid_parent="root"/>
   <Node _name="Select" inputs="t:ac.appended array,s:isC.x = y?,f:ak.appended array" outputs="s? t\3Af:sk.s? t\3Af" uid="sk" uid_parent="root"/>
   <Node _name="Select" inputs="t:sk.s? t\3Af,s:kAct.x .and. y?,f:emp.value" outputs="s? t\3Af:s2.s? t\3Af" uid="s2" uid_parent="root"/>
-  <Node _name="Select" inputs="t:am.appended array,s:mAct.x .and. y?,f:s2.s? t\3Af" outputs="s? t\3Af:posts.s? t\3Af" uid="posts" uid_parent="root"/>
+  <Node _name="Select" inputs="t:am.appended array,s:mPost.x .and. y?,f:s2.s? t\3Af" outputs="s? t\3Af:posts.s? t\3Af" uid="posts" uid_parent="root"/>
 
   <Node _name="Not" inputs="x:isU.x &gt;= 0?" outputs=".not. x?:nU..not. x?" uid="nU" uid_parent="root"/>
   <Node _name="And" inputs="x:tin.value,y:nU..not. x?" outputs="x .and. y?:keep.x .and. y?" uid="keep" uid_parent="root"/>
   <Node _name="Or" inputs="x:isD.x &gt;= 0?,y:keep.x .and. y?" outputs="x .or. y?:tn.x .or. y?" uid="tn" uid_parent="root"/>
-  <Node _name="Select" inputs="t:tn.x .or. y?,s:mAct.x .and. y?,f:tin.value" outputs="s? t\3Af:tout.s? t\3Af" uid="tout" uid_parent="root"/>
+  <Node _name="Select" inputs="t:tn.x .or. y?,s:mPost.x .and. y?,f:tin.value" outputs="s? t\3Af:tout.s? t\3Af" uid="tout" uid_parent="root"/>
 
-  <Node _name="And" inputs="x:mAct.x .and. y?,y:pop.value" outputs="x .and. y?:mv.x .and. y?" uid="mv" uid_parent="root"/>
+  <Node _name="And" inputs="x:mPost.x .and. y?,y:pop.value" outputs="x .and. y?:mv.x .and. y?" uid="mv" uid_parent="root"/>
   <Constant _name="0" outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
   <Node _name="Select" inputs="t:sx.x+y,s:mv.x .and. y?,f:k0.value" outputs="s? t\3Af:cux.s? t\3Af" uid="cux" uid_parent="root"/>
   <Node _name="Select" inputs="t:sy.x+y,s:mv.x .and. y?,f:k0.value" outputs="s? t\3Af:cuy.s? t\3Af" uid="cuy" uid_parent="root"/>
@@ -82,5 +87,5 @@
 
   <Indicator _name="posts" conIdx="20" connection="recommended" description="Win32 messages to post to the panel window\2C in order. Empty when nothing is to be posted." inputs="value:posts.s? t\3Af" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="o_posts" uid_parent="root" value="[]"/>
   <Indicator _name="tracking out" conIdx="21" connection="recommended" description="Tracking state after this message - feed it to the next call's tracking in." inputs="value:tout.s? t\3Af" type="bool" uid="o_tr" uid_parent="root" value="false"/>
-  <Indicator _name="cursor" conIdx="22" connection="recommended" description="move? TRUE (only while popup is TRUE\2C for an allowed mouse message)\3A move the host cursor to the screen point (x\2C y) before posting. FALSE otherwise\2C with x and y 0." inputs="value:bcu.output cluster" type="cluster{bool.move?,int32.x,int32.y}" uid="o_cu" uid_parent="root" value="[false,0,0]"/>
+  <Indicator _name="cursor" conIdx="22" connection="recommended" description="move? TRUE (only while popup is TRUE\2C for an allowed mouse BUTTON message)\3A move the host cursor to the screen point (x\2C y) before posting. FALSE otherwise\2C with x and y 0." inputs="value:bcu.output cluster" type="cluster{bool.move?,int32.x,int32.y}" uid="o_cu" uid_parent="root" value="[false,0,0]"/>
 </VI>

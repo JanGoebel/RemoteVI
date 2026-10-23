@@ -1,38 +1,106 @@
-<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the window hWnd (the served front panel)\2C in order\2C with user32 PostMessageW. When cursor.move? is TRUE (a LabVIEW popup is open\2C which reads the real cursor) the host cursor is first moved to the screen point (cursor.x\2C cursor.y) with user32 SetCursorPos. No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. Posting does not wait for LabVIEW to process the messages. An incoming error posts nothing; an error from a call skips the rest.">
-  <FreeLabel comment="Cursor first\2C then one PostMessageW per post" uid="lbl" uid_parent="root"/>
+<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the window hWnd (the served front panel)\2C in order\2C with user32 PostMessageW. When cursor.move? is TRUE (a LabVIEW popup is open\2C which reads the real cursor) the host cursor is borrowed just for this click\3A its position is saved (GetCursorPos)\2C it is moved to the screen point (cursor.x\2C cursor.y) with SetCursorPos\2C a WM_MOUSEMOVE with that screen point is posted before the posts (without it the popup ignores the click - measured)\2C and then the VI waits until LabVIEW has handled the click (RemoteVI Wait Popups Change.vi\3A until the popups differ from popup hWnds - the menu closed or another popup opened - at most 300 ms after a button-up and 50 ms after a button-down\2C which normally changes nothing) and puts the cursor back where it was. Measured\3A a menu item click takes about 15-40 ms\2C so the host cursor is away only that long. No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. Without cursor.move? the messages are just posted\3B posting does not wait for LabVIEW to process them. An incoming error posts nothing\3B an error from a call skips the rest\2C but a cursor that was moved is always put back.">
+  <FreeLabel comment="Popup click\3A borrow cursor\2C post\2C restore" uid="lbl" uid_parent="root"/>
   <Control _name="hWnd" conIdx="0" connection="required" description="Native handle of the window that receives the messages - the served front panel (RemoteVI Get Panel Geometry.vi)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="posts" conIdx="5" connection="required" description="Messages to post\2C from RemoteVI Translate Input.vi." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
-  <Control _name="cursor" conIdx="7" connection="recommended" description="From RemoteVI Translate Input.vi\3A when move? is TRUE the host cursor is moved to the screen point (x\2C y) before posting." outputs="value:cu.value" type="cluster{bool.move?,int32.x,int32.y}" uid="cu" uid_parent="root" value="[false,0,0]"/>
+  <Control _name="cursor" conIdx="7" connection="recommended" description="From RemoteVI Translate Input.vi\3A when move? is TRUE the host cursor is moved to the screen point (x\2C y) for the click and put back afterwards." outputs="value:cu.value" type="cluster{bool.move?,int32.x,int32.y}" uid="cu" uid_parent="root" value="[false,0,0]"/>
+  <Control _name="popup hWnds" conIdx="9" connection="recommended" description="Window handles of the popups open before this click (RemoteVI Find Popups.vi without SysShadow)\2C as the server loop last saw them. The wait after a popup click ends as soon as the popups differ from this list." outputs="value:ph.value" type="array{uint64}" uid="ph" uid_parent="root" value="[]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
   <Node _name="Unbundle By Name" fields="move?,x,y" inputs="input cluster:cu.value" outputs="move?:ucu.move?,x:ucu.x,y:ucu.y" uid="ucu" uid_parent="root"/>
   <Structure _name="Case Structure" selectin="ucu.move?" uid="cm" uid_parent="root">
     <Tunnel _id="In1" inputs="value:ucu.x" uid="cm_i1" uid_parent="cm"/>
     <Tunnel _id="In2" inputs="value:ucu.y" uid="cm_i2" uid_parent="cm"/>
     <Tunnel _id="In3" inputs="value:ei.value" uid="cm_i3" uid_parent="cm"/>
-    <CaseFrame label="Popup open\3A move the host cursor" selector="True" selectout="" uid="cmt" uid_parent="cm">
+    <Tunnel _id="In4" inputs="value:hw.value" uid="cm_i4" uid_parent="cm"/>
+    <CaseFrame label="Popup open\3A save cursor\2C move it\2C hover" selector="True" selectout="" uid="cmt" uid_parent="cm">
       <Tunnel _id="In1" outputs="value:t_x.value" uid="t_x" uid_parent="cmt"/>
       <Tunnel _id="In2" outputs="value:t_y.value" uid="t_y" uid_parent="cmt"/>
       <Tunnel _id="In3" outputs="value:t_ei.value" uid="t_ei" uid_parent="cmt"/>
-      <Call inputs="X:t_x.value,Y:t_y.value,error in:t_ei.value" outputs="return value:,error out:scp.error out" target="user32 SetCursorPos.vi" uid="scp" uid_parent="cmt"/>
-      <Tunnel _id="Out1" inputs="value:scp.error out" uid="t_o1" uid_parent="cmt"/>
+      <Tunnel _id="In4" outputs="value:t_hw.value" uid="t_hw" uid_parent="cmt"/>
+      <Call inputs="error in:t_ei.value" outputs="X:gcp.X,Y:gcp.Y,return value:,error out:gcp.error out" target="user32 GetCursorPos.vi" uid="gcp" uid_parent="cmt"/>
+      <Call inputs="X:t_x.value,Y:t_y.value,error in:gcp.error out" outputs="return value:,error out:scp.error out" target="user32 SetCursorPos.vi" uid="scp" uid_parent="cmt"/>
+      <Constant _name="0xFFFF" outputs="value:kMask.value" type="int32" uid="kMask" uid_parent="cmt" value="65535"/>
+      <Constant _name="65536" outputs="value:k16.value" type="int64" uid="k16" uid_parent="cmt" value="65536"/>
+      <Node _name="And" inputs="x:t_x.value,y:kMask.value" outputs="x .and. y?:mx.x .and. y?" uid="mx" uid_parent="cmt"/>
+      <Node _name="And" inputs="x:t_y.value,y:kMask.value" outputs="x .and. y?:my.x .and. y?" uid="my" uid_parent="cmt"/>
+      <Node _name="Multiply" inputs="x:my.x .and. y?,y:k16.value" outputs="x*y:hi.x*y" uid="hi" uid_parent="cmt"/>
+      <Node _name="Add" inputs="x:hi.x*y,y:mx.x .and. y?" outputs="x+y:lp.x+y" uid="lp" uid_parent="cmt"/>
+      <Constant _name="WM_MOUSEMOVE" outputs="value:kmm.value" type="uint32" uid="kmm" uid_parent="cmt" value="512"/>
+      <Constant _name="no buttons" outputs="value:kw0.value" type="uint64" uid="kw0" uid_parent="cmt" value="0"/>
+      <Call inputs="hWnd:t_hw.value,Msg:kmm.value,wParam:kw0.value,lParam:lp.x+y,error in (no error):scp.error out" outputs="return value:,error out:pmm.error out" target="user32 PostMessageW.vi" uid="pmm" uid_parent="cmt"/>
+      <Tunnel _id="Out1" inputs="value:pmm.error out" uid="t_o1" uid_parent="cmt"/>
+      <Tunnel _id="Out2" inputs="value:gcp.X" uid="t_o2" uid_parent="cmt"/>
+      <Tunnel _id="Out3" inputs="value:gcp.Y" uid="t_o3" uid_parent="cmt"/>
+      <Tunnel _id="Out4" inputs="value:gcp.error out" uid="t_o4" uid_parent="cmt"/>
     </CaseFrame>
     <CaseFrame selector="False" selectout="" uid="cmf" uid_parent="cm">
       <Tunnel _id="In1" outputs="value:" uid="f_x" uid_parent="cmf"/>
       <Tunnel _id="In2" outputs="value:" uid="f_y" uid_parent="cmf"/>
       <Tunnel _id="In3" outputs="value:f_ei.value" uid="f_ei" uid_parent="cmf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_hw" uid_parent="cmf"/>
       <Tunnel _id="Out1" inputs="value:f_ei.value" uid="f_o1" uid_parent="cmf"/>
+      <Tunnel _id="Out2" inputs="value:" uid="f_o2" uid_parent="cmf"/>
+      <Tunnel _id="Out3" inputs="value:" uid="f_o3" uid_parent="cmf"/>
+      <Tunnel _id="Out4" inputs="value:f_ei.value" uid="f_o4" uid_parent="cmf"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:cm_o1.value" uid="cm_o1" uid_parent="cm"/>
+    <Tunnel _id="Out2" cond="true" outputs="value:cm_o2.value" uid="cm_o2" uid_parent="cm"/>
+    <Tunnel _id="Out3" cond="true" outputs="value:cm_o3.value" uid="cm_o3" uid_parent="cm"/>
+    <Tunnel _id="Out4" outputs="value:cm_o4.value" uid="cm_o4" uid_parent="cm"/>
   </Structure>
   <Structure _name="For Loop" count="" label="Post each message" maxin="" maxout="" uid="loop" uid_parent="root">
     <Tunnel _id="In1" inputs="value:ps.value" mode="index" outputs="value:pi.value" uid="pi" uid_parent="loop"/>
-    <Tunnel _id="In2" inputs="value:hw.value" outputs="value:hi.value" uid="hi" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:hw.value" outputs="value:hi2.value" uid="hi2" uid_parent="loop"/>
     <ShiftReg uid="sr" uid_parent="loop">
       <Left inputs="value:cm_o1.value" outputs="value:srl.value" uid="srl" uid_parent="sr"/>
       <Right inputs="value:pm.error out" outputs="value:srr.value" uid="srr" uid_parent="sr"/>
     </ShiftReg>
     <Node _name="Unbundle By Name" fields="msg,wParam,lParam" inputs="input cluster:pi.value" outputs="msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam" uid="ub" uid_parent="loop"/>
-    <Call inputs="hWnd:hi.value,Msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam,error in (no error):srl.value" outputs="return value:,error out:pm.error out" target="user32 PostMessageW.vi" uid="pm" uid_parent="loop"/>
+    <Call inputs="hWnd:hi2.value,Msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam,error in (no error):srl.value" outputs="return value:,error out:pm.error out" target="user32 PostMessageW.vi" uid="pm" uid_parent="loop"/>
   </Structure>
-  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:srr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+  <Structure _name="Case Structure" selectin="ucu.move?" uid="cw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:srr.value" uid="cw_i1" uid_parent="cw"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="cw_i2" uid_parent="cw"/>
+    <Tunnel _id="In3" inputs="value:ph.value" uid="cw_i3" uid_parent="cw"/>
+    <Tunnel _id="In4" inputs="value:ps.value" uid="cw_i4" uid_parent="cw"/>
+    <Tunnel _id="In5" inputs="value:cm_o2.value" uid="cw_i5" uid_parent="cw"/>
+    <Tunnel _id="In6" inputs="value:cm_o3.value" uid="cw_i6" uid_parent="cw"/>
+    <Tunnel _id="In7" inputs="value:cm_o4.value" uid="cw_i7" uid_parent="cw"/>
+    <CaseFrame label="Wait until the popups change\2C restore cursor" selector="True" selectout="" uid="cwt" uid_parent="cw">
+      <Tunnel _id="In1" outputs="value:w_err.value" uid="w_err" uid_parent="cwt"/>
+      <Tunnel _id="In2" outputs="value:w_hw.value" uid="w_hw" uid_parent="cwt"/>
+      <Tunnel _id="In3" outputs="value:w_ph.value" uid="w_ph" uid_parent="cwt"/>
+      <Tunnel _id="In4" outputs="value:w_ps.value" uid="w_ps" uid_parent="cwt"/>
+      <Tunnel _id="In5" outputs="value:w_x0.value" uid="w_x0" uid_parent="cwt"/>
+      <Tunnel _id="In6" outputs="value:w_y0.value" uid="w_y0" uid_parent="cwt"/>
+      <Tunnel _id="In7" outputs="value:w_ge.value" uid="w_ge" uid_parent="cwt"/>
+      <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="cwt" value="0"/>
+      <Node _name="Index Array" inputs="array:w_ps.value,index:i0.value" outputs="element:p0.element" uid="p0" uid_parent="cwt"/>
+      <Node _name="Unbundle By Name" fields="msg" inputs="input cluster:p0.element" outputs="msg:p0u.msg" uid="p0u" uid_parent="cwt"/>
+      <Constant _name="button up" outputs="value:aU.value" type="array{uint32}" uid="aU" uid_parent="cwt" value="[514,517,520]"/>
+      <Node _name="Search 1D Array" inputs="1D array:aU.value,element:p0u.msg" outputs="index of element:sU.index of element" uid="sU" uid_parent="cwt"/>
+      <Node _name="Greater Or Equal To 0?" inputs="x:sU.index of element" outputs="x &gt;= 0?:isU.x &gt;= 0?" uid="isU" uid_parent="cwt"/>
+      <Constant _name="300 ms after an up" outputs="value:k300.value" type="uint32" uid="k300" uid_parent="cwt" value="300"/>
+      <Constant _name="50 ms after a down" outputs="value:k50.value" type="uint32" uid="k50" uid_parent="cwt" value="50"/>
+      <Node _name="Select" inputs="t:k300.value,s:isU.x &gt;= 0?,f:k50.value" outputs="s? t\3Af:maxw.s? t\3Af" uid="maxw" uid_parent="cwt"/>
+      <Call inputs="panel hWnd:w_hw.value,popup hWnds:w_ph.value,timeout ms:maxw.s? t\3Af,error in:w_err.value" outputs="changed?:,error out:wpc.error out" target="RemoteVI Wait Popups Change.vi" uid="wpc" uid_parent="cwt"/>
+      <Call inputs="error in (no error):wpc.error out" outputs="error out:clr.error out" target="Clear Errors.vi" uid="clr" uid_parent="cwt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:w_ge.value" outputs="status:ges.status" uid="ges" uid_parent="cwt"/>
+      <Node _name="Select" inputs="t:w_ge.value,s:ges.status,f:clr.error out" outputs="s? t\3Af:rin.s? t\3Af" uid="rin" uid_parent="cwt"/>
+      <Call inputs="X:w_x0.value,Y:w_y0.value,error in:rin.s? t\3Af" outputs="return value:,error out:rst.error out" target="user32 SetCursorPos.vi" uid="rst" uid_parent="cwt"/>
+      <Node _name="Merge Errors" inputs="error in:wpc.error out,error in:rst.error out" outputs="error out:wme.error out" uid="wme" uid_parent="cwt"/>
+      <Tunnel _id="Out1" inputs="value:wme.error out" uid="w_o1" uid_parent="cwt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cwf" uid_parent="cw">
+      <Tunnel _id="In1" outputs="value:v_err.value" uid="v_err" uid_parent="cwf"/>
+      <Tunnel _id="In2" outputs="value:" uid="v_hw" uid_parent="cwf"/>
+      <Tunnel _id="In3" outputs="value:" uid="v_ph" uid_parent="cwf"/>
+      <Tunnel _id="In4" outputs="value:" uid="v_ps" uid_parent="cwf"/>
+      <Tunnel _id="In5" outputs="value:" uid="v_x0" uid_parent="cwf"/>
+      <Tunnel _id="In6" outputs="value:" uid="v_y0" uid_parent="cwf"/>
+      <Tunnel _id="In7" outputs="value:" uid="v_ge" uid_parent="cwf"/>
+      <Tunnel _id="Out1" inputs="value:v_err.value" uid="v_o1" uid_parent="cwf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:cw_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

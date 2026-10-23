@@ -71,7 +71,7 @@ The LabVIEW popups that are open over the panel: ring/enum menus, right-click me
 | 2 | u16 | popup count *n* |
 | 4 | *n* × rect | same layout as FRAME rects (§3.1): x, y, length, PNG |
 
-x and y are relative to the panel origin and **may lie outside the panel**, for example a context menu that overflows the right or bottom edge. The client draws the popups over the canvas, unclipped, and sends input on them with the same panel coordinates, which may be negative or beyond the panel size. `encodeOverlay()`, `tests/vectors/frame.json` → `overlays`.
+x and y are relative to the panel origin and **may lie outside the panel**, for example a context menu that overflows the right or bottom edge. The client draws the popups over the canvas, unclipped, and sends input on them with the same panel coordinates, which may be negative or beyond the panel size. Popups are listed bottom-most first, so later entries are drawn on top. `encodeOverlay()`, `tests/vectors/frame.json` → `overlays`.
 
 ### 3.3 Text messages
 

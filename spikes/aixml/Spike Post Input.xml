@@ -1,0 +1,38 @@
+<VI _name="Spike Post Input.vi" description="Posts one Win32 MOUSE message to the front panel window of VI. Panel X/Panel Y are pixels of the visible panel image (FP.Get Image\2C visible area only)\2C so the screen point is Panel Bounds.left/top plus that offset\2C converted with ScreenToClient; lParam = (clientY shl 16) or (clientX and 0xFFFF). Waits Delay ms afterwards so the UI thread can process the message. An incoming error skips the post.">
+  <Control _name="VI" type="ref{LV.VI}" uid="vi" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vi.value" description="The VI whose front panel window receives the message." />
+  <Control _name="Panel X" type="int32" uid="px" uid_parent="root" value="0" conIdx="5" connection="required" outputs="value:px.value" description="X in panel-image pixels." />
+  <Control _name="Panel Y" type="int32" uid="py" uid_parent="root" value="0" conIdx="7" connection="required" outputs="value:py.value" description="Y in panel-image pixels." />
+  <Control _name="Msg" type="uint32" uid="msg" uid_parent="root" value="512" conIdx="9" connection="required" outputs="value:msg.value" description="Window message, e.g. 512 WM_MOUSEMOVE\2C 513 WM_LBUTTONDOWN\2C 514 WM_LBUTTONUP." />
+  <Control _name="wParam" type="uint64" uid="wp" uid_parent="root" value="0" conIdx="1" connection="recommended" outputs="value:wp.value" description="MK_* flags\2C 1 = MK_LBUTTON." />
+  <Control _name="Delay ms" type="uint32" uid="dl" uid_parent="root" value="50" conIdx="2" connection="recommended" outputs="value:dl.value" description="Wait after posting." />
+  <Control _name="Screen lParam" type="bool" uid="scr" uid_parent="root" value="false" conIdx="3" connection="optional" outputs="value:scr.value" description="Diagnostic: pack the SCREEN point into lParam instead of the client point." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="lParam" type="int64" uid="lpo" uid_parent="root" value="0" conIdx="4" connection="recommended" inputs="value:lp.x+y" description="The lParam that was posted." />
+  <Indicator _name="return value" type="int32" uid="rv" uid_parent="root" value="0" conIdx="6" connection="recommended" inputs="value:pm.return value" description="PostMessageW result\2C nonzero on success." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:wo.value" description="Standard error out." />
+  <Node _name="Property Node" uid="pn" uid_parent="root" fields="read+Front Panel Window\3AOS Window,read+Front Panel Window\3APanel Bounds" type="{LV.VI}" inputs="reference:vi.value,error in (no error):ei.value" outputs="error out:pn.error out,Front Panel Window\3AOS Window:pn.Front Panel Window\3AOS Window,Front Panel Window\3APanel Bounds:pn.Front Panel Window\3APanel Bounds" />
+  <Node _name="To Quad Integer" uid="q1" uid_parent="root" inputs="number:pn.Front Panel Window\3AOS Window" outputs="64bit integer:q1.64bit integer" />
+  <Node _name="To Unsigned Quad Integer" uid="hw" uid_parent="root" inputs="number:q1.64bit integer" outputs="unsigned 64bit integer:hw.unsigned 64bit integer" />
+  <Node _name="Unbundle By Name" uid="ub" uid_parent="root" fields="left,top" inputs="input cluster:pn.Front Panel Window\3APanel Bounds" outputs="left:ub.left,top:ub.top" />
+  <Node _name="To Long Integer" uid="l32" uid_parent="root" inputs="number:ub.left" outputs="32bit integer:l32.32bit integer" />
+  <Node _name="To Long Integer" uid="t32" uid_parent="root" inputs="number:ub.top" outputs="32bit integer:t32.32bit integer" />
+  <Node _name="Add" uid="sx" uid_parent="root" inputs="x:l32.32bit integer,y:px.value" outputs="x+y:sx.x+y" />
+  <Node _name="Add" uid="sy" uid_parent="root" inputs="x:t32.32bit integer,y:py.value" outputs="x+y:sy.x+y" />
+  <Call uid="stc" uid_parent="root" target="user32 ScreenToClient.vi" inputs="hWnd:hw.unsigned 64bit integer,Screen X:sx.x+y,Screen Y:sy.x+y,error in (no error):pn.error out" outputs="Client X:stc.Client X,Client Y:stc.Client Y,return value:,error out:stc.error out" />
+  <Node _name="Select" uid="selx" uid_parent="root" inputs="t:sx.x+y,s:scr.value,f:stc.Client X" outputs="s? t\3Af:selx.s? t\3Af" />
+  <Node _name="Select" uid="sely" uid_parent="root" inputs="t:sy.x+y,s:scr.value,f:stc.Client Y" outputs="s? t\3Af:sely.s? t\3Af" />
+  <Node _name="To Unsigned Word Integer" uid="cxw" uid_parent="root" inputs="number:selx.s? t\3Af" outputs="unsigned 16bit integer:cxw.unsigned 16bit integer" />
+  <Node _name="To Quad Integer" uid="cxq" uid_parent="root" inputs="number:cxw.unsigned 16bit integer" outputs="64bit integer:cxq.64bit integer" />
+  <Node _name="To Quad Integer" uid="cyq" uid_parent="root" inputs="number:sely.s? t\3Af" outputs="64bit integer:cyq.64bit integer" />
+  <Constant _name="65536" type="int64" uid="k16" uid_parent="root" value="65536" outputs="value:k16.value" />
+  <Node _name="Multiply" uid="hi" uid_parent="root" inputs="x:cyq.64bit integer,y:k16.value" outputs="x*y:hi.x*y" />
+  <Node _name="Add" uid="lp" uid_parent="root" inputs="x:hi.x*y,y:cxq.64bit integer" outputs="x+y:lp.x+y" />
+  <Call uid="pm" uid_parent="root" target="user32 PostMessageW.vi" inputs="hWnd:hw.unsigned 64bit integer,Msg:msg.value,wParam:wp.value,lParam:lp.x+y,error in (no error):stc.error out" outputs="return value:pm.return value,error out:pm.error out" />
+  <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="root">
+    <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:wi.value" outputs="millisecond timer value:" />
+    <Tunnel _id="In1" uid="wi" uid_parent="seq" inputs="value:dl.value" outputs="value:wi.value" />
+    <Tunnel _id="In2" uid="ein" uid_parent="seq" inputs="value:pm.error out" outputs="value:ein.value" />
+    <Tunnel _id="Out1" uid="wo" uid_parent="seq" inputs="value:ein.value" outputs="value:wo.value" />
+  </Structure>
+  <FreeLabel comment="Panel pixel to screen to client\2C then post" uid="c1" uid_parent="root" />
+</VI>

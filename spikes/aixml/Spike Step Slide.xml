@@ -1,0 +1,36 @@
+<VI _name="Spike Step Slide.vi" description="Spike step a: posts a click on the centre of the control labelled Label (default Switch) on the running VI\2C waits Settle ms and reads the boolean back through VI Server. Pass when the value toggled. Any error skips the rest.">
+  <Control _name="VI" type="ref{LV.VI}" uid="vi" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vi.value" description="The running fixture." />
+  <Control _name="Label" type="string" uid="lb" uid_parent="root" value="Slide" conIdx="5" connection="recommended" outputs="value:lb.value" description="Label of the slide." />
+  <Control _name="Delay ms" type="uint32" uid="dl" uid_parent="root" value="60" conIdx="7" connection="recommended" outputs="value:dl.value" description="Wait after each posted message." />
+  <Control _name="Settle ms" type="uint32" uid="sm" uid_parent="root" value="200" conIdx="9" connection="recommended" outputs="value:sm.value" description="Wait before the value is read back." />
+  <Control _name="Grab DX" type="int32" uid="gdx" uid_parent="root" value="63" conIdx="1" connection="recommended" outputs="value:gdx.value" description="Thumb X relative to Rect.Left." />
+  <Control _name="Grab DY" type="int32" uid="gdy" uid_parent="root" value="18" conIdx="2" connection="recommended" outputs="value:gdy.value" description="Thumb Y relative to Rect.Top." />
+  <Control _name="Drag DX" type="int32" uid="ddx" uid_parent="root" value="40" conIdx="3" connection="recommended" outputs="value:ddx.value" description="Horizontal drag distance in pixels." />
+  <Control _name="Steps" type="int32" uid="ns" uid_parent="root" value="5" conIdx="12" connection="recommended" outputs="value:ns.value" description="Intermediate WM_MOUSEMOVE messages." />
+  <Control _name="Screen lParam For Moves" type="bool" uid="scr" uid_parent="root" value="false" conIdx="13" connection="optional" outputs="value:scr.value" description="Diagnostic\2C passed to Spike Drag.vi." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="Pass" type="bool" uid="po" uid_parent="root" value="false" conIdx="4" connection="recommended" inputs="value:gt.x &gt; y?" description="True when the value increased." />
+  <Indicator _name="Before" type="double" uid="bo" uid_parent="root" value="0" conIdx="6" connection="recommended" inputs="value:v1.data" description="Value before the click." />
+  <Indicator _name="After" type="double" uid="ao" uid_parent="root" value="0" conIdx="8" connection="recommended" inputs="value:v2.data" description="Value after the click." />
+  <Indicator _name="Rect" type="cluster{int32.Left,int32.Top,int32.Width,int32.Height}" uid="ro" uid_parent="root" value="[0,0,0,0]" conIdx="10" connection="recommended" inputs="value:fc.Rect" description="Control body in panel-image pixels." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:v2.error out" description="Standard error out." />
+  <Call uid="fc" uid_parent="root" target="Spike Find Control.vi" inputs="VI:vi.value,Label:lb.value,error in:ei.value" outputs="Control:fc.Control,Found:,Rect:fc.Rect,error out:fc.error out" />
+  <Node _name="Property Node" uid="r1" uid_parent="root" fields="read+Value" type="{LV.Control}" inputs="reference:fc.Control,error in (no error):fc.error out" outputs="error out:r1.error out,Value:r1.Value" />
+  <Constant _name="double type" type="double" uid="bt" uid_parent="root" value="0" outputs="value:bt.value" />
+  <Node _name="Variant To Data" uid="v1" uid_parent="root" inputs="variant:r1.Value,type:bt.value,error in:r1.error out" outputs="data:v1.data,error out:v1.error out" />
+  <Node _name="Unbundle By Name" uid="ub" uid_parent="root" fields="Left,Top" inputs="input cluster:fc.Rect" outputs="Left:ub.Left,Top:ub.Top" />
+  <Node _name="Add" uid="gx" uid_parent="root" inputs="x:ub.Left,y:gdx.value" outputs="x+y:gx.x+y" />
+  <Node _name="Add" uid="gy" uid_parent="root" inputs="x:ub.Top,y:gdy.value" outputs="x+y:gy.x+y" />
+  <Node _name="Add" uid="ex" uid_parent="root" inputs="x:gx.x+y,y:ddx.value" outputs="x+y:ex.x+y" />
+  <Call uid="ck" uid_parent="root" target="Spike Drag.vi" inputs="VI:vi.value,From X:gx.x+y,From Y:gy.x+y,To X:ex.x+y,To Y:gy.x+y,Steps:ns.value,Delay ms:dl.value,Screen lParam For Moves:scr.value,error in:v1.error out" outputs="error out:ck.error out" />
+  <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="root" label="Let the UI thread settle">
+    <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:wi.value" outputs="millisecond timer value:" />
+    <Tunnel _id="In1" uid="wi" uid_parent="seq" inputs="value:sm.value" outputs="value:wi.value" />
+    <Tunnel _id="In2" uid="ein" uid_parent="seq" inputs="value:ck.error out" outputs="value:ein.value" />
+    <Tunnel _id="Out1" uid="wo" uid_parent="seq" inputs="value:ein.value" outputs="value:wo.value" />
+  </Structure>
+  <Node _name="Property Node" uid="r2" uid_parent="root" fields="read+Value" type="{LV.Control}" inputs="reference:fc.Control,error in (no error):wo.value" outputs="error out:r2.error out,Value:r2.Value" />
+  <Node _name="Variant To Data" uid="v2" uid_parent="root" inputs="variant:r2.Value,type:bt.value,error in:r2.error out" outputs="data:v2.data,error out:v2.error out" />
+  <Node _name="Greater?" uid="gt" uid_parent="root" inputs="x:v2.data,y:v1.data" outputs="x &gt; y?:gt.x &gt; y?" />
+  <FreeLabel comment="Read\2C click the centre\2C read again" uid="c1" uid_parent="root" />
+</VI>

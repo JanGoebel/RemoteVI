@@ -1,0 +1,40 @@
+<VI _name="Spike Cover Window.vi" description="Puts the target VI's panel into the BACKGROUND for the input-injection spike: opens a reference to the VI at Blocker Path and\2C when Use Blocker is TRUE\2C opens its front panel activated and gives it the target's Window Bounds\2C so the blocker covers the target and is the foreground window. Returns the blocker reference (close it with Spike Uncover Window.vi) and whether the target is still frontmost afterwards.">
+  <Control _name="Target VI" type="ref{LV.VI}" uid="tv" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:tv.value" description="The VI whose panel is covered." />
+  <Control _name="Blocker Path" type="path" uid="bp" uid_parent="root" value="" conIdx="5" connection="required" outputs="value:bp.value" description="Any VI that is not running\2C used only for its panel." />
+  <Control _name="Use Blocker" type="bool" uid="ub" uid_parent="root" value="true" conIdx="7" connection="recommended" outputs="value:ub.value" description="FALSE opens the reference only and covers nothing." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="Blocker VI" type="ref{LV.VI}" uid="bo" uid_parent="root" value="" conIdx="4" connection="recommended" inputs="value:open.vi reference" description="Reference to the blocker." />
+  <Indicator _name="Target Frontmost" type="bool" uid="tf" uid_parent="root" value="false" conIdx="6" connection="recommended" inputs="value:pf.Front Panel Window\3AIs Frontmost" description="Target's Front Panel Window\3AIs Frontmost afterwards." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:pf.error out" description="Standard error out." />
+  <Node _name="Open VI Reference" uid="open" uid_parent="root" inputs="vi path:bp.value,error in (no error):ei.value" outputs="error out:open.error out,vi reference:open.vi reference" />
+  <Node _name="Property Node" uid="tb" uid_parent="root" fields="read+Front Panel Window\3AWindow Bounds" type="{LV.VI}" inputs="reference:tv.value,error in (no error):open.error out" outputs="error out:tb.error out,Front Panel Window\3AWindow Bounds:tb.Front Panel Window\3AWindow Bounds" />
+  <Structure _name="Case Structure" uid="cs" uid_parent="root" selectin="ub.value">
+    <Tunnel _id="In1" uid="c1i" uid_parent="cs" inputs="value:open.vi reference" />
+    <Tunnel _id="In2" uid="c2i" uid_parent="cs" inputs="value:tb.error out" />
+    <Tunnel _id="In3" uid="c3i" uid_parent="cs" inputs="value:tb.Front Panel Window\3AWindow Bounds" />
+    <CaseFrame selector="True" uid="ft" uid_parent="cs" selectout="" label="Open the blocker over the target">
+      <Tunnel _id="In1" uid="c1t" uid_parent="ft" outputs="value:c1t.value" />
+      <Tunnel _id="In2" uid="c2t" uid_parent="ft" outputs="value:c2t.value" />
+      <Tunnel _id="In3" uid="c3t" uid_parent="ft" outputs="value:c3t.value" />
+      <Constant _name="Activate" type="bool" uid="act" uid_parent="ft" value="true" outputs="value:act.value" />
+      <Node _name="Invoke Node" uid="fpo" uid_parent="ft" target="FP.Open" type="{LV.VI}" inputs="reference:c1t.value,error in (no error):c2t.value,Activate:act.value" outputs="reference out:fpo.reference out,error out:fpo.error out" />
+      <Node _name="Property Node" uid="wb" uid_parent="ft" fields="write+Front Panel Window\3AWindow Bounds" type="{LV.VI}" inputs="reference:fpo.reference out,error in (no error):fpo.error out,Front Panel Window\3AWindow Bounds:c3t.value" outputs="error out:wb.error out" />
+      <Tunnel _id="Out1" uid="o1t" uid_parent="ft" inputs="value:wb.error out" />
+    </CaseFrame>
+    <CaseFrame selector="False" uid="ff" uid_parent="cs" selectout="">
+      <Tunnel _id="In1" uid="c1f" uid_parent="ff" outputs="value:" />
+      <Tunnel _id="In2" uid="c2f" uid_parent="ff" outputs="value:c2f.value" />
+      <Tunnel _id="In3" uid="c3f" uid_parent="ff" outputs="value:" />
+      <Tunnel _id="Out1" uid="o1f" uid_parent="ff" inputs="value:c2f.value" />
+    </CaseFrame>
+    <Tunnel _id="Out1" uid="o1" uid_parent="cs" outputs="value:o1.value" />
+  </Structure>
+  <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="root" label="Let the windows settle">
+    <Constant _name="settle ms" type="uint32" uid="k" uid_parent="seq" value="300" outputs="value:k.value" />
+    <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:k.value" outputs="millisecond timer value:" />
+    <Tunnel _id="In1" uid="si" uid_parent="seq" inputs="value:o1.value" outputs="value:si.value" />
+    <Tunnel _id="Out1" uid="so" uid_parent="seq" inputs="value:si.value" outputs="value:so.value" />
+  </Structure>
+  <Node _name="Property Node" uid="pf" uid_parent="root" fields="read+Front Panel Window\3AIs Frontmost" type="{LV.VI}" inputs="reference:tv.value,error in (no error):so.value" outputs="error out:pf.error out,Front Panel Window\3AIs Frontmost:pf.Front Panel Window\3AIs Frontmost" />
+  <FreeLabel comment="Cover the target with another panel" uid="cm" uid_parent="root" />
+</VI>

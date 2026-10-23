@@ -1,0 +1,36 @@
+<VI _name="RemoteVI Demo.vi" description="Demo of the RemoteVI toolkit. Publishes its own front panel with RemoteVI Start.vi (VI unwired\2C so the caller - this VI - is published on port 8088 - NI Application Web Server often holds 8080)\2C runs a 50 ms loop that draws a moving sine (amplitude Numeric) on the graph until Stop is pressed\2C then calls RemoteVI Stop.vi. Open URL in a browser to see and operate the panel.">
+  <FreeLabel comment="Start before the loop\2C Stop after it" uid="lbl" uid_parent="root"/>
+  <Control _name="Stop" description="Ends the demo." outputs="value:stopc.value" style="latched" type="bool" uid="stopc" uid_parent="sl" value="false"/>
+  <Control _name="Numeric" description="Amplitude of the sine." outputs="value:num.value" type="double" uid="num" uid_parent="sl" value="1"/>
+  <Control _name="Mode" description="A text ring\2C to try popup menus remotely." items="Off,Slow,Fast" outputs="value:" style="Ring" type="int32" uid="mode" uid_parent="root" value="0" values="[0,1,2]"/>
+  <Control _name="Enable" description="A boolean to click remotely." outputs="value:" type="bool" uid="en" uid_parent="root" value="false"/>
+  <Control _name="Message" description="A string to type into remotely." outputs="value:" type="string" uid="msg" uid_parent="root" value="Hello from LabVIEW"/>
+  <Indicator _name="Sine" description="A moving sine (100 points\2C amplitude Numeric) - keeps the panel changing." inputs="value:wave.value" style="graph21703" type="array{double}" uid="chart" uid_parent="sl" value="[]"/>
+  <Indicator _name="URL" description="Where the panel is served." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
+
+  <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>
+  <Constant outputs="value:k.value" type="double" uid="k" uid_parent="root" value="0.2"/>
+  <Constant outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
+  <Structure _name="While Loop" count="sl.value" label="Until Stop" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:k.value" outputs="value:l_k.value" uid="l_k" uid_parent="sl"/>
+    <Tunnel _id="In2" inputs="value:ms.value" outputs="value:l_ms.value" uid="l_ms" uid_parent="sl"/>
+    <Tunnel _id="In3" inputs="value:st.error out" outputs="value:l_err.value" uid="l_err" uid_parent="sl"/>
+    <Constant outputs="value:n100.value" type="int32" uid="n100" uid_parent="sl" value="100"/>
+    <Structure _name="For Loop" count="wl.value" label="One period of samples" maxin="n100.value" maxout="" uid="wl" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:sl.value" outputs="value:w_i.value" uid="w_i" uid_parent="wl"/>
+      <Tunnel _id="In2" inputs="value:l_k.value" outputs="value:w_k.value" uid="w_k" uid_parent="wl"/>
+      <Tunnel _id="In3" inputs="value:num.value" outputs="value:w_a.value" uid="w_a" uid_parent="wl"/>
+      <Node _name="Add" inputs="x:wl.value,y:w_i.value" outputs="x+y:ad.x+y" uid="ad" uid_parent="wl"/>
+      <Node _name="Multiply" inputs="x:ad.x+y,y:w_k.value" outputs="x*y:ph.x*y" uid="ph" uid_parent="wl"/>
+      <Node _name="Sine" inputs="x:ph.x*y" outputs="sin(x):sn.sin(x)" uid="sn" uid_parent="wl"/>
+      <Node _name="Multiply" inputs="x:sn.sin(x),y:w_a.value" outputs="x*y:mul.x*y" uid="mul" uid_parent="wl"/>
+      <Tunnel _id="Out1" inputs="value:mul.x*y" mode="index" outputs="value:wave.value" uid="wave" uid_parent="wl"/>
+    </Structure>
+    <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>
+    <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>
+    <Condition inputs="value:stopc.value" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Call inputs="port:port.value,error in:err_end.value" outputs="error out:sp.error out" target="RemoteVI Stop.vi" uid="sp" uid_parent="root"/>
+  <Indicator _name="error out" description="Errors from RemoteVI Start.vi and RemoteVI Stop.vi." inputs="value:sp.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

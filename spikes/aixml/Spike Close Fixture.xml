@@ -1,0 +1,30 @@
+<VI _name="Spike Close Fixture.vi" description="Cleans up after Spike Launch Fixture.vi: aborts the VI if it is still running\2C closes its front panel and closes the reference. Runs even when error in carries an error\2C which is merged into error out.">
+  <Control _name="VI" type="ref{LV.VI}" uid="vi" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vi.value" description="Reference from Spike Launch Fixture.vi." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in - does not stop the cleanup." />
+  <Indicator _name="Was Running" type="bool" uid="wr" uid_parent="root" value="false" conIdx="4" connection="recommended" inputs="value:ne.x != y?" description="True when the VI had to be aborted." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:me.error out" description="error in merged with the cleanup's own errors." />
+  <Node _name="Property Node" uid="st" uid_parent="root" fields="read+Execution\3AState" type="{LV.VI}" inputs="reference:vi.value" outputs="error out:st.error out,Execution\3AState:st.Execution\3AState" />
+  <Node _name="To Long Integer" uid="s32" uid_parent="root" inputs="number:st.Execution\3AState" outputs="32bit integer:s32.32bit integer" />
+  <Constant _name="Idle" type="int32" uid="k1" uid_parent="root" value="1" outputs="value:k1.value" />
+  <Node _name="Not Equal?" uid="ne" uid_parent="root" inputs="x:s32.32bit integer,y:k1.value" outputs="x != y?:ne.x != y?" />
+  <Structure _name="Case Structure" uid="cs" uid_parent="root" selectin="ne.x != y?">
+    <Tunnel _id="In1" uid="ti" uid_parent="cs" inputs="value:vi.value" />
+    <Tunnel _id="In2" uid="te" uid_parent="cs" inputs="value:st.error out" />
+    <CaseFrame selector="True" uid="ft" uid_parent="cs" selectout="" label="Still running\2C abort it">
+      <Tunnel _id="In1" uid="ti1" uid_parent="ft" outputs="value:ti1.value" />
+      <Tunnel _id="In2" uid="te1" uid_parent="ft" outputs="value:te1.value" />
+      <Node _name="Invoke Node" uid="ab" uid_parent="ft" target="Abort VI" type="{LV.VI}" inputs="reference:ti1.value,error in (no error):te1.value" outputs="reference out:,error out:ab.error out" />
+      <Tunnel _id="Out1" uid="to1" uid_parent="ft" inputs="value:ab.error out" />
+    </CaseFrame>
+    <CaseFrame selector="False" uid="ff" uid_parent="cs" selectout="">
+      <Tunnel _id="In1" uid="ti2" uid_parent="ff" outputs="value:" />
+      <Tunnel _id="In2" uid="te2" uid_parent="ff" outputs="value:te2.value" />
+      <Tunnel _id="Out1" uid="to2" uid_parent="ff" inputs="value:te2.value" />
+    </CaseFrame>
+    <Tunnel _id="Out1" uid="to" uid_parent="cs" outputs="value:to.value" />
+  </Structure>
+  <Node _name="Invoke Node" uid="fpc" uid_parent="root" target="FP.Close" type="{LV.VI}" inputs="reference:vi.value,error in (no error):to.value" outputs="error out:fpc.error out" />
+  <Node _name="Close Reference" uid="cr" uid_parent="root" inputs="reference:vi.value,error in (no error):fpc.error out" outputs="error out:cr.error out" />
+  <Node _name="Merge Errors" uid="me" uid_parent="root" inputs="error in:ei.value,error in:cr.error out" outputs="error out:me.error out" />
+  <FreeLabel comment="Cleanup runs regardless of error in" uid="c1" uid_parent="root" />
+</VI>

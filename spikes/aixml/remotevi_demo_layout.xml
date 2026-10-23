@@ -1,0 +1,47 @@
+<VI _name="RemoteVI Demo Layout.vi" description="Lays out the front panel of RemoteVI Demo.vi (the generator places a graph or chart far larger than the window and stacks the controls under it) and saves it: controls in a column on the left\2C the graph to their right with a 400 x 230 plot area\2C the window sized to the content. Run it once after regenerating the demo\2C with the demo idle.">
+  <Control _name="path" conIdx="0" connection="required" description="Path of RemoteVI Demo.vi." outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Open VI Reference" inputs="vi path:p.value,error in (no error):ei.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:pn.reference out,error out:pn.error out,Front Panel:pn.fp" type="{LV.VI}" uid="pn" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:pn.fp,error in (no error):pn.error out" outputs="error out:pc.error out,Controls[]:pc.c" type="{LV.Panel}" uid="pc" uid_parent="root"/>
+  <Constant outputs="value:names.value" type="array{string}" uid="names" uid_parent="root" value="[Stop,Numeric,Mode,Enable,Message,URL,error out,Sine]"/>
+  <Constant outputs="value:pos.value" type="array{cluster{int32.Left,int32.Top}}" uid="pos" uid_parent="root" value="[[20,20],[20,80],[20,140],[20,200],[20,260],[20,320],[20,380],[220,20]]"/>
+  <Constant outputs="value:chartcls.value" type="ref{LV.WaveformGraph}" uid="chartcls" uid_parent="root" value=""/>
+  <Constant outputs="value:plotsz.value" type="cluster{int32.Width,int32.Height}" uid="plotsz" uid_parent="root" value="[400,230]"/>
+  <Structure _name="For Loop" count="" label="Place each control by label" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:names.value" outputs="value:l_n.value" uid="l_n" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:pos.value" outputs="value:l_p.value" uid="l_p" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:chartcls.value" outputs="value:l_cc.value" uid="l_cc" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:plotsz.value" outputs="value:l_sz.value" uid="l_sz" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:pc.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:wp.error out" outputs="value:loop_err.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value,error in (no error):le.value" outputs="reference out:lt.reference out,error out:lt.error out,Label.Text:lt.t" type="{LV.Control}" uid="lt" uid_parent="fl"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_n.value,element:lt.t" outputs="index of element:ix.index of element" uid="ix" uid_parent="fl"/>
+    <Node _name="Index Array" inputs="array:l_p.value,index:ix.index of element" outputs="element:xy.element" uid="xy" uid_parent="fl"/>
+    <Node _name="To More Specific Class" inputs="target class:l_cc.value,reference:c.value" outputs="specific class reference:ch.specific class reference,error out:ch.error out" uid="ch" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:ch.error out" outputs="status:chs.status" uid="chs" uid_parent="fl"/>
+    <Structure _name="Case Structure" selectin="chs.status" uid="cs" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:ch.specific class reference" uid="cs_i1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:l_sz.value" uid="cs_i2" uid_parent="cs"/>
+      <CaseFrame selector="True" selectout="" uid="cst" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:" uid="t1" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:" uid="t2" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame label="The chart\3A size its plot area" selector="False" selectout="" uid="csf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:f1.value" uid="f1" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:f2.value" uid="f2" uid_parent="csf"/>
+        <Node _name="Property Node" fields="write+Plot Area\3ASize" inputs="reference:f1.value,Plot Area\3ASize:f2.value" outputs="error out:" type="{LV.WaveformGraph}" uid="ps" uid_parent="csf"/>
+      </CaseFrame>
+    </Structure>
+    <Node _name="Property Node" fields="write+Position" inputs="reference:lt.reference out,error in (no error):lt.error out,Position:xy.element" outputs="error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="fl"/>
+  </Structure>
+  <Constant outputs="value:wb.value" type="cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}" uid="wb" uid_parent="root" value="[120,120,920,600]"/>
+  <Constant outputs="value:org.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="org" uid_parent="root" value="[0,0]"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AOrigin,write+Front Panel Window\3APanel Bounds" inputs="reference:pn.reference out,error in (no error):loop_err.value,Front Panel Window\3AOrigin:org.value,Front Panel Window\3APanel Bounds:wb.value" outputs="reference out:wn.reference out,error out:wn.error out" type="{LV.VI}" uid="wn" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:wn.reference out,error in (no error):wn.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

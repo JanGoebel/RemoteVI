@@ -1,0 +1,49 @@
+<VI _name="Spike Map Probe.vi" description="Diagnostic for the input-injection spike: launches the fixture\2C reports Panel Bounds\2C Window Bounds and where the panel origin lands in client coordinates\2C then for each X in Probe X clicks (X\2C Probe Y) in panel-image pixels and reads the slide value back - a slide jumps to a clicked point\2C so the values show where the posted clicks really land. Closes the fixture afterwards.">
+  <Control _name="Fixture Path" type="path" uid="fp" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:fp.value" description="Fixture." />
+  <Control _name="Probe X" type="array{int32}" uid="pxs" uid_parent="root" value="[20,40,60,80,100]" conIdx="5" connection="recommended" outputs="value:pxs.value" description="Panel-image X values to click." />
+  <Control _name="Probe Y" type="array{int32}" uid="py" uid_parent="root" value="[125,125,125,125,125]" conIdx="7" connection="recommended" outputs="value:py.value" description="Panel-image Y per probe\2C indexed with Probe X." />
+  <Control _name="Window Bounds In" type="cluster{int16.left,int16.top,int16.right,int16.bottom}" uid="wbi" uid_parent="root" value="[15,15,715,495]" conIdx="9" connection="recommended" outputs="value:wbi.value" description="Written to Front Panel Window\3AWindow Bounds before probing\2C to test whether the offset follows the window." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="Slide Values" type="array{double}" uid="svo" uid_parent="root" value="[]" conIdx="4" connection="recommended" inputs="value:svt.value" description="Slide value after each probe click." />
+  <Indicator _name="Panel Bounds" type="cluster{int16.left,int16.top,int16.right,int16.bottom}" uid="pbo" uid_parent="root" value="[0,0,0,0]" conIdx="6" connection="recommended" inputs="value:pn.Front Panel Window\3APanel Bounds" description="Front Panel Window\3APanel Bounds (screen)." />
+  <Indicator _name="Window Bounds" type="cluster{int16.left,int16.top,int16.right,int16.bottom}" uid="wbo" uid_parent="root" value="[0,0,0,0]" conIdx="8" connection="recommended" inputs="value:pn.Front Panel Window\3AWindow Bounds" description="Front Panel Window\3AWindow Bounds (screen)." />
+  <Indicator _name="Origin Client X" type="int32" uid="ocx" uid_parent="root" value="0" conIdx="10" connection="recommended" inputs="value:stc.Client X" description="Panel Bounds top-left after ScreenToClient." />
+  <Indicator _name="Origin Client Y" type="int32" uid="ocy" uid_parent="root" value="0" conIdx="1" connection="recommended" inputs="value:stc.Client Y" description="Panel Bounds top-left after ScreenToClient." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:cl.error out" description="Standard error out." />
+  <Call uid="ln" uid_parent="root" target="Spike Launch Fixture.vi" inputs="Fixture Path:fp.value,error in:ei.value" outputs="VI:ln.VI,Is Frontmost:,error out:ln.error out" />
+  <Node _name="Property Node" uid="pw" uid_parent="root" fields="write+Front Panel Window\3AWindow Bounds" type="{LV.VI}" inputs="reference:ln.VI,error in (no error):ln.error out,Front Panel Window\3AWindow Bounds:wbi.value" outputs="error out:pw.error out" />
+  <Node _name="Property Node" uid="pn" uid_parent="root" fields="read+Front Panel Window\3AOS Window,read+Front Panel Window\3APanel Bounds,read+Front Panel Window\3AWindow Bounds" type="{LV.VI}" inputs="reference:ln.VI,error in (no error):pw.error out" outputs="error out:pn.error out,Front Panel Window\3AOS Window:pn.Front Panel Window\3AOS Window,Front Panel Window\3APanel Bounds:pn.Front Panel Window\3APanel Bounds,Front Panel Window\3AWindow Bounds:pn.Front Panel Window\3AWindow Bounds" />
+  <Node _name="To Quad Integer" uid="q1" uid_parent="root" inputs="number:pn.Front Panel Window\3AOS Window" outputs="64bit integer:q1.64bit integer" />
+  <Node _name="To Unsigned Quad Integer" uid="hw" uid_parent="root" inputs="number:q1.64bit integer" outputs="unsigned 64bit integer:hw.unsigned 64bit integer" />
+  <Node _name="Unbundle By Name" uid="ub" uid_parent="root" fields="left,top" inputs="input cluster:pn.Front Panel Window\3APanel Bounds" outputs="left:ub.left,top:ub.top" />
+  <Node _name="To Long Integer" uid="l32" uid_parent="root" inputs="number:ub.left" outputs="32bit integer:l32.32bit integer" />
+  <Node _name="To Long Integer" uid="t32" uid_parent="root" inputs="number:ub.top" outputs="32bit integer:t32.32bit integer" />
+  <Call uid="stc" uid_parent="root" target="user32 ScreenToClient.vi" inputs="hWnd:hw.unsigned 64bit integer,Screen X:l32.32bit integer,Screen Y:t32.32bit integer,error in (no error):pn.error out" outputs="Client X:stc.Client X,Client Y:stc.Client Y,return value:,error out:stc.error out" />
+  <Call uid="fc" uid_parent="root" target="Spike Find Control.vi" inputs="VI:ln.VI,Label:sll.value,error in:stc.error out" outputs="Control:fc.Control,Found:,Rect:,error out:fc.error out" />
+  <Constant _name="slide label" type="string" uid="sll" uid_parent="root" value="Slide" outputs="value:sll.value" />
+  <Constant _name="double type" type="double" uid="bt" uid_parent="root" value="0" outputs="value:bt.value" />
+  <Structure _name="For Loop" uid="fl" uid_parent="root" count="" maxin="" maxout="" label="Click each X\2C read the slide">
+    <Tunnel _id="In1" uid="tx" uid_parent="fl" mode="index" inputs="value:pxs.value" outputs="value:tx.value" />
+    <Tunnel _id="In2" uid="tvi" uid_parent="fl" inputs="value:ln.VI" outputs="value:tvi.value" />
+    <Tunnel _id="In3" uid="ty" uid_parent="fl" mode="index" inputs="value:py.value" outputs="value:ty.value" />
+    <Tunnel _id="In4" uid="tc" uid_parent="fl" inputs="value:fc.Control" outputs="value:tc.value" />
+    <Tunnel _id="In5" uid="tbt" uid_parent="fl" inputs="value:bt.value" outputs="value:tbt.value" />
+    <Call uid="ck" uid_parent="fl" target="Spike Click.vi" inputs="VI:tvi.value,Panel X:tx.value,Panel Y:ty.value,error in:sl.value" outputs="error out:ck.error out" />
+    <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="fl">
+      <Constant _name="settle" type="uint32" uid="k200" uid_parent="seq" value="200" outputs="value:k200.value" />
+      <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:k200.value" outputs="millisecond timer value:" />
+      <Tunnel _id="In1" uid="ein" uid_parent="seq" inputs="value:ck.error out" outputs="value:ein.value" />
+      <Tunnel _id="Out1" uid="wo" uid_parent="seq" inputs="value:ein.value" outputs="value:wo.value" />
+    </Structure>
+    <Node _name="Property Node" uid="rv" uid_parent="fl" fields="read+Value" type="{LV.Control}" inputs="reference:tc.value,error in (no error):wo.value" outputs="error out:rv.error out,Value:rv.Value" />
+    <Node _name="Variant To Data" uid="vd" uid_parent="fl" inputs="variant:rv.Value,type:tbt.value,error in:rv.error out" outputs="data:vd.data,error out:vd.error out" />
+    <Tunnel _id="Out1" uid="svt" uid_parent="fl" mode="index" inputs="value:vd.data" outputs="value:svt.value" />
+    <ShiftReg uid="sh" uid_parent="fl">
+      <Left uid="sl" uid_parent="sh" inputs="value:fc.error out" outputs="value:sl.value" />
+      <Right uid="sr" uid_parent="sh" inputs="value:vd.error out" outputs="value:sr.value" />
+    </ShiftReg>
+  </Structure>
+  <Call uid="st" uid_parent="root" target="Spike Step Stop.vi" inputs="VI:ln.VI,error in:sr.value" outputs="Pass:,error out:st.error out" />
+  <Call uid="cl" uid_parent="root" target="Spike Close Fixture.vi" inputs="VI:ln.VI,error in:st.error out" outputs="Was Running:,error out:cl.error out" />
+  <FreeLabel comment="Where do posted clicks really land?" uid="c1" uid_parent="root" />
+</VI>

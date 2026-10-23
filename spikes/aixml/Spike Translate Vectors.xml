@@ -1,0 +1,22 @@
+<VI _name="Spike Translate Vectors.vi" description="Test harness for RemoteVI Translate Input.vi against tests\5Cvectors\5Ctranslate.json: each message text is parsed with RemoteVI Parse Input.vi\2C as the server will\2C then translated with its own tracking-before value and the common geo. Returns per case the tracking after and the number of posts\2C and all posts concatenated in case order.">
+  <FreeLabel comment="Parse then translate\2C one case per iteration" uid="lbl" uid_parent="root"/>
+  <Control _name="Messages" conIdx="0" connection="required" description="Client message texts\2C one per case." outputs="value:m.value" type="array{string}" uid="m" uid_parent="root" value="[]"/>
+  <Control _name="Tracking Before" conIdx="5" connection="required" description="Tracking state before each case." outputs="value:tb.value" type="array{bool}" uid="tb" uid_parent="root" value="[]"/>
+  <Control _name="geo" conIdx="7" connection="required" description="Panel and client origins in screen coordinates." outputs="value:g.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="g" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Passed through." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Structure _name="For Loop" count="" label="One case per iteration" maxin="" maxout="" uid="loop" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:m.value" mode="index" outputs="value:mi.value" uid="mi" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:tb.value" mode="index" outputs="value:ti.value" uid="ti" uid_parent="loop"/>
+    <Tunnel _id="In3" inputs="value:g.value" outputs="value:gi.value" uid="gi" uid_parent="loop"/>
+    <Call inputs="text:mi.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="loop"/>
+    <Call inputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,geo:gi.value,tracking in:ti.value" outputs="posts:tr.posts,tracking out:tr.tracking out" target="RemoteVI Translate Input.vi" uid="tr" uid_parent="loop"/>
+    <Node _name="Array Size" inputs="array:tr.posts" outputs="size(s):sz.size(s)" uid="sz" uid_parent="loop"/>
+    <Tunnel _id="Out1" inputs="value:tr.tracking out" mode="index" outputs="value:ta.value" uid="ta" uid_parent="loop"/>
+    <Tunnel _id="Out2" inputs="value:sz.size(s)" mode="index" outputs="value:ca.value" uid="ca" uid_parent="loop"/>
+    <Tunnel _id="Out3" inputs="value:tr.posts" mode="concat" outputs="value:pa.value" uid="pa" uid_parent="loop"/>
+  </Structure>
+  <Indicator _name="Tracking After" conIdx="4" connection="recommended" description="Tracking out per case." inputs="value:ta.value" type="array{bool}" uid="o_ta" uid_parent="root" value="[]"/>
+  <Indicator _name="Post Counts" conIdx="6" connection="recommended" description="Number of posts per case." inputs="value:ca.value" type="array{int32}" uid="o_ca" uid_parent="root" value="[]"/>
+  <Indicator _name="Posts" conIdx="8" connection="recommended" description="All posts in case order." inputs="value:pa.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="o_pa" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C passed through." inputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

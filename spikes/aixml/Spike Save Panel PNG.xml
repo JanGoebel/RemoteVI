@@ -1,0 +1,21 @@
+<VI _name="Spike Save Panel PNG.vi" description="Grabs the visible front panel of VI (FP.Get Image\2C visible area only\2C 24 bit)\2C encodes it as PNG and writes it to PNG Path. Reports the image width and height. An incoming error skips everything.">
+  <Control _name="VI" type="ref{LV.VI}" uid="vi" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vi.value" description="The VI whose open panel is captured." />
+  <Control _name="PNG Path" type="path" uid="pp" uid_parent="root" value="" conIdx="5" connection="required" outputs="value:pp.value" description="File to write\2C overwritten." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="Width" type="int32" uid="wo" uid_parent="root" value="0" conIdx="4" connection="recommended" inputs="value:w32.32bit integer" description="Image width in pixels." />
+  <Indicator _name="Height" type="int32" uid="ho" uid_parent="root" value="0" conIdx="6" connection="recommended" inputs="value:h32.32bit integer" description="Image height in pixels." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:wr.error out" description="Standard error out." />
+  <Constant _name="visible area only" type="bool" uid="va" uid_parent="root" value="true" outputs="value:va.value" />
+  <Constant _name="image depth" type="int32" uid="id" uid_parent="root" value="24" outputs="value:id.value" />
+  <Node _name="Invoke Node" uid="gi" uid_parent="root" target="FP.Get Image" type="{LV.VI}" inputs="reference:vi.value,error in (no error):ei.value,visible area only:va.value,image depth:id.value" outputs="error out:gi.error out,image data:gi.image data" />
+  <Call uid="png" uid_parent="root" target="NI_WebServices.lvlib:LV Image to PNG Data.vi" inputs="compression (none):,error in (no error):gi.error out,image data:gi.image data" outputs="error out:png.error out,png data:png.png data" />
+  <Constant _name="no size prefix" type="bool" uid="np" uid_parent="root" value="false" outputs="value:np.value" />
+  <Node _name="Write to Binary File" uid="wr" uid_parent="root" inputs="prepend array or string size? (T):np.value,error in:png.error out,data:png.png data,file (use dialog):pp.value" outputs="error out:wr.error out" />
+  <Node _name="Unbundle By Name" uid="ur" uid_parent="root" fields="Rectangle" inputs="input cluster:gi.image data" outputs="Rectangle:ur.Rectangle" />
+  <Node _name="Unbundle By Name" uid="ub" uid_parent="root" fields="left,top,right,bottom" inputs="input cluster:ur.Rectangle" outputs="left:ub.left,top:ub.top,right:ub.right,bottom:ub.bottom" />
+  <Node _name="Subtract" uid="dw" uid_parent="root" inputs="y:ub.left,x:ub.right" outputs="x-y:dw.x-y" />
+  <Node _name="Subtract" uid="dh" uid_parent="root" inputs="y:ub.top,x:ub.bottom" outputs="x-y:dh.x-y" />
+  <Node _name="To Long Integer" uid="w32" uid_parent="root" inputs="number:dw.x-y" outputs="32bit integer:w32.32bit integer" />
+  <Node _name="To Long Integer" uid="h32" uid_parent="root" inputs="number:dh.x-y" outputs="32bit integer:h32.32bit integer" />
+  <FreeLabel comment="Panel image to PNG file" uid="cm" uid_parent="root" />
+</VI>

@@ -1,0 +1,35 @@
+<VI _name="Spike Splitter Drag.vi" description="Splitter check for the input-injection spike: opens and runs the VI at VI Path (an NI example with splitter bars - never saved)\2C reads the rectangle of the control labelled Probe Control (one that scales with its pane)\2C saves a panel PNG\2C drags from (From X\2C From Y) by (DX\2C DY) panel-image pixels with posted messages (Spike Drag.vi\2C moves and button-up in SCREEN coordinates when Screen Moves is TRUE)\2C then reads the rectangle again and saves a second PNG. Finally aborts the VI and closes its panel and reference without saving.">
+  <Control _name="VI Path" type="path" uid="vp" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vp.value" description="The splitter example." />
+  <Control _name="From X" type="int32" uid="fx" uid_parent="root" value="281" conIdx="5" connection="recommended" outputs="value:fx.value" description="Splitter bar X in panel-image pixels." />
+  <Control _name="From Y" type="int32" uid="fy" uid_parent="root" value="300" conIdx="7" connection="recommended" outputs="value:fy.value" description="Splitter bar Y in panel-image pixels." />
+  <Control _name="DX" type="int32" uid="dx" uid_parent="root" value="100" conIdx="9" connection="recommended" outputs="value:dx.value" description="Horizontal drag distance." />
+  <Control _name="DY" type="int32" uid="dy" uid_parent="root" value="0" conIdx="1" connection="recommended" outputs="value:dy.value" description="Vertical drag distance." />
+  <Control _name="Screen Moves" type="bool" uid="sc" uid_parent="root" value="true" conIdx="2" connection="recommended" outputs="value:sc.value" description="Passed to Spike Drag.vi as Screen lParam For Moves." />
+  <Control _name="Probe Control" type="string" uid="pc" uid_parent="root" value="Waveform Graph" conIdx="3" connection="recommended" outputs="value:pc.value" description="Label of a control that resizes with its pane." />
+  <Control _name="PNG Before" type="path" uid="pb" uid_parent="root" value="" conIdx="12" connection="recommended" outputs="value:pb.value" description="Panel capture before the drag." />
+  <Control _name="PNG After" type="path" uid="pa" uid_parent="root" value="" conIdx="13" connection="recommended" outputs="value:pa.value" description="Panel capture after the drag." />
+  <Control _name="Screen Down" type="bool" uid="sd" uid_parent="root" value="false" conIdx="14" connection="optional" outputs="value:sd.value" description="Passed to Spike Drag.vi as Screen lParam For Down." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="Rect Before" type="cluster{int32.Left,int32.Top,int32.Width,int32.Height}" uid="rbo" uid_parent="root" value="[0,0,0,0]" conIdx="4" connection="recommended" inputs="value:f1.Rect" description="Probe control before (panel-image pixels\2C pane-relative left/top)." />
+  <Indicator _name="Rect After" type="cluster{int32.Left,int32.Top,int32.Width,int32.Height}" uid="rao" uid_parent="root" value="[0,0,0,0]" conIdx="6" connection="recommended" inputs="value:f2.Rect" description="Probe control after." />
+  <Indicator _name="Found" type="bool" uid="fo" uid_parent="root" value="false" conIdx="8" connection="recommended" inputs="value:f1.Found" description="Probe control exists." />
+  <Indicator _name="Was Running" type="bool" uid="wr" uid_parent="root" value="false" conIdx="10" connection="recommended" inputs="value:cl.Was Running" description="True when the example had to be aborted at the end (expected)." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:cl.error out" description="Standard error out." />
+  <Call uid="ln" uid_parent="root" target="Spike Launch Fixture.vi" inputs="Fixture Path:vp.value,error in:ei.value" outputs="VI:ln.VI,Is Frontmost:,error out:ln.error out" />
+  <Call uid="f1" uid_parent="root" target="Spike Find Control.vi" inputs="VI:ln.VI,Label:pc.value,error in:ln.error out" outputs="Control:,Found:f1.Found,Rect:f1.Rect,error out:f1.error out" />
+  <Call uid="s1" uid_parent="root" target="Spike Save Panel PNG.vi" inputs="VI:ln.VI,PNG Path:pb.value,error in:f1.error out" outputs="Width:,Height:,error out:s1.error out" />
+  <Node _name="Add" uid="tx" uid_parent="root" inputs="x:fx.value,y:dx.value" outputs="x+y:tx.x+y" />
+  <Node _name="Add" uid="ty" uid_parent="root" inputs="x:fy.value,y:dy.value" outputs="x+y:ty.x+y" />
+  <Constant _name="steps" type="int32" uid="ns" uid_parent="root" value="10" outputs="value:ns.value" />
+  <Call uid="dr" uid_parent="root" target="Spike Drag.vi" inputs="VI:ln.VI,From X:fx.value,From Y:fy.value,To X:tx.x+y,To Y:ty.x+y,Steps:ns.value,Screen lParam For Moves:sc.value,Screen lParam For Down:sd.value,error in:s1.error out" outputs="error out:dr.error out" />
+  <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="root" label="Let the panes relayout">
+    <Constant _name="settle ms" type="uint32" uid="k" uid_parent="seq" value="500" outputs="value:k.value" />
+    <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:k.value" outputs="millisecond timer value:" />
+    <Tunnel _id="In1" uid="si" uid_parent="seq" inputs="value:dr.error out" outputs="value:si.value" />
+    <Tunnel _id="Out1" uid="so" uid_parent="seq" inputs="value:si.value" outputs="value:so.value" />
+  </Structure>
+  <Call uid="f2" uid_parent="root" target="Spike Find Control.vi" inputs="VI:ln.VI,Label:pc.value,error in:so.value" outputs="Control:,Found:,Rect:f2.Rect,error out:f2.error out" />
+  <Call uid="s2" uid_parent="root" target="Spike Save Panel PNG.vi" inputs="VI:ln.VI,PNG Path:pa.value,error in:f2.error out" outputs="Width:,Height:,error out:s2.error out" />
+  <Call uid="cl" uid_parent="root" target="Spike Close Fixture.vi" inputs="VI:ln.VI,error in:s2.error out" outputs="Was Running:cl.Was Running,error out:cl.error out" />
+  <FreeLabel comment="Drag the splitter\2C compare before and after" uid="cm" uid_parent="root" />
+</VI>

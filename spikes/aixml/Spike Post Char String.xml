@@ -1,0 +1,81 @@
+<VI _name="Spike Post Char String.vi" description="Types a string into the front panel window of VI by posting one WM_CHAR (258\2C lParam 1) per byte of String\2C waiting Delay ms after each. With Key Down Up each WM_CHAR is wrapped in WM_KEYDOWN/WM_KEYUP. An error stops the remaining characters.">
+  <Control _name="VI" type="ref{LV.VI}" uid="vi" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:vi.value" description="The VI whose front panel window receives the characters." />
+  <Control _name="String" type="string" uid="s" uid_parent="root" value="" conIdx="5" connection="required" outputs="value:s.value" description="Text to type\2C one WM_CHAR per byte." />
+  <Control _name="Delay ms" type="uint32" uid="dl" uid_parent="root" value="50" conIdx="7" connection="recommended" outputs="value:dl.value" description="Wait after each character." />
+  <Control _name="With Key Down Up" type="bool" uid="kdu" uid_parent="root" value="false" conIdx="9" connection="optional" outputs="value:kdu.value" description="Wrap each WM_CHAR in WM_KEYDOWN/WM_KEYUP with the upper-cased character as virtual key\2C as a real keystroke arrives." />
+  <Control _name="Key Down VK" type="uint64" uid="kvk" uid_parent="root" value="0" conIdx="1" connection="optional" outputs="value:kvk.value" description="With Key Down Up: virtual key for the wrapping WM_KEYDOWN/UP. 0 uses the upper-cased character; a key with no character (e.g. 232) keeps TranslateMessage from adding a second WM_CHAR." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:sr.value" description="Standard error out." />
+  <Node _name="String To Byte Array" uid="ba" uid_parent="root" inputs="string:s.value" outputs="unsigned byte array:ba.unsigned byte array" />
+  <Constant _name="WM_CHAR" type="uint32" uid="wmc" uid_parent="root" value="258" outputs="value:wmc.value" />
+  <Constant _name="lParam 1" type="int64" uid="l1" uid_parent="root" value="1" outputs="value:l1.value" />
+  <Structure _name="For Loop" uid="fl" uid_parent="root" count="" maxin="" maxout="" label="One WM_CHAR per byte">
+    <Tunnel _id="In1" uid="bt" uid_parent="fl" mode="index" inputs="value:ba.unsigned byte array" outputs="value:bt.value" />
+    <Tunnel _id="In2" uid="vt" uid_parent="fl" inputs="value:vi.value" outputs="value:vt.value" />
+    <Tunnel _id="In3" uid="mt" uid_parent="fl" inputs="value:wmc.value" outputs="value:mt.value" />
+    <Tunnel _id="In4" uid="lt" uid_parent="fl" inputs="value:l1.value" outputs="value:lt.value" />
+    <Tunnel _id="In5" uid="dt" uid_parent="fl" inputs="value:dl.value" outputs="value:dt.value" />
+    <Tunnel _id="In6" uid="kt" uid_parent="fl" inputs="value:kdu.value" outputs="value:kt.value" />
+    <Tunnel _id="In7" uid="kvt" uid_parent="fl" inputs="value:kvk.value" outputs="value:kvt.value" />
+    <Constant _name="zero" type="uint64" uid="z0" uid_parent="fl" value="0" outputs="value:z0.value" />
+    <Node _name="Equal?" uid="isz" uid_parent="fl" inputs="x:kvt.value,y:z0.value" outputs="x = y?:isz.x = y?" />
+    <Node _name="Select" uid="vks" uid_parent="fl" inputs="t:vq.unsigned 64bit integer,s:isz.x = y?,f:kvt.value" outputs="s? t\3Af:vks.s? t\3Af" />
+    <Node _name="To Upper Case" uid="up" uid_parent="fl" inputs="string:bt.value" outputs="all upper case string:up.all upper case string" />
+    <Node _name="To Unsigned Quad Integer" uid="vq" uid_parent="fl" inputs="number:up.all upper case string" outputs="unsigned 64bit integer:vq.unsigned 64bit integer" />
+    <Structure _name="Case Structure" uid="cd" uid_parent="fl" selectin="kt.value">
+      <Tunnel _id="In1" uid="cdv" uid_parent="cd" inputs="value:vt.value" />
+      <Tunnel _id="In2" uid="cdk" uid_parent="cd" inputs="value:vks.s? t\3Af" />
+      <Tunnel _id="In3" uid="cdd" uid_parent="cd" inputs="value:dt.value" />
+      <Tunnel _id="In4" uid="cde" uid_parent="cd" inputs="value:sl.value" />
+      <CaseFrame selector="True" uid="cdT" uid_parent="cd" selectout="">
+        <Tunnel _id="In1" uid="cdv1" uid_parent="cdT" outputs="value:cdv1.value" />
+        <Tunnel _id="In2" uid="cdk1" uid_parent="cdT" outputs="value:cdk1.value" />
+        <Tunnel _id="In3" uid="cdd1" uid_parent="cdT" outputs="value:cdd1.value" />
+        <Tunnel _id="In4" uid="cde1" uid_parent="cdT" outputs="value:cde1.value" />
+        <Constant _name="WM_KEYDOWN" type="uint32" uid="wkd" uid_parent="cdT" value="256" outputs="value:wkd.value" />
+        <Constant _name="lParam 1" type="int64" uid="wl1" uid_parent="cdT" value="1" outputs="value:wl1.value" />
+        <Call uid="pkd" uid_parent="cdT" target="Spike Post Key.vi" inputs="VI:cdv1.value,Msg:wkd.value,wParam:cdk1.value,lParam:wl1.value,Delay ms:cdd1.value,error in:cde1.value" outputs="return value:,error out:pkd.error out" />
+        <Tunnel _id="Out1" uid="cdo1" uid_parent="cdT" inputs="value:pkd.error out" />
+      </CaseFrame>
+      <CaseFrame selector="False" uid="cdF" uid_parent="cd" selectout="">
+        <Tunnel _id="In1" uid="cdv2" uid_parent="cdF" outputs="value:" />
+        <Tunnel _id="In2" uid="cdk2" uid_parent="cdF" outputs="value:" />
+        <Tunnel _id="In3" uid="cdd2" uid_parent="cdF" outputs="value:" />
+        <Tunnel _id="In4" uid="cde2" uid_parent="cdF" outputs="value:cde2.value" />
+        <Tunnel _id="Out1" uid="cdo2" uid_parent="cdF" inputs="value:cde2.value" />
+      </CaseFrame>
+      <Tunnel _id="Out1" uid="cdo" uid_parent="cd" outputs="value:cdo.value" />
+    </Structure>
+    <Structure _name="Case Structure" uid="cu" uid_parent="fl" selectin="kt.value">
+      <Tunnel _id="In1" uid="cuv" uid_parent="cu" inputs="value:vt.value" />
+      <Tunnel _id="In2" uid="cuk" uid_parent="cu" inputs="value:vks.s? t\3Af" />
+      <Tunnel _id="In3" uid="cud" uid_parent="cu" inputs="value:dt.value" />
+      <Tunnel _id="In4" uid="cue" uid_parent="cu" inputs="value:pk.error out" />
+      <CaseFrame selector="True" uid="cuT" uid_parent="cu" selectout="">
+        <Tunnel _id="In1" uid="cuv1" uid_parent="cuT" outputs="value:cuv1.value" />
+        <Tunnel _id="In2" uid="cuk1" uid_parent="cuT" outputs="value:cuk1.value" />
+        <Tunnel _id="In3" uid="cud1" uid_parent="cuT" outputs="value:cud1.value" />
+        <Tunnel _id="In4" uid="cue1" uid_parent="cuT" outputs="value:cue1.value" />
+        <Constant _name="WM_KEYUP" type="uint32" uid="wku" uid_parent="cuT" value="257" outputs="value:wku.value" />
+        <Constant _name="lParam up" type="int64" uid="wlu" uid_parent="cuT" value="3221225473" outputs="value:wlu.value" />
+        <Call uid="pku" uid_parent="cuT" target="Spike Post Key.vi" inputs="VI:cuv1.value,Msg:wku.value,wParam:cuk1.value,lParam:wlu.value,Delay ms:cud1.value,error in:cue1.value" outputs="return value:,error out:pku.error out" />
+        <Tunnel _id="Out1" uid="cuo1" uid_parent="cuT" inputs="value:pku.error out" />
+      </CaseFrame>
+      <CaseFrame selector="False" uid="cuF" uid_parent="cu" selectout="">
+        <Tunnel _id="In1" uid="cuv2" uid_parent="cuF" outputs="value:" />
+        <Tunnel _id="In2" uid="cuk2" uid_parent="cuF" outputs="value:" />
+        <Tunnel _id="In3" uid="cud2" uid_parent="cuF" outputs="value:" />
+        <Tunnel _id="In4" uid="cue2" uid_parent="cuF" outputs="value:cue2.value" />
+        <Tunnel _id="Out1" uid="cuo2" uid_parent="cuF" inputs="value:cue2.value" />
+      </CaseFrame>
+      <Tunnel _id="Out1" uid="cuo" uid_parent="cu" outputs="value:cuo.value" />
+    </Structure>
+    <Node _name="To Unsigned Quad Integer" uid="wq" uid_parent="fl" inputs="number:bt.value" outputs="unsigned 64bit integer:wq.unsigned 64bit integer" />
+    <Call uid="pk" uid_parent="fl" target="Spike Post Key.vi" inputs="VI:vt.value,Msg:mt.value,wParam:wq.unsigned 64bit integer,lParam:lt.value,Delay ms:dt.value,error in:cdo.value" outputs="return value:,error out:pk.error out" />
+    <ShiftReg uid="sh" uid_parent="fl">
+      <Left uid="sl" uid_parent="sh" inputs="value:ei.value" outputs="value:sl.value" />
+      <Right uid="sr" uid_parent="sh" inputs="value:cuo.value" outputs="value:sr.value" />
+    </ShiftReg>
+  </Structure>
+  <FreeLabel comment="WM_CHAR per byte\2C optional key down/up" uid="c1" uid_parent="root" />
+</VI>

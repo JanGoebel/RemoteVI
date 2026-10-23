@@ -1,0 +1,22 @@
+<VI _name="Spike Launch Fixture.vi" description="Opens a reference to the VI at Fixture Path\2C opens its front panel (FP.Open\2C Activate as given - FALSE leaves the current foreground window in front)\2C starts it with Run VI (Wait until done FALSE\2C Auto Dispose Ref FALSE)\2C waits Startup ms and reports whether its panel is the frontmost window. The caller owns the returned reference and must close it (Spike Close Fixture.vi). Any error skips the rest.">
+  <Control _name="Fixture Path" type="path" uid="fp" uid_parent="root" value="" conIdx="0" connection="required" outputs="value:fp.value" description="The VI to run." />
+  <Control _name="Activate" type="bool" uid="ac" uid_parent="root" value="false" conIdx="5" connection="recommended" outputs="value:ac.value" description="FP.Open Activate: TRUE brings the panel to the front." />
+  <Control _name="Startup ms" type="uint32" uid="su" uid_parent="root" value="800" conIdx="7" connection="recommended" outputs="value:su.value" description="Wait after Run VI before the panel is used." />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" outputs="value:ei.value" description="Standard error in." />
+  <Indicator _name="VI" type="ref{LV.VI}" uid="vo" uid_parent="root" value="" conIdx="4" connection="recommended" inputs="value:run.reference out" description="Reference to the running fixture." />
+  <Indicator _name="Is Frontmost" type="bool" uid="fm" uid_parent="root" value="false" conIdx="6" connection="recommended" inputs="value:pf.Front Panel Window\3AIs Frontmost" description="Front Panel Window\3AIs Frontmost after the start." />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" inputs="value:pf.error out" description="Standard error out." />
+  <Node _name="Open VI Reference" uid="open" uid_parent="root" inputs="vi path:fp.value,error in (no error):ei.value" outputs="error out:open.error out,vi reference:open.vi reference" />
+  <Node _name="Invoke Node" uid="fpo" uid_parent="root" target="FP.Open" type="{LV.VI}" inputs="reference:open.vi reference,error in (no error):open.error out,Activate:ac.value" outputs="reference out:fpo.reference out,error out:fpo.error out" />
+  <Constant _name="Wait until done" type="bool" uid="wud" uid_parent="root" value="false" outputs="value:wud.value" />
+  <Constant _name="Auto Dispose Ref" type="bool" uid="adr" uid_parent="root" value="false" outputs="value:adr.value" />
+  <Node _name="Invoke Node" uid="run" uid_parent="root" target="Run VI" type="{LV.VI}" inputs="reference:fpo.reference out,error in (no error):fpo.error out,Wait until done:wud.value,Auto Dispose Ref:adr.value" outputs="reference out:run.reference out,error out:run.error out" />
+  <Structure _name="Flat Sequence Frame" uid="seq" uid_parent="root" label="Let the panel come up">
+    <Node _name="Wait (ms)" uid="w" uid_parent="seq" inputs="milliseconds to wait:wi.value" outputs="millisecond timer value:" />
+    <Tunnel _id="In1" uid="wi" uid_parent="seq" inputs="value:su.value" outputs="value:wi.value" />
+    <Tunnel _id="In2" uid="ein" uid_parent="seq" inputs="value:run.error out" outputs="value:ein.value" />
+    <Tunnel _id="Out1" uid="wo" uid_parent="seq" inputs="value:ein.value" outputs="value:wo.value" />
+  </Structure>
+  <Node _name="Property Node" uid="pf" uid_parent="root" fields="read+Front Panel Window\3AIs Frontmost" type="{LV.VI}" inputs="reference:run.reference out,error in (no error):wo.value" outputs="error out:pf.error out,Front Panel Window\3AIs Frontmost:pf.Front Panel Window\3AIs Frontmost" />
+  <FreeLabel comment="Open the panel\2C start the VI\2C do not wait for it" uid="c1" uid_parent="root" />
+</VI>

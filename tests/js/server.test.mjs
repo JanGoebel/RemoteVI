@@ -1,19 +1,20 @@
-// End-to-end tests against the reference server over real sockets.
+// End-to-end tests against the reference server (protocol v2) over real sockets.
+// They describe what the LabVIEW server loop must do; the same scenarios are the
+// manual acceptance test for the G implementation (docs/testing.md).
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
+import { inflateSync } from 'node:zlib';
 
 import { startServer } from '../../tools/mock-server/server.mjs';
-import { decodeFrame, ENC_SOLID, ENC_QOI, ENC_RAW_RGB } from '../../web/js/protocol.js';
-import { decodeQoi } from '../../web/js/qoi.js';
+import { FRAME_MAGIC, MSG_FRAME, FRAMES_IN_FLIGHT } from '../../tools/lib/protocol.mjs';
 
 let srv;
 before(async () => {
-  srv = await startServer({ port: 0, token: 'secret-token', fps: 60, log: () => {} });
+  srv = await startServer({ port: 0, fps: 60, log: () => {} });
 });
 after(() => srv.close());
 
-/** Raw HTTP request; resolves with the full response text once the server closes. */
 function rawRequest(text) {
   return new Promise((resolve, reject) => {
     const s = net.connect(srv.port, '127.0.0.1', () => s.write(text));
@@ -35,12 +36,11 @@ function connect() {
     if (i >= 0) waiters.splice(i, 1)[0].resolve(item);
     else queue.push(item);
   };
-  ws.onmessage = (ev) => push(typeof ev.data === 'string' ? JSON.parse(ev.data) : { binary: new Uint8Array(ev.data) });
-  ws.onclose = (ev) => push({ closed: ev.code, reason: ev.reason });
+  ws.onmessage = (ev) => push(typeof ev.data === 'string' ? { text: ev.data } : { frame: decodeFrame(ev.data) });
+  ws.onclose = (ev) => push({ closed: ev.code });
   return {
     ws,
     opened: new Promise((r) => { ws.onopen = r; }),
-    send: (m) => ws.send(JSON.stringify(m)),
     next(pred = () => true, ms = 2000) {
       const i = queue.findIndex(pred);
       if (i >= 0) return Promise.resolve(queue.splice(i, 1)[0]);
@@ -56,24 +56,58 @@ function connect() {
   };
 }
 
-async function hello(token = 'secret-token') {
-  const c = connect();
-  await c.opened;
-  c.send({ t: 'hello', v: 1, client: 'test', token });
-  return c;
+function decodeFrame(buf) {
+  const b = Buffer.from(buf);
+  assert.equal(b[0], FRAME_MAGIC);
+  assert.equal(b[1], MSG_FRAME);
+  const frame = { seq: b.readUInt32BE(2), width: b.readUInt16BE(6), height: b.readUInt16BE(8), rects: [] };
+  let o = 12;
+  for (let i = 0, n = b.readUInt16BE(10); i < n; i++) {
+    const len = b.readUInt32BE(o + 4);
+    frame.rects.push({ x: b.readInt16BE(o), y: b.readInt16BE(o + 2), ...decodePng(b.subarray(o + 8, o + 8 + len)) });
+    o += 8 + len;
+  }
+  assert.equal(o, b.length, 'no trailing bytes');
+  return frame;
 }
 
-test('static files are served from the fixed table with security headers', async () => {
+/** Decoder for the truecolour, filter-0 PNGs the reference encoder writes. */
+function decodePng(png) {
+  assert.equal(png.subarray(1, 4).toString('latin1'), 'PNG');
+  let o = 8, w = 0, h = 0;
+  const idat = [];
+  while (o < png.length) {
+    const len = png.readUInt32BE(o);
+    const type = png.subarray(o + 4, o + 8).toString('latin1');
+    const data = png.subarray(o + 8, o + 8 + len);
+    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); }
+    if (type === 'IDAT') idat.push(data);
+    o += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const px = new Uint32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * (1 + w * 3) + 1 + x * 3;
+      px[y * w + x] = (raw[i] << 16) | (raw[i + 1] << 8) | raw[i + 2];
+    }
+  }
+  return { w, h, px };
+}
+
+function paint(img, width, frame) {
+  for (const r of frame.rects) {
+    for (let y = 0; y < r.h; y++) img.set(r.px.subarray(y * r.w, (y + 1) * r.w), (r.y + y) * width + r.x);
+  }
+}
+
+test('GET / serves the one-file client with security headers; everything else is refused', async () => {
   const res = await rawRequest('GET / HTTP/1.1\r\nHost: x\r\n\r\n');
   assert.match(res, /^HTTP\/1\.1 200 OK\r\n/);
-  assert.match(res, /Content-Security-Policy: default-src 'self'/);
   assert.match(res, /X-Content-Type-Options: nosniff/);
   assert.match(res, /<canvas id="panel"/);
-});
-
-test('unknown paths, traversal attempts and other methods are rejected', async () => {
+  assert.match(await rawRequest('GET /js/client.js HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 404 /);
   assert.match(await rawRequest('GET /../package.json HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 404 /);
-  assert.match(await rawRequest('GET /%2e%2e/package.json HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 404 /);
   assert.match(await rawRequest('POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n'), /^HTTP\/1\.1 405 /);
   assert.match(await rawRequest('GET /ws HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 426 /);
 });
@@ -84,87 +118,66 @@ test('cross-origin WebSocket handshakes are refused', async () => {
   assert.match(res, /^HTTP\/1\.1 403 /);
 });
 
-test('wrong token closes the session with 4403', async () => {
-  const c = await hello('wrong');
-  const msg = await c.next((m) => 'closed' in m);
-  assert.equal(msg.closed, 4403);
-});
-
-test('messages before hello are refused', async () => {
+test('title is sent on connect; the first frame is the whole panel, pixel-exact', async () => {
   const c = connect();
   await c.opened;
-  c.send({ t: 'set', id: 'c2', value: 1 });
-  assert.equal((await c.next((m) => 'closed' in m)).closed, 4401);
-});
-
-test('keyframe reconstructs the panel pixel-exactly, deltas follow, acks pace the stream', async () => {
-  const c = await hello();
-  const welcome = await c.next((m) => m.t === 'welcome');
-  assert.equal(welcome.role, 'controller');
-  const layout = await c.next((m) => m.t === 'layout');
-  assert.ok(layout.controls.some((x) => x.id === 'c2' && x.value === 2.5));
-
-  const first = decodeFrame((await c.next((m) => m.binary)).binary);
-  assert.equal(first.keyframe, true);
-  const img = new Uint32Array(first.width * first.height);
-  const paint = (frame) => {
-    for (const t of frame.tiles) {
-      for (let y = 0; y < t.h; y++) {
-        for (let x = 0; x < t.w; x++) {
-          let px;
-          if (t.encoding === ENC_SOLID) px = (t.data[1] << 16) | (t.data[2] << 8) | t.data[3];
-          else if (t.encoding === ENC_RAW_RGB) { const i = (y * t.w + x) * 3; px = (t.data[i] << 16) | (t.data[i + 1] << 8) | t.data[i + 2]; }
-          else if (t.encoding === ENC_QOI) { const d = (t.decoded ??= decodeQoi(t.data).rgba); const i = (y * t.w + x) * 4; px = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]; }
-          img[(t.y + y) * frame.width + t.x + x] = px;
-        }
-      }
-    }
-  };
-  paint(first);
+  assert.equal((await c.next((m) => m.text?.startsWith('title '))).text, 'title Simulated Panel.vi');
+  const { frame } = await c.next((m) => m.frame);
+  assert.deepEqual(frame.rects.map(({ x, y, w, h }) => ({ x, y, w, h })), [{ x: 0, y: 0, w: frame.width, h: frame.height }]);
+  const img = new Uint32Array(frame.width * frame.height);
+  paint(img, frame.width, frame);
   // With the pump off the simulated panel is static, so a fresh render must equal what we rebuilt.
   assert.deepEqual(img, srv.panel.render().slice());
-
-  // Without acks the server stops after FRAMES_IN_FLIGHT frames, even with a changing panel.
-  c.send({ t: 'mouse', e: 'down', x: 30, y: 50, b: 0, mods: 0 }); // toggles the pump -> chart animates
-  const second = decodeFrame((await c.next((m) => m.binary)).binary);
-  assert.equal(second.keyframe, false);
-  assert.ok(second.tiles.length > 0 && second.tiles.length < 40, 'only dirty tiles are sent');
-  await assert.rejects(c.next((m) => m.binary, 300), /timed out/);
-
-  c.send({ t: 'ack', seq: second.seq });
-  const third = decodeFrame((await c.next((m) => m.binary)).binary);
-  assert.equal(third.seq, second.seq + 1);
-  c.send({ t: 'mouse', e: 'down', x: 30, y: 50, b: 0, mods: 0 }); // pump off again for other tests
   c.ws.close();
 });
 
-test('single-controller mode: viewers are read-only until they request control', async () => {
-  const a = await hello();
-  assert.equal((await a.next((m) => m.t === 'welcome')).role, 'controller');
-  const b = await hello();
-  assert.equal((await b.next((m) => m.t === 'welcome')).role, 'viewer');
+test('input becomes Win32 messages; only dirty bands follow; acks pace the stream', async () => {
+  const c = connect();
+  await c.opened;
+  const { frame: first } = await c.next((m) => m.frame);
+  const img = new Uint32Array(first.width * first.height);
+  paint(img, first.width, first);
+  c.ws.send(`a ${first.seq}`);
 
-  b.send({ t: 'set', id: 'c2', value: 1 });
-  assert.equal((await b.next((m) => m.t === 'error')).code, 'not-controller');
+  // Click "Pump On": the chart starts animating, so frames keep coming.
+  srv.posted.length = 0;
+  c.ws.send('m 513 30 50 1');
+  c.ws.send('m 514 30 50 0');
+  const { frame: second } = await c.next((m) => m.frame);
+  assert.ok(second.rects.length > 0);
+  assert.ok(second.rects.every((r) => r.w * r.h < first.width * first.height), 'only dirty bands are sent');
+  assert.deepEqual(srv.posted.map((p) => p.msg), [0x201, 0x202]);
+  paint(img, first.width, second);
 
-  b.send({ t: 'control', action: 'request' });
-  assert.equal((await b.next((m) => m.t === 'role' && m.role === 'controller')).role, 'controller');
-  assert.equal((await a.next((m) => m.t === 'role' && m.role === 'viewer')).role, 'viewer');
+  // Without acks the server stops after FRAMES_IN_FLIGHT unacknowledged frames.
+  const inFlight = [second];
+  for (let i = 1; i < FRAMES_IN_FLIGHT; i++) inFlight.push((await c.next((m) => m.frame)).frame);
+  await assert.rejects(c.next((m) => m.frame, 300), /timed out/);
 
-  b.send({ t: 'set', id: 'c2', value: 99 });
-  const v = await a.next((m) => m.t === 'value');
-  assert.deepEqual(v, { t: 'value', id: 'c2', value: 10 }, 'value is clamped and broadcast to all sessions');
+  c.ws.send(`a ${inFlight.at(-1).seq}`);
+  const { frame: next } = await c.next((m) => m.frame);
+  assert.equal(next.seq, inFlight.at(-1).seq + 1);
 
-  b.send({ t: 'set', id: 'c6', value: 1 });
-  assert.equal((await b.next((m) => m.t === 'error')).code, 'rejected', 'indicators are not writable');
-
-  a.ws.close();
-  b.ws.close();
+  c.ws.send('m 513 30 50 1'); // pump off again for other tests
+  c.ws.send('m 514 30 50 0');
+  c.ws.close();
 });
 
-test('ping is answered with the same timestamp', async () => {
-  const c = await hello();
-  c.send({ t: 'ping', ts: 1234.5 });
-  assert.equal((await c.next((m) => m.t === 'pong')).ts, 1234.5);
+test('keyboard and wheel messages reach the panel; malformed and disallowed ones are ignored', async () => {
+  const c = connect();
+  await c.opened;
+  await c.next((m) => m.frame);
+  srv.posted.length = 0;
+  c.ws.send('m 513 50 270 1');       // focus Operator
+  c.ws.send('k 258 120 1');          // WM_CHAR 'x'
+  c.ws.send('m 522 40 110 7864320'); // WM_MOUSEWHEEL +120 over Setpoint
+  c.ws.send('m 16 1 1 0');           // WM_CLOSE: not on the allow list
+  c.ws.send('m 513 1 2');            // malformed
+  c.ws.send('hello');                // malformed
+  c.ws.send('a 1');
+  await new Promise((r) => setTimeout(r, 100));
+  assert.deepEqual(srv.posted.map((p) => p.msg), [0x201, 0x100, 0x102, 0x101, 0x20a]);
+  assert.ok(srv.panel.state.operator.endsWith('X'));
+  assert.equal(srv.panel.state.setpoint, 2.6);
   c.ws.close();
 });

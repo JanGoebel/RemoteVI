@@ -107,11 +107,15 @@ export function buildResponseHead(status, headers = {}) {
   return s + '\r\n';
 }
 
-/** Security headers added to every static response. */
+/**
+ * Security headers added to every static response. The client is one self-contained
+ * file, so inline script and style are allowed; nothing may be loaded from anywhere
+ * else, and only this origin may be connected to.
+ */
 export const SECURITY_HEADERS = Object.freeze({
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'no-referrer',
   'Cache-Control': 'no-store',
-  'Content-Security-Policy': "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-ancestors 'none'",
+  'Content-Security-Policy': "default-src 'none'; connect-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'",
 });

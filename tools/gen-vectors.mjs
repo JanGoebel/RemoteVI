@@ -6,18 +6,17 @@
 //   node tools/gen-vectors.mjs --check   exit 1 if committed vectors are stale
 //
 // Byte strings are lowercase hex. Pixels are 0x00RRGGBB integers, row-major.
-// Expected values come from independent oracles where one exists (node:crypto
-// for SHA-1/Base64, RFC 6455 / RFC 4648 examples); QOI and tile vectors come
-// from the reference implementation and are cross-checked by the round-trip tests.
+// Expected values come from independent oracles where one exists (RFC 6455
+// examples); rect, frame and input vectors come from the reference implementation
+// in tools/lib.
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { encodeQoi } from './lib/qoi-encode.mjs';
-import { diffTiles, encodeTile, tileGrid } from './lib/tiles.mjs';
-import { encodeFrame, FRAME_FLAG_KEYFRAME } from '../web/js/protocol.js';
+import { dirtyRects } from './lib/rects.mjs';
+import { encodeFrame, parseInput, mouseLParam } from './lib/protocol.mjs';
+import { translateInput } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
 
@@ -31,31 +30,6 @@ function mulberry32(seed) {
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// --- SHA-1 / Base64 (WebSocket handshake building blocks) ----------------------
-
-function sha1Vectors() {
-  // Lengths 55/56/63/64/65 straddle the SHA-1 padding boundaries - the classic bug spot.
-  const inputs = ['', 'abc', 'The quick brown fox jumps over the lazy dog',
-    'a'.repeat(55), 'a'.repeat(56), 'a'.repeat(63), 'a'.repeat(64), 'a'.repeat(65), 'a'.repeat(1000),
-    'dGhlIHNhbXBsZSBub25jZQ==258EAFA5-E914-47DA-95CA-C5AB0DC85B11'];
-  return {
-    description: 'SHA-1 digests. input is ASCII; digest is hex.',
-    cases: inputs.map((input) => ({ input, digest: createHash('sha1').update(input, 'latin1').digest('hex') })),
-  };
-}
-
-function base64Vectors() {
-  const strings = ['', 'f', 'fo', 'foo', 'foob', 'fooba', 'foobar']; // RFC 4648 section 10
-  const binary = [[0], [0xff, 0xfe], [0xfb, 0xff, 0xbf], Array.from({ length: 20 }, (_, i) => i * 13)];
-  return {
-    description: 'Standard Base64 with padding. bytes is hex.',
-    cases: [
-      ...strings.map((s) => ({ bytes: hex(Buffer.from(s, 'latin1')), base64: Buffer.from(s, 'latin1').toString('base64') })),
-      ...binary.map((b) => ({ bytes: hex(b), base64: Buffer.from(b).toString('base64') })),
-    ],
   };
 }
 
@@ -128,7 +102,7 @@ function httpVectors() {
   };
 }
 
-// --- QOI / tiles / frames ---------------------------------------------------------
+// --- dirty rects / frames / input ------------------------------------------------
 
 function image(w, h, fn) {
   const px = new Uint32Array(w * h);
@@ -136,76 +110,103 @@ function image(w, h, fn) {
   return px;
 }
 
-function qoiVectors() {
-  const rnd = mulberry32(42);
-  const palette = [0xe6e6e6, 0x000000, 0xffffff, 0x2ecc40, 0x1f6feb];
-  const images = [
-    { name: '1x1 black (initial pixel run)', w: 1, h: 1, px: image(1, 1, () => 0) },
-    { name: '1x1 white (wraparound OP_DIFF)', w: 1, h: 1, px: image(1, 1, () => 0xffffff) },
-    { name: '1x1 mid grey (OP_RGB)', w: 1, h: 1, px: image(1, 1, () => 0x808080) },
-    { name: 'solid 8x8 panel grey', w: 8, h: 8, px: image(8, 8, () => 0xe6e6e6) },
-    { name: 'run longer than 62', w: 100, h: 1, px: image(100, 1, (x) => (x === 0 ? 0x123456 : 0xabcdef)) },
-    { name: 'small diffs (OP_DIFF)', w: 16, h: 1, px: image(16, 1, (x) => ((100 + (x % 2)) << 16) | ((100 - (x % 3 === 0 ? 1 : 0)) << 8) | (100 + (x & 1))) },
-    { name: 'gradient (OP_LUMA)', w: 16, h: 4, px: image(16, 4, (x, y) => ((x * 12) << 16) | ((y * 40 + x * 10) << 8) | (x * 11)) },
-    { name: 'palette alternation (OP_INDEX)', w: 12, h: 3, px: image(12, 3, (x, y) => palette[(x + y) % palette.length]) },
-    { name: 'wraparound diffs', w: 4, h: 1, px: image(4, 1, (x) => [0x000000, 0xffffff, 0x000000, 0x010101][x]) },
-    { name: 'random 13x7', w: 13, h: 7, px: image(13, 7, () => Math.floor(rnd() * 0x1000000)) },
+function rectVectors() {
+  // 10x7 panel with 4x4 tiles: tile grid is 3 columns (4,4,2) x 2 rows (4,3).
+  const w = 10, h = 7, tile = 4;
+  const base = image(w, h, (x, y) => 0x101010 * ((x + y) % 4));
+  const change = (pts) => {
+    const px = base.slice();
+    for (const [x, y] of pts) px[y * w + x] ^= 0xffffff;
+    return px;
+  };
+  const cases = [
+    { name: 'no previous capture: whole panel', prev: null, pts: [] },
+    { name: 'identical: nothing dirty', prev: base, pts: [] },
+    { name: 'one pixel in the first tile', prev: base, pts: [[1, 1]] },
+    { name: 'first and last tile of a row merge into one band', prev: base, pts: [[0, 0], [9, 3]] },
+    { name: 'clipped bottom-right tile', prev: base, pts: [[9, 6]] },
+    { name: 'one band per tile row', prev: base, pts: [[5, 0], [0, 6]] },
   ];
   return {
-    description: 'QOI encodings (3 channels, sRGB) of 0x00RRGGBB pixel arrays. The G encoder must be byte-identical.',
-    cases: images.map(({ name, w, h, px }) => ({ name, width: w, height: h, pixels: Array.from(px), qoi: hex(encodeQoi(px, w, { x: 0, y: 0, w, h })) })),
-  };
-}
-
-function tileVectors() {
-  // 100x40 with 32 px tiles: a 4x2 grid whose right column and bottom row are clipped.
-  const w = 100, h = 40, size = 32;
-  const base = image(w, h, (x, y) => (x < 50 ? 0xe6e6e6 : ((x * 3) << 16) | (y << 8)));
-  const changed = base.slice();
-  changed[5 * w + 98] = 0xff0000; // tile (96,0), the clipped 4x32 one
-  changed[39 * w + 0] = 0x00ff00; // tile (0,32), the clipped 32x8 one
-  return {
-    description: 'Tile grid / diff / per-tile encoding. encoding: 0 SOLID, 1 QOI, 2 RAW_RGB.',
-    tileSize: size,
-    grid: { width: w, height: h, tiles: tileGrid(w, h, size) },
-    diff: {
-      width: w, height: h, before: Array.from(base), after: Array.from(changed),
-      dirty: diffTiles(base, changed, w, h, size).map(({ x, y, w: tw, h: th }) => ({ x, y, w: tw, h: th })),
-    },
-    // Each tile of diff.before, encoded.
-    encodeTile: tileGrid(w, h, size).map((t) => {
-      const e = encodeTile(base, w, t);
-      return { ...t, encoding: e.encoding, data: hex(e.data) };
+    description: 'Capture/Dirty Rects.vi. pixels are 0x00RRGGBB row-major; prev null means no previous capture. '
+      + 'Dirty tiles of each tile row are merged into one rectangle spanning first to last dirty tile.',
+    width: w, height: h, tileSize: tile, prev: Array.from(base),
+    cases: cases.map((c) => {
+      const cur = change(c.pts);
+      return { name: c.name, hasPrev: c.prev !== null, cur: Array.from(cur), rects: dirtyRects(c.prev, cur, w, h, tile) };
     }),
   };
 }
 
 function frameVectors() {
-  // 12x4 panel, three 4x4 tiles: flat colour (SOLID), smooth gradient (QOI), noise (RAW).
-  const rnd = mulberry32(7);
-  const px = image(12, 4, (x, y) => (x < 4 ? 0x336699 : x < 8 ? (x << 8) | y : Math.floor(rnd() * 0x1000000)));
-  const tiles = [0, 4, 8].map((x) => encodeTile(px, 12, { x, y: 0, w: 4, h: 4 }));
+  const png1 = Buffer.from('89504e470d0a1a0a', 'hex'); // stand-ins: the frame layout does not look inside
+  const png2 = Buffer.from('0102030405', 'hex');
+  const rects = [{ x: 0, y: 0, png: png1 }, { x: 640, y: 64, png: png2 }];
   return {
-    description: 'Complete FRAME messages (docs/protocol.md section 3).',
-    cases: [{
-      name: 'keyframe with one SOLID, one QOI and one RAW_RGB tile',
-      flags: FRAME_FLAG_KEYFRAME, seq: 7, width: 12, height: 4,
-      pixels: Array.from(px),
-      tiles: tiles.map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h, encoding: t.encoding, data: hex(t.data) })),
-      message: hex(encodeFrame({ flags: FRAME_FLAG_KEYFRAME, seq: 7, width: 12, height: 4, tiles })),
-    }],
+    description: 'Protocol/Frame Encode.vi: complete FRAME messages (docs/protocol.md). png/message are hex.',
+    cases: [
+      { name: 'two rects', seq: 7, width: 800, height: 600,
+        rects: rects.map((r) => ({ x: r.x, y: r.y, png: hex(r.png) })), message: hex(encodeFrame(7, 800, 600, rects)) },
+      { name: 'no rects, large seq', seq: 4294967295, width: 1, height: 1, rects: [], message: hex(encodeFrame(4294967295, 1, 1, [])) },
+    ],
+  };
+}
+
+function inputVectors() {
+  const texts = [
+    'm 513 120 45 1', 'm 512 0 0 0', 'm 522 10 20 4287102976', 'k 256 37 16777217', 'k 257 37 3238002689',
+    'k 258 65 1', 'a 12', 'a', 'm 513 1 2', 'x 1 2 3', 'm 513 a b c', '', 'm 513 1.5 2 0',
+    'a ', 'a  12', 'a 12 ', 'a 4294967295', 'a 4294967296', 'k 256 -2147483648 0', 'k 256 -2147483649 0', 'a 1x', 'a -', 'a 1e3',
+  ];
+  return {
+    description: 'Protocol/Parse Input.vi. result null means: ignore the message. '
+      + 'lParam is the mouse lParam for client point (cx, cy).',
+    cases: texts.map((text) => ({ text, result: parseInput(text) })),
+    mouseLParam: [[0, 0], [120, 45], [-5, 10], [1919, 1079]].map(([cx, cy]) => ({ cx, cy, lParam: mouseLParam(cx, cy) })),
+  };
+}
+
+function translateVectors() {
+  // Panel origin (100,200) on screen; client area origin (100,154): a 46 px toolbar.
+  const geo = { panelX: 100, panelY: 200, clientX: 100, clientY: 154 };
+  const steps = [
+    ['hover', 'm 512 10 20 0', false],
+    ['left down: client coords, starts tracking', 'm 513 10 20 1', false],
+    ['drag move while tracking: screen coords', 'm 512 50 20 1', true],
+    ['left up while tracking: screen coords, ends tracking', 'm 514 50 20 0', true],
+    ['up without tracking: client coords', 'm 514 50 20 0', false],
+    ['double click down: client, tracking', 'm 515 10 20 1', false],
+    ['right down', 'm 516 5 5 2', false],
+    ['wheel: always screen coords', 'm 522 10 20 7864320', false],
+    ['wheel while tracking', 'm 522 10 20 7864320', true],
+    ['negative client y (toolbar area)', 'm 512 0 0 0', false],
+    ['char is wrapped in VK 0xE8 down/up', 'k 258 65 1', false],
+    ['special key passes through', 'k 256 13 1', false],
+    ['key up passes through', 'k 257 37 3238002689', false],
+    ['not allowed: WM_CLOSE', 'm 16 1 1 0', false],
+    ['not allowed: WM_SYSKEYDOWN', 'k 260 18 1', false],
+    ['ack: nothing to post', 'a 5', false],
+  ];
+  return {
+    description: 'Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. '
+      + 'input is a client message (see input.json); trackingBefore/After is the per-client button-held state. '
+      + 'lParam is unsigned 32-bit.',
+    geo,
+    cases: steps.map(([name, text, tracking]) => {
+      const r = translateInput(parseInput(text), geo, tracking);
+      return { name, input: text, trackingBefore: tracking, trackingAfter: r.tracking, posts: r.posts };
+    }),
   };
 }
 
 export function buildVectors() {
   return {
-    'sha1.json': sha1Vectors(),
-    'base64.json': base64Vectors(),
     'websocket.json': websocketVectors(),
     'http.json': httpVectors(),
-    'qoi.json': qoiVectors(),
-    'tiles.json': tileVectors(),
+    'rects.json': rectVectors(),
     'frame.json': frameVectors(),
+    'input.json': inputVectors(),
+    'translate.json': translateVectors(),
   };
 }
 

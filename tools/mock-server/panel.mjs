@@ -1,6 +1,6 @@
-// A simulated LabVIEW front panel: a software-rendered bitmap plus the control
-// metadata the real toolkit derives via VI Server. Input semantics here are the
-// reference behaviour for the G ControlAdapter classes.
+// A simulated LabVIEW front panel for the reference server: a software-rendered
+// bitmap that reacts to the same Win32 mouse and keyboard messages the LabVIEW
+// toolkit posts to a real panel window.
 
 import { drawText } from './font5x7.mjs';
 
@@ -20,6 +20,7 @@ export class SimulatedPanel {
     this.pixels = new Uint32Array(this.width * this.height);
     this.t0 = Date.now();
     this.dragging = null;
+    this.focus = null;
     this.state = { pump: false, setpoint: 2.5, gain: 4, mode: 1, operator: 'JANE', history: [] };
     this.controls = [
       { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30] },
@@ -36,51 +37,46 @@ export class SimulatedPanel {
     return this.controls.find((c) => c.id === id);
   }
 
-  /** Layout with current values for overlay-editable controls. */
-  layout() {
-    const values = { c2: this.state.setpoint, c4: this.state.mode, c5: this.state.operator };
-    return this.controls.map((c) => (c.id in values ? { ...c, value: values[c.id] } : c));
-  }
-
-  // --- input (returns list of {id, value} changes for overlay-visible values) ---
-
-  set(id, value) {
-    const c = this.byId(id);
-    if (!c || c.readonly) throw new Error(`control ${id} is not writable`);
-    switch (id) {
-      case 'c2':
-        if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('numeric expected');
-        this.state.setpoint = Math.min(c.max, Math.max(c.min, value));
-        return [{ id, value: this.state.setpoint }];
-      case 'c4':
-        if (!Number.isInteger(value) || value < 0 || value >= c.items.length) throw new Error('bad enum index');
-        this.state.mode = value;
-        return [{ id, value }];
-      case 'c5':
-        if (typeof value !== 'string') throw new Error('string expected');
-        this.state.operator = value.slice(0, 24);
-        return [{ id, value: this.state.operator }];
-      default:
-        throw new Error(`control ${id} cannot be set directly`);
-    }
-  }
-
-  mouse(ev) {
-    const hit = this.hit(ev.x, ev.y);
-    if (ev.e === 'down' && ev.b === 0) {
-      if (hit?.id === 'c1') this.state.pump = !this.state.pump; // switch when pressed
-      if (hit?.id === 'c3') {
-        this.dragging = 'c3';
-        this.slide(ev.x);
+  /**
+   * Apply one Win32 mouse message at panel coordinates - the same messages the
+   * LabVIEW toolkit posts to the real panel window. Reference behaviour only:
+   * LabVIEW itself decides what a click does on a real panel.
+   */
+  post(msg, x, y, wParam) {
+    const hit = this.hit(x, y);
+    switch (msg) {
+      case 0x0201: // WM_LBUTTONDOWN
+      case 0x0203: // WM_LBUTTONDBLCLK
+        this.focus = hit?.id === 'c5' ? 'c5' : null;
+        if (hit?.id === 'c1') this.state.pump = !this.state.pump; // switch when pressed
+        if (hit?.id === 'c4') this.state.mode = (this.state.mode + 1) % hit.items.length;
+        if (hit?.id === 'c3') {
+          this.dragging = 'c3';
+          this.slide(x);
+        }
+        break;
+      case 0x0200: // WM_MOUSEMOVE
+        if (this.dragging === 'c3' && (wParam & 1)) this.slide(x);
+        break;
+      case 0x0202: // WM_LBUTTONUP
+        this.dragging = null;
+        break;
+      case 0x020a: { // WM_MOUSEWHEEL: signed delta in the high word of wParam
+        const delta = (wParam >>> 16) << 16 >> 16;
+        if (hit?.id === 'c2') {
+          const v = this.state.setpoint + Math.sign(delta) * 0.1;
+          this.state.setpoint = Math.round(Math.min(10, Math.max(-10, v)) * 10) / 10;
+        }
+        break;
       }
-    } else if (ev.e === 'move' && this.dragging === 'c3') {
-      this.slide(ev.x);
-    } else if (ev.e === 'up') {
-      this.dragging = null;
-    } else if (ev.e === 'wheel' && hit?.id === 'c2') {
-      return this.set('c2', Math.round((this.state.setpoint - ev.dy * 0.1) * 10) / 10);
     }
-    return [];
+  }
+
+  /** Apply one Win32 keyboard message; only WM_CHAR into the focused string matters here. */
+  key(msg, wParam) {
+    if (msg !== 0x0102 || this.focus !== 'c5') return;
+    if (wParam === 8) this.state.operator = this.state.operator.slice(0, -1);
+    else if (wParam >= 32 && this.state.operator.length < 24) this.state.operator += String.fromCharCode(wParam).toUpperCase();
   }
 
   slide(x) {

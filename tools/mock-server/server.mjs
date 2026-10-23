@@ -1,122 +1,65 @@
 #!/usr/bin/env node
-// RemoteVI reference server.
+// RemoteVI reference server, protocol v2.
 //
-// Implements the server half of docs/protocol.md on raw TCP sockets - the same
-// building blocks the G implementation has (TCP Listen/Read/Write) - against a
-// simulated front panel. Use it to develop the web client without LabVIEW and
-// as the behavioural reference for the LabVIEW side.
+// Does what the LabVIEW toolkit's server loop does (source/RemoteVI.lvlib,
+// Server/Server Loop.vi), in the same single-loop shape, against a simulated
+// panel: serve the one-file web client, upgrade /ws, stream dirty rectangles as
+// PNGs with ack-based flow control, and turn input messages into Win32 messages.
+// Use it to develop the web client without LabVIEW and as the behavioural
+// reference for the G code.
 //
-//   node tools/mock-server/server.mjs [--port 8080] [--host 127.0.0.1]
-//        [--token <t> | --no-token] [--mode single|everyone|view] [--fps 30]
+//   node tools/mock-server/server.mjs [--port 8080] [--host 127.0.0.1] [--fps 30] [--view-only]
 
 import net from 'node:net';
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { PROTOCOL_VERSION, FRAME_FLAG_KEYFRAME, encodeFrame } from '../../web/js/protocol.js';
-import { diffTiles, encodeTile, DEFAULT_TILE_SIZE } from '../lib/tiles.mjs';
 import { findHeadEnd, parseRequestHead, isWebSocketUpgrade, buildResponseHead, HttpError, SECURITY_HEADERS } from '../lib/http.mjs';
 import {
   acceptKey, decodeClientFrame, encodeServerFrame, closePayload, WsError,
   OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG, CLOSE_NORMAL, CLOSE_POLICY, CLOSE_PROTOCOL_ERROR,
 } from '../lib/websocket.mjs';
+import { encodeFrame, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
+import { translateInput } from '../lib/input.mjs';
+import { dirtyRects, crop } from '../lib/rects.mjs';
+import { encodePng } from '../lib/png-encode.mjs';
 import { SimulatedPanel } from './panel.mjs';
 
 const HEAD_TIMEOUT_MS = 5000;
-const HELLO_TIMEOUT_MS = 3000;
-const MAX_CONNECTIONS = 16;
-const FRAMES_IN_FLIGHT = 2;
-const MAX_SOCKET_BACKLOG = 1 << 20;
-
-const MIME = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
-};
-
-// --- configuration --------------------------------------------------------------
+const MAX_CLIENTS = 8;
 
 export function startServer(opts = {}) {
   const cfg = {
-    port: 8080, host: '127.0.0.1', mode: 'single', fps: 30, token: randomBytes(9).toString('base64url'),
-    webRoot: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web'),
-    log: console.log,
+    port: 8080, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log,
+    indexPath: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/index.html'),
     ...opts,
   };
-  if (!['single', 'everyone', 'view'].includes(cfg.mode)) throw new Error(`invalid mode ${cfg.mode}`);
-
-  const files = loadStaticFiles(cfg.webRoot);
+  // The toolkit embeds index.html as a string constant; read it once, like that.
+  const index = fs.readFileSync(cfg.indexPath);
   const panel = new SimulatedPanel();
-  const sessions = new Set();
-  let owner = null;
-  let nextSessionId = 1;
-  let connections = 0;
-
-  // --- static files: a fixed table, never a filesystem lookup per request ------
-
-  function loadStaticFiles(root) {
-    const table = new Map();
-    const walk = (dir) => {
-      for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-        const full = path.join(dir, ent.name);
-        if (ent.isDirectory()) walk(full);
-        else if (MIME[path.extname(ent.name)]) {
-          const url = '/' + path.relative(root, full).split(path.sep).join('/');
-          table.set(url, { type: MIME[path.extname(ent.name)], body: fs.readFileSync(full) });
-        }
-      }
-    };
-    walk(root);
-    table.set('/', table.get('/index.html'));
-    return table;
-  }
-
-  // --- roles -----------------------------------------------------------------
-
-  const roleOf = (s) => (cfg.mode === 'everyone' ? 'controller' : cfg.mode === 'view' ? 'viewer' : s === owner ? 'controller' : 'viewer');
-
-  function broadcastRoles() {
-    for (const s of sessions) s.sendJson({ t: 'role', role: roleOf(s), owner: owner?.name ?? null });
-  }
-
-  function releaseOwner(s) {
-    if (owner === s) {
-      owner = null;
-      broadcastRoles();
-    }
-  }
-
-  // --- connection handling ---------------------------------------------------
+  const clients = new Set();
+  /** Every input message that reached the "panel window", for tests. */
+  const posted = [];
 
   const server = net.createServer((socket) => {
-    if (connections >= MAX_CONNECTIONS) {
-      socket.end(buildResponseHead(503, { 'Content-Length': '0' }));
-      return;
-    }
-    connections++;
-    socket.setNoDelay(true); // latency over throughput: no Nagle
-    socket.on('close', () => connections--);
+    socket.setNoDelay(true);
     socket.on('error', () => {});
-    handleHttp(socket);
+    readHead(socket);
   });
 
-  function handleHttp(socket) {
+  function readHead(socket) {
     let buf = Buffer.alloc(0);
     const timer = setTimeout(() => fail(new HttpError(408, 'timeout')), HEAD_TIMEOUT_MS);
-
-    function fail(err) {
+    const fail = (err) => {
       clearTimeout(timer);
-      const status = err instanceof HttpError ? err.status : 400;
-      socket.end(buildResponseHead(status, { 'Content-Length': '0' }));
-    }
-
-    function onData(chunk) {
+      socket.end(buildResponseHead(err instanceof HttpError ? err.status : 400, { 'Content-Length': '0' }));
+    };
+    const onData = (chunk) => {
       buf = Buffer.concat([buf, chunk]);
-      let end;
       try {
-        end = findHeadEnd(buf);
+        const end = findHeadEnd(buf);
         if (end < 0) return;
         socket.off('data', onData);
         clearTimeout(timer);
@@ -125,50 +68,51 @@ export function startServer(opts = {}) {
         socket.off('data', onData);
         fail(err);
       }
-    }
+    };
     socket.on('data', onData);
   }
 
   function route(socket, req, rest) {
     if (req.path === '/ws') {
       if (!isWebSocketUpgrade(req)) throw new HttpError(426, 'websocket upgrade required');
-      // Browsers always send Origin on WebSocket handshakes; reject cross-site pages.
+      // Browsers always send Origin on WebSocket handshakes: refuse other sites' pages.
       const origin = req.headers['origin'];
       if (origin !== undefined) {
-        let originHost;
-        try { originHost = new URL(origin).host; } catch { originHost = null; }
-        if (originHost !== req.headers['host']) throw new HttpError(403, 'cross-origin websocket');
+        let host = null;
+        try { host = new URL(origin).host; } catch { /* invalid origin */ }
+        if (host !== req.headers['host']) throw new HttpError(403, 'cross-origin websocket');
       }
+      if (clients.size >= MAX_CLIENTS) throw new HttpError(503, 'too many clients');
       socket.write(buildResponseHead(101, {
         Upgrade: 'websocket', Connection: 'Upgrade', 'Sec-WebSocket-Accept': acceptKey(req.headers['sec-websocket-key']),
       }));
-      new Session(socket, rest);
+      new Client(socket, rest);
       return;
     }
-    const file = files.get(req.path);
-    if (!file) throw new HttpError(404, 'not found');
+    if (req.method !== 'GET' || (req.path !== '/' && req.path !== '/index.html')) throw new HttpError(404, 'not found');
     socket.end(Buffer.concat([
-      Buffer.from(buildResponseHead(200, { 'Content-Type': file.type, 'Content-Length': String(file.body.length), ...SECURITY_HEADERS }), 'latin1'),
-      file.body,
+      Buffer.from(buildResponseHead(200, {
+        'Content-Type': 'text/html; charset=utf-8', 'Content-Length': String(index.length), ...SECURITY_HEADERS,
+      }), 'latin1'),
+      index,
     ]));
   }
 
-  // --- WebSocket sessions ----------------------------------------------------
-
-  class Session {
+  class Client {
     constructor(socket, initial) {
       this.socket = socket;
-      this.id = nextSessionId++;
-      this.name = `${socket.remoteAddress}#${this.id}`;
       this.buf = Buffer.alloc(0);
-      this.authed = false;
       this.seq = 0;
       this.acked = 0;
       this.lastSent = null;
       this.closed = false;
-      this.helloTimer = setTimeout(() => this.close(4401, 'hello timeout'), HELLO_TIMEOUT_MS);
+      this.tracking = false;
+      clients.add(this);
       socket.on('data', (d) => this.onData(d));
       socket.on('close', () => this.onClose());
+      this.write(OP_TEXT, 'title Simulated Panel.vi');
+      this.write(OP_TEXT, `viewonly ${cfg.viewOnly ? 1 : 0}`);
+      cfg.log(`client connected (${clients.size})`);
       if (initial.length) this.onData(initial);
     }
 
@@ -191,89 +135,42 @@ export function startServer(opts = {}) {
       if (opcode === OP_PING) return this.write(OP_PONG, payload);
       if (opcode === OP_PONG) return;
       if (opcode === OP_CLOSE) return this.close(CLOSE_NORMAL, '');
-      // Client messages are small JSON objects; fragmentation is not needed and is refused.
       if (!fin || opcode !== OP_TEXT) return this.close(CLOSE_POLICY, 'only unfragmented text messages accepted');
-      let msg;
-      try { msg = JSON.parse(payload.toString('utf8')); } catch { return this.close(CLOSE_POLICY, 'invalid JSON'); }
-      if (!msg || typeof msg.t !== 'string') return this.close(CLOSE_POLICY, 'invalid message');
-      this.onMessage(msg);
-    }
-
-    onMessage(msg) {
-      if (!this.authed) {
-        if (msg.t !== 'hello') return this.close(4401, 'hello expected');
-        if (msg.v !== PROTOCOL_VERSION) return this.close(4400, `protocol version ${PROTOCOL_VERSION} required`);
-        if (!tokenOk(msg.token)) return this.close(4403, 'invalid token');
-        clearTimeout(this.helloTimer);
-        this.authed = true;
-        sessions.add(this);
-        if (cfg.mode === 'single' && owner === null) owner = this;
-        this.sendJson({ t: 'welcome', v: PROTOCOL_VERSION, session: String(this.id), vi: 'Simulated Panel.vi',
-          panel: { w: panel.width, h: panel.height }, mode: cfg.mode, role: roleOf(this) });
-        this.sendJson({ t: 'layout', controls: panel.layout() });
-        broadcastRoles();
-        cfg.log(`session ${this.name} connected (${sessions.size} active)`);
+      const msg = parseInput(payload.toString('latin1'));
+      if (!msg) return; // malformed input is ignored, not fatal
+      if (msg.kind === 'ack') {
+        if (msg.seq <= this.seq) this.acked = Math.max(this.acked, msg.seq);
         return;
       }
-      switch (msg.t) {
-        case 'ack':
-          if (Number.isInteger(msg.seq) && msg.seq <= this.seq) this.acked = Math.max(this.acked, msg.seq);
-          return;
-        case 'ping':
-          return this.sendJson({ t: 'pong', ts: msg.ts });
-        case 'refresh':
-          this.lastSent = null;
-          return;
-        case 'control':
-          if (cfg.mode !== 'single') return;
-          if (msg.action === 'request' && owner !== this) {
-            // The newest requester takes over, as with LabVIEW Remote Panels' "Request Control".
-            owner = this;
-            broadcastRoles();
-          } else if (msg.action === 'release') {
-            releaseOwner(this);
-          }
-          return;
-        case 'mouse':
-        case 'key':
-        case 'set': {
-          if (roleOf(this) !== 'controller') return this.sendJson({ t: 'error', code: 'not-controller', message: 'Request control first' });
-          try {
-            const changes = msg.t === 'set' ? panel.set(msg.id, msg.value) : msg.t === 'mouse' ? panel.mouse(msg) : [];
-            for (const c of changes) for (const s of sessions) s.sendJson({ t: 'value', ...c });
-          } catch (err) {
-            this.sendJson({ t: 'error', code: 'rejected', message: err.message });
-          }
-          return;
-        }
-        default:
-          return; // unknown message types are ignored for forward compatibility
+      if (cfg.viewOnly) return;
+      // Same translation the LabVIEW server does; the simulated window sits at the
+      // screen origin with no toolbar, so client = panel coordinates.
+      const t = translateInput(msg, { panelX: 0, panelY: 0, clientX: 0, clientY: 0 }, this.tracking);
+      this.tracking = t.tracking;
+      for (const p of t.posts) {
+        posted.push(p);
+        if (p.msg >= 0x200) panel.post(p.msg, p.lParam & 0xffff, p.lParam >>> 16, p.wParam >>> 0);
+        else panel.key(p.msg, p.wParam);
       }
     }
 
-    sendJson(obj) {
-      this.write(OP_TEXT, JSON.stringify(obj));
+    /** Send the changes since this client's last frame, if flow control allows. */
+    push(pixels, pngCache) {
+      if (this.closed || this.seq - this.acked >= FRAMES_IN_FLIGHT) return;
+      const rects = dirtyRects(this.lastSent, pixels, panel.width, panel.height);
+      if (!rects.length) return;
+      const encoded = rects.map((r) => {
+        const key = `${r.x},${r.y},${r.w},${r.h}`;
+        if (!pngCache.has(key)) pngCache.set(key, encodePng(crop(pixels, panel.width, r), r.w, r.h));
+        return { x: r.x, y: r.y, png: pngCache.get(key) };
+      });
+      this.seq++;
+      this.write(OP_BINARY, encodeFrame(this.seq, panel.width, panel.height, encoded));
+      this.lastSent = pixels.slice();
     }
 
     write(opcode, payload) {
       if (!this.closed) this.socket.write(encodeServerFrame(opcode, payload));
-    }
-
-    /** Send a frame if flow control allows. `encoded` caches tile encodings across sessions. */
-    pushFrame(pixels, encoded) {
-      if (this.seq - this.acked >= FRAMES_IN_FLIGHT || this.socket.writableLength > MAX_SOCKET_BACKLOG) return;
-      const keyframe = this.lastSent === null;
-      const dirty = diffTiles(this.lastSent, pixels, panel.width, panel.height, DEFAULT_TILE_SIZE);
-      if (!dirty.length) return;
-      const tiles = dirty.map((t) => {
-        const k = t.y * panel.width + t.x;
-        if (!encoded.has(k)) encoded.set(k, encodeTile(pixels, panel.width, t));
-        return encoded.get(k);
-      });
-      this.seq++;
-      this.write(OP_BINARY, Buffer.from(encodeFrame({ flags: keyframe ? FRAME_FLAG_KEYFRAME : 0, seq: this.seq,
-        width: panel.width, height: panel.height, tiles })));
-      this.lastSent = pixels.slice();
     }
 
     close(code, reason) {
@@ -285,42 +182,29 @@ export function startServer(opts = {}) {
     }
 
     onClose() {
-      clearTimeout(this.helloTimer);
       this.closed = true;
-      if (sessions.delete(this)) {
-        releaseOwner(this);
-        cfg.log(`session ${this.name} closed (${sessions.size} active)`);
-      }
+      if (clients.delete(this)) cfg.log(`client disconnected (${clients.size})`);
     }
   }
 
-  function tokenOk(token) {
-    if (cfg.token === null) return true;
-    if (typeof token !== 'string') return false;
-    const a = Buffer.from(token);
-    const b = Buffer.from(cfg.token);
-    return a.length === b.length && timingSafeEqual(a, b);
-  }
-
-  // --- capture loop ----------------------------------------------------------
-
+  // The capture loop: one capture per tick, shared by all clients; each client
+  // diffs against what it was last sent.
   const timer = setInterval(() => {
-    if (!sessions.size) return;
+    if (!clients.size) return;
     const pixels = panel.render();
-    const encoded = new Map();
-    for (const s of sessions) s.pushFrame(pixels, encoded);
+    const pngCache = new Map();
+    for (const c of clients) c.push(pixels, pngCache);
   }, Math.round(1000 / cfg.fps));
 
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(cfg.port, cfg.host, () => {
       const { port } = server.address();
-      const url = `http://${cfg.host}:${port}/${cfg.token ? `#token=${cfg.token}` : ''}`;
       resolve({
-        url, port, token: cfg.token, panel,
+        url: `http://${cfg.host}:${port}/`, port, panel, posted,
         close: () => new Promise((r) => {
           clearInterval(timer);
-          for (const s of sessions) s.close(1001, 'server shutting down');
+          for (const c of clients) c.close(1001, 'server shutting down');
           server.close(() => r());
         }),
       });
@@ -332,13 +216,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const { values } = parseArgs({
     options: {
       port: { type: 'string', default: '8080' }, host: { type: 'string', default: '127.0.0.1' },
-      token: { type: 'string' }, 'no-token': { type: 'boolean', default: false },
-      mode: { type: 'string', default: 'single' }, fps: { type: 'string', default: '30' },
+      fps: { type: 'string', default: '30' }, 'view-only': { type: 'boolean', default: false },
     },
   });
-  const opts = { port: Number(values.port), host: values.host, mode: values.mode, fps: Number(values.fps) };
-  if (values['no-token']) opts.token = null;
-  else if (values.token) opts.token = values.token;
-  const srv = await startServer(opts);
+  const srv = await startServer({
+    port: Number(values.port), host: values.host, fps: Number(values.fps), viewOnly: values['view-only'],
+  });
   console.log(`RemoteVI reference server: open ${srv.url}`);
 }

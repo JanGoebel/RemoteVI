@@ -1,0 +1,163 @@
+{
+ "description": "Protocol/Parse Input.vi. result null means: ignore the message. lParam is the mouse lParam for client point (cx, cy).",
+ "cases": [
+  {
+   "text": "m 513 120 45 1",
+   "result": {
+    "kind": "mouse",
+    "msg": 513,
+    "x": 120,
+    "y": 45,
+    "wParam": 1
+   }
+  },
+  {
+   "text": "m 512 0 0 0",
+   "result": {
+    "kind": "mouse",
+    "msg": 512,
+    "x": 0,
+    "y": 0,
+    "wParam": 0
+   }
+  },
+  {
+   "text": "m 522 10 20 4287102976",
+   "result": {
+    "kind": "mouse",
+    "msg": 522,
+    "x": 10,
+    "y": 20,
+    "wParam": 4287102976
+   }
+  },
+  {
+   "text": "k 256 37 16777217",
+   "result": {
+    "kind": "key",
+    "msg": 256,
+    "wParam": 37,
+    "lParam": 16777217
+   }
+  },
+  {
+   "text": "k 257 37 3238002689",
+   "result": {
+    "kind": "key",
+    "msg": 257,
+    "wParam": 37,
+    "lParam": 3238002689
+   }
+  },
+  {
+   "text": "k 258 65 1",
+   "result": {
+    "kind": "key",
+    "msg": 258,
+    "wParam": 65,
+    "lParam": 1
+   }
+  },
+  {
+   "text": "a 12",
+   "result": {
+    "kind": "ack",
+    "seq": 12
+   }
+  },
+  {
+   "text": "a",
+   "result": null
+  },
+  {
+   "text": "m 513 1 2",
+   "result": null
+  },
+  {
+   "text": "x 1 2 3",
+   "result": null
+  },
+  {
+   "text": "m 513 a b c",
+   "result": null
+  },
+  {
+   "text": "",
+   "result": null
+  },
+  {
+   "text": "m 513 1.5 2 0",
+   "result": null
+  },
+  {
+   "text": "a ",
+   "result": null
+  },
+  {
+   "text": "a  12",
+   "result": null
+  },
+  {
+   "text": "a 12 ",
+   "result": null
+  },
+  {
+   "text": "a 4294967295",
+   "result": {
+    "kind": "ack",
+    "seq": 4294967295
+   }
+  },
+  {
+   "text": "a 4294967296",
+   "result": null
+  },
+  {
+   "text": "k 256 -2147483648 0",
+   "result": {
+    "kind": "key",
+    "msg": 256,
+    "wParam": -2147483648,
+    "lParam": 0
+   }
+  },
+  {
+   "text": "k 256 -2147483649 0",
+   "result": null
+  },
+  {
+   "text": "a 1x",
+   "result": null
+  },
+  {
+   "text": "a -",
+   "result": null
+  },
+  {
+   "text": "a 1e3",
+   "result": null
+  }
+ ],
+ "mouseLParam": [
+  {
+   "cx": 0,
+   "cy": 0,
+   "lParam": 0
+  },
+  {
+   "cx": 120,
+   "cy": 45,
+   "lParam": 2949240
+  },
+  {
+   "cx": -5,
+   "cy": 10,
+   "lParam": 720891
+  },
+  {
+   "cx": 1919,
+   "cy": 1079,
+   "lParam": 70715263
+  }
+ ]
+}

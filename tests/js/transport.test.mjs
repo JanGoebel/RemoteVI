@@ -88,11 +88,3 @@ test('WebSocket server frames match RFC 6455 examples', () => {
   }
 });
 
-test('SHA-1 and Base64 vectors are internally consistent', () => {
-  // These vectors exist for the G implementation; here we check the vector file itself.
-  const sha = vectors('sha1.json').cases;
-  const handshake = sha.find((c) => c.input.startsWith('dGhlIHNhbXBsZSBub25jZQ=='));
-  assert.equal(Buffer.from(handshake.digest, 'hex').toString('base64'), 's3pPLMBiTxaQ9kYGzzhZRbK+xOo=');
-  assert.equal(sha.find((c) => c.input === 'abc').digest, 'a9993e364706816aba3e25717850c26c9cd0d89d');
-  for (const c of vectors('base64.json').cases) assert.equal(fromHex(c.bytes).toString('base64'), c.base64);
-});

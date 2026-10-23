@@ -1,0 +1,211 @@
+{
+ "description": "Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. input is a client message (see input.json); trackingBefore/After is the per-client button-held state. lParam is unsigned 32-bit.",
+ "geo": {
+  "panelX": 100,
+  "panelY": 200,
+  "clientX": 100,
+  "clientY": 154
+ },
+ "cases": [
+  {
+   "name": "hover",
+   "input": "m 512 10 20 0",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 512,
+     "wParam": 0,
+     "lParam": 4325386
+    }
+   ]
+  },
+  {
+   "name": "left down: client coords, starts tracking",
+   "input": "m 513 10 20 1",
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "posts": [
+    {
+     "msg": 513,
+     "wParam": 1,
+     "lParam": 4325386
+    }
+   ]
+  },
+  {
+   "name": "drag move while tracking: screen coords",
+   "input": "m 512 50 20 1",
+   "trackingBefore": true,
+   "trackingAfter": true,
+   "posts": [
+    {
+     "msg": 512,
+     "wParam": 1,
+     "lParam": 14418070
+    }
+   ]
+  },
+  {
+   "name": "left up while tracking: screen coords, ends tracking",
+   "input": "m 514 50 20 0",
+   "trackingBefore": true,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 514,
+     "wParam": 0,
+     "lParam": 14418070
+    }
+   ]
+  },
+  {
+   "name": "up without tracking: client coords",
+   "input": "m 514 50 20 0",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 514,
+     "wParam": 0,
+     "lParam": 4325426
+    }
+   ]
+  },
+  {
+   "name": "double click down: client, tracking",
+   "input": "m 515 10 20 1",
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "posts": [
+    {
+     "msg": 515,
+     "wParam": 1,
+     "lParam": 4325386
+    }
+   ]
+  },
+  {
+   "name": "right down",
+   "input": "m 516 5 5 2",
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "posts": [
+    {
+     "msg": 516,
+     "wParam": 2,
+     "lParam": 3342341
+    }
+   ]
+  },
+  {
+   "name": "wheel: always screen coords",
+   "input": "m 522 10 20 7864320",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 522,
+     "wParam": 7864320,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "wheel while tracking",
+   "input": "m 522 10 20 7864320",
+   "trackingBefore": true,
+   "trackingAfter": true,
+   "posts": [
+    {
+     "msg": 522,
+     "wParam": 7864320,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "negative client y (toolbar area)",
+   "input": "m 512 0 0 0",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 512,
+     "wParam": 0,
+     "lParam": 3014656
+    }
+   ]
+  },
+  {
+   "name": "char is wrapped in VK 0xE8 down/up",
+   "input": "k 258 65 1",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 232,
+     "lParam": 1
+    },
+    {
+     "msg": 258,
+     "wParam": 65,
+     "lParam": 1
+    },
+    {
+     "msg": 257,
+     "wParam": 232,
+     "lParam": 3221225473
+    }
+   ]
+  },
+  {
+   "name": "special key passes through",
+   "input": "k 256 13 1",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 13,
+     "lParam": 1
+    }
+   ]
+  },
+  {
+   "name": "key up passes through",
+   "input": "k 257 37 3238002689",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": [
+    {
+     "msg": 257,
+     "wParam": 37,
+     "lParam": 3238002689
+    }
+   ]
+  },
+  {
+   "name": "not allowed: WM_CLOSE",
+   "input": "m 16 1 1 0",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": []
+  },
+  {
+   "name": "not allowed: WM_SYSKEYDOWN",
+   "input": "k 260 18 1",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": []
+  },
+  {
+   "name": "ack: nothing to post",
+   "input": "a 5",
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "posts": []
+  }
+ ]
+}

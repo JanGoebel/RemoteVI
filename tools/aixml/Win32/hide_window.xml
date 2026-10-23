@@ -1,0 +1,39 @@
+<VI _name="RemoteVI Hide Window.vi" description="Makes the top-level window hwnd invisible on the host screen while it stays open and functional\3A adds the extended style WS_EX_LAYERED (0x80000) with SetWindowLongPtrW(GWL_EXSTYLE -20) unless it is already set\2C then sets the opacity to 0 with SetLayeredWindowAttributes(alpha 0\2C LWA_ALPHA 2). Used for LabVIEW popups (menus\2C drop-downs\2C graph palette popups and their SysShadow) that a REMOTE user opened\2C so they do not float over the host's desktop\3B RemoteVI Capture Window.vi still captures them and posted clicks still reach them (measured). Idempotent. Win32 only\2C no VI Server call.">
+  <Control _name="hwnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The window to hide (HWND)." outputs="value:hw.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is changed." outputs="value:errin.value" />
+  <Indicator _name="hidden?" type="bool" uid="ohid" uid_parent="root" value="false" conIdx="4" connection="recommended" description="TRUE when SetLayeredWindowAttributes succeeded (the window is now transparent)." inputs="value:ok.x != 0?" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:la.error out" />
+  <Constant _name="GWL_EXSTYLE" type="int32" uid="gwl" uid_parent="root" value="-20" outputs="value:gwl.value" />
+  <Call uid="get" uid_parent="root" target="user32 GetWindowLongPtrW.vi" inputs="hWnd:hw.value,nIndex:gwl.value,error in:errin.value" outputs="return value:get.return value,error out:get.error out" />
+  <Constant _name="WS_EX_LAYERED" type="int64" uid="klay" uid_parent="root" value="524288" outputs="value:klay.value" />
+  <Node _name="Or" uid="ex" uid_parent="root" inputs="x:get.return value,y:klay.value" outputs="x .or. y?:ex.x .or. y?" />
+  <Node _name="Not Equal?" uid="chg" uid_parent="root" inputs="x:ex.x .or. y?,y:get.return value" outputs="x != y?:chg.x != y?" />
+  <Structure _name="Case Structure" uid="cs" uid_parent="root" selectin="chg.x != y?">
+    <Tunnel _id="In1" uid="ci1" uid_parent="cs" inputs="value:hw.value" />
+    <Tunnel _id="In2" uid="ci2" uid_parent="cs" inputs="value:gwl.value" />
+    <Tunnel _id="In3" uid="ci3" uid_parent="cs" inputs="value:ex.x .or. y?" />
+    <Tunnel _id="In4" uid="ci4" uid_parent="cs" inputs="value:get.error out" />
+    <CaseFrame selector="True" uid="ct" uid_parent="cs" selectout="" label="Not layered yet">
+      <Tunnel _id="In1" uid="ct1" uid_parent="ct" outputs="value:ct1.value" />
+      <Tunnel _id="In2" uid="ct2" uid_parent="ct" outputs="value:ct2.value" />
+      <Tunnel _id="In3" uid="ct3" uid_parent="ct" outputs="value:ct3.value" />
+      <Tunnel _id="In4" uid="ct4" uid_parent="ct" outputs="value:ct4.value" />
+      <Call uid="set" uid_parent="ct" target="user32 SetWindowLongPtrW.vi" inputs="hWnd:ct1.value,nIndex:ct2.value,dwNewLong:ct3.value,error in:ct4.value" outputs="return value:,error out:set.error out" />
+      <Tunnel _id="Out1" uid="cto1" uid_parent="ct" inputs="value:set.error out" />
+    </CaseFrame>
+    <CaseFrame selector="False" uid="cf" uid_parent="cs" selectout="" label="Already layered">
+      <Tunnel _id="In1" uid="cf1" uid_parent="cf" outputs="value:" />
+      <Tunnel _id="In2" uid="cf2" uid_parent="cf" outputs="value:" />
+      <Tunnel _id="In3" uid="cf3" uid_parent="cf" outputs="value:" />
+      <Tunnel _id="In4" uid="cf4" uid_parent="cf" outputs="value:cf4.value" />
+      <Tunnel _id="Out1" uid="cfo1" uid_parent="cf" inputs="value:cf4.value" />
+    </CaseFrame>
+    <Tunnel _id="Out1" uid="cse" uid_parent="cs" outputs="value:cse.value" />
+  </Structure>
+  <Constant _name="crKey" type="uint32" uid="kck" uid_parent="root" value="0" outputs="value:kck.value" />
+  <Constant _name="alpha 0" type="uint8" uid="ka" uid_parent="root" value="0" outputs="value:ka.value" />
+  <Constant _name="LWA_ALPHA" type="uint32" uid="kf" uid_parent="root" value="2" outputs="value:kf.value" />
+  <Call uid="la" uid_parent="root" target="user32 SetLayeredWindowAttributes.vi" inputs="hwnd:hw.value,crKey:kck.value,bAlpha:ka.value,dwFlags:kf.value,error in:cse.value" outputs="return value:la.return value,error out:la.error out" />
+  <Node _name="Not Equal To 0?" uid="ok" uid_parent="root" inputs="x:la.return value" outputs="x != 0?:ok.x != 0?" />
+  <FreeLabel comment="Layered with alpha 0 - open but invisible" uid="cmt" uid_parent="root" />
+</VI>

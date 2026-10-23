@@ -1,0 +1,47 @@
+<VI _name="RemoteVI Capture Window.vi" description="Captures the window hwnd into a 2D U32 pixmap [row\2C column] of 0x00RRGGBB values by asking the window to draw itself (user32 PrintWindow with PW_RENDERFULLCONTENT 2) into a memory bitmap - GetWindowRect for the size\2C GetDC(0)\2C CreateCompatibleDC\2C CreateCompatibleBitmap\2C SelectObject\2C PrintWindow\2C GetDIBits as 32-bit top-down rows. Unlike a screen copy this sees the window's own pixels whether or not it is covered\2C on another monitor or made invisible (layered with alpha 0\2C RemoteVI Hide Window.vi) - measured on LabVIEW's popup menus (LVMenuWnd). No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. Every GDI object is deselected and released again\2C also when an earlier step failed. error out carries error in\2C a Call Library Function Node error\2C 5002 when PrintWindow failed or 5001 when GetDIBits copied no line (the window is gone or empty)\3B pixmap may then be all zero or empty.">
+  <Control _name="hwnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The window to capture (HWND)\2C e.g. a popup from RemoteVI Find Popups.vi." outputs="value:hw.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is captured (the cleanup calls still run on null handles\2C harmlessly)." outputs="value:errin.value" />
+  <Indicator _name="pixmap" type="array.2{uint32}" uid="opix" uid_parent="root" value="[]" conIdx="4" connection="recommended" description="h rows of w pixels of the whole window\2C top row first\2C each 0x00RRGGBB (the top byte is masked off)." inputs="value:rs.output array" />
+  <Indicator _name="rect" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="orect" uid_parent="root" value="[0,0,0,0]" conIdx="6" connection="recommended" description="The window's screen rectangle (GetWindowRect)\3A left x\2C top y\2C width w\2C height h." inputs="value:brc.output cluster" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in\2C the first DLL call error\2C 5002 when PrintWindow failed or 5001 when GetDIBits copied nothing." inputs="value:merge.error out" />
+  <Call uid="wr" uid_parent="root" target="user32 GetWindowRect.vi" inputs="hWnd:hw.value,error in:errin.value" outputs="RECT:wr.RECT,return value:,error out:wr.error out" />
+  <Node _name="Unbundle By Name" uid="ur" uid_parent="root" fields="left,top,right,bottom" inputs="input cluster:wr.RECT" outputs="left:ur.left,top:ur.top,right:ur.right,bottom:ur.bottom" />
+  <Node _name="Subtract" uid="w" uid_parent="root" inputs="x:ur.right,y:ur.left" outputs="x-y:w.x-y" />
+  <Node _name="Subtract" uid="h" uid_parent="root" inputs="x:ur.bottom,y:ur.top" outputs="x-y:h.x-y" />
+  <Constant _name="rect0" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="r0" uid_parent="root" value="[0,0,0,0]" outputs="value:r0.value" />
+  <Node _name="Bundle By Name" uid="brc" uid_parent="root" fields="x,y,w,h" inputs="x:ur.left,y:ur.top,w:w.x-y,h:h.x-y,input cluster:r0.value" outputs="output cluster:brc.output cluster" />
+  <Constant _name="screen" type="uint64" uid="k0" uid_parent="root" value="0" outputs="value:k0.value" />
+  <Call uid="getdc" uid_parent="root" target="user32 GetDC.vi" inputs="hWnd:k0.value,error in:wr.error out" outputs="HDC:getdc.HDC,error out:getdc.error out" />
+  <Call uid="mkdc" uid_parent="root" target="gdi32 CreateCompatibleDC.vi" inputs="hdc:getdc.HDC,error in:getdc.error out" outputs="HDC:mkdc.HDC,error out:mkdc.error out" />
+  <Call uid="mkbmp" uid_parent="root" target="gdi32 CreateCompatibleBitmap.vi" inputs="hdc:getdc.HDC,cx:w.x-y,cy:h.x-y,error in:mkdc.error out" outputs="HBITMAP:mkbmp.HBITMAP,error out:mkbmp.error out" />
+  <Call uid="sel" uid_parent="root" target="gdi32 SelectObject.vi" inputs="hdc:mkdc.HDC,h:mkbmp.HBITMAP,error in:mkbmp.error out" outputs="previous object:sel.previous object,error out:sel.error out" />
+  <Constant _name="PW_RENDERFULLCONTENT" type="uint32" uid="pwf" uid_parent="root" value="2" outputs="value:pwf.value" />
+  <Call uid="pw" uid_parent="root" target="user32 PrintWindow.vi" inputs="hwnd:hw.value,hdcBlt:mkdc.HDC,nFlags:pwf.value,error in:sel.error out" outputs="return value:pw.return value,error out:pw.error out" />
+  <Call uid="unsel" uid_parent="root" target="gdi32 SelectObject.vi" inputs="hdc:mkdc.HDC,h:sel.previous object,error in:pw.error out" outputs="previous object:,error out:unsel.error out" />
+  <Node _name="Multiply" uid="npix" uid_parent="root" inputs="x:w.x-y,y:h.x-y" outputs="x*y:npix.x*y" />
+  <Constant type="uint32" uid="u0" uid_parent="root" value="0" outputs="value:u0.value" />
+  <Constant _name="zero" type="int32" uid="z32" uid_parent="root" value="0" outputs="value:z32.value" />
+  <Node _name="Initialize Array" uid="buf" uid_parent="root" inputs="element:u0.value,dimension size:npix.x*y" outputs="initialized array:buf.initialized array" />
+  <Node _name="Negate" uid="negh" uid_parent="root" inputs="x:h.x-y" outputs="-x:negh.-x" />
+  <Constant _name="biSize" type="uint32" uid="bisz" uid_parent="root" value="40" outputs="value:bisz.value" />
+  <Constant _name="biPlanes" type="uint16" uid="bipl" uid_parent="root" value="1" outputs="value:bipl.value" />
+  <Constant _name="biBitCount" type="uint16" uid="bibc" uid_parent="root" value="32" outputs="value:bibc.value" />
+  <Node _name="Bundle" uid="bmi" uid_parent="root" inputs="element:bisz.value,element:w.x-y,element:negh.-x,element:bipl.value,element:bibc.value,element:u0.value,element:u0.value,element:z32.value,element:z32.value,element:u0.value,element:u0.value,element:u0.value" outputs="output cluster:bmi.output cluster" />
+  <Call uid="dib" uid_parent="root" target="gdi32 GetDIBits.vi" inputs="hdc:getdc.HDC,hbm:mkbmp.HBITMAP,start:u0.value,cLines:h.x-y,lpvBits:buf.initialized array,lpbmi:bmi.output cluster,usage:u0.value,error in:unsel.error out" outputs="lpvBits out:dib.lpvBits out,return value:dib.return value,error out:dib.error out" />
+  <Constant _name="RGB mask" type="uint32" uid="mask" uid_parent="root" value="16777215" outputs="value:mask.value" />
+  <Node _name="And" uid="and" uid_parent="root" inputs="x:dib.lpvBits out,y:mask.value" outputs="x .and. y?:and.x .and. y?" />
+  <Node _name="Reshape Array" uid="rs" uid_parent="root" inputs="array:and.x .and. y?,dimension size:h.x-y,dimension size:w.x-y" outputs="output array:rs.output array" />
+  <Node _name="Equal To 0?" uid="pwbad" uid_parent="root" inputs="x:pw.return value" outputs="x = 0?:pwbad.x = 0?" />
+  <Node _name="Equal To 0?" uid="none" uid_parent="root" inputs="x:dib.return value" outputs="x = 0?:none.x = 0?" />
+  <Constant _name="PrintWindow failed" type="cluster{bool.status,int32.code,string.source}" uid="epw" uid_parent="root" value="[true,5002,RemoteVI Capture Window.vi\3A PrintWindow failed - the window is gone or does not draw]" outputs="value:epw.value" />
+  <Constant _name="GetDIBits failed" type="cluster{bool.status,int32.code,string.source}" uid="efail" uid_parent="root" value="[true,5001,RemoteVI Capture Window.vi\3A GetDIBits copied no line - empty window or GDI failure]" outputs="value:efail.value" />
+  <Constant _name="no error" type="cluster{bool.status,int32.code,string.source}" uid="enone" uid_parent="root" value="[false,0,]" outputs="value:enone.value" />
+  <Node _name="Select" uid="echk" uid_parent="root" inputs="t:efail.value,s:none.x = 0?,f:enone.value" outputs="s? t\3Af:echk.out" />
+  <Node _name="Select" uid="echk2" uid_parent="root" inputs="t:epw.value,s:pwbad.x = 0?,f:echk.out" outputs="s? t\3Af:echk2.out" />
+  <Call uid="clr" uid_parent="root" target="Clear Errors.vi" inputs="error in (no error):dib.error out" outputs="error out:clr.error out" />
+  <Call uid="delbmp" uid_parent="root" target="gdi32 DeleteObject.vi" inputs="ho:mkbmp.HBITMAP,error in:clr.error out" outputs="return value:,error out:delbmp.error out" />
+  <Call uid="deldc" uid_parent="root" target="gdi32 DeleteDC.vi" inputs="hdc:mkdc.HDC,error in:clr.error out" outputs="return value:,error out:deldc.error out" />
+  <Call uid="reldc" uid_parent="root" target="user32 ReleaseDC.vi" inputs="hWnd:k0.value,hDC:getdc.HDC,error in:clr.error out" outputs="return value:,error out:reldc.error out" />
+  <Node _name="Merge Errors" uid="merge" uid_parent="root" inputs="error in:dib.error out,error in:echk2.out,error in:delbmp.error out,error in:deldc.error out,error in:reldc.error out" outputs="error out:merge.error out" />
+  <FreeLabel comment="PrintWindow - sees hidden or covered windows" uid="cmt" uid_parent="root" />
+</VI>

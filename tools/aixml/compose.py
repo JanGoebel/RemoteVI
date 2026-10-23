@@ -28,7 +28,7 @@ PYTHON = os.path.join(LVMCP_BIN, "pylabview", "python.exe")
 
 def number_symbols(text):
     """Replace every non-numeric uid with a number from 5000 up, in uid/uid_parent and in every
-    net reference (`sym.terminal`) inside inputs/outputs/selectin/selectout/maxin/count."""
+    net reference (`sym.terminal`) inside inputs/outputs/selectin/selectout/maxin/count/cond."""
     syms = []
     for m in re.finditer(r'\buid="([^"]+)"', text):
         s = m.group(1)
@@ -57,7 +57,7 @@ def number_symbols(text):
                 net = num.get(head, head) + "." + rest
             parts.append(net if term is None else term + ":" + net)
         return '%s="%s"' % (attr, ",".join(parts))
-    text = re.sub(r'\b(inputs|outputs|selectin|selectout|maxin|maxout|count)="([^"]*)"', fix_nets, text)
+    text = re.sub(r'\b(inputs|outputs|selectin|selectout|maxin|maxout|count|cond)="([^"]*)"', fix_nets, text)
     return text
 
 

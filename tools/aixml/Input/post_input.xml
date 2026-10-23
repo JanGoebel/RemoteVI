@@ -1,16 +1,34 @@
-<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the front panel window of VI\2C in order\2C with user32 PostMessageW. The window handle is Front Panel Window\3AOS Window\2C sign-extended I32 to I64 to U64. Posting does not wait for LabVIEW to process the messages. An incoming error posts nothing; an error from a post skips the rest.">
-  <FreeLabel comment="One PostMessageW per post\2C in order" uid="lbl" uid_parent="root"/>
-  <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel window receives the messages." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the window hWnd (the served front panel)\2C in order\2C with user32 PostMessageW. When cursor.move? is TRUE (a LabVIEW popup is open\2C which reads the real cursor) the host cursor is first moved to the screen point (cursor.x\2C cursor.y) with user32 SetCursorPos. No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. Posting does not wait for LabVIEW to process the messages. An incoming error posts nothing; an error from a call skips the rest.">
+  <FreeLabel comment="Cursor first\2C then one PostMessageW per post" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="Native handle of the window that receives the messages - the served front panel (RemoteVI Get Panel Geometry.vi)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="posts" conIdx="5" connection="required" description="Messages to post\2C from RemoteVI Translate Input.vi." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Control _name="cursor" conIdx="7" connection="recommended" description="From RemoteVI Translate Input.vi\3A when move? is TRUE the host cursor is moved to the screen point (x\2C y) before posting." outputs="value:cu.value" type="cluster{bool.move?,int32.x,int32.y}" uid="cu" uid_parent="root" value="[false,0,0]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
-  <Node _name="Property Node" fields="read+Front Panel Window\3AOS Window" inputs="reference:vi.value,error in (no error):ei.value" outputs="error out:pn.error out,Front Panel Window\3AOS Window:pn.Front Panel Window\3AOS Window" type="{LV.VI}" uid="pn" uid_parent="root"/>
-  <Node _name="To Quad Integer" inputs="number:pn.Front Panel Window\3AOS Window" outputs="64bit integer:q1.64bit integer" uid="q1" uid_parent="root"/>
-  <Node _name="To Unsigned Quad Integer" inputs="number:q1.64bit integer" outputs="unsigned 64bit integer:hw.unsigned 64bit integer" uid="hw" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="move?,x,y" inputs="input cluster:cu.value" outputs="move?:ucu.move?,x:ucu.x,y:ucu.y" uid="ucu" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="ucu.move?" uid="cm" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ucu.x" uid="cm_i1" uid_parent="cm"/>
+    <Tunnel _id="In2" inputs="value:ucu.y" uid="cm_i2" uid_parent="cm"/>
+    <Tunnel _id="In3" inputs="value:ei.value" uid="cm_i3" uid_parent="cm"/>
+    <CaseFrame label="Popup open\3A move the host cursor" selector="True" selectout="" uid="cmt" uid_parent="cm">
+      <Tunnel _id="In1" outputs="value:t_x.value" uid="t_x" uid_parent="cmt"/>
+      <Tunnel _id="In2" outputs="value:t_y.value" uid="t_y" uid_parent="cmt"/>
+      <Tunnel _id="In3" outputs="value:t_ei.value" uid="t_ei" uid_parent="cmt"/>
+      <Call inputs="X:t_x.value,Y:t_y.value,error in:t_ei.value" outputs="return value:,error out:scp.error out" target="user32 SetCursorPos.vi" uid="scp" uid_parent="cmt"/>
+      <Tunnel _id="Out1" inputs="value:scp.error out" uid="t_o1" uid_parent="cmt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cmf" uid_parent="cm">
+      <Tunnel _id="In1" outputs="value:" uid="f_x" uid_parent="cmf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_y" uid_parent="cmf"/>
+      <Tunnel _id="In3" outputs="value:f_ei.value" uid="f_ei" uid_parent="cmf"/>
+      <Tunnel _id="Out1" inputs="value:f_ei.value" uid="f_o1" uid_parent="cmf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cm_o1.value" uid="cm_o1" uid_parent="cm"/>
+  </Structure>
   <Structure _name="For Loop" count="" label="Post each message" maxin="" maxout="" uid="loop" uid_parent="root">
     <Tunnel _id="In1" inputs="value:ps.value" mode="index" outputs="value:pi.value" uid="pi" uid_parent="loop"/>
-    <Tunnel _id="In2" inputs="value:hw.unsigned 64bit integer" outputs="value:hi.value" uid="hi" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:hw.value" outputs="value:hi.value" uid="hi" uid_parent="loop"/>
     <ShiftReg uid="sr" uid_parent="loop">
-      <Left inputs="value:pn.error out" outputs="value:srl.value" uid="srl" uid_parent="sr"/>
+      <Left inputs="value:cm_o1.value" outputs="value:srl.value" uid="srl" uid_parent="sr"/>
       <Right inputs="value:pm.error out" outputs="value:srr.value" uid="srr" uid_parent="sr"/>
     </ShiftReg>
     <Node _name="Unbundle By Name" fields="msg,wParam,lParam" inputs="input cluster:pi.value" outputs="msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam" uid="ub" uid_parent="loop"/>

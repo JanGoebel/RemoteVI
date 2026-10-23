@@ -64,6 +64,7 @@ Ring and enum menus, right-click menus, combo-box lists and graph-palette popups
 
 * **No popup:** normal path. The server caches panel geometry and `hWnd` for the popup case.
 * **Popup open:** the server makes no VI Server UI calls. The frame is the last panel capture with each popup's screen pixels pasted over it (`RemoteVI Capture Screen Rect.vi`, GDI `BitBlt` from the screen DC; popups are topmost, so the screen shows them). Mouse input moves the **host cursor** to the screen point (`SetCursorPos`, because the popup reads the real cursor), then posts the message to the panel window with screen coordinates. Measured: this selects ring items. The host's cursor therefore jumps while a remote user works in a popup.
+* **A click can open a popup a moment later.** The posted message is handled by LabVIEW's UI thread after the server has moved on, so a `FP.Get Image` issued in the same breath would land inside the popup's modal loop and freeze the server until someone closes the menu on the host (measured). After any posted message other than `WM_MOUSEMOVE`/`WM_MOUSEWHEEL` (`clicked?` from `RemoteVI Service Client.vi`) the server therefore makes no VI Server UI call for 300 ms and re-sends the cached panel instead.
 * **Minimized panel:** LabVIEW ignores input to it. The server restores it with `ShowWindow(SW_SHOWNOACTIVATE)`, without taking focus.
 
 **Known limit:** modifier state. LabVIEW may read Shift/Ctrl with `GetKeyState`, which posted messages don't change, so Shift-click and Ctrl shortcuts may not behave like local ones.

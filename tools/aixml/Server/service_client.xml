@@ -1,7 +1,9 @@
-<VI _name="RemoteVI Service Client.vi" description="Services one WebSocket client without blocking (docs\5Cprotocol.md sections 4-6). Reads whatever bytes are waiting (TCP Read\2C immediate mode\2C timeout 0\3B error 56 means nothing waiting\2C any other error means the peer is gone and sets closed)\2C appends them to rx buffer and decodes every complete frame with RemoteVI WS Decode Client Frame.vi. A text frame goes through RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq) when seq is not ahead of the client's seq\3B mouse and key messages are translated (RemoteVI Translate Input.vi\2C tracking carried) and posted to the panel of VI (RemoteVI Post Input.vi). A ping is answered with a pong\3B a close frame with a close frame (1000)\3B a binary or fragmented message with close 1008\3B a protocol violation with the decoder's close code - each sets closed. Consumed bytes leave rx buffer. A client already closed is passed through untouched. TCP errors only set closed\3B error out carries the errors of reading the panel geometry and posting input.">
+<VI _name="RemoteVI Service Client.vi" description="Services one WebSocket client without blocking (docs\5Cprotocol.md sections 4-6). Reads whatever bytes are waiting (TCP Read\2C immediate mode\2C timeout 0\3B error 56 means nothing waiting\2C any other error means the peer is gone and sets closed)\2C appends them to rx buffer and decodes every complete frame with RemoteVI WS Decode Client Frame.vi. A text frame goes through RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq) when seq is not ahead of the client's seq\3B mouse and key messages are translated (RemoteVI Translate Input.vi with geo and popup\2C tracking carried) and posted to the window hWnd (RemoteVI Post Input.vi\2C which first moves the host cursor while a popup is open)\3B a minimized panel is restored first (RemoteVI Restore If Minimized.vi). No VI Server call\2C so servicing goes on while an open LabVIEW popup blocks the UI thread\3B the server loop supplies geo\2C hWnd and popup from its cache. clicked? tells the server loop that a message which may open a LabVIEW popup (anything but WM_MOUSEMOVE and WM_MOUSEWHEEL) was posted\2C so it holds its VI Server calls back until the popup has had time to appear. A ping is answered with a pong\3B a close frame with a close frame (1000)\3B a binary or fragmented message with close 1008\3B a protocol violation with the decoder's close code - each sets closed. Consumed bytes leave rx buffer. A client already closed is passed through untouched. TCP errors only set closed\3B error out carries the errors of restoring the window and posting input.">
   <FreeLabel comment="Decode every complete frame waiting" uid="lbl" uid_parent="root"/>
   <Control _name="Client" conIdx="0" connection="required" description="Per-client state (same cluster as in RemoteVI Server Loop.vi). connection is the TCP connection refnum type-cast to U32." outputs="value:cl.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="cl" uid_parent="root" value="[0,,0,0,[],false,false]"/>
-  <Control _name="VI" conIdx="5" connection="required" description="The published VI\3B input is posted to its front panel window." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="geo" conIdx="5" connection="required" description="Panel origin and client-area origin in screen coordinates (RemoteVI Get Panel Geometry.vi\2C cached by the server loop)." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="hWnd" conIdx="7" connection="required" description="Native handle of the served front panel window (cached by the server loop)." outputs="value:hwnd.value" type="uint64" uid="hwnd" uid_parent="root" value="0"/>
+  <Control _name="popup" conIdx="9" connection="recommended" description="A LabVIEW popup window is open (RemoteVI Find Popups.vi): mouse input then moves the host cursor and uses screen coordinates." outputs="value:popin.value" type="bool" uid="popin" uid_parent="root" value="false"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
   <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
@@ -10,6 +12,8 @@
     <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
   </Structure>
   <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Constant _name="panel" outputs="value:pan0.value" type="cluster{cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}.geo,uint64.hWnd,bool.popup}" uid="pan0" uid_parent="root" value="[[0,0,0,0],0,false]"/>
+  <Node _name="Bundle By Name" fields="geo,hWnd,popup" inputs="geo:geo.value,hWnd:hwnd.value,popup:popin.value,input cluster:pan0.value" outputs="output cluster:pan.output cluster" uid="pan" uid_parent="root"/>
   <Node _name="Unbundle By Name" fields="connection,rx buffer,seq,acked,tracking,closed" inputs="input cluster:cl.value" outputs="connection:ub.connection,rx buffer:ub.rx buffer,seq:ub.seq,acked:ub.acked,tracking:ub.tracking,closed:ub.closed" uid="ub" uid_parent="root"/>
   <Node _name="Type Cast" inputs="x:ub.connection,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
 
@@ -21,7 +25,7 @@
     <Tunnel _id="In5" inputs="value:ub.seq" uid="cs_i5" uid_parent="cs"/>
     <Tunnel _id="In6" inputs="value:ub.acked" uid="cs_i6" uid_parent="cs"/>
     <Tunnel _id="In7" inputs="value:ub.tracking" uid="cs_i7" uid_parent="cs"/>
-    <Tunnel _id="In8" inputs="value:vi.value" uid="cs_i8" uid_parent="cs"/>
+    <Tunnel _id="In8" inputs="value:pan.output cluster" uid="cs_i8" uid_parent="cs"/>
     <CaseFrame label="Closed\3A nothing to do" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_cl.value" uid="t_cl" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
@@ -33,6 +37,8 @@
       <Tunnel _id="In8" outputs="value:" uid="t_i8" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:t_cl.value" uid="t_o1" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:t_ei.value" uid="t_o2" uid_parent="cst"/>
+      <Constant outputs="value:tfl.value" type="bool" uid="tfl" uid_parent="cst" value="false"/>
+      <Tunnel _id="Out3" inputs="value:tfl.value" uid="t_o3" uid_parent="cst"/>
     </CaseFrame>
     <CaseFrame label="Open\3A read and decode" selector="False" selectout="" uid="csf" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:f_cl.value" uid="f_cl" uid_parent="csf"/>
@@ -51,6 +57,7 @@
       <Constant outputs="value:c56.value" type="int32" uid="c56" uid_parent="csf" value="56"/>
       <Node _name="Not Equal?" inputs="x:re.code,y:c56.value" outputs="x != y?:n56.x != y?" uid="n56" uid_parent="csf"/>
       <Node _name="And" inputs="x:re.status,y:n56.x != y?" outputs="x .and. y?:gone.x .and. y?" uid="gone" uid_parent="csf"/>
+      <Constant outputs="value:clk0.value" type="bool" uid="clk0" uid_parent="csf" value="false"/>
       <Node _name="Concatenate Strings" inputs="string:f_rx.value,string:rd.data out" outputs="concatenated string:buf0.concatenated string" uid="buf0" uid_parent="csf"/>
 
       <Structure _name="While Loop" count="" label="One WebSocket frame per iteration" uid="dl" uid_parent="csf">
@@ -73,6 +80,11 @@
           <Left inputs="value:gone.x .and. y?" outputs="value:cls.value" uid="sr_clsl" uid_parent="sr_cls"/>
           <Right inputs="value:cc_o1.value" outputs="value:cls_end.value" uid="sr_clsr" uid_parent="sr_cls"/>
         </ShiftReg>
+        <ShiftReg uid="sr_clk" uid_parent="dl">
+          <Left inputs="value:clk0.value" outputs="value:clkl.value" uid="sr_clkl" uid_parent="sr_clk"/>
+          <Right inputs="value:clko.x .or. y?" outputs="value:clk_end.value" uid="sr_clkr" uid_parent="sr_clk"/>
+        </ShiftReg>
+        <Node _name="Or" inputs="x:clkl.value,y:ca_o4.value" outputs="x .or. y?:clko.x .or. y?" uid="clko" uid_parent="dl"/>
         <ShiftReg uid="sr_err" uid_parent="dl">
           <Left inputs="value:f_ei.value" outputs="value:err.value" uid="sr_errl" uid_parent="sr_err"/>
           <Right inputs="value:ca_o3.value" outputs="value:err_end.value" uid="sr_errr" uid_parent="sr_err"/>
@@ -153,11 +165,18 @@
                 <Tunnel _id="In7" outputs="value:p_y.value" uid="p_y" uid_parent="cpt"/>
                 <Tunnel _id="In8" outputs="value:p_wp.value" uid="p_wp" uid_parent="cpt"/>
                 <Tunnel _id="In9" outputs="value:p_lp.value" uid="p_lp" uid_parent="cpt"/>
-                <Call inputs="VI:p_vi.value,error in:p_err.value" outputs="geo:gg.geo,hWnd:,error out:gg.error out" target="RemoteVI Get Panel Geometry.vi" uid="gg" uid_parent="cpt"/>
-                <Call inputs="kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,wParam:p_wp.value,lParam:p_lp.value,geo:gg.geo,tracking in:p_trk.value" outputs="posts:ti.posts,tracking out:ti.tracking out" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="cpt"/>
-                <Call inputs="VI:p_vi.value,posts:ti.posts,error in:gg.error out" outputs="error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="cpt"/>
+                <Node _name="Unbundle By Name" fields="geo,hWnd,popup" inputs="input cluster:p_vi.value" outputs="geo:up.geo,hWnd:up.hWnd,popup:up.popup" uid="up" uid_parent="cpt"/>
+                <Call inputs="hWnd:up.hWnd,error in:p_err.value" outputs="was minimized?:,error out:rim.error out" target="RemoteVI Restore If Minimized.vi" uid="rim" uid_parent="cpt"/>
+                <Call inputs="kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,wParam:p_wp.value,lParam:p_lp.value,geo:up.geo,popup:up.popup,tracking in:p_trk.value" outputs="posts:ti.posts,tracking out:ti.tracking out,cursor:ti.cursor" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="cpt"/>
+                <Call inputs="hWnd:up.hWnd,posts:ti.posts,cursor:ti.cursor,error in:rim.error out" outputs="error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="cpt"/>
                 <Tunnel _id="Out1" inputs="value:ti.tracking out" uid="p_o1" uid_parent="cpt"/>
                 <Tunnel _id="Out2" inputs="value:po.error out" uid="p_o2" uid_parent="cpt"/>
+                <Constant _name="WM_MOUSEMOVE" outputs="value:kmv.value" type="uint32" uid="kmv" uid_parent="cpt" value="512"/>
+                <Constant _name="WM_MOUSEWHEEL" outputs="value:kwh.value" type="uint32" uid="kwh" uid_parent="cpt" value="522"/>
+                <Node _name="Not Equal?" inputs="x:p_msg.value,y:kmv.value" outputs="x != y?:nmv.x != y?" uid="nmv" uid_parent="cpt"/>
+                <Node _name="Not Equal?" inputs="x:p_msg.value,y:kwh.value" outputs="x != y?:nwh.x != y?" uid="nwh" uid_parent="cpt"/>
+                <Node _name="And" inputs="x:nmv.x != y?,y:nwh.x != y?" outputs="x .and. y?:clk.x .and. y?" uid="clk" uid_parent="cpt"/>
+                <Tunnel _id="Out3" inputs="value:clk.x .and. y?" uid="p_o3" uid_parent="cpt"/>
               </CaseFrame>
               <CaseFrame selector="False" selectout="" uid="cpf" uid_parent="cp">
                 <Tunnel _id="In1" outputs="value:" uid="q_vi" uid_parent="cpf"/>
@@ -171,13 +190,17 @@
                 <Tunnel _id="In9" outputs="value:" uid="q_i9" uid_parent="cpf"/>
                 <Tunnel _id="Out1" inputs="value:q_trk.value" uid="q_o1" uid_parent="cpf"/>
                 <Tunnel _id="Out2" inputs="value:q_err.value" uid="q_o2" uid_parent="cpf"/>
+                <Constant outputs="value:qf.value" type="bool" uid="qf" uid_parent="cpf" value="false"/>
+                <Tunnel _id="Out3" inputs="value:qf.value" uid="q_o3" uid_parent="cpf"/>
               </CaseFrame>
               <Tunnel _id="Out1" outputs="value:cp_o1.value" uid="cp_o1" uid_parent="cp"/>
               <Tunnel _id="Out2" outputs="value:cp_o2.value" uid="cp_o2" uid_parent="cp"/>
+              <Tunnel _id="Out3" outputs="value:cp_o3.value" uid="cp_o3" uid_parent="cp"/>
             </Structure>
             <Tunnel _id="Out1" inputs="value:nack.s? t\3Af" uid="a_o1" uid_parent="cat"/>
             <Tunnel _id="Out2" inputs="value:cp_o1.value" uid="a_o2" uid_parent="cat"/>
             <Tunnel _id="Out3" inputs="value:cp_o2.value" uid="a_o3" uid_parent="cat"/>
+            <Tunnel _id="Out4" inputs="value:cp_o3.value" uid="a_o4" uid_parent="cat"/>
           </CaseFrame>
           <CaseFrame selector="False" selectout="" uid="caf" uid_parent="ca">
             <Tunnel _id="In1" outputs="value:" uid="b_pl" uid_parent="caf"/>
@@ -189,10 +212,13 @@
             <Tunnel _id="Out1" inputs="value:b_ack.value" uid="b_o1" uid_parent="caf"/>
             <Tunnel _id="Out2" inputs="value:b_trk.value" uid="b_o2" uid_parent="caf"/>
             <Tunnel _id="Out3" inputs="value:b_err.value" uid="b_o3" uid_parent="caf"/>
+            <Constant outputs="value:bfl.value" type="bool" uid="bfl" uid_parent="caf" value="false"/>
+            <Tunnel _id="Out4" inputs="value:bfl.value" uid="b_o4" uid_parent="caf"/>
           </CaseFrame>
           <Tunnel _id="Out1" outputs="value:ca_o1.value" uid="ca_o1" uid_parent="ca"/>
           <Tunnel _id="Out2" outputs="value:ca_o2.value" uid="ca_o2" uid_parent="ca"/>
           <Tunnel _id="Out3" outputs="value:ca_o3.value" uid="ca_o3" uid_parent="ca"/>
+          <Tunnel _id="Out4" outputs="value:ca_o4.value" uid="ca_o4" uid_parent="ca"/>
         </Structure>
 
         <Structure _name="Case Structure" selectin="isPing.x .and. y?" uid="cg" uid_parent="dl">
@@ -261,11 +287,14 @@
       <Node _name="Bundle By Name" fields="rx buffer,acked,tracking,closed" inputs="rx buffer:buf_end.value,acked:ack_end.value,tracking:trk_end.value,closed:cls_end.value,input cluster:f_cl.value" outputs="output cluster:ncl.output cluster" uid="ncl" uid_parent="csf"/>
       <Tunnel _id="Out1" inputs="value:ncl.output cluster" uid="f_o1" uid_parent="csf"/>
       <Tunnel _id="Out2" inputs="value:err_end.value" uid="f_o2" uid_parent="csf"/>
+      <Tunnel _id="Out3" inputs="value:clk_end.value" uid="f_o3" uid_parent="csf"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
     <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:cs_o3.value" uid="cs_o3" uid_parent="cs"/>
   </Structure>
 
   <Indicator _name="Client out" conIdx="4" connection="recommended" description="The client after servicing: rx buffer\2C acked\2C tracking and closed updated." inputs="value:cs_o1.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="o_cl" uid_parent="root" value="[0,,0,0,[],false,false]"/>
-  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with errors from reading the panel geometry and posting input." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+  <Indicator _name="clicked?" conIdx="6" connection="recommended" description="TRUE when a mouse button\2C double-click or key message was posted in this call - one that may open a LabVIEW popup." inputs="value:cs_o3.value" type="bool" uid="o_clk" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with errors from restoring the window and posting input." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

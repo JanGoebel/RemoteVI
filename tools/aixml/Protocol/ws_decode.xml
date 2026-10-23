@@ -1,0 +1,122 @@
+<VI _name="RemoteVI WS Decode Client Frame.vi" description="Decodes one masked client-to-server WebSocket frame (RFC 6455) from the start of buffer. complete? is FALSE with close code 0 when more bytes are needed. A protocol violation gives complete? FALSE and close code 1002 (RSV bits set, unknown opcode, unmasked frame, control frame over 125 bytes or fragmented) or 1009 (payload longer than max payload). On success the unmasked payload is returned and bytes consumed is the frame size to drop from the buffer. Pure function. Reference: decodeClientFrame() in tools\5Clib\5Cwebsocket.mjs.">
+  <FreeLabel comment="Close code: first TRUE in priority order" uid="lbl" uid_parent="root"/>
+  <Control _name="buffer" conIdx="0" connection="required" description="Bytes received so far; the frame starts at offset 0." outputs="value:buf.value" type="string" uid="buf" uid_parent="root" value=""/>
+  <Control _name="max payload" conIdx="1" connection="recommended" description="Largest payload accepted, in bytes. Longer frames give close code 1009." outputs="value:max.value" type="uint32" uid="max" uid_parent="root" value="65536"/>
+  <Constant outputs="value:k80.value" type="uint8" uid="k80" uid_parent="root" value="128"/>
+  <Constant outputs="value:k70.value" type="uint8" uid="k70" uid_parent="root" value="112"/>
+  <Constant outputs="value:k0F.value" type="uint8" uid="k0F" uid_parent="root" value="15"/>
+  <Constant outputs="value:k7F.value" type="uint8" uid="k7F" uid_parent="root" value="127"/>
+  <Constant outputs="value:k126.value" type="uint8" uid="k126" uid_parent="root" value="126"/>
+  <Constant outputs="value:k127.value" type="uint8" uid="k127" uid_parent="root" value="127"/>
+  <Constant outputs="value:k8.value" type="uint8" uid="k8" uid_parent="root" value="8"/>
+  <Constant outputs="value:k10.value" type="uint8" uid="k10" uid_parent="root" value="10"/>
+  <Constant outputs="value:k2.value" type="uint8" uid="k2" uid_parent="root" value="2"/>
+  <Constant outputs="value:op0.value" type="uint8" uid="op0" uid_parent="root" value="0"/>
+  <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Constant outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
+  <Constant outputs="value:i2.value" type="int32" uid="i2" uid_parent="root" value="2"/>
+  <Constant outputs="value:i4.value" type="int32" uid="i4" uid_parent="root" value="4"/>
+  <Constant outputs="value:i6.value" type="int32" uid="i6" uid_parent="root" value="6"/>
+  <Constant outputs="value:i10.value" type="int32" uid="i10" uid_parent="root" value="10"/>
+  <Constant outputs="value:u125.value" type="uint32" uid="u125" uid_parent="root" value="125"/>
+  <Constant outputs="value:u0.value" type="uint32" uid="u0" uid_parent="root" value="0"/>
+  <Constant outputs="value:tU16.value" type="uint16" uid="tU16" uid_parent="root" value="0"/>
+  <Constant outputs="value:tU32.value" type="uint32" uid="tU32" uid_parent="root" value="0"/>
+  <Constant outputs="value:z14.value" type="array{uint8}" uid="z14" uid_parent="root" value="[0,0,0,0,0,0,0,0,0,0,0,0,0,0]"/>
+  <Constant outputs="value:i14.value" type="int32" uid="i14" uid_parent="root" value="14"/>
+  <Constant outputs="value:u3.value" type="uint32" uid="u3" uid_parent="root" value="3"/>
+  <Constant outputs="value:u4.value" type="uint32" uid="u4" uid_parent="root" value="4"/>
+  <Constant outputs="value:empty.value" type="string" uid="empty" uid_parent="root" value=""/>
+  <Constant outputs="value:true.value" type="bool" uid="true" uid_parent="root" value="true"/>
+  <Constant outputs="value:codes.value" type="array{uint16}" uid="codes" uid_parent="root" value="[1002,0,1009,1002,1002,1009]"/>
+
+  <Node _name="String Length" inputs="string:buf.value" outputs="length:n.length" uid="n" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:buf.value,offset (0):i0.value,length (rest):i14.value" outputs="substring:hs.substring" uid="hs" uid_parent="root"/>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:z14.value" outputs="string:zs.string" uid="zs" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:hs.substring,string:zs.string" outputs="concatenated string:hdr.concatenated string" uid="hdr" uid_parent="root"/>
+  <Node _name="String To Byte Array" inputs="string:hdr.concatenated string" outputs="unsigned byte array:by.unsigned byte array" uid="by" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:by.unsigned byte array,index:i0.value,index:i1.value" outputs="element:ix.e0,element:ix.e1" uid="ix" uid_parent="root"/>
+
+  <Node _name="And" inputs="x:ix.e0,y:k80.value" outputs="x .and. y?:a80.x .and. y?" uid="a80" uid_parent="root"/>
+  <Node _name="Not Equal To 0?" inputs="x:a80.x .and. y?" outputs="x != 0?:fin.x != 0?" uid="fin" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix.e0,y:k70.value" outputs="x .and. y?:a70.x .and. y?" uid="a70" uid_parent="root"/>
+  <Node _name="Not Equal To 0?" inputs="x:a70.x .and. y?" outputs="x != 0?:rsv.x != 0?" uid="rsv" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix.e0,y:k0F.value" outputs="x .and. y?:opc.x .and. y?" uid="opc" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix.e1,y:k80.value" outputs="x .and. y?:am.x .and. y?" uid="am" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:am.x .and. y?" outputs="x = 0?:unm.x = 0?" uid="unm" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix.e1,y:k7F.value" outputs="x .and. y?:l7.x .and. y?" uid="l7" uid_parent="root"/>
+
+  <Node _name="Less Or Equal?" inputs="x:opc.x .and. y?,y:k2.value" outputs="x &lt;= y?:le2.x &lt;= y?" uid="le2" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:opc.x .and. y?,y:k8.value" outputs="x &gt;= y?:ctl.x &gt;= y?" uid="ctl" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:opc.x .and. y?,y:k10.value" outputs="x &gt; y?:gt10.x &gt; y?" uid="gt10" uid_parent="root"/>
+  <Node _name="Not" inputs="x:le2.x &lt;= y?" outputs=".not. x?:nle2..not. x?" uid="nle2" uid_parent="root"/>
+  <Node _name="And" inputs="x:nle2..not. x?,y:gt10.x &gt; y?" outputs="x .and. y?:badhi.x .and. y?" uid="badhi" uid_parent="root"/>
+  <Node _name="Not" inputs="x:ctl.x &gt;= y?" outputs=".not. x?:nctl..not. x?" uid="nctl" uid_parent="root"/>
+  <Node _name="And" inputs="x:nle2..not. x?,y:nctl..not. x?" outputs="x .and. y?:badlo.x .and. y?" uid="badlo" uid_parent="root"/>
+  <Node _name="Compound Arithmetic" operation="OR" inputs="value:rsv.x != 0?,value:unm.x = 0?,value:badhi.x .and. y?,value:badlo.x .and. y?" outputs="result:errA.result" uid="errA" uid_parent="root"/>
+
+  <Node _name="Equal?" inputs="x:l7.x .and. y?,y:k126.value" outputs="x = y?:is126.x = y?" uid="is126" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:l7.x .and. y?,y:k127.value" outputs="x = y?:is127.x = y?" uid="is127" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:hdr.concatenated string,offset (0):i2.value,length (rest):i2.value" outputs="substring:s16.substring" uid="s16" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:s16.substring,type:tU16.value" outputs="*(type *) &amp;x:len16.*(type *) &amp;x" uid="len16" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:hdr.concatenated string,offset (0):i2.value,length (rest):i4.value" outputs="substring:shi.substring" uid="shi" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:shi.substring,type:tU32.value" outputs="*(type *) &amp;x:hi.*(type *) &amp;x" uid="hi" uid_parent="root"/>
+  <Node _name="Not Equal To 0?" inputs="x:hi.*(type *) &amp;x" outputs="x != 0?:hinz.x != 0?" uid="hinz" uid_parent="root"/>
+  <Node _name="And" inputs="x:is127.x = y?,y:hinz.x != 0?" outputs="x .and. y?:big.x .and. y?" uid="big" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:hdr.concatenated string,offset (0):i6.value,length (rest):i4.value" outputs="substring:slo.substring" uid="slo" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:slo.substring,type:tU32.value" outputs="*(type *) &amp;x:lo.*(type *) &amp;x" uid="lo" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:len16.*(type *) &amp;x" outputs="unsigned 32bit integer:l16u.unsigned 32bit integer" uid="l16u" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:l7.x .and. y?" outputs="unsigned 32bit integer:l7u.unsigned 32bit integer" uid="l7u" uid_parent="root"/>
+  <Node _name="Select" inputs="t:lo.*(type *) &amp;x,s:is127.x = y?,f:l7u.unsigned 32bit integer" outputs="s? t\3Af:selA.s? t\3Af" uid="selA" uid_parent="root"/>
+  <Node _name="Select" inputs="t:l16u.unsigned 32bit integer,s:is126.x = y?,f:selA.s? t\3Af" outputs="s? t\3Af:len.s? t\3Af" uid="len" uid_parent="root"/>
+  <Node _name="Select" inputs="t:i10.value,s:is127.x = y?,f:i2.value" outputs="s? t\3Af:pA.s? t\3Af" uid="pA" uid_parent="root"/>
+  <Node _name="Select" inputs="t:i4.value,s:is126.x = y?,f:pA.s? t\3Af" outputs="s? t\3Af:p.s? t\3Af" uid="p" uid_parent="root"/>
+
+  <Node _name="Greater Or Equal?" inputs="x:n.length,y:i2.value" outputs="x &gt;= y?:have2.x &gt;= y?" uid="have2" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:n.length,y:p.s? t\3Af" outputs="x &lt; y?:nohdr.x &lt; y?" uid="nohdr" uid_parent="root"/>
+  <Node _name="And" inputs="x:have2.x &gt;= y?,y:errA.result" outputs="x .and. y?:e1.x .and. y?" uid="e1" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:len.s? t\3Af,y:u125.value" outputs="x &gt; y?:gt125.x &gt; y?" uid="gt125" uid_parent="root"/>
+  <Node _name="Not" inputs="x:fin.x != 0?" outputs=".not. x?:nfin..not. x?" uid="nfin" uid_parent="root"/>
+  <Node _name="And" inputs="x:ctl.x &gt;= y?,y:gt125.x &gt; y?" outputs="x .and. y?:e4.x .and. y?" uid="e4" uid_parent="root"/>
+  <Node _name="And" inputs="x:ctl.x &gt;= y?,y:nfin..not. x?" outputs="x .and. y?:e4f.x .and. y?" uid="e4f" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:len.s? t\3Af,y:max.value" outputs="x &gt; y?:e5.x &gt; y?" uid="e5" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:e1.x .and. y?,element:nohdr.x &lt; y?,element:big.x .and. y?,element:e4f.x .and. y?,element:e4.x .and. y?,element:e5.x &gt; y?" outputs="appended array:conds.appended array" uid="conds" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:conds.appended array,element:true.value" outputs="index of element:first.index of element" uid="first" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:codes.value,index:first.index of element" outputs="element:code.element" uid="code" uid_parent="root"/>
+
+  <Node _name="To Quad Integer" inputs="number:len.s? t\3Af" outputs="64bit integer:len64.64bit integer" uid="len64" uid_parent="root"/>
+  <Node _name="Add" inputs="x:p.s? t\3Af,y:i4.value" outputs="x+y:off.x+y" uid="off" uid_parent="root"/>
+  <Node _name="To Quad Integer" inputs="number:off.x+y" outputs="64bit integer:off64.64bit integer" uid="off64" uid_parent="root"/>
+  <Node _name="Add" inputs="x:len64.64bit integer,y:off64.64bit integer" outputs="x+y:need.x+y" uid="need" uid_parent="root"/>
+  <Node _name="To Quad Integer" inputs="number:n.length" outputs="64bit integer:n64.64bit integer" uid="n64" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:n64.64bit integer,y:need.x+y" outputs="x &gt;= y?:all.x &gt;= y?" uid="all" uid_parent="root"/>
+  <Node _name="Less Than 0?" inputs="x:first.index of element" outputs="x &lt; 0?:ok.x = 0?" uid="ok" uid_parent="root"/>
+  <Node _name="And" inputs="x:ok.x = 0?,y:all.x &gt;= y?" outputs="x .and. y?:cmp.x .and. y?" uid="cmp" uid_parent="root"/>
+
+  <Node _name="Select" inputs="t:u0.value,s:e5.x &gt; y?,f:len.s? t\3Af" outputs="s? t\3Af:slen.s? t\3Af" uid="slen" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:buf.value,offset (0):off.x+y,length (rest):slen.s? t\3Af" outputs="substring:raw.substring" uid="raw" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:hdr.concatenated string,offset (0):p.s? t\3Af,length (rest):i4.value" outputs="substring:mstr.substring" uid="mstr" uid_parent="root"/>
+  <Node _name="String To Byte Array" inputs="string:mstr.substring" outputs="unsigned byte array:m4.unsigned byte array" uid="m4" uid_parent="root"/>
+  <Node _name="Add" inputs="x:slen.s? t\3Af,y:u3.value" outputs="x+y:r3.x+y" uid="r3" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:r3.x+y,y:u4.value" outputs="x-y*floor(x/y):qr.rem,floor(x/y):qr.quot" uid="qr" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Repeat the mask" maxin="qr.quot" maxout="" uid="mloop" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:m4.unsigned byte array" outputs="value:min.value" uid="min" uid_parent="mloop"/>
+    <Tunnel _id="Out1" inputs="value:min.value" mode="concat" outputs="value:mby.value" uid="mby" uid_parent="mloop"/>
+  </Structure>
+  <Node _name="String To Byte Array" inputs="string:raw.substring" outputs="unsigned byte array:rby.unsigned byte array" uid="rby" uid_parent="root"/>
+  <Node _name="Exclusive Or" inputs="x:rby.unsigned byte array,y:mby.value" outputs="x .xor. y?:xb.x .xor. y?" uid="xb" uid_parent="root"/>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:xb.x .xor. y?" outputs="string:pls.string" uid="pls" uid_parent="root"/>
+
+  <Node _name="Select" inputs="t:pls.string,s:cmp.x .and. y?,f:empty.value" outputs="s? t\3Af:plo.s? t\3Af" uid="plo" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:need.x+y" outputs="unsigned 32bit integer:need32.unsigned 32bit integer" uid="need32" uid_parent="root"/>
+  <Node _name="Select" inputs="t:need32.unsigned 32bit integer,s:cmp.x .and. y?,f:u0.value" outputs="s? t\3Af:cons.s? t\3Af" uid="cons" uid_parent="root"/>
+  <Node _name="And" inputs="x:fin.x != 0?,y:cmp.x .and. y?" outputs="x .and. y?:fino.x .and. y?" uid="fino" uid_parent="root"/>
+  <Node _name="Select" inputs="t:opc.x .and. y?,s:cmp.x .and. y?,f:op0.value" outputs="s? t\3Af:opo.s? t\3Af" uid="opo" uid_parent="root"/>
+
+  <Indicator _name="complete?" conIdx="14" connection="recommended" description="TRUE when a whole valid frame was decoded. FALSE when more bytes are needed (close code 0) or the frame is invalid (close code not 0)." inputs="value:cmp.x .and. y?" type="bool" uid="o_cmp" uid_parent="root" value="false"/>
+  <Indicator _name="fin" conIdx="15" connection="recommended" description="FIN bit of the decoded frame. FALSE unless complete?." inputs="value:fino.x .and. y?" type="bool" uid="o_fin" uid_parent="root" value="false"/>
+  <Indicator _name="opcode" conIdx="16" connection="recommended" description="Opcode of the decoded frame: 0 continuation, 1 text, 2 binary, 8 close, 9 ping, 10 pong. 0 unless complete?." inputs="value:opo.s? t\3Af" type="uint8" uid="o_op" uid_parent="root" value="0"/>
+  <Indicator _name="payload" conIdx="17" connection="recommended" description="Unmasked payload. Empty unless complete?." inputs="value:plo.s? t\3Af" type="string" uid="o_pl" uid_parent="root" value=""/>
+  <Indicator _name="bytes consumed" conIdx="18" connection="recommended" description="Size of the decoded frame in bytes, to remove from the front of the buffer. 0 unless complete?." inputs="value:cons.s? t\3Af" type="uint32" uid="o_cons" uid_parent="root" value="0"/>
+  <Indicator _name="close code" conIdx="19" connection="recommended" description="0 when the bytes so far are valid, 1002 protocol error, 1009 payload too big. Send a close frame with this code when it is not 0." inputs="value:code.element" type="uint16" uid="o_code" uid_parent="root" value="0"/>
+</VI>

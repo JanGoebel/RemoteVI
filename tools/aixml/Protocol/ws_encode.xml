@@ -1,0 +1,30 @@
+<VI _name="RemoteVI WS Encode Server Frame.vi" description="Encodes one unmasked server-to-client WebSocket frame (RFC 6455) with FIN set: byte 0x80 OR opcode, then the payload length as 7 bits, as 126 plus a U16, or as 127 plus a U64 (big-endian), then the payload. The server never fragments. Pure function, cannot fail. Reference: encodeServerFrame() in tools\5Clib\5Cwebsocket.mjs.">
+  <FreeLabel comment="All three length forms built; Select picks one" uid="lbl" uid_parent="root"/>
+  <Control _name="opcode" conIdx="0" connection="required" description="Frame opcode: 1 text, 2 binary, 8 close, 9 ping, 10 pong. Only the low 4 bits should be set." outputs="value:op.value" type="uint8" uid="op" uid_parent="root" value="2"/>
+  <Control _name="payload" conIdx="5" connection="required" description="Application data, sent unmasked." outputs="value:pl.value" type="string" uid="pl" uid_parent="root" value=""/>
+  <Constant outputs="value:tstr.value" type="string" uid="tstr" uid_parent="root" value=""/>
+  <Constant outputs="value:c80.value" type="uint8" uid="c80" uid_parent="root" value="128"/>
+  <Constant outputs="value:c126.value" type="uint8" uid="c126" uid_parent="root" value="126"/>
+  <Constant outputs="value:c127.value" type="uint8" uid="c127" uid_parent="root" value="127"/>
+  <Constant outputs="value:l126.value" type="int32" uid="l126" uid_parent="root" value="126"/>
+  <Constant outputs="value:l64k.value" type="int32" uid="l64k" uid_parent="root" value="65536"/>
+  <Node _name="Or" inputs="x:op.value,y:c80.value" outputs="x .or. y?:b0.x .or. y?" uid="b0" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:b0.x .or. y?,type:tstr.value" outputs="*(type *) &amp;x:tb0.*(type *) &amp;x" uid="tb0" uid_parent="root"/>
+  <Node _name="String Length" inputs="string:pl.value" outputs="length:len.length" uid="len" uid_parent="root"/>
+  <Node _name="To Unsigned Byte Integer" inputs="number:len.length" outputs="unsigned 8bit integer:l8.unsigned 8bit integer" uid="l8" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:l8.unsigned 8bit integer,type:tstr.value" outputs="*(type *) &amp;x:t7.*(type *) &amp;x" uid="t7" uid_parent="root"/>
+  <Node _name="To Unsigned Word Integer" inputs="number:len.length" outputs="unsigned 16bit integer:l16.unsigned 16bit integer" uid="l16" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:c126.value,type:tstr.value" outputs="*(type *) &amp;x:t126.*(type *) &amp;x" uid="t126" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:l16.unsigned 16bit integer,type:tstr.value" outputs="*(type *) &amp;x:t16.*(type *) &amp;x" uid="t16" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:t126.*(type *) &amp;x,string:t16.*(type *) &amp;x" outputs="concatenated string:h16.concatenated string" uid="h16" uid_parent="root"/>
+  <Node _name="To Unsigned Quad Integer" inputs="number:len.length" outputs="unsigned 64bit integer:l64.unsigned 64bit integer" uid="l64" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:c127.value,type:tstr.value" outputs="*(type *) &amp;x:t127.*(type *) &amp;x" uid="t127" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:l64.unsigned 64bit integer,type:tstr.value" outputs="*(type *) &amp;x:t64.*(type *) &amp;x" uid="t64" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:t127.*(type *) &amp;x,string:t64.*(type *) &amp;x" outputs="concatenated string:h64.concatenated string" uid="h64" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:len.length,y:l126.value" outputs="x &lt; y?:lt126.x &lt; y?" uid="lt126" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:len.length,y:l64k.value" outputs="x &lt; y?:lt64k.x &lt; y?" uid="lt64k" uid_parent="root"/>
+  <Node _name="Select" inputs="t:t7.*(type *) &amp;x,s:lt126.x &lt; y?,f:h16.concatenated string" outputs="s? t\3Af:sel1.s? t\3Af" uid="sel1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:sel1.s? t\3Af,s:lt64k.x &lt; y?,f:h64.concatenated string" outputs="s? t\3Af:sel2.s? t\3Af" uid="sel2" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:tb0.*(type *) &amp;x,string:sel2.s? t\3Af,string:pl.value" outputs="concatenated string:fr.concatenated string" uid="fr" uid_parent="root"/>
+  <Indicator _name="frame" conIdx="4" connection="recommended" description="The complete frame: header followed by the payload." inputs="value:fr.concatenated string" type="string" uid="frame" uid_parent="root" value=""/>
+</VI>

@@ -18,9 +18,9 @@
       <Right inputs="value:tr.tracking out" outputs="value:trr.value" uid="trr" uid_parent="srt"/>
     </ShiftReg>
     <Call inputs="text:mi.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="loop"/>
-    <Call inputs="VI:vin.value,error in:el.value" outputs="geo:gg.geo,hWnd:,error out:gg.error out" target="RemoteVI Get Panel Geometry.vi" uid="gg" uid_parent="loop"/>
+    <Call inputs="VI:vin.value,error in:el.value" outputs="geo:gg.geo,hWnd:gg.hWnd,error out:gg.error out" target="RemoteVI Get Panel Geometry.vi" uid="gg" uid_parent="loop"/>
     <Call inputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,geo:gg.geo,tracking in:tl.value" outputs="posts:tr.posts,tracking out:tr.tracking out" target="RemoteVI Translate Input.vi" uid="tr" uid_parent="loop"/>
-    <Call inputs="VI:vin.value,posts:tr.posts,error in:gg.error out" outputs="error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="loop"/>
+    <Call inputs="hWnd:gg.hWnd,posts:tr.posts,error in:gg.error out" outputs="error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="loop"/>
     <Node _name="Array Size" inputs="array:tr.posts" outputs="size(s):sz.size(s)" uid="sz" uid_parent="loop"/>
     <Structure _name="Flat Sequence Frame" label="Let the UI thread process" uid="seq" uid_parent="loop">
       <Node _name="Wait (ms)" inputs="milliseconds to wait:wi.value" outputs="millisecond timer value:" uid="w" uid_parent="seq"/>

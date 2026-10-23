@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Demo Layout.vi" description="Lays out the front panel of RemoteVI Demo.vi (the generator places a graph or chart far larger than the window and stacks the controls under it) and saves it: controls in a column on the left\2C the graph to their right with a 400 x 230 plot area\2C the window sized to the content. Run it once after regenerating the demo\2C with the demo idle.">
+<VI _name="RemoteVI Demo Layout.vi" description="Lays out the front panel of RemoteVI Demo.vi (the generator places a graph or chart far larger than the window and stacks the controls under it) and saves it: controls in a column on the left\2C the graph to their right with a 400 x 230 plot area\2C its graph palette (zoom\2C pan) visible and autoscaling off on both scales (Scale Fit 0\2C so a zoom is not undone by the next data write)\2C the window sized to the content. Run it once after regenerating the demo\2C with the demo idle.">
   <Control _name="path" conIdx="0" connection="required" description="Path of RemoteVI Demo.vi." outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
   <Node _name="Open VI Reference" inputs="vi path:p.value,error in (no error):ei.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
@@ -30,10 +30,14 @@
         <Tunnel _id="In1" outputs="value:" uid="t1" uid_parent="cst"/>
         <Tunnel _id="In2" outputs="value:" uid="t2" uid_parent="cst"/>
       </CaseFrame>
-      <CaseFrame label="The chart\3A size its plot area" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <CaseFrame label="The graph\3A plot area size\2C palette on" selector="False" selectout="" uid="csf" uid_parent="cs">
         <Tunnel _id="In1" outputs="value:f1.value" uid="f1" uid_parent="csf"/>
         <Tunnel _id="In2" outputs="value:f2.value" uid="f2" uid_parent="csf"/>
-        <Node _name="Property Node" fields="write+Plot Area\3ASize" inputs="reference:f1.value,Plot Area\3ASize:f2.value" outputs="error out:" type="{LV.WaveformGraph}" uid="ps" uid_parent="csf"/>
+        <Constant _name="palette visible" outputs="value:pvis.value" type="bool" uid="pvis" uid_parent="csf" value="true"/>
+        <Node _name="Property Node" fields="write+Plot Area\3ASize,write+Palette\3AVisible,read+X Scale,read+Y Scale" inputs="reference:f1.value,Plot Area\3ASize:f2.value,Palette\3AVisible:pvis.value" outputs="error out:ps.error out,X Scale:ps.xs,Y Scale:ps.ys" type="{LV.WaveformGraph}" uid="ps" uid_parent="csf"/>
+        <Constant _name="no scale fit" outputs="value:nofit.value" type="uint8" uid="nofit" uid_parent="csf" value="0"/>
+        <Node _name="Property Node" fields="write+Scale Fit" inputs="reference:ps.xs,error in (no error):ps.error out,Scale Fit:nofit.value" outputs="error out:px.error out" type="{LV.GraphScale}" uid="px" uid_parent="csf"/>
+        <Node _name="Property Node" fields="write+Scale Fit" inputs="reference:ps.ys,error in (no error):px.error out,Scale Fit:nofit.value" outputs="error out:" type="{LV.GraphScale}" uid="py" uid_parent="csf"/>
       </CaseFrame>
     </Structure>
     <Node _name="Property Node" fields="write+Position" inputs="reference:lt.reference out,error in (no error):lt.error out,Position:xy.element" outputs="error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="fl"/>

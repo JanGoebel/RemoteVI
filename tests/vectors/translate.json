@@ -1,5 +1,5 @@
 {
- "description": "Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. input is a client message (see input.json); trackingBefore/After is the per-client button-held state. lParam is unsigned 32-bit.",
+ "description": "Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. input is a client message (see input.json); trackingBefore/After is the per-client button-held state; popup: a LabVIEW popup is open; cursor: screen point to move the host cursor to first (null = do not move). lParam is unsigned 32-bit.",
  "geo": {
   "panelX": 100,
   "panelY": 200,
@@ -10,8 +10,10 @@
   {
    "name": "hover",
    "input": "m 512 10 20 0",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 512,
@@ -23,8 +25,10 @@
   {
    "name": "left down: client coords, starts tracking",
    "input": "m 513 10 20 1",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": true,
+   "cursor": null,
    "posts": [
     {
      "msg": 513,
@@ -36,8 +40,10 @@
   {
    "name": "drag move while tracking: screen coords",
    "input": "m 512 50 20 1",
+   "popup": false,
    "trackingBefore": true,
    "trackingAfter": true,
+   "cursor": null,
    "posts": [
     {
      "msg": 512,
@@ -49,8 +55,10 @@
   {
    "name": "left up while tracking: screen coords, ends tracking",
    "input": "m 514 50 20 0",
+   "popup": false,
    "trackingBefore": true,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 514,
@@ -62,8 +70,10 @@
   {
    "name": "up without tracking: client coords",
    "input": "m 514 50 20 0",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 514,
@@ -75,8 +85,10 @@
   {
    "name": "double click down: client, tracking",
    "input": "m 515 10 20 1",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": true,
+   "cursor": null,
    "posts": [
     {
      "msg": 515,
@@ -88,8 +100,10 @@
   {
    "name": "right down",
    "input": "m 516 5 5 2",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": true,
+   "cursor": null,
    "posts": [
     {
      "msg": 516,
@@ -101,8 +115,10 @@
   {
    "name": "wheel: always screen coords",
    "input": "m 522 10 20 7864320",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 522,
@@ -114,8 +130,10 @@
   {
    "name": "wheel while tracking",
    "input": "m 522 10 20 7864320",
+   "popup": false,
    "trackingBefore": true,
    "trackingAfter": true,
+   "cursor": null,
    "posts": [
     {
      "msg": 522,
@@ -127,8 +145,10 @@
   {
    "name": "negative client y (toolbar area)",
    "input": "m 512 0 0 0",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 512,
@@ -140,8 +160,10 @@
   {
    "name": "char is wrapped in VK 0xE8 down/up",
    "input": "k 258 65 1",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 256,
@@ -163,8 +185,10 @@
   {
    "name": "special key passes through",
    "input": "k 256 13 1",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 256,
@@ -176,8 +200,10 @@
   {
    "name": "key up passes through",
    "input": "k 257 37 3238002689",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": [
     {
      "msg": 257,
@@ -189,23 +215,108 @@
   {
    "name": "not allowed: WM_CLOSE",
    "input": "m 16 1 1 0",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": []
   },
   {
    "name": "not allowed: WM_SYSKEYDOWN",
    "input": "k 260 18 1",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": []
   },
   {
    "name": "ack: nothing to post",
    "input": "a 5",
+   "popup": false,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
    "posts": []
+  },
+  {
+   "name": "popup open: move uses screen coords and moves the cursor",
+   "input": "m 512 10 20 0",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": {
+    "x": 110,
+    "y": 220
+   },
+   "posts": [
+    {
+     "msg": 512,
+     "wParam": 0,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "popup open: down uses screen coords, cursor, tracking",
+   "input": "m 513 10 20 1",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "cursor": {
+    "x": 110,
+    "y": 220
+   },
+   "posts": [
+    {
+     "msg": 513,
+     "wParam": 1,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "popup open: up uses screen coords, cursor, ends tracking",
+   "input": "m 514 10 20 0",
+   "popup": true,
+   "trackingBefore": true,
+   "trackingAfter": false,
+   "cursor": {
+    "x": 110,
+    "y": 220
+   },
+   "posts": [
+    {
+     "msg": 514,
+     "wParam": 0,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "popup open: char still wrapped, no cursor move",
+   "input": "k 258 65 1",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 232,
+     "lParam": 1
+    },
+    {
+     "msg": 258,
+     "wParam": 65,
+     "lParam": 1
+    },
+    {
+     "msg": 257,
+     "wParam": 232,
+     "lParam": 3221225473
+    }
+   ]
   }
  ]
 }

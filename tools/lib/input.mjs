@@ -10,6 +10,11 @@
 //    WM_KEYDOWN of the character's own key makes LabVIEW's message loop
 //    produce a second character. So each WM_CHAR is wrapped in key-down/up of
 //    VK 0xE8, a key that produces no character.
+//  * While a LabVIEW popup (ring/enum menu, right-click menu, graph palette
+//    popup ...) is open, LabVIEW reads the REAL cursor position. So every mouse
+//    message gets screen coordinates and the server first moves the host cursor
+//    there (`cursor` in the result). The popup's own picture comes from a
+//    screen capture, see docs/architecture.md.
 
 import { ALLOWED_MESSAGES, mouseLParam } from './protocol.mjs';
 
@@ -24,16 +29,18 @@ const BUTTON_UP = new Set([0x202, 0x205, 0x208]);
  * @param {{panelX:number,panelY:number,clientX:number,clientY:number}} geo
  *        panel origin and client-area origin, both in screen coordinates
  * @param {boolean} tracking a button is held (state kept per client by the server)
- * @returns {{posts:{msg:number,wParam:number,lParam:number}[], tracking:boolean}}
+ * @param {boolean} [popup] a LabVIEW popup window is open
+ * @returns {{posts:{msg:number,wParam:number,lParam:number}[], tracking:boolean, cursor:{x:number,y:number}|null}}
  */
-export function translateInput(input, geo, tracking) {
-  if (input.kind !== 'mouse' && input.kind !== 'key') return { posts: [], tracking };
-  if (!ALLOWED_MESSAGES.has(input.msg)) return { posts: [], tracking };
+export function translateInput(input, geo, tracking, popup = false) {
+  if (input.kind !== 'mouse' && input.kind !== 'key') return { posts: [], tracking, cursor: null };
+  if (!ALLOWED_MESSAGES.has(input.msg)) return { posts: [], tracking, cursor: null };
 
   if (input.kind === 'key') {
     if (input.msg === 0x102) {
       return {
         tracking,
+        cursor: null,
         posts: [
           { msg: 0x100, wParam: VK_NOCHAR, lParam: 1 },
           { msg: 0x102, wParam: input.wParam, lParam: 1 },
@@ -41,7 +48,7 @@ export function translateInput(input, geo, tracking) {
         ],
       };
     }
-    return { tracking, posts: [{ msg: input.msg, wParam: input.wParam, lParam: input.lParam }] };
+    return { tracking, cursor: null, posts: [{ msg: input.msg, wParam: input.wParam, lParam: input.lParam }] };
   }
 
   const sx = geo.panelX + input.x;
@@ -50,6 +57,12 @@ export function translateInput(input, geo, tracking) {
   const client = mouseLParam(sx - geo.clientX, sy - geo.clientY);
   let lParam;
   let next = tracking;
+  if (popup) {
+    // The popup tracks the real cursor; button state still comes from the messages.
+    if (BUTTON_DOWN.has(input.msg)) next = true;
+    else if (BUTTON_UP.has(input.msg)) next = false;
+    return { tracking: next, cursor: { x: sx, y: sy }, posts: [{ msg: input.msg, wParam: input.wParam, lParam: screen }] };
+  }
   if (input.msg === 0x20a) {
     lParam = screen;
   } else if (BUTTON_DOWN.has(input.msg)) {
@@ -61,5 +74,5 @@ export function translateInput(input, geo, tracking) {
   } else {
     lParam = tracking ? screen : client; // WM_MOUSEMOVE
   }
-  return { tracking: next, posts: [{ msg: input.msg, wParam: input.wParam, lParam }] };
+  return { tracking: next, cursor: null, posts: [{ msg: input.msg, wParam: input.wParam, lParam }] };
 }

@@ -186,15 +186,20 @@ function translateVectors() {
     ['not allowed: WM_CLOSE', 'm 16 1 1 0', false],
     ['not allowed: WM_SYSKEYDOWN', 'k 260 18 1', false],
     ['ack: nothing to post', 'a 5', false],
+    ['popup open: move uses screen coords and moves the cursor', 'm 512 10 20 0', false, true],
+    ['popup open: down uses screen coords, cursor, tracking', 'm 513 10 20 1', false, true],
+    ['popup open: up uses screen coords, cursor, ends tracking', 'm 514 10 20 0', true, true],
+    ['popup open: char still wrapped, no cursor move', 'k 258 65 1', false, true],
   ];
   return {
     description: 'Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. '
-      + 'input is a client message (see input.json); trackingBefore/After is the per-client button-held state. '
+      + 'input is a client message (see input.json); trackingBefore/After is the per-client button-held state; '
+      + 'popup: a LabVIEW popup is open; cursor: screen point to move the host cursor to first (null = do not move). '
       + 'lParam is unsigned 32-bit.',
     geo,
-    cases: steps.map(([name, text, tracking]) => {
-      const r = translateInput(parseInput(text), geo, tracking);
-      return { name, input: text, trackingBefore: tracking, trackingAfter: r.tracking, posts: r.posts };
+    cases: steps.map(([name, text, tracking, popup = false]) => {
+      const r = translateInput(parseInput(text), geo, tracking, popup);
+      return { name, input: text, popup, trackingBefore: tracking, trackingAfter: r.tracking, cursor: r.cursor, posts: r.posts };
     }),
   };
 }

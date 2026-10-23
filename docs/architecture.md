@@ -58,10 +58,15 @@ The first version (protocol v1, see git history) modelled each control through V
 * Only the messages in protocol §4.3 are posted.
 * Printable characters go as `WM_CHAR`, so the host keyboard layout doesn't matter.
 
-**Known limits of posted input** (to be confirmed by `spikes/Spike Input Injection.vi`):
+### Popups (menus, dropdowns, graph palette)
 
-* Modifier state: LabVIEW may read Shift/Ctrl with `GetKeyState`, which posted messages don't change. Shift-click and Ctrl shortcuts may not behave like local ones.
-* Popup windows: ring/enum menus, right-click menus and dialogs are separate native windows. `FP.Get Image` doesn't show them, and a native menu runs a modal loop in the UI thread.
+Ring and enum menus, right-click menus, combo-box lists and graph-palette popups are separate top-level windows (`LVMenuWnd` and others) owned by LabVIEW. They are not part of `FP.Get Image`. While one is open, LabVIEW's UI thread runs a modal loop, and every VI Server UI call (`FP.Get Image`, `Panel Bounds`, `OS Window`, …) blocks until it closes. The server therefore watches for popups with Win32 only (`RemoteVI Find Popups.vi`, which uses no VI Server calls) every loop iteration:
+
+* **No popup:** normal path. The server caches panel geometry and `hWnd` for the popup case.
+* **Popup open:** the server makes no VI Server UI calls. The frame is the last panel capture with each popup's screen pixels pasted over it (`RemoteVI Capture Screen Rect.vi`, GDI `BitBlt` from the screen DC; popups are topmost, so the screen shows them). Mouse input moves the **host cursor** to the screen point (`SetCursorPos`, because the popup reads the real cursor), then posts the message to the panel window with screen coordinates. Measured: this selects ring items. The host's cursor therefore jumps while a remote user works in a popup.
+* **Minimized panel:** LabVIEW ignores input to it. The server restores it with `ShowWindow(SW_SHOWNOACTIVATE)`, without taking focus.
+
+**Known limit:** modifier state. LabVIEW may read Shift/Ctrl with `GetKeyState`, which posted messages don't change, so Shift-click and Ctrl shortcuts may not behave like local ones.
 
 ### HTTP
 

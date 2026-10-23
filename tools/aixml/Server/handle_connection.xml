@@ -148,7 +148,7 @@
           <Constant outputs="value:hn4.value" type="string" uid="hn4" uid_parent="cuf" value="Cache-Control"/>
           <Constant outputs="value:hv4.value" type="string" uid="hv4" uid_parent="cuf" value="no-store"/>
           <Constant outputs="value:hn5.value" type="string" uid="hn5" uid_parent="cuf" value="Content-Security-Policy"/>
-          <Constant outputs="value:hv5.value" type="string" uid="hv5" uid_parent="cuf" value="default-src &apos;none&apos;\3B connect-src &apos;self&apos;\3B style-src &apos;unsafe-inline&apos;\3B script-src &apos;unsafe-inline&apos;\3B frame-ancestors &apos;none&apos;"/>
+          <Constant outputs="value:hv5.value" type="string" uid="hv5" uid_parent="cuf" value="default-src &apos;none&apos;\3B connect-src &apos;self&apos;\3B img-src blob:\3B style-src &apos;unsafe-inline&apos;\3B script-src &apos;unsafe-inline&apos;\3B frame-ancestors &apos;none&apos;"/>
           <Call inputs="Response in:cr.Response out,Header:hn1.value,Value:hv1.value,error in (no error):cr.error out" outputs="error out:sh1.error out,Response out:sh1.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh1" uid_parent="cuf"/>
           <Call inputs="Response in:sh1.Response out,Header:hn2.value,Value:hv2.value,error in (no error):sh1.error out" outputs="error out:sh2.error out,Response out:sh2.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh2" uid_parent="cuf"/>
           <Call inputs="Response in:sh2.Response out,Header:hn3.value,Value:hv3.value,error in (no error):sh2.error out" outputs="error out:sh3.error out,Response out:sh3.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh3" uid_parent="cuf"/>

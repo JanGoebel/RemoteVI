@@ -113,7 +113,7 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 * **screen** coordinates: moves and the button-up while a button is held (*tracking*, from a button-down to the next button-up, kept per client). LabVIEW reads these as screen coordinates; measured in `spikes/Spike Input Injection.vi`;
 * **screen** coordinates: `WM_MOUSEWHEEL`, as Windows defines it.
 
-**While a popup is open**, LabVIEW reads the real cursor. Button messages are posted with screen coordinates, and the server moves the host cursor to the point only for the click: until the set of popups changes, at most 300 ms (measured ~40 ms), then back to where it was. Moves and wheel are dropped, so the host cursor stays put. There is no hover highlight, so click a submenu entry to open it.
+**While a popup is open**, LabVIEW hit-tests clicks with the real cursor position against the popup window's real position. The server never moves the host cursor. It moves the popup windows (invisible on the host) by the offset that puts the clicked point under the real cursor, then posts the button message with the real cursor position in `lParam`. Moves and wheel are dropped, because LabVIEW updates the hover highlight only on real cursor motion. A submenu opens when its entry is clicked. OVERLAY positions stay the popups' logical positions (real position minus that offset).
 
 ### 4.2 Keyboard
 

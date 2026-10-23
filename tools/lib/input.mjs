@@ -11,12 +11,15 @@
 //    produce a second character. So each WM_CHAR is wrapped in key-down/up of
 //    VK 0xE8, a key that produces no character.
 //  * While a LabVIEW popup (ring/enum menu, right-click menu, graph palette
-//    popup ...) is open, LabVIEW reads the REAL cursor position. Button messages
-//    get screen coordinates and the server moves the host cursor there just for
-//    the click (`cursor` in the result): it puts it back as soon as the popup set
-//    changes, measured ~40 ms. Moves are dropped so the host cursor stays put
-//    (no hover highlight; click a submenu entry to open it). The popup itself
-//    travels as an OVERLAY message, see docs/protocol.md.
+//    popup ...) is open, LabVIEW hit-tests clicks with the REAL cursor position
+//    against the popup window's REAL position. The host cursor is never moved:
+//    the server moves the (invisible) popup windows so that the point the
+//    remote user clicked (`cursor` in the result, the popup's logical screen
+//    point) lies under wherever the host cursor is, then posts the click with
+//    the real cursor position in lParam. Moves and wheel are dropped: LabVIEW
+//    only updates the hover highlight on real cursor motion, so there is none;
+//    a submenu opens when its entry is clicked. Popups travel as OVERLAY
+//    messages at their logical position, see docs/protocol.md.
 
 import { ALLOWED_MESSAGES, mouseLParam } from './protocol.mjs';
 

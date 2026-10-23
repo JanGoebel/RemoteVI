@@ -41,7 +41,11 @@ body {
 body[data-state="online"] .dot { background: var(--ok); }
 body[data-state="offline"] .dot { background: var(--err); }
 .stage { flex: 1; overflow: auto; padding: 16px; }
-.panel-wrap { width: max-content; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25); }
+.panel-wrap { position: relative; width: max-content; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25); touch-action: none; }
+/* LabVIEW popups (menus, dropdowns, palette popups); may extend past the panel. */
+#overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+#overlay img { position: absolute; display: block; pointer-events: auto; image-rendering: pixelated; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
+.stage { padding-bottom: 240px; padding-right: 240px; }
 #panel { display: block; outline: none; image-rendering: pixelated; cursor: default; touch-action: none; }
 body[data-view-only="true"] #panel { cursor: not-allowed; }
 .stage.fit { display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -63,6 +67,7 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
 <main id="stage" class="stage">
   <div class="panel-wrap">
     <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
+    <div id="overlay"></div>
   </div>
 </main>
 <script>
@@ -72,6 +77,8 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
 
 const FRAME_MAGIC = 0x52;          // 'R'
 const MSG_FRAME = 1;
+const MSG_OVERLAY = 2;
+const OVERLAY_HEADER = 4;          // magic, type, count u16
 const FRAME_HEADER = 12;           // magic, type, seq u32, width u16, height u16, count u16
 const RECT_HEADER = 8;             // x i16, y i16, length u32
 
@@ -127,23 +134,33 @@ function keyLParam(extended, up) {
   return l;
 }
 
+function readRects(v, buf, o, count) {
+  const rects = [];
+  for (let i = 0; i < count; i++) {
+    if (o + RECT_HEADER > buf.byteLength) throw new Error('truncated message');
+    const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
+    o += RECT_HEADER;
+    if (o + len > buf.byteLength) throw new Error('truncated message');
+    rects.push({ x, y, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
+    o += len;
+  }
+  return rects;
+}
+
+function decodeOverlay(buf) {
+  const v = new DataView(buf);
+  return readRects(v, buf, OVERLAY_HEADER, v.getUint16(2));
+}
+
 function decodeFrame(buf) {
   const v = new DataView(buf);
   if (buf.byteLength < FRAME_HEADER || v.getUint8(0) !== FRAME_MAGIC || v.getUint8(1) !== MSG_FRAME) {
     throw new Error('not a RemoteVI frame');
   }
-  const frame = { seq: v.getUint32(2), width: v.getUint16(6), height: v.getUint16(8), rects: [] };
-  const count = v.getUint16(10);
-  let o = FRAME_HEADER;
-  for (let i = 0; i < count; i++) {
-    if (o + RECT_HEADER > buf.byteLength) throw new Error('truncated frame');
-    const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
-    o += RECT_HEADER;
-    if (o + len > buf.byteLength) throw new Error('truncated frame');
-    frame.rects.push({ x, y, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
-    o += len;
-  }
-  return frame;
+  return {
+    seq: v.getUint32(2), width: v.getUint16(6), height: v.getUint16(8),
+    rects: readRects(v, buf, FRAME_HEADER, v.getUint16(10)),
+  };
 }
 
 // --- client -------------------------------------------------------------------
@@ -151,6 +168,8 @@ function decodeFrame(buf) {
 class RemoteViClient {
   constructor() {
     this.canvas = document.getElementById('panel');
+    this.wrap = this.canvas.parentElement;
+    this.overlay = document.getElementById('overlay');
     this.ctx = this.canvas.getContext('2d', { alpha: false });
     this.stage = document.getElementById('stage');
     this.statusEl = document.getElementById('status');
@@ -164,6 +183,7 @@ class RemoteViClient {
     document.getElementById('fit-btn').addEventListener('click', (e) => {
       const fit = this.stage.classList.toggle('fit');
       e.currentTarget.setAttribute('aria-pressed', String(fit));
+      this.scaleOverlay();
     });
     this.bindInput();
     setInterval(() => this.showStats(), 1000);
@@ -207,6 +227,12 @@ class RemoteViClient {
   }
 
   onFrame(buf) {
+    if (buf.byteLength >= 2 && new DataView(buf).getUint8(1) === MSG_OVERLAY) {
+      let popups;
+      try { popups = decodeOverlay(buf); } catch (err) { console.error(err); return; }
+      this.queue = this.queue.then(() => this.showOverlay(popups));
+      return;
+    }
     let frame;
     try {
       frame = decodeFrame(buf);
@@ -224,6 +250,7 @@ class RemoteViClient {
     if (frame.width !== this.canvas.width || frame.height !== this.canvas.height) {
       this.canvas.width = frame.width;
       this.canvas.height = frame.height;
+      this.scaleOverlay();
     }
     frame.rects.forEach((r, i) => {
       this.ctx.drawImage(bitmaps[i], r.x, r.y);
@@ -234,15 +261,33 @@ class RemoteViClient {
     this.send(`a ${frame.seq}`);
   }
 
+  showOverlay(popups) {
+    for (const img of this.overlay.querySelectorAll('img')) URL.revokeObjectURL(img.src);
+    this.overlay.replaceChildren(...popups.map((p) => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(p.png);
+      img.style.left = `${p.x}px`;
+      img.style.top = `${p.y}px`;
+      img.draggable = false;
+      return img;
+    }));
+    this.scaleOverlay();
+  }
+
+  // The overlay is laid out in panel pixels and scaled like the canvas (Fit mode).
+  scaleOverlay() {
+    const s = this.canvas.getBoundingClientRect().width / this.canvas.width;
+    this.overlay.style.transform = `scale(${s})`;
+  }
+
   // --- input -------------------------------------------------------------------
 
+  // Panel pixel under the pointer. Not clamped: popups may extend past the panel.
   panelPoint(e) {
     const r = this.canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - r.left) * (this.canvas.width / r.width));
-    const y = Math.floor((e.clientY - r.top) * (this.canvas.height / r.height));
     return {
-      x: Math.min(Math.max(x, 0), this.canvas.width - 1),
-      y: Math.min(Math.max(y, 0), this.canvas.height - 1),
+      x: Math.floor((e.clientX - r.left) * (this.canvas.width / r.width)),
+      y: Math.floor((e.clientY - r.top) * (this.canvas.height / r.height)),
     };
   }
 
@@ -253,14 +298,16 @@ class RemoteViClient {
 
   bindInput() {
     const c = this.canvas;
-    c.addEventListener('contextmenu', (e) => e.preventDefault());
+    const w = this.wrap;
+    w.addEventListener('contextmenu', (e) => e.preventDefault());
+    addEventListener('resize', () => this.scaleOverlay());
 
-    c.addEventListener('pointerdown', (e) => {
+    w.addEventListener('pointerdown', (e) => {
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
       e.preventDefault();
       c.focus();
-      c.setPointerCapture(e.pointerId);
+      w.setPointerCapture(e.pointerId);
       this.flushMove();
       // Windows reports the second press of a double click as *BUTTONDBLCLK.
       this.mouse(e.detail === 2 ? msgs[2] : msgs[0], e);
@@ -272,17 +319,17 @@ class RemoteViClient {
       this.flushMove();
       this.mouse(msgs[1], e);
     };
-    c.addEventListener('pointerup', up);
-    c.addEventListener('pointercancel', up);
+    w.addEventListener('pointerup', up);
+    w.addEventListener('pointercancel', up);
 
     // Moves are coalesced to one per animation frame: only the latest position matters.
-    c.addEventListener('pointermove', (e) => {
+    w.addEventListener('pointermove', (e) => {
       const first = this.pendingMove === null;
       this.pendingMove = e;
       if (first) requestAnimationFrame(() => this.flushMove());
     });
 
-    c.addEventListener('wheel', (e) => {
+    w.addEventListener('wheel', (e) => {
       e.preventDefault();
       const notches = e.deltaMode === 0 ? -e.deltaY / 100 : -e.deltaY / 3;
       const delta = Math.round(Math.max(-3, Math.min(3, notches || -Math.sign(e.deltaY))) * WHEEL_DELTA);

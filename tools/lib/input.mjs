@@ -11,10 +11,12 @@
 //    produce a second character. So each WM_CHAR is wrapped in key-down/up of
 //    VK 0xE8, a key that produces no character.
 //  * While a LabVIEW popup (ring/enum menu, right-click menu, graph palette
-//    popup ...) is open, LabVIEW reads the REAL cursor position. So every mouse
-//    message gets screen coordinates and the server first moves the host cursor
-//    there (`cursor` in the result). The popup's own picture comes from a
-//    screen capture, see docs/architecture.md.
+//    popup ...) is open, LabVIEW reads the REAL cursor position. Button messages
+//    get screen coordinates and the server moves the host cursor there just for
+//    the click (`cursor` in the result): it puts it back as soon as the popup set
+//    changes, measured ~40 ms. Moves are dropped so the host cursor stays put
+//    (no hover highlight; click a submenu entry to open it). The popup itself
+//    travels as an OVERLAY message, see docs/protocol.md.
 
 import { ALLOWED_MESSAGES, mouseLParam } from './protocol.mjs';
 
@@ -61,6 +63,7 @@ export function translateInput(input, geo, tracking, popup = false) {
     // The popup tracks the real cursor; button state still comes from the messages.
     if (BUTTON_DOWN.has(input.msg)) next = true;
     else if (BUTTON_UP.has(input.msg)) next = false;
+    else return { tracking, cursor: null, posts: [] }; // moves and wheel: dropped
     return { tracking: next, cursor: { x: sx, y: sy }, posts: [{ msg: input.msg, wParam: input.wParam, lParam: screen }] };
   }
   if (input.msg === 0x20a) {

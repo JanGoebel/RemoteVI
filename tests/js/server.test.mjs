@@ -7,7 +7,7 @@ import net from 'node:net';
 import { inflateSync } from 'node:zlib';
 
 import { startServer } from '../../tools/mock-server/server.mjs';
-import { FRAME_MAGIC, MSG_FRAME, FRAMES_IN_FLIGHT } from '../../tools/lib/protocol.mjs';
+import { FRAME_MAGIC, MSG_FRAME, MSG_OVERLAY, FRAMES_IN_FLIGHT } from '../../tools/lib/protocol.mjs';
 
 let srv;
 before(async () => {
@@ -36,7 +36,8 @@ function connect() {
     if (i >= 0) waiters.splice(i, 1)[0].resolve(item);
     else queue.push(item);
   };
-  ws.onmessage = (ev) => push(typeof ev.data === 'string' ? { text: ev.data } : { frame: decodeFrame(ev.data) });
+  ws.onmessage = (ev) => push(typeof ev.data === 'string' ? { text: ev.data }
+    : new Uint8Array(ev.data)[1] === MSG_OVERLAY ? { overlay: decodeOverlay(ev.data) } : { frame: decodeFrame(ev.data) });
   ws.onclose = (ev) => push({ closed: ev.code });
   return {
     ws,
@@ -69,6 +70,19 @@ function decodeFrame(buf) {
   }
   assert.equal(o, b.length, 'no trailing bytes');
   return frame;
+}
+
+function decodeOverlay(buf) {
+  const b = Buffer.from(buf);
+  const popups = [];
+  let o = 4;
+  for (let i = 0, n = b.readUInt16BE(2); i < n; i++) {
+    const len = b.readUInt32BE(o + 4);
+    popups.push({ x: b.readInt16BE(o), y: b.readInt16BE(o + 2), ...decodePng(b.subarray(o + 8, o + 8 + len)) });
+    o += 8 + len;
+  }
+  assert.equal(o, b.length, 'no trailing bytes');
+  return popups;
 }
 
 /** Decoder for the truecolour, filter-0 PNGs the reference encoder writes. */
@@ -179,5 +193,27 @@ test('keyboard and wheel messages reach the panel; malformed and disallowed ones
   assert.deepEqual(srv.posted.map((p) => p.msg), [0x201, 0x100, 0x102, 0x101, 0x20a]);
   assert.ok(srv.panel.state.operator.endsWith('X'));
   assert.equal(srv.panel.state.setpoint, 2.6);
+  c.ws.close();
+});
+
+test('popups travel as OVERLAY messages, may overflow the panel, and close on a click', async () => {
+  const c = connect();
+  await c.opened;
+  const { frame } = await c.next((m) => m.frame);
+  c.ws.send(`a ${frame.seq}`);
+  const before = srv.panel.state.mode;
+  c.ws.send('m 516 480 280 2');      // right-click near the bottom-right corner
+  c.ws.send('m 517 480 280 0');
+  const { overlay } = await c.next((m) => m.overlay);
+  assert.equal(overlay.length, 1);
+  const [p] = overlay;
+  assert.deepEqual([p.x, p.y], [480, 280]);
+  assert.ok(p.x + p.w > frame.width && p.y + p.h > frame.height, 'the popup extends past the panel');
+  const target = (before + 1) % 3;
+  c.ws.send(`m 513 ${p.x + 10} ${p.y + 4 + target * 16} 1`);   // click an item outside the panel area
+  c.ws.send(`m 514 ${p.x + 10} ${p.y + 4 + target * 16} 0`);
+  const cleared = await c.next((m) => m.overlay);
+  assert.deepEqual(cleared.overlay, []);
+  assert.equal(srv.panel.state.mode, target);
   c.ws.close();
 });

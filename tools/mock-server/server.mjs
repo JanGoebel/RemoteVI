@@ -21,7 +21,7 @@ import {
   acceptKey, decodeClientFrame, encodeServerFrame, closePayload, WsError,
   OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG, CLOSE_NORMAL, CLOSE_POLICY, CLOSE_PROTOCOL_ERROR,
 } from '../lib/websocket.mjs';
-import { encodeFrame, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
 import { translateInput } from '../lib/input.mjs';
 import { dirtyRects, crop } from '../lib/rects.mjs';
 import { encodePng } from '../lib/png-encode.mjs';
@@ -112,6 +112,7 @@ export function startServer(opts = {}) {
       socket.on('close', () => this.onClose());
       this.write(OP_TEXT, 'title Simulated Panel.vi');
       this.write(OP_TEXT, `viewonly ${cfg.viewOnly ? 1 : 0}`);
+      if (overlay.message) this.write(OP_BINARY, overlay.message);
       cfg.log(`client connected (${clients.size})`);
       if (initial.length) this.onData(initial);
     }
@@ -187,10 +188,24 @@ export function startServer(opts = {}) {
     }
   }
 
+  // Popups go out as OVERLAY messages whenever they change, outside flow control
+  // (they are small and rare). The LabVIEW server captures them with PrintWindow.
+  const overlay = { key: '', message: null };
+  function pushOverlay() {
+    const p = panel.renderPopup();
+    const key = p ? `${p.x},${p.y},${panel.state.mode}` : '';
+    if (key === overlay.key) return;
+    overlay.key = key;
+    overlay.message = p ? encodeOverlay([{ x: p.x, y: p.y, png: encodePng(p.pixels, p.w, p.h) }]) : encodeOverlay([]);
+    for (const c of clients) c.write(OP_BINARY, overlay.message);
+    if (!p) overlay.message = null;
+  }
+
   // The capture loop: one capture per tick, shared by all clients; each client
   // diffs against what it was last sent.
   const timer = setInterval(() => {
     if (!clients.size) return;
+    pushOverlay();
     const pixels = panel.render();
     const pngCache = new Map();
     for (const c of clients) c.push(pixels, pngCache);

@@ -240,20 +240,38 @@
    "posts": []
   },
   {
-   "name": "popup open: move uses screen coords and moves the cursor",
+   "name": "popup open: moves are dropped (host cursor stays put)",
    "input": "m 512 10 20 0",
    "popup": true,
    "trackingBefore": false,
    "trackingAfter": false,
+   "cursor": null,
+   "posts": []
+  },
+  {
+   "name": "popup open: wheel is dropped",
+   "input": "m 522 10 20 7864320",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": []
+  },
+  {
+   "name": "popup open: click outside the panel (negative coords) still maps",
+   "input": "m 513 -30 600 1",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": true,
    "cursor": {
-    "x": 110,
-    "y": 220
+    "x": 70,
+    "y": 800
    },
    "posts": [
     {
-     "msg": 512,
-     "wParam": 0,
-     "lParam": 14418030
+     "msg": 513,
+     "wParam": 1,
+     "lParam": 52428870
     }
    ]
   },

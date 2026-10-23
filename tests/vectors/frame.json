@@ -1,5 +1,5 @@
 {
- "description": "Protocol/Frame Encode.vi: complete FRAME messages (docs/protocol.md). png/message are hex.",
+ "description": "Protocol/Frame Encode.vi and Overlay Encode.vi: complete FRAME and OVERLAY messages (docs/protocol.md). png/message are hex.",
  "cases": [
   {
    "name": "two rects",
@@ -27,6 +27,29 @@
    "height": 1,
    "rects": [],
    "message": "5201ffffffff000100010000"
+  }
+ ],
+ "overlays": [
+  {
+   "name": "two popups, one partly outside the panel",
+   "popups": [
+    {
+     "x": 30,
+     "y": 140,
+     "png": "89504e470d0a1a0a"
+    },
+    {
+     "x": 790,
+     "y": -12,
+     "png": "0102030405"
+    }
+   ],
+   "message": "52020002001e008c0000000889504e470d0a1a0a0316fff4000000050102030405"
+  },
+  {
+   "name": "clear",
+   "popups": [],
+   "message": "52020000"
   }
  ]
 }

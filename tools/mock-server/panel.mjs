@@ -12,6 +12,8 @@ const LED_ON = 0x2ecc40;
 const LED_OFF = 0x1f4d24;
 const CHART_BG = 0x101418;
 const CHART_FG = 0xf0c419;
+const POPUP_W = 110;
+const POPUP_ITEM_H = 16;
 
 export class SimulatedPanel {
   constructor() {
@@ -21,6 +23,8 @@ export class SimulatedPanel {
     this.t0 = Date.now();
     this.dragging = null;
     this.focus = null;
+    /** Simulated popup menu {x, y, items} in panel coordinates, or null. */
+    this.popup = null;
     this.state = { pump: false, setpoint: 2.5, gain: 4, mode: 1, operator: 'JANE', history: [] };
     this.controls = [
       { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30] },
@@ -43,6 +47,20 @@ export class SimulatedPanel {
    * LabVIEW itself decides what a click does on a real panel.
    */
   post(msg, x, y, wParam) {
+    if (this.popup) {
+      // A real LabVIEW popup grabs all clicks: inside selects, outside closes.
+      if (msg === 0x0201 || msg === 0x0204) {
+        const i = Math.floor((y - this.popup.y - 2) / POPUP_ITEM_H);
+        const inside = x >= this.popup.x && x < this.popup.x + POPUP_W && i >= 0 && i < this.popup.items.length;
+        if (inside) this.state.mode = i;
+        this.popup = null;
+      }
+      return;
+    }
+    if (msg === 0x0204) { // WM_RBUTTONDOWN: context menu at the pointer, may overflow the panel
+      this.popup = { x, y, items: this.controls[3].items };
+      return;
+    }
     const hit = this.hit(x, y);
     switch (msg) {
       case 0x0201: // WM_LBUTTONDOWN
@@ -70,6 +88,25 @@ export class SimulatedPanel {
         break;
       }
     }
+  }
+
+  /** The open popup as an image {x, y, w, h, pixels}, or null. */
+  renderPopup() {
+    if (!this.popup) return null;
+    const { x, y, items } = this.popup;
+    const w = POPUP_W, h = items.length * POPUP_ITEM_H + 4;
+    const saved = { pixels: this.pixels, width: this.width, height: this.height };
+    this.pixels = new Uint32Array(w * h);
+    this.width = w;
+    this.height = h;
+    this.box([0, 0, w, h], CTRL_BG);
+    items.forEach((item, i) => {
+      if (i === this.state.mode) this.rect(1, 2 + i * POPUP_ITEM_H, w - 2, POPUP_ITEM_H, 0xcce4ff);
+      drawText(this.pixels, w, 8, 6 + i * POPUP_ITEM_H, item, TEXT);
+    });
+    const img = { x, y, w, h, pixels: this.pixels };
+    Object.assign(this, saved);
+    return img;
   }
 
   /** Apply one Win32 keyboard message; only WM_CHAR into the focused string matters here. */

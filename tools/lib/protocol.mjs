@@ -4,6 +4,8 @@
 
 export const FRAME_MAGIC = 0x52;
 export const MSG_FRAME = 1;
+export const MSG_OVERLAY = 2;
+export const OVERLAY_HEADER = 4;
 export const FRAME_HEADER = 12;
 export const RECT_HEADER = 8;
 export const FRAMES_IN_FLIGHT = 2;
@@ -30,6 +32,29 @@ export function encodeFrame(seq, width, height, rects) {
     out.writeUInt32BE(r.png.length, o + 4);
     r.png.copy(out, o + RECT_HEADER);
     o += RECT_HEADER + r.png.length;
+  }
+  return out;
+}
+
+/**
+ * OVERLAY: the popups currently open over the panel (menus, dropdowns, palette
+ * popups). Replaces the previous overlay entirely; an empty list clears it.
+ * Positions are relative to the panel origin and may lie outside the panel.
+ * @param {{x:number,y:number,png:Buffer}[]} popups
+ */
+export function encodeOverlay(popups) {
+  const size = OVERLAY_HEADER + popups.reduce((n, p) => n + RECT_HEADER + p.png.length, 0);
+  const out = Buffer.alloc(size);
+  out[0] = FRAME_MAGIC;
+  out[1] = MSG_OVERLAY;
+  out.writeUInt16BE(popups.length, 2);
+  let o = OVERLAY_HEADER;
+  for (const p of popups) {
+    out.writeInt16BE(p.x, o);
+    out.writeInt16BE(p.y, o + 2);
+    out.writeUInt32BE(p.png.length, o + 4);
+    p.png.copy(out, o + RECT_HEADER);
+    o += RECT_HEADER + p.png.length;
   }
   return out;
 }

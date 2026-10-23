@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { dirtyRects } from './lib/rects.mjs';
-import { encodeFrame, parseInput, mouseLParam } from './lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, parseInput, mouseLParam } from './lib/protocol.mjs';
 import { translateInput } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
@@ -143,11 +143,16 @@ function frameVectors() {
   const png2 = Buffer.from('0102030405', 'hex');
   const rects = [{ x: 0, y: 0, png: png1 }, { x: 640, y: 64, png: png2 }];
   return {
-    description: 'Protocol/Frame Encode.vi: complete FRAME messages (docs/protocol.md). png/message are hex.',
+    description: 'Protocol/Frame Encode.vi and Overlay Encode.vi: complete FRAME and OVERLAY messages (docs/protocol.md). png/message are hex.',
     cases: [
       { name: 'two rects', seq: 7, width: 800, height: 600,
         rects: rects.map((r) => ({ x: r.x, y: r.y, png: hex(r.png) })), message: hex(encodeFrame(7, 800, 600, rects)) },
       { name: 'no rects, large seq', seq: 4294967295, width: 1, height: 1, rects: [], message: hex(encodeFrame(4294967295, 1, 1, [])) },
+    ],
+    overlays: [
+      { name: 'two popups, one partly outside the panel', popups: [{ x: 30, y: 140, png: hex(png1) }, { x: 790, y: -12, png: hex(png2) }],
+        message: hex(encodeOverlay([{ x: 30, y: 140, png: png1 }, { x: 790, y: -12, png: png2 }])) },
+      { name: 'clear', popups: [], message: hex(encodeOverlay([])) },
     ],
   };
 }
@@ -186,7 +191,9 @@ function translateVectors() {
     ['not allowed: WM_CLOSE', 'm 16 1 1 0', false],
     ['not allowed: WM_SYSKEYDOWN', 'k 260 18 1', false],
     ['ack: nothing to post', 'a 5', false],
-    ['popup open: move uses screen coords and moves the cursor', 'm 512 10 20 0', false, true],
+    ['popup open: moves are dropped (host cursor stays put)', 'm 512 10 20 0', false, true],
+    ['popup open: wheel is dropped', 'm 522 10 20 7864320', false, true],
+    ['popup open: click outside the panel (negative coords) still maps', 'm 513 -30 600 1', false, true],
     ['popup open: down uses screen coords, cursor, tracking', 'm 513 10 20 1', false, true],
     ['popup open: up uses screen coords, cursor, ends tracking', 'm 514 10 20 0', true, true],
     ['popup open: char still wrapped, no cursor move', 'k 258 65 1', false, true],

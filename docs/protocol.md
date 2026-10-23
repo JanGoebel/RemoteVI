@@ -60,7 +60,20 @@ The client resizes its canvas to the panel size when it changes, then draws each
 
 **Which rects:** the server splits the panel into a grid of 64 × 64 tiles (edge tiles clipped), compares the capture with the one this client was last sent, and merges the dirty tiles of each tile row into one rect, spanning the first to the last dirty tile of that row. See `dirtyRects()` and `tests/vectors/rects.json`. A client must not depend on this; any set of rects is valid.
 
-### 3.2 Text messages
+### 3.2 OVERLAY (binary message)
+
+The LabVIEW popups that are open over the panel: ring/enum menus, right-click menus, combo-box lists, graph-palette popups. Each OVERLAY **replaces** the previous one; an empty list clears it. The server sends one whenever the popups or their pixels change, outside flow control (they are small and rare), and sends the current one to a client that connects while a popup is open.
+
+| Offset | Type | Field |
+|---|---|---|
+| 0 | u8 | magic `0x52` |
+| 1 | u8 | message type `2` = OVERLAY |
+| 2 | u16 | popup count *n* |
+| 4 | *n* × rect | same layout as FRAME rects (§3.1): x, y, length, PNG |
+
+x and y are relative to the panel origin and **may lie outside the panel**, for example a context menu that overflows the right or bottom edge. The client draws the popups over the canvas, unclipped, and sends input on them with the same panel coordinates, which may be negative or beyond the panel size. `encodeOverlay()`, `tests/vectors/frame.json` → `overlays`.
+
+### 3.3 Text messages
 
 One command word, a space, and an argument. Clients ignore commands they don't know.
 
@@ -99,6 +112,8 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 * **client** coordinates: hover moves and button-downs;
 * **screen** coordinates: moves and the button-up while a button is held (*tracking*, from a button-down to the next button-up, kept per client). LabVIEW reads these as screen coordinates; measured in `spikes/Spike Input Injection.vi`;
 * **screen** coordinates: `WM_MOUSEWHEEL`, as Windows defines it.
+
+**While a popup is open**, LabVIEW reads the real cursor. Button messages are posted with screen coordinates, and the server moves the host cursor to the point only for the click: until the set of popups changes, at most 300 ms (measured ~40 ms), then back to where it was. Moves and wheel are dropped, so the host cursor stays put. There is no hover highlight, so click a submenu entry to open it.
 
 ### 4.2 Keyboard
 

@@ -1,0 +1,76 @@
+<VI _name="RemoteVI Translate Input.vi" description="Turns one parsed client input message (the outputs of RemoteVI Parse Input.vi) into the Win32 messages the server posts to the panel window (docs/protocol.md section 4). Only the allowed messages of section 4.3 produce posts; anything else - ack\2C invalid\2C WM_CLOSE\2C WM_SYSKEYDOWN - gives an empty posts array and leaves tracking unchanged. WM_CHAR becomes three posts: WM_KEYDOWN(0xE8\2C1)\2C WM_CHAR(wParam\2C1)\2C WM_KEYUP(0xE8\2C0xC0000001). Other key messages pass through unchanged. Mouse lParam = ((y and 0xFFFF) shl 16) or (x and 0xFFFF) of CLIENT coordinates (screen point minus client origin) or of SCREEN coordinates (panel origin plus x/y): the wheel always uses screen; a button-down uses client and starts tracking; a button-up uses screen while tracking\2C else client\2C and ends tracking; a move uses screen while tracking\2C else client. Pure function\2C cannot fail. Reference: translateInput() in tools\5Clib\5Cinput.mjs.">
+  <FreeLabel comment="Allowed only. Mouse: client or screen point" uid="lbl" uid_parent="root"/>
+  <Control _name="kind" conIdx="0" connection="required" description="Message kind from RemoteVI Parse Input.vi. Only mouse and key produce posts." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack}" uid="kind" uid_parent="root" value="0"/>
+  <Control _name="msg" conIdx="1" connection="required" description="Windows message number from RemoteVI Parse Input.vi." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
+  <Control _name="x" conIdx="2" connection="recommended" description="Panel pixel x (mouse)." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="3" connection="recommended" description="Panel pixel y (mouse)." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Control _name="wParam" conIdx="4" connection="recommended" description="wParam (mouse and key)\2C posted unchanged." outputs="value:wp.value" type="uint64" uid="wp" uid_parent="root" value="0"/>
+  <Control _name="lParam" conIdx="5" connection="recommended" description="lParam (key)\2C posted unchanged for key messages other than WM_CHAR." outputs="value:lpin.value" type="int64" uid="lpin" uid_parent="root" value="0"/>
+  <Control _name="geo" conIdx="6" connection="required" description="Screen coordinates of the panel origin (Panel Bounds left/top) and of the client-area origin\2C from RemoteVI Get Panel Geometry.vi." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="tracking in" conIdx="7" connection="recommended" description="A mouse button is held (per-client state\2C from the previous call's tracking out)." outputs="value:tin.value" type="bool" uid="tin" uid_parent="root" value="false"/>
+
+  <Constant outputs="value:kM.value" type="uint16{invalid,mouse,key,ack}" uid="kM" uid_parent="root" value="1"/>
+  <Constant outputs="value:kK.value" type="uint16{invalid,mouse,key,ack}" uid="kK" uid_parent="root" value="2"/>
+  <Constant _name="allowed" outputs="value:aA.value" type="array{uint32}" uid="aA" uid_parent="root" value="[256,257,258,512,513,514,515,516,517,518,519,520,521,522]"/>
+  <Constant _name="button down" outputs="value:aD.value" type="array{uint32}" uid="aD" uid_parent="root" value="[513,515,516,518,519,521]"/>
+  <Constant _name="button up" outputs="value:aU.value" type="array{uint32}" uid="aU" uid_parent="root" value="[514,517,520]"/>
+  <Constant _name="WM_MOUSEWHEEL" outputs="value:kW.value" type="uint32" uid="kW" uid_parent="root" value="522"/>
+  <Constant _name="WM_CHAR" outputs="value:kC.value" type="uint32" uid="kC" uid_parent="root" value="258"/>
+
+  <Node _name="Equal?" inputs="x:kind.value,y:kM.value" outputs="x = y?:isM.x = y?" uid="isM" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:kind.value,y:kK.value" outputs="x = y?:isK.x = y?" uid="isK" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:aA.value,element:msg.value" outputs="index of element:sA.index of element" uid="sA" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:aD.value,element:msg.value" outputs="index of element:sD.index of element" uid="sD" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:aU.value,element:msg.value" outputs="index of element:sU.index of element" uid="sU" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:sA.index of element" outputs="x &gt;= 0?:okA.x &gt;= 0?" uid="okA" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:sD.index of element" outputs="x &gt;= 0?:isD.x &gt;= 0?" uid="isD" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:sU.index of element" outputs="x &gt;= 0?:isU.x &gt;= 0?" uid="isU" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:msg.value,y:kW.value" outputs="x = y?:isW.x = y?" uid="isW" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:msg.value,y:kC.value" outputs="x = y?:isC.x = y?" uid="isC" uid_parent="root"/>
+  <Node _name="And" inputs="x:isM.x = y?,y:okA.x &gt;= 0?" outputs="x .and. y?:mAct.x .and. y?" uid="mAct" uid_parent="root"/>
+  <Node _name="And" inputs="x:isK.x = y?,y:okA.x &gt;= 0?" outputs="x .and. y?:kAct.x .and. y?" uid="kAct" uid_parent="root"/>
+
+  <Node _name="Unbundle By Name" fields="panelX,panelY,clientX,clientY" inputs="input cluster:geo.value" outputs="panelX:ug.panelX,panelY:ug.panelY,clientX:ug.clientX,clientY:ug.clientY" uid="ug" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:ug.panelX,y:ug.clientX" outputs="x-y:ox.x-y" uid="ox" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:ug.panelY,y:ug.clientY" outputs="x-y:oy.x-y" uid="oy" uid_parent="root"/>
+  <Node _name="Add" inputs="x:ug.panelX,y:x.value" outputs="x+y:sx.x+y" uid="sx" uid_parent="root"/>
+  <Node _name="Add" inputs="x:ug.panelY,y:y.value" outputs="x+y:sy.x+y" uid="sy" uid_parent="root"/>
+  <Node _name="Add" inputs="x:ox.x-y,y:x.value" outputs="x+y:cx.x+y" uid="cx" uid_parent="root"/>
+  <Node _name="Add" inputs="x:oy.x-y,y:y.value" outputs="x+y:cy.x+y" uid="cy" uid_parent="root"/>
+
+  <Constant _name="client" outputs="value:kF.value" type="bool" uid="kF" uid_parent="root" value="false"/>
+  <Node _name="Or" inputs="x:isW.x = y?,y:tin.value" outputs="x .or. y?:wt.x .or. y?" uid="wt" uid_parent="root"/>
+  <Node _name="Select" inputs="t:kF.value,s:isD.x &gt;= 0?,f:wt.x .or. y?" outputs="s? t\3Af:scr.s? t\3Af" uid="scr" uid_parent="root"/>
+  <Node _name="Select" inputs="t:sx.x+y,s:scr.s? t\3Af,f:cx.x+y" outputs="s? t\3Af:px.s? t\3Af" uid="px" uid_parent="root"/>
+  <Node _name="Select" inputs="t:sy.x+y,s:scr.s? t\3Af,f:cy.x+y" outputs="s? t\3Af:py.s? t\3Af" uid="py" uid_parent="root"/>
+  <Constant _name="0xFFFF" outputs="value:kMask.value" type="int32" uid="kMask" uid_parent="root" value="65535"/>
+  <Constant _name="65536" outputs="value:k16.value" type="int64" uid="k16" uid_parent="root" value="65536"/>
+  <Node _name="And" inputs="x:px.s? t\3Af,y:kMask.value" outputs="x .and. y?:ux.x .and. y?" uid="ux" uid_parent="root"/>
+  <Node _name="And" inputs="x:py.s? t\3Af,y:kMask.value" outputs="x .and. y?:uy.x .and. y?" uid="uy" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:uy.x .and. y?,y:k16.value" outputs="x*y:hi.x*y" uid="hi" uid_parent="root"/>
+  <Node _name="Add" inputs="x:hi.x*y,y:ux.x .and. y?" outputs="x+y:mlp.x+y" uid="mlp" uid_parent="root"/>
+
+  <Constant _name="post" outputs="value:ct.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="ct" uid_parent="root" value="[0,0,0]"/>
+  <Constant _name="WM_CHAR post" outputs="value:cch.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="cch" uid_parent="root" value="[258,0,1]"/>
+  <Constant _name="KEYDOWN 0xE8" outputs="value:cd.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="cd" uid_parent="root" value="[256,232,1]"/>
+  <Constant _name="KEYUP 0xE8" outputs="value:cu.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="cu" uid_parent="root" value="[257,232,3221225473]"/>
+  <Constant _name="no posts" outputs="value:emp.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="emp" uid_parent="root" value="[]"/>
+
+  <Node _name="Bundle By Name" fields="msg,wParam,lParam" inputs="msg:msg.value,wParam:wp.value,lParam:mlp.x+y,input cluster:ct.value" outputs="output cluster:bm.output cluster" uid="bm" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:bm.output cluster" outputs="appended array:am.appended array" uid="am" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="msg,wParam,lParam" inputs="msg:msg.value,wParam:wp.value,lParam:lpin.value,input cluster:ct.value" outputs="output cluster:bk.output cluster" uid="bk" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:bk.output cluster" outputs="appended array:ak.appended array" uid="ak" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="wParam" inputs="wParam:wp.value,input cluster:cch.value" outputs="output cluster:bc.output cluster" uid="bc" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:cd.value,element:bc.output cluster,element:cu.value" outputs="appended array:ac.appended array" uid="ac" uid_parent="root"/>
+  <Node _name="Select" inputs="t:ac.appended array,s:isC.x = y?,f:ak.appended array" outputs="s? t\3Af:sk.s? t\3Af" uid="sk" uid_parent="root"/>
+  <Node _name="Select" inputs="t:sk.s? t\3Af,s:kAct.x .and. y?,f:emp.value" outputs="s? t\3Af:s2.s? t\3Af" uid="s2" uid_parent="root"/>
+  <Node _name="Select" inputs="t:am.appended array,s:mAct.x .and. y?,f:s2.s? t\3Af" outputs="s? t\3Af:posts.s? t\3Af" uid="posts" uid_parent="root"/>
+
+  <Node _name="Not" inputs="x:isU.x &gt;= 0?" outputs=".not. x?:nU..not. x?" uid="nU" uid_parent="root"/>
+  <Node _name="And" inputs="x:tin.value,y:nU..not. x?" outputs="x .and. y?:keep.x .and. y?" uid="keep" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isD.x &gt;= 0?,y:keep.x .and. y?" outputs="x .or. y?:tn.x .or. y?" uid="tn" uid_parent="root"/>
+  <Node _name="Select" inputs="t:tn.x .or. y?,s:mAct.x .and. y?,f:tin.value" outputs="s? t\3Af:tout.s? t\3Af" uid="tout" uid_parent="root"/>
+
+  <Indicator _name="posts" conIdx="20" connection="recommended" description="Win32 messages to post to the panel window\2C in order. Empty when nothing is to be posted." inputs="value:posts.s? t\3Af" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="o_posts" uid_parent="root" value="[]"/>
+  <Indicator _name="tracking out" conIdx="21" connection="recommended" description="Tracking state after this message - feed it to the next call's tracking in." inputs="value:tout.s? t\3Af" type="bool" uid="o_tr" uid_parent="root" value="false"/>
+</VI>

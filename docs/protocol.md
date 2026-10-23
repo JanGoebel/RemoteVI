@@ -1,141 +1,129 @@
-# RemoteVI protocol, version 1
+# RemoteVI protocol, version 2
 
-This is the normative spec. The reference implementation lives in `web/js/protocol.js` and `tools/lib/*`. Test vectors are in `tests/vectors/`.
+This is the normative spec. The reference implementation is `tools/lib/protocol.mjs` (with `rects.mjs`, `websocket.mjs`, `http.mjs`), the reference server is `tools/mock-server/server.mjs`, and the browser side is `web/index.html`. Test vectors are in `tests/vectors/`.
+
+Version 2 replaces version 1's per-control model (layout, `set`, overlays, QOI tiles). The panel is a picture going one way and raw mouse and keyboard events going the other. Everything LabVIEW draws is shown as drawn, and everything a local user can click can be clicked remotely.
 
 ## 1. HTTP endpoints
 
-| Path | Purpose |
+| Request | Response |
 |---|---|
-| `GET /` | `index.html` of the browser client |
-| `GET /js/*`, `GET /css/*` | client assets, served from a fixed in-memory table |
-| `GET /ws` | WebSocket upgrade (RFC 6455, version 13) |
+| `GET /` or `GET /index.html` | the browser client, one self-contained HTML file |
+| `GET /ws` with a WebSocket upgrade (RFC 6455, version 13) | `101`, then the session below |
+| `GET /ws` without an upgrade | `426` |
+| a WebSocket upgrade whose `Origin` host differs from `Host` | `403` |
+| any other path | `404` |
 
-Every other path returns `404`, every other method `405`, and every response but `101` carries `Connection: close`. Limits are in [security.md](security.md).
+Static responses carry the headers in [security.md](security.md#response-headers) and close the connection.
 
-## 2. Session lifecycle
+## 2. Session
 
 ```
-client                                     server
-  │  WebSocket upgrade  ──────────────────►  │  Origin must match Host (if present)
-  │  {"t":"hello","v":1,"client":…,"token":…}►│  must arrive within 3 s
-  │  ◄──────────────── {"t":"welcome",…}    │
-  │  ◄──────────────── {"t":"layout",…}     │
-  │  ◄──────────────── FRAME (keyframe)     │
-  │  {"t":"ack","seq":1} ─────────────────►  │
-  │  ◄──────────────── FRAME (delta) …      │
+client                                   server
+  │  WebSocket upgrade  ────────────────►  │
+  │  ◄──────────────── "title <VI name>"   │  text
+  │  ◄──────────────── "viewonly 0|1"      │  text
+  │  ◄──────────────── FRAME seq 1         │  whole panel
+  │  "a 1" ────────────────────────────►   │  ack after painting
+  │  "m 513 120 45 1" ─────────────────►   │  input, any time
+  │  ◄──────────────── FRAME seq 2 …       │  only what changed
 ```
 
-The access token travels in the `hello` message, not the URL. The browser reads it from the page URL's fragment (`http://host:port/#token=…`), and fragments are never sent to servers or proxies.
+There is no handshake beyond the WebSocket upgrade. A client may send input as soon as the socket is open.
 
-Close codes, beyond the RFC 6455 ones:
+## 3. Server → client
 
-| Code | Meaning | Client behaviour |
+### 3.1 FRAME (binary message)
+
+All integers are big-endian.
+
+| Offset | Type | Field |
 |---|---|---|
-| 4400 | unsupported protocol version | stop, show error |
-| 4401 | no/invalid `hello` (timeout, wrong first message) | stop, show error |
-| 4403 | wrong token | stop, show error |
-| 1001 | server shutting down or VI unpublished | reconnect with backoff |
+| 0 | u8 | magic `0x52` (`R`) |
+| 1 | u8 | message type `1` = FRAME |
+| 2 | u32 | `seq`, 1 for the first frame of a session, then +1 per frame |
+| 6 | u16 | panel width in pixels |
+| 8 | u16 | panel height in pixels |
+| 10 | u16 | rect count *n* |
+| 12 | *n* × rect | |
 
-## 3. Binary messages (server → client)
+Each rect:
 
-All integers are **big-endian**, which is LabVIEW's native `Flatten To String` order.
-
-### FRAME (type `0x10`)
-
-| Offset | Size | Field |
+| Offset | Type | Field |
 |---|---|---|
-| 0 | u8 | type = `0x10` |
-| 1 | u8 | flags: bit 0 = keyframe (all tiles present; panel size may have changed) |
-| 2 | u32 | seq: starts at 1 per session, +1 per frame |
-| 6 | u16 | panel width (px) |
-| 8 | u16 | panel height (px) |
-| 10 | u16 | tile count N |
-| 12 | … | N tiles |
+| 0 | i16 | x of the top-left corner on the panel |
+| 2 | i16 | y |
+| 4 | u32 | length *L* of the PNG |
+| 8 | *L* bytes | a PNG image; its own header carries width and height |
 
-Tile:
+The client resizes its canvas to the panel size when it changes, then draws each PNG at (x, y). The first frame of a session, and any frame after a size change, covers the whole panel.
 
-| Offset | Size | Field |
+**Which rects:** the server splits the panel into a grid of 64 × 64 tiles (edge tiles clipped), compares the capture with the one this client was last sent, and merges the dirty tiles of each tile row into one rect, spanning the first to the last dirty tile of that row. See `dirtyRects()` and `tests/vectors/rects.json`. A client must not depend on this; any set of rects is valid.
+
+### 3.2 Text messages
+
+One command word, a space, and an argument. Clients ignore commands they don't know.
+
+| Message | Meaning |
+|---|---|
+| `title <name>` | name of the published VI, for display |
+| `viewonly 0` / `viewonly 1` | whether the server ignores this client's input |
+
+## 4. Client → server (text messages)
+
+ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not fatal (`parseInput()`, `tests/vectors/input.json`).
+
+| Message | Meaning |
+|---|---|
+| `a <seq>` | frame `seq` has been painted |
+| `m <msg> <x> <y> <wParam>` | mouse message `msg` at panel pixel (x, y) |
+| `k <msg> <wParam> <lParam>` | keyboard message `msg` |
+
+`msg`, `wParam` and `lParam` are **Win32 window-message values**. The server posts them to the panel's native window as they are. Only the server translates coordinates.
+
+### 4.1 Mouse
+
+| `msg` | Name | Sent on |
 |---|---|---|
-| 0 | u16 | x |
-| 2 | u16 | y |
-| 4 | u16 | w |
-| 6 | u16 | h |
-| 8 | u8 | encoding |
-| 9 | u32 | payload length L |
-| 13 | L | payload |
+| 512 (0x200) | `WM_MOUSEMOVE` | pointer move, at most once per animation frame |
+| 513 / 514 | `WM_LBUTTONDOWN` / `UP` | left button |
+| 515 | `WM_LBUTTONDBLCLK` | second press of a double click, instead of DOWN |
+| 516 / 517 / 518 | `WM_RBUTTON…` | right button, likewise |
+| 519 / 520 / 521 | `WM_MBUTTON…` | middle button, likewise |
+| 522 (0x20A) | `WM_MOUSEWHEEL` | wheel; high word of `wParam` is the signed delta, ±120 per notch |
 
-Encodings:
+`wParam` carries the `MK_*` flags: `MK_LBUTTON 1`, `MK_RBUTTON 2`, `MK_SHIFT 4`, `MK_CONTROL 8`, `MK_MBUTTON 16`.
 
-| Value | Name | Payload |
+Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/translate.json`): screen point = (panel origin on screen) + (x, y), where the panel origin is the top-left of `Front Panel Window:Panel Bounds`. The client-area origin comes from `ScreenToClient(hWnd)`; in the IDE the toolbar is inside the client area. `lParam = (y << 16) | (x & 0xFFFF)` of either:
+
+* **client** coordinates: hover moves and button-downs;
+* **screen** coordinates: moves and the button-up while a button is held (*tracking*, from a button-down to the next button-up, kept per client). LabVIEW reads these as screen coordinates; measured in `spikes/Spike Input Injection.vi`;
+* **screen** coordinates: `WM_MOUSEWHEEL`, as Windows defines it.
+
+### 4.2 Keyboard
+
+| `msg` | Name | Sent for |
 |---|---|---|
-| `0x00` | SOLID | 4 bytes `00 RR GG BB` (exactly a LabVIEW `U32` colour) |
-| `0x01` | QOI | a complete QOI image (header + chunks + end marker), 3 channels, size w×h |
-| `0x02` | RAW_RGB | w×h×3 bytes, row-major `RR GG BB` |
+| 256 / 257 | `WM_KEYDOWN` / `WM_KEYUP` | non-character keys: Enter, Tab, Backspace, Esc, arrows, Home/End, PgUp/PgDn, Insert/Delete, F1–F12, Shift, Ctrl |
+| 258 | `WM_CHAR` | printable characters (the character code), and Ctrl+A…Z as codes 1–26 |
 
-Rules:
+Printable characters go as `WM_CHAR` so the result doesn't depend on the host's keyboard layout. `lParam` for key messages is repeat count 1, bit 24 for extended keys, and bits 30–31 set on key-up.
 
-* Tiles never overlap within a frame and must lie inside the panel.
-* A change of panel size is only allowed on a keyframe.
-* The server's tile grid is an implementation detail. Clients must accept tiles of any size.
+Server side, each `WM_CHAR` is posted as `WM_KEYDOWN(0xE8)`, `WM_CHAR`, `WM_KEYUP(0xE8)`. A bare posted `WM_CHAR` right after a non-character key is dropped by LabVIEW, and a key-down of the character's own key would make LabVIEW's message loop produce the character twice. VK `0xE8` produces no character.
 
-## 4. JSON messages
+### 4.3 Allowed messages
 
-Every text message is a JSON object with a string field `t`. Unknown `t` values and unknown fields are ignored, which keeps the protocol forward compatible.
+The server posts only the messages listed in 4.1 and 4.2 (`ALLOWED_MESSAGES`) and drops everything else. A client can never send `WM_CLOSE`, `WM_DESTROY`, `WM_COMMAND` or similar.
 
-### Server → client
+## 5. Flow control
 
-| `t` | Fields | Notes |
+A client acks each frame **after painting it**. The server sends a new frame to a client only while that client has fewer than **2** unacknowledged frames. A slow client or network therefore gets fewer, fresher frames, never a backlog. Each client is diffed against what *it* was last sent, so clients of different speeds don't hold each other back.
+
+## 6. Limits
+
+| Limit | Value | Action |
 |---|---|---|
-| `welcome` | `v`, `session`, `vi` (VI name), `panel {w,h}`, `mode` (`single`/`everyone`/`view`), `role` (`controller`/`viewer`) | first message after a valid `hello` |
-| `layout` | `controls[]` (see below) | sent after `welcome` and whenever the layout changes |
-| `value` | `id`, `value` | current value of an overlay-editable control, so overlays open pre-filled |
-| `role` | `role`, `owner` (display name or `null`) | ownership changed |
-| `pong` | `ts` | echo of `ping.ts` |
-| `error` | `code`, `message` | non-fatal. Codes: `not-controller`, `rejected`, `unknown-control` |
-
-Control entry (`layout.controls[]`, ordered back-to-front):
-
-```json
-{ "id": "c2", "label": "Setpoint", "kind": "numeric",
-  "bounds": [24, 104, 120, 22], "edit": [24, 104, 104, 22],
-  "readonly": false, "visible": true, "disabled": false,
-  "min": -10, "max": 10, "items": [], "mech": "", "multiline": false, "value": 2.5 }
-```
-
-* `bounds` and `edit` are `[x, y, w, h]` in panel pixels.
-* `kind` is one of `boolean`, `numeric`, `string`, `path`, `enum`, `ring`, `slider`, `chart`, `graph`, `cluster`, `array`, `other`.
-* `mech` is set for booleans: `switch-when-pressed`, `switch-when-released`, `switch-until-released`, `latch-when-pressed`, `latch-when-released`, `latch-until-released`.
-* `id` stays stable for the lifetime of a publication. LabVIEW uses the control's VI Server reference number, formatted as a string.
-* With `Flatten To JSON`, all fields are always present. Clients treat empty or zero values as "not applicable".
-
-### Client → server
-
-| `t` | Fields | Requires controller |
-|---|---|---|
-| `hello` | `v`, `client`, `token` | – |
-| `ack` | `seq` | – |
-| `ping` | `ts` (opaque number) | – |
-| `refresh` | – (request a keyframe) | – |
-| `control` | `action`: `request` / `release` | – |
-| `mouse` | `e`: `down`/`up`/`move`/`wheel`; `x`, `y` (panel px); `b` (button for down/up, button mask for move); `dy` (wheel: ±1); `mods` | yes |
-| `key` | `e`: `down`/`up`; `key`, `code` (DOM `KeyboardEvent` values); `mods` | yes |
-| `set` | `id`, `value` (JSON number, string or integer index) | yes |
-
-`mods` is a bitmask: 1 = Shift, 2 = Ctrl, 4 = Alt, 8 = Meta.
-
-If a viewer sends one of the "requires controller" messages, the server answers with `error`/`not-controller` and ignores it.
-
-## 5. Input model
-
-1. The client hit-tests a pointer press against `layout.controls`, topmost visible first.
-2. If the hit control is overlay-editable (`numeric`, `string`, `path`, `enum`, `ring`, not read-only or disabled), the client opens a local editor at `edit` (or `bounds`) and sends only `set` when the edit is committed.
-3. Otherwise it forwards raw `mouse` events. The server hit-tests again, and the control's adapter interprets the gesture (boolean mechanical action, slider drag, wheel increments).
-4. `key` events go to the server only while no overlay is open.
-
-## 6. Flow control
-
-The client sends `ack` with a frame's `seq` *after* painting it. The server sends a new frame to a session only while `seq − lastAck < FramesInFlight` (default 2), and only if that session's socket backlog is under 1 MiB. Diffing is done against the last frame *sent to that session*, so skipped captures never lose changes.
-
-## 7. Versioning
-
-`hello.v` / `welcome.v` carry the protocol version. A server closes with 4400 if it can't speak the requested version. New optional fields and new message types don't change the version. Changes to the binary layout or the meaning of existing fields do.
+| Client WebSocket payload | 64 KiB | close `1009` |
+| Unmasked client frame, RSV bits, unknown opcode, fragmented or oversized control frame | – | close `1002` |
+| Binary or fragmented client data message | – | close `1008` |
+| Concurrent clients | 8 | `503` on upgrade |

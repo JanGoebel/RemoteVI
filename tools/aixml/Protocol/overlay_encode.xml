@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Overlay Encode.vi" description="Encodes one RemoteVI protocol v2 OVERLAY message (docs/protocol.md section 3.2)\3A the LabVIEW popups open over the panel. Layout\2C all integers big-endian\3A 0x52\2C 0x02\2C popup count U16\2C then per popup x I16\2C y I16\2C png length U32 and the png bytes - the same record layout as FRAME rects. x and y are relative to the panel origin and may lie outside the panel. An empty popups array gives the 4-byte message that clears the overlay. Pure function\2C cannot fail. Reference: encodeOverlay() in tools\5Clib\5Cprotocol.mjs\2C vectors tests\5Cvectors\5Cframe.json overlays.">
+  <FreeLabel comment="Header then one record per popup" uid="lbl" uid_parent="root"/>
+  <Control _name="popups" conIdx="0" connection="required" description="The popups in drawing order - the client draws later ones on top\2C so the server sends the bottom-most first\3A x and y (I16) of the top-left corner relative to the panel origin and the PNG-encoded pixels. The count is written as U16." outputs="value:pops.value" type="array{cluster{int16.x,int16.y,string.png}}" uid="pops" uid_parent="root" value="[]"/>
+  <Constant _name="0x52 0x02" outputs="value:magic.value" type="uint16" uid="magic" uid_parent="root" value="20994"/>
+  <Constant outputs="value:tstr.value" type="string" uid="tstr" uid_parent="root" value=""/>
+  <Node _name="Type Cast" inputs="x:magic.value,type:tstr.value" outputs="*(type *) &amp;x:tcm.*(type *) &amp;x" uid="tcm" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:pops.value" outputs="size(s):asz.size(s)" uid="asz" uid_parent="root"/>
+  <Node _name="To Unsigned Word Integer" inputs="number:asz.size(s)" outputs="unsigned 16bit integer:cnt.unsigned 16bit integer" uid="cnt" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:cnt.unsigned 16bit integer,type:tstr.value" outputs="*(type *) &amp;x:tcc.*(type *) &amp;x" uid="tcc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One record per popup" maxin="" maxout="" uid="loop" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pops.value" mode="index" outputs="value:rin.value" uid="rin" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:tstr.value" outputs="value:tin.value" uid="tin" uid_parent="loop"/>
+    <Node _name="Unbundle By Name" fields="x,y,png" inputs="input cluster:rin.value" outputs="x:unb.x,y:unb.y,png:unb.png" uid="unb" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:unb.x,type:tin.value" outputs="*(type *) &amp;x:tcx.*(type *) &amp;x" uid="tcx" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:unb.y,type:tin.value" outputs="*(type *) &amp;x:tcy.*(type *) &amp;x" uid="tcy" uid_parent="loop"/>
+    <Node _name="String Length" inputs="string:unb.png" outputs="length:slen.length" uid="slen" uid_parent="loop"/>
+    <Node _name="To Unsigned Long Integer" inputs="number:slen.length" outputs="unsigned 32bit integer:u32.unsigned 32bit integer" uid="u32" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:u32.unsigned 32bit integer,type:tin.value" outputs="*(type *) &amp;x:tcl.*(type *) &amp;x" uid="tcl" uid_parent="loop"/>
+    <Node _name="Concatenate Strings" inputs="string:tcx.*(type *) &amp;x,string:tcy.*(type *) &amp;x,string:tcl.*(type *) &amp;x,string:unb.png" outputs="concatenated string:rec.concatenated string" uid="rec" uid_parent="loop"/>
+    <Tunnel _id="Out1" inputs="value:rec.concatenated string" mode="index" outputs="value:recs.value" uid="recs" uid_parent="loop"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:tcm.*(type *) &amp;x,string:tcc.*(type *) &amp;x,string:recs.value" outputs="concatenated string:msg.concatenated string" uid="msg" uid_parent="root"/>
+  <Indicator _name="message" conIdx="4" connection="recommended" description="The complete OVERLAY message\2C ready to send as one binary WebSocket message." inputs="value:msg.concatenated string" type="string" uid="message" uid_parent="root" value=""/>
+</VI>

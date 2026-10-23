@@ -1,26 +1,343 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RemoteVI</title>
-  <link rel="stylesheet" href="css/remotevi.css">
-  <script type="module" src="js/client.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RemoteVI</title>
+<!--
+  RemoteVI browser client, protocol v2 (docs/protocol.md).
+  Self-contained on purpose: the LabVIEW toolkit embeds this one file as a string
+  constant and serves it for GET /, so a built EXE needs no support files.
+  Keep it pure ASCII (use \u escapes and HTML entities) so the G string constant
+  holds exactly these bytes.
+-->
+<style>
+:root {
+  --bg: #e9ebee; --bar-bg: #fff; --bar-fg: #1d2330; --muted: #667085;
+  --accent: #1f6feb; --ok: #1a7f37; --warn: #bf8700; --err: #cf222e; --border: #d0d7de;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181e; --bar-bg: #1e232b; --bar-fg: #e6edf3; --muted: #8d96a0; --border: #30363d; }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: flex; flex-direction: column; background: var(--bg); color: var(--bar-fg);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.bar {
+  display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+  background: var(--bar-bg); border-bottom: 1px solid var(--border);
+}
+.bar .spacer { flex: 1; }
+.stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar button {
+  font: inherit; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: transparent; color: inherit; cursor: pointer;
+}
+.bar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+body[data-state="online"] .dot { background: var(--ok); }
+body[data-state="offline"] .dot { background: var(--err); }
+.stage { flex: 1; overflow: auto; padding: 16px; }
+.panel-wrap { width: max-content; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25); }
+#panel { display: block; outline: none; image-rendering: pixelated; cursor: default; touch-action: none; }
+body[data-view-only="true"] #panel { cursor: not-allowed; }
+.stage.fit { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.stage.fit #panel {
+  max-width: calc(100vw - 32px); max-height: calc(100vh - 80px);
+  width: auto; height: auto; image-rendering: auto;
+}
+</style>
 </head>
-<body data-state="connecting" data-role="viewer">
-  <header class="bar">
-    <span class="dot" aria-hidden="true"></span>
-    <strong id="vi-name">RemoteVI</strong>
-    <span id="status" role="status">Connecting…</span>
-    <span class="spacer"></span>
-    <span id="stats" class="stats"></span>
-    <button id="fit-btn" type="button" aria-pressed="false" title="Fit panel to window">Fit</button>
-    <button id="control-btn" type="button" hidden>Request control</button>
-  </header>
-  <main id="stage" class="stage">
-    <div class="panel-wrap">
-      <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
-    </div>
-  </main>
+<body data-state="connecting">
+<header class="bar">
+  <span class="dot" aria-hidden="true"></span>
+  <strong id="vi-name">RemoteVI</strong>
+  <span id="status" role="status">Connecting&hellip;</span>
+  <span class="spacer"></span>
+  <span id="stats" class="stats"></span>
+  <button id="fit-btn" type="button" aria-pressed="false" title="Scale the panel to the window">Fit</button>
+</header>
+<main id="stage" class="stage">
+  <div class="panel-wrap">
+    <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
+  </div>
+</main>
+<script>
+'use strict';
+
+// --- protocol v2 constants (docs/protocol.md) --------------------------------
+
+const FRAME_MAGIC = 0x52;          // 'R'
+const MSG_FRAME = 1;
+const FRAME_HEADER = 12;           // magic, type, seq u32, width u16, height u16, count u16
+const RECT_HEADER = 8;             // x i16, y i16, length u32
+
+// Win32 message numbers. The server posts them to the panel window, so these
+// values ARE the protocol.
+const WM = {
+  KEYDOWN: 0x0100, KEYUP: 0x0101, CHAR: 0x0102,
+  MOUSEMOVE: 0x0200,
+  LBUTTONDOWN: 0x0201, LBUTTONUP: 0x0202, LBUTTONDBLCLK: 0x0203,
+  RBUTTONDOWN: 0x0204, RBUTTONUP: 0x0205, RBUTTONDBLCLK: 0x0206,
+  MBUTTONDOWN: 0x0207, MBUTTONUP: 0x0208, MBUTTONDBLCLK: 0x0209,
+  MOUSEWHEEL: 0x020A,
+};
+const MK = { LBUTTON: 0x01, RBUTTON: 0x02, SHIFT: 0x04, CONTROL: 0x08, MBUTTON: 0x10 };
+const WHEEL_DELTA = 120;
+
+// Browser button index (0 left, 1 middle, 2 right) -> [down, up, dblclk].
+const BUTTON_MSGS = {
+  0: [WM.LBUTTONDOWN, WM.LBUTTONUP, WM.LBUTTONDBLCLK],
+  1: [WM.MBUTTONDOWN, WM.MBUTTONUP, WM.MBUTTONDBLCLK],
+  2: [WM.RBUTTONDOWN, WM.RBUTTONUP, WM.RBUTTONDBLCLK],
+};
+
+// KeyboardEvent.code -> [virtual-key code, extended-key flag]. Printable
+// characters are not listed: they travel as WM_CHAR so the remote side does not
+// depend on the host's keyboard layout.
+const VK = {
+  Backspace: [0x08, 0], Tab: [0x09, 0], Enter: [0x0D, 0], NumpadEnter: [0x0D, 1],
+  ShiftLeft: [0x10, 0], ShiftRight: [0x10, 0], ControlLeft: [0x11, 0], ControlRight: [0x11, 1],
+  Escape: [0x1B, 0], PageUp: [0x21, 1], PageDown: [0x22, 1], End: [0x23, 1], Home: [0x24, 1],
+  ArrowLeft: [0x25, 1], ArrowUp: [0x26, 1], ArrowRight: [0x27, 1], ArrowDown: [0x28, 1],
+  Insert: [0x2D, 1], Delete: [0x2E, 1],
+  F1: [0x70, 0], F2: [0x71, 0], F3: [0x72, 0], F4: [0x73, 0], F5: [0x74, 0], F6: [0x75, 0],
+  F7: [0x76, 0], F8: [0x77, 0], F9: [0x78, 0], F10: [0x79, 0], F11: [0x7A, 0], F12: [0x7B, 0],
+};
+
+function mouseFlags(e) {
+  let w = 0;
+  if (e.buttons & 1) w |= MK.LBUTTON;
+  if (e.buttons & 2) w |= MK.RBUTTON;
+  if (e.buttons & 4) w |= MK.MBUTTON;
+  if (e.shiftKey) w |= MK.SHIFT;
+  if (e.ctrlKey) w |= MK.CONTROL;
+  return w;
+}
+
+// lParam for WM_KEYDOWN / WM_KEYUP: repeat count 1, extended bit 24, and for
+// key-up the previous-state and transition bits. Sent as an unsigned decimal.
+function keyLParam(extended, up) {
+  let l = 1;
+  if (extended) l += 0x01000000;
+  if (up) l += 0xC0000000;
+  return l;
+}
+
+function decodeFrame(buf) {
+  const v = new DataView(buf);
+  if (buf.byteLength < FRAME_HEADER || v.getUint8(0) !== FRAME_MAGIC || v.getUint8(1) !== MSG_FRAME) {
+    throw new Error('not a RemoteVI frame');
+  }
+  const frame = { seq: v.getUint32(2), width: v.getUint16(6), height: v.getUint16(8), rects: [] };
+  const count = v.getUint16(10);
+  let o = FRAME_HEADER;
+  for (let i = 0; i < count; i++) {
+    if (o + RECT_HEADER > buf.byteLength) throw new Error('truncated frame');
+    const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
+    o += RECT_HEADER;
+    if (o + len > buf.byteLength) throw new Error('truncated frame');
+    frame.rects.push({ x, y, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
+    o += len;
+  }
+  return frame;
+}
+
+// --- client -------------------------------------------------------------------
+
+class RemoteViClient {
+  constructor() {
+    this.canvas = document.getElementById('panel');
+    this.ctx = this.canvas.getContext('2d', { alpha: false });
+    this.stage = document.getElementById('stage');
+    this.statusEl = document.getElementById('status');
+    this.statsEl = document.getElementById('stats');
+    this.ws = null;
+    this.backoff = 250;
+    this.queue = Promise.resolve();   // frames are painted strictly in order
+    this.pendingMove = null;
+    this.stats = { frames: 0, bytes: 0, since: performance.now() };
+
+    document.getElementById('fit-btn').addEventListener('click', (e) => {
+      const fit = this.stage.classList.toggle('fit');
+      e.currentTarget.setAttribute('aria-pressed', String(fit));
+    });
+    this.bindInput();
+    setInterval(() => this.showStats(), 1000);
+    this.connect();
+  }
+
+  connect() {
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+    ws.binaryType = 'arraybuffer';
+    this.ws = ws;
+    this.setStatus('connecting', 'Connecting...');
+    ws.onopen = () => { this.backoff = 250; this.setStatus('online', 'Connected'); };
+    ws.onmessage = (ev) => {
+      if (typeof ev.data === 'string') this.onText(ev.data);
+      else this.onFrame(ev.data);
+    };
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
+      this.setStatus('offline', `Disconnected, retrying in ${(this.backoff / 1000).toFixed(1)} s`);
+      setTimeout(() => this.connect(), this.backoff);
+      this.backoff = Math.min(this.backoff * 2, 5000);
+    };
+  }
+
+  send(line) {
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(line);
+  }
+
+  onText(text) {
+    // Server text messages: "title <VI name>", "viewonly 0|1". Unknown ones are ignored.
+    const sp = text.indexOf(' ');
+    const cmd = sp < 0 ? text : text.slice(0, sp);
+    const arg = sp < 0 ? '' : text.slice(sp + 1);
+    if (cmd === 'title') {
+      document.getElementById('vi-name').textContent = arg;
+      document.title = `${arg} - RemoteVI`;
+    } else if (cmd === 'viewonly') {
+      document.body.dataset.viewOnly = String(arg === '1');
+    }
+  }
+
+  onFrame(buf) {
+    let frame;
+    try {
+      frame = decodeFrame(buf);
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    this.stats.frames++;
+    this.stats.bytes += buf.byteLength;
+    this.queue = this.queue.then(() => this.paint(frame)).catch((err) => console.error(err));
+  }
+
+  async paint(frame) {
+    const bitmaps = await Promise.all(frame.rects.map((r) => createImageBitmap(r.png)));
+    if (frame.width !== this.canvas.width || frame.height !== this.canvas.height) {
+      this.canvas.width = frame.width;
+      this.canvas.height = frame.height;
+    }
+    frame.rects.forEach((r, i) => {
+      this.ctx.drawImage(bitmaps[i], r.x, r.y);
+      bitmaps[i].close();
+    });
+    // Ack after painting: the server keeps at most two frames in flight, so a
+    // slow client gets fresher frames instead of a growing backlog.
+    this.send(`a ${frame.seq}`);
+  }
+
+  // --- input -------------------------------------------------------------------
+
+  panelPoint(e) {
+    const r = this.canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - r.left) * (this.canvas.width / r.width));
+    const y = Math.floor((e.clientY - r.top) * (this.canvas.height / r.height));
+    return {
+      x: Math.min(Math.max(x, 0), this.canvas.width - 1),
+      y: Math.min(Math.max(y, 0), this.canvas.height - 1),
+    };
+  }
+
+  mouse(msg, e, wParam = mouseFlags(e)) {
+    const { x, y } = this.panelPoint(e);
+    this.send(`m ${msg} ${x} ${y} ${wParam}`);
+  }
+
+  bindInput() {
+    const c = this.canvas;
+    c.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    c.addEventListener('pointerdown', (e) => {
+      const msgs = BUTTON_MSGS[e.button];
+      if (!msgs) return;
+      e.preventDefault();
+      c.focus();
+      c.setPointerCapture(e.pointerId);
+      this.flushMove();
+      // Windows reports the second press of a double click as *BUTTONDBLCLK.
+      this.mouse(e.detail === 2 ? msgs[2] : msgs[0], e);
+    });
+
+    const up = (e) => {
+      const msgs = BUTTON_MSGS[e.button];
+      if (!msgs) return;
+      this.flushMove();
+      this.mouse(msgs[1], e);
+    };
+    c.addEventListener('pointerup', up);
+    c.addEventListener('pointercancel', up);
+
+    // Moves are coalesced to one per animation frame: only the latest position matters.
+    c.addEventListener('pointermove', (e) => {
+      const first = this.pendingMove === null;
+      this.pendingMove = e;
+      if (first) requestAnimationFrame(() => this.flushMove());
+    });
+
+    c.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const notches = e.deltaMode === 0 ? -e.deltaY / 100 : -e.deltaY / 3;
+      const delta = Math.round(Math.max(-3, Math.min(3, notches || -Math.sign(e.deltaY))) * WHEEL_DELTA);
+      if (!delta) return;
+      // The wheel delta is the signed high word of wParam.
+      this.mouse(WM.MOUSEWHEEL, e, ((delta & 0xFFFF) * 0x10000 + mouseFlags(e)) >>> 0);
+    }, { passive: false });
+
+    c.addEventListener('keydown', (e) => {
+      const vk = VK[e.code];
+      if (vk) {
+        e.preventDefault();
+        this.send(`k ${WM.KEYDOWN} ${vk[0]} ${keyLParam(vk[1], false)}`);
+      } else if (e.key.length === 1 && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        if (e.ctrlKey) {
+          // Ctrl+letter shortcuts: control characters 1..26 are what Windows sends as WM_CHAR.
+          const code = e.key.toUpperCase().charCodeAt(0);
+          if (code >= 65 && code <= 90) this.send(`k ${WM.CHAR} ${code - 64} 1`);
+        } else {
+          this.send(`k ${WM.CHAR} ${e.key.charCodeAt(0)} 1`);
+        }
+      }
+    });
+    c.addEventListener('keyup', (e) => {
+      const vk = VK[e.code];
+      if (vk) {
+        e.preventDefault();
+        this.send(`k ${WM.KEYUP} ${vk[0]} ${keyLParam(vk[1], true)}`);
+      }
+    });
+  }
+
+  flushMove() {
+    const e = this.pendingMove;
+    this.pendingMove = null;
+    if (e) this.mouse(WM.MOUSEMOVE, e);
+  }
+
+  // --- status ------------------------------------------------------------------
+
+  setStatus(state, text) {
+    document.body.dataset.state = state;
+    this.statusEl.textContent = text;
+  }
+
+  showStats() {
+    const secs = (performance.now() - this.stats.since) / 1000;
+    this.statsEl.textContent =
+      `${(this.stats.frames / secs).toFixed(0)} fps | ${(this.stats.bytes / 1024 / secs).toFixed(0)} KiB/s`;
+    this.stats = { frames: 0, bytes: 0, since: performance.now() };
+  }
+}
+
+new RemoteViClient();
+</script>
 </body>
 </html>

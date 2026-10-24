@@ -1,0 +1,18 @@
+<VI _name="RemoteVI Post Menu Key.vi" description="Drives an open LabVIEW menu with one key\3A posts WM_KEYDOWN and WM_KEYUP of vk (lParam key lParam\2C plus the previous-state and transition bits 0xC0000000 for the key-up) to hWnd - the served panel\2C which holds the mouse capture while a LabVIEW menu is open - with user32 PostMessageW\2C then waits until the popups differ from popup hWnds (RemoteVI Wait Popups Change.vi\2C at most 300 ms). Used by RemoteVI Post Input.vi to close a submenu (VK_LEFT) and to open the highlighted item's submenu (VK_RIGHT)\3A LabVIEW menus take posted keys also while a submenu is open (measured). Win32 only\2C no VI Server call\2C so it runs while the menu's modal loop holds LabVIEW's UI thread. An incoming error posts nothing.">
+  <FreeLabel comment="Key down, key up, wait for the menus" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served front panel's window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="vk" conIdx="5" connection="required" description="Virtual-key code (37 VK_LEFT\2C 39 VK_RIGHT)." outputs="value:vk.value" type="uint64" uid="vk" uid_parent="root" value="0"/>
+  <Control _name="key lParam" conIdx="7" connection="recommended" description="lParam of the key-down\3A repeat count 1\2C the scan code in bits 16-23\2C bit 24 for an extended key." outputs="value:klp.value" type="int64" uid="klp" uid_parent="root" value="1"/>
+  <Control _name="popup hWnds" conIdx="9" connection="recommended" description="The popups open before the key\3B the wait ends when one of them closes or a new menu window appears." outputs="value:ph.value" type="array{uint64}" uid="ph" uid_parent="root" value="[]"/>
+  <Constant _name="wait at most 300 ms" outputs="value:tmo.value" type="uint32" uid="tmo" uid_parent="root" value="300"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="WM_KEYDOWN" outputs="value:kd.value" type="uint32" uid="kd" uid_parent="root" value="256"/>
+  <Constant _name="WM_KEYUP" outputs="value:ku.value" type="uint32" uid="ku" uid_parent="root" value="257"/>
+  <Constant _name="previous state and transition bits" outputs="value:kup.value" type="int64" uid="kup" uid_parent="root" value="3221225472"/>
+  <Node _name="Add" inputs="x:klp.value,y:kup.value" outputs="x+y:ulp.x+y" uid="ulp" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,Msg:kd.value,wParam:vk.value,lParam:klp.value,error in (no error):ei.value" outputs="return value:,error out:pd.error out" target="user32 PostMessageW.vi" uid="pd" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,Msg:ku.value,wParam:vk.value,lParam:ulp.x+y,error in (no error):pd.error out" outputs="return value:,error out:pu.error out" target="user32 PostMessageW.vi" uid="pu" uid_parent="root"/>
+  <Call inputs="panel hWnd:hw.value,popup hWnds:ph.value,timeout ms:tmo.value,error in:pu.error out" outputs="changed?:wpc.changed?,error out:wpc.error out" target="RemoteVI Wait Popups Change.vi" uid="wpc" uid_parent="root"/>
+  <Indicator _name="changed?" conIdx="4" connection="recommended" description="TRUE when the popups changed within 300 ms." inputs="value:wpc.changed?" type="bool" uid="ochg" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or a PostMessageW error." inputs="value:wpc.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

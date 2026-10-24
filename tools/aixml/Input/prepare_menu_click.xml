@@ -1,0 +1,103 @@
+<VI _name="RemoteVI Prepare Menu Click.vi" description="Readies an open LabVIEW menu chain for a remote button-down at the LOGICAL screen point (x\2C y). LabVIEW hit-tests a SUBMENU against the place where it opened it\3A once a submenu is open\2C clicks are ignored after the popups were moved under the host cursor - in the submenu and in its parent alike - while a submenu that LabVIEW opened at its final place takes the click (measured). So when the point lies in a menu window (class LVMenuWnd) and more than one popup is open\2C the submenus are closed first with VK_LEFT (RemoteVI Post Menu Key.vi\2C one per menu\2C topmost first\2C each waiting until that menu closed)\3A all of them when the click is on the bottom-most menu\2C else every menu above the clicked one and the clicked one itself. windows out lists the menus still open\3B reopen? is TRUE when the clicked menu was closed - the caller then moves windows out by the displacement and reopens it with VK_RIGHT\2C which LabVIEW places next to the moved parent\2C so the clicked point lies under the host cursor in a menu LabVIEW knows at that place. For a button-up\2C a single popup\2C a click outside every popup or on a window that is no LabVIEW menu nothing is posted and windows passes through. menu? tells whether the point lies in a LabVIEW menu window. Win32 only\2C no VI Server call.">
+  <FreeLabel comment="Close submenus above the clicked menu" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served front panel's window\3B the keys are posted to it." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="windows" conIdx="5" connection="required" description="The open popups\2C topmost first (RemoteVI Find Popups.vi order)\2C with their LOGICAL top-left and size." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
+  <Control _name="point" conIdx="7" connection="required" description="The clicked LOGICAL screen point." outputs="value:pt.value" type="cluster{int32.x,int32.y}" uid="pt" uid_parent="root" value="[0,0]"/>
+  <Control _name="button down?" conIdx="9" connection="required" description="The click is a button-down. Only a button-down closes submenus." outputs="value:bd.value" type="bool" uid="bd" uid_parent="root" value="false"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. With an error nothing is posted." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pt.value" outputs="x:upt.x,y:upt.y" uid="upt" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Point in each popup? Its handle" maxin="" maxout="" uid="fin" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:win.value" mode="index" outputs="value:n_w.value" uid="n_w" uid_parent="fin"/>
+    <Tunnel _id="In2" inputs="value:upt.x" outputs="value:n_tx.value" uid="n_tx" uid_parent="fin"/>
+    <Tunnel _id="In3" inputs="value:upt.y" outputs="value:n_ty.value" uid="n_ty" uid_parent="fin"/>
+    <Node _name="Unbundle By Name" fields="hwnd,x,y,w,h" inputs="input cluster:n_w.value" outputs="hwnd:nwu.hwnd,x:nwu.x,y:nwu.y,w:nwu.w,h:nwu.h" uid="nwu" uid_parent="fin"/>
+    <Node _name="Add" inputs="x:nwu.x,y:nwu.w" outputs="x+y:nr.x+y" uid="nr" uid_parent="fin"/>
+    <Node _name="Add" inputs="x:nwu.y,y:nwu.h" outputs="x+y:nb.x+y" uid="nb" uid_parent="fin"/>
+    <Node _name="Greater Or Equal?" inputs="x:n_tx.value,y:nwu.x" outputs="x &gt;= y?:c1.x &gt;= y?" uid="c1" uid_parent="fin"/>
+    <Node _name="Less?" inputs="x:n_tx.value,y:nr.x+y" outputs="x &lt; y?:c2.x &lt; y?" uid="c2" uid_parent="fin"/>
+    <Node _name="Greater Or Equal?" inputs="x:n_ty.value,y:nwu.y" outputs="x &gt;= y?:c3.x &gt;= y?" uid="c3" uid_parent="fin"/>
+    <Node _name="Less?" inputs="x:n_ty.value,y:nb.x+y" outputs="x &lt; y?:c4.x &lt; y?" uid="c4" uid_parent="fin"/>
+    <Node _name="And" inputs="x:c1.x &gt;= y?,y:c2.x &lt; y?" outputs="x .and. y?:a1.x .and. y?" uid="a1" uid_parent="fin"/>
+    <Node _name="And" inputs="x:c3.x &gt;= y?,y:c4.x &lt; y?" outputs="x .and. y?:a2.x .and. y?" uid="a2" uid_parent="fin"/>
+    <Node _name="And" inputs="x:a1.x .and. y?,y:a2.x .and. y?" outputs="x .and. y?:a3.x .and. y?" uid="a3" uid_parent="fin"/>
+    <Tunnel _id="Out1" inputs="value:a3.x .and. y?" mode="index" outputs="value:ina.value" uid="ina" uid_parent="fin"/>
+    <Tunnel _id="Out2" inputs="value:nwu.hwnd" mode="index" outputs="value:hws.value" uid="hws" uid_parent="fin"/>
+  </Structure>
+  <Constant _name="TRUE" outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Node _name="Search 1D Array" inputs="1D array:ina.value,element:kt.value" outputs="index of element:k.index of element" uid="k" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:win.value" outputs="size(s):n.size(s)" uid="n" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:hws.value,index:k.index of element" outputs="element:hk.element" uid="hk" uid_parent="root"/>
+  <Call inputs="hWnd:hk.element,error in:ei.value" outputs="class name:cls.class name,return value:,error out:cls.error out" target="user32 GetClassNameW.vi" uid="cls" uid_parent="root"/>
+  <Constant _name="menu class" outputs="value:kmc.value" type="string" uid="kmc" uid_parent="root" value="LVMenuWnd"/>
+  <Node _name="Equal?" inputs="x:cls.class name,y:kmc.value" outputs="x = y?:ism.x = y?" uid="ism" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:k.index of element" outputs="x &gt;= 0?:onp.x &gt;= 0?" uid="onp" uid_parent="root"/>
+  <Node _name="And" inputs="x:ism.x = y?,y:onp.x &gt;= 0?" outputs="x .and. y?:menu.x .and. y?" uid="menu" uid_parent="root"/>
+  <Node _name="Decrement" inputs="x:n.size(s)" outputs="x-1:nl.x-1" uid="nl" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:k.index of element,y:nl.x-1" outputs="x = y?:isroot.x = y?" uid="isroot" uid_parent="root"/>
+  <Node _name="Increment" inputs="x:k.index of element" outputs="x+1:kp.x+1" uid="kp" uid_parent="root"/>
+  <Node _name="Select" inputs="t:nl.x-1,s:isroot.x = y?,f:kp.x+1" outputs="s? t\3Af:cc.s? t\3Af" uid="cc" uid_parent="root"/>
+  <Constant _name="0" outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Greater?" inputs="x:cc.s? t\3Af,y:k0.value" outputs="x &gt; y?:any.x &gt; y?" uid="any" uid_parent="root"/>
+  <Node _name="And" inputs="x:menu.x .and. y?,y:bd.value" outputs="x .and. y?:d1.x .and. y?" uid="d1" uid_parent="root"/>
+  <Node _name="And" inputs="x:d1.x .and. y?,y:any.x &gt; y?" outputs="x .and. y?:doc.x .and. y?" uid="doc" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="doc.x .and. y?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:win.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:hws.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:cc.s? t\3Af" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:n.size(s)" uid="cs_i4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:hw.value" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:cls.error out" uid="cs_i6" uid_parent="cs"/>
+    <Tunnel _id="In7" inputs="value:isroot.x = y?" uid="cs_i7" uid_parent="cs"/>
+    <CaseFrame label="Close the submenus with VK_LEFT" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_win.value" uid="t_win" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_hws.value" uid="t_hws" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_cc.value" uid="t_cc" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_n.value" uid="t_n" uid_parent="cst"/>
+      <Tunnel _id="In5" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Tunnel _id="In7" outputs="value:t_root.value" uid="t_root" uid_parent="cst"/>
+      <Constant _name="VK_LEFT" outputs="value:kl.value" type="uint64" uid="kl" uid_parent="cst" value="37"/>
+      <Constant _name="scan 0x4B\2C extended" outputs="value:kll.value" type="int64" uid="kll" uid_parent="cst" value="21692417"/>
+      <Structure _name="For Loop" count="lc.value" label="One VK_LEFT per menu to close" maxin="t_cc.value" maxout="" uid="lc" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:t_hws.value" outputs="value:l_hws.value" uid="l_hws" uid_parent="lc"/>
+        <Tunnel _id="In2" inputs="value:t_n.value" outputs="value:l_n.value" uid="l_n" uid_parent="lc"/>
+        <Tunnel _id="In3" inputs="value:t_hw.value" outputs="value:l_hw.value" uid="l_hw" uid_parent="lc"/>
+        <Tunnel _id="In4" inputs="value:kl.value" outputs="value:l_vk.value" uid="l_vk" uid_parent="lc"/>
+        <Tunnel _id="In5" inputs="value:kll.value" outputs="value:l_lp.value" uid="l_lp" uid_parent="lc"/>
+        <ShiftReg uid="sre" uid_parent="lc">
+          <Left inputs="value:t_ei.value" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+          <Right inputs="value:pmk.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+        </ShiftReg>
+        <Node _name="Subtract" inputs="x:l_n.value,y:lc.value" outputs="x-y:rem.x-y" uid="rem" uid_parent="lc"/>
+        <Node _name="Array Subset" inputs="array:l_hws.value,index:lc.value,length:rem.x-y" outputs="subarray:open.subarray" uid="open" uid_parent="lc"/>
+        <Call inputs="hWnd:l_hw.value,vk:l_vk.value,key lParam:l_lp.value,popup hWnds:open.subarray,error in:le.value" outputs="changed?:,error out:pmk.error out" target="RemoteVI Post Menu Key.vi" uid="pmk" uid_parent="lc"/>
+      </Structure>
+      <Node _name="Subtract" inputs="x:t_n.value,y:t_cc.value" outputs="x-y:left.x-y" uid="left" uid_parent="cst"/>
+      <Node _name="Array Subset" inputs="array:t_win.value,index:t_cc.value,length:left.x-y" outputs="subarray:stay.subarray" uid="stay" uid_parent="cst"/>
+      <Node _name="Not" inputs="x:t_root.value" outputs=".not. x?:reo..not. x?" uid="reo" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:stay.subarray" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:reo..not. x?" uid="t_o2" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:lerr.value" uid="t_o3" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Nothing to close" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_win.value" uid="f_win" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_hws" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_cc" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_n" uid_parent="csf"/>
+      <Tunnel _id="In5" outputs="value:" uid="f_hw" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Tunnel _id="In7" outputs="value:" uid="f_root" uid_parent="csf"/>
+      <Constant _name="no reopen" outputs="value:fno.value" type="bool" uid="fno" uid_parent="csf" value="false"/>
+      <Tunnel _id="Out1" inputs="value:f_win.value" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:fno.value" uid="f_o2" uid_parent="csf"/>
+      <Tunnel _id="Out3" inputs="value:f_ei.value" uid="f_o3" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:cs_o3.value" uid="cs_o3" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="windows out" conIdx="4" connection="recommended" description="The popups still open after the submenus were closed (windows without its first entries)\3B windows when nothing was closed." inputs="value:cs_o1.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="owin" uid_parent="root" value="[]"/>
+  <Indicator _name="reopen?" conIdx="6" connection="recommended" description="TRUE when the clicked submenu was closed\3A move windows out\2C then reopen it with VK_RIGHT." inputs="value:cs_o2.value" type="bool" uid="oreo" uid_parent="root" value="false"/>
+  <Indicator _name="menu?" conIdx="8" connection="recommended" description="The point lies in a LabVIEW menu window (class LVMenuWnd)." inputs="value:menu.x .and. y?" type="bool" uid="omenu" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C a GetClassNameW or a posting error." inputs="value:cs_o3.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

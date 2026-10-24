@@ -28,27 +28,40 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 
 | Part | State |
 |---|---|
-| Capture, diff, PNG (`source/Capture`) | ✅ verified (vectors, timings) |
+| Capture, diff, PNG (`source/Capture`) | ✅ vectors and benchmarks |
 | Protocol, WebSocket framing (`source/Protocol`) | ✅ all vectors pass |
-| Input (`source/Input`, `source/Win32`) | ✅ click, drag, typing, latched Stop on a live panel, also when the window is covered |
-| Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ `tools/check-server.mjs` passes against LabVIEW, about 16–18 fps, about 1–2 % of one core |
+| Input (`source/Input`, `source/Win32`) | ✅ clicks, drags, double clicks, wheel, typing, Shift/Ctrl/Alt, hover enter/leave; host cursor and keyboard never touched |
+| Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay (may extend past the panel), invisible on the host when opened remotely, panel keeps updating underneath |
+| Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Popups (ring/enum menus, right-click menus with submenus, graph palette, tip strips) | ✅ streamed as an overlay, may extend past the panel, invisible on the host when opened remotely |
-| Splitter dragging | ❓ didn't move in NI's example (possibly locked splitters). Untested on an unlocked one. |
-| Access token, bind address | planned |
-| `.lvlib`, palette, VI package | planned |
+| Tests | ✅ `npm test` (18), unit-test check VIs (89 vectors), LabVIEW integration suite `tests/lv` (16) |
+| Caraya runner | ⏳ needs Caraya installed for LabVIEW 2025 (`tests/caraya/build.py`, `scripts/run-caraya.ps1`) |
+| Splitter dragging | ❓ untested on a panel with an unlocked splitter |
+| Access token, bind address, `.lvlib`, palette, VI package | planned |
 
-## Known issues
+## Known limits
 
-* LabVIEW popups (ring and enum menus, right-click menus, combo-box lists, graph palette) are streamed as an overlay and clicked by borrowing the host cursor for about 50-100 ms per click. While one is open there is no hover highlight (moves are dropped), and the panel image does not update. Popups opened remotely are invisible on the host; one opened at the host stays visible there.
-* Only one server per LabVIEW instance (the Server Loop isn't reentrant). A second `RemoteVI Start.vi` returns error 5001; a port in use returns the listener's error (60).
+* **No hover highlight in remote menus.** LabVIEW updates it only when the real cursor moves. A submenu opens when its entry is clicked.
+* **Remote tip strips can flash on the host.** One triggered remotely shows on the host for 20–90 ms before it is hidden, or stays visible if the host cursor is over the panel.
+* **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
+* **One server per LabVIEW instance.** The Server Loop isn't reentrant. A second `RemoteVI Start.vi` returns error 5001, and a port in use returns the listener's error (60).
+* **Modifiers are shared.** Several clients holding Shift/Ctrl at the same time share LabVIEW's single key state.
+* **Windows only** (input injection is Win32).
+
+## Testing
+
+```bash
+npm test                                         # JS reference, vectors, end-to-end against the reference server
+RVI_LV=1 npm run test:lv                         # LabVIEW integration suite; run tests/fixtures/RemoteVI Fixture.vi first (port 8089)
+node tools/check-server.mjs --click 50,228       # black-box check of a running server (default http://127.0.0.1:8088)
+```
+
+Details: [docs/testing.md](docs/testing.md).
 
 ## Development
 
 ```bash
-npm test                                   # JS reference, vectors, end-to-end against the reference server
-npm run mock                               # reference server with a simulated panel
-node tools/check-server.mjs --url http://127.0.0.1:8088 --click 50,228   # black-box check of a running server
+npm run mock                               # reference server with a simulated panel, for client work without LabVIEW
 ```
 
 The G code was generated with labview-mcp on LabVIEW 2025. The AIXML sources are in `tools/aixml/`. `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.

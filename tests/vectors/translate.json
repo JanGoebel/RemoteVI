@@ -83,7 +83,7 @@
    ]
   },
   {
-   "name": "double click down: client, tracking",
+   "name": "double click: posted as a second button-down (no CS_DBLCLKS), client, tracking",
    "input": "m 515 10 20 1",
    "popup": false,
    "trackingBefore": false,
@@ -91,9 +91,24 @@
    "cursor": null,
    "posts": [
     {
-     "msg": 515,
+     "msg": 513,
      "wParam": 1,
      "lParam": 4325386
+    }
+   ]
+  },
+  {
+   "name": "right double click: posted as a right button-down",
+   "input": "m 518 5 5 2",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 516,
+     "wParam": 2,
+     "lParam": 3342341
     }
    ]
   },
@@ -183,7 +198,7 @@
    ]
   },
   {
-   "name": "special key passes through",
+   "name": "special key gets its scan code",
    "input": "k 256 13 1",
    "popup": false,
    "trackingBefore": false,
@@ -193,12 +208,12 @@
     {
      "msg": 256,
      "wParam": 13,
-     "lParam": 1
+     "lParam": 1835009
     }
    ]
   },
   {
-   "name": "key up passes through",
+   "name": "key up gets its scan code, extended and up bits kept",
    "input": "k 257 37 3238002689",
    "popup": false,
    "trackingBefore": false,
@@ -208,7 +223,82 @@
     {
      "msg": 257,
      "wParam": 37,
-     "lParam": 3238002689
+     "lParam": 3242917889
+    }
+   ]
+  },
+  {
+   "name": "extended key down (Right) gets its scan code",
+   "input": "k 256 39 16777217",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 39,
+     "lParam": 21823489
+    }
+   ]
+  },
+  {
+   "name": "Shift down gets its scan code",
+   "input": "k 256 16 1",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 16,
+     "lParam": 2752513
+    }
+   ]
+  },
+  {
+   "name": "a scan code the client sent is kept",
+   "input": "k 256 13 1835009",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 13,
+     "lParam": 1835009
+    }
+   ]
+  },
+  {
+   "name": "key without a known scan code passes through",
+   "input": "k 256 65 1",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 256,
+     "wParam": 65,
+     "lParam": 1
+    }
+   ]
+  },
+  {
+   "name": "negative (signed) key-up lParam gets its scan code",
+   "input": "k 257 13 -1073741823",
+   "popup": false,
+   "trackingBefore": false,
+   "trackingAfter": false,
+   "cursor": null,
+   "posts": [
+    {
+     "msg": 257,
+     "wParam": 13,
+     "lParam": -1071906815
     }
    ]
   },
@@ -307,6 +397,24 @@
     {
      "msg": 514,
      "wParam": 0,
+     "lParam": 14418030
+    }
+   ]
+  },
+  {
+   "name": "popup open: double click is posted as a button-down",
+   "input": "m 515 10 20 1",
+   "popup": true,
+   "trackingBefore": false,
+   "trackingAfter": true,
+   "cursor": {
+    "x": 110,
+    "y": 220
+   },
+   "posts": [
+    {
+     "msg": 513,
+     "wParam": 1,
      "lParam": 14418030
     }
    ]

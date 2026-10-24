@@ -14,6 +14,16 @@
 //    button-down. The `tracking` this function returns (button-down until
 //    button-up) is only bookkeeping.
 //  * WM_MOUSEWHEEL always carries screen coordinates (Windows' definition).
+//  * A double click is posted as a second button-DOWN, not as WM_xBUTTONDBLCLK:
+//    LabVIEW's panel window class has no CS_DBLCLKS, so Windows never sends it
+//    the DBLCLK messages and LabVIEW ignores a posted one; it detects the
+//    double click itself from two downs (measured: the listbox Double Click
+//    event fires for down-up-down-up, never for down-up-DBLCLK-up).
+//  * A key message whose lParam carries no scan code (bits 16-23 zero, which
+//    is what the browser client sends) gets the key's set-1 scan code
+//    (SCAN_CODES), as a real keyboard delivers it. LabVIEW lost the arrow key
+//    of a posted Shift (scan 0) + Right (scan 0); with either scan code set
+//    Shift+Right arrived (measured).
 //  * A bare posted WM_CHAR right after a non-character key is dropped, and a
 //    WM_KEYDOWN of the character's own key makes LabVIEW's message loop
 //    produce a second character. So each WM_CHAR is wrapped in key-down/up of
@@ -25,10 +35,11 @@
 //    remote user clicked (`cursor` in the result, the popup's logical screen
 //    point) lies under wherever the host cursor is, then posts the click with
 //    the real cursor position in lParam. Moves and wheel are dropped: LabVIEW
-//    only updates the hover highlight on real cursor motion, so there is none;
-//    a submenu opens on the second click on its entry. A click outside every
-//    popup is not posted; the server closes the popups with WM_CANCELMODE.
-//    Popups travel as OVERLAY messages at their logical position, see
+//    only updates the hover highlight on real cursor motion, so there is none.
+//    A click outside every popup is not posted; the server closes the popups
+//    with WM_CANCELMODE. Submenus are driven with VK_LEFT / VK_RIGHT around the
+//    click (RemoteVI Post Input.vi), and tip strips do not count as a popup
+//    here. Popups travel as OVERLAY messages at their logical position, see
 //    docs/protocol.md.
 //
 // Two rules live in the server rather than here, because they are timing and
@@ -48,6 +59,28 @@ export const KEYUP_LPARAM = 0xc0000001;
 
 const BUTTON_DOWN = new Set([0x201, 0x203, 0x204, 0x206, 0x207, 0x209]);
 const BUTTON_UP = new Set([0x202, 0x205, 0x208]);
+/** WM_xBUTTONDBLCLK -> WM_xBUTTONDOWN: what Windows sends a window class without CS_DBLCLKS. */
+const DBLCLK_AS_DOWN = new Map([[0x203, 0x201], [0x206, 0x204], [0x209, 0x207]]);
+
+/**
+ * Set-1 scan codes of the non-character keys a client sends (docs/protocol.md 4.2) and of the
+ * modifier keys, by virtual-key code. These keys have the same scan code in every layout.
+ */
+export const SCAN_CODES = new Map([
+  [0x08, 0x0e], [0x09, 0x0f], [0x0d, 0x1c], [0x10, 0x2a], [0x11, 0x1d], [0x12, 0x38], [0x1b, 0x01],
+  [0x21, 0x49], [0x22, 0x51], [0x23, 0x4f], [0x24, 0x47], [0x25, 0x4b], [0x26, 0x48], [0x27, 0x4d], [0x28, 0x50],
+  [0x2d, 0x52], [0x2e, 0x53],
+  [0x70, 0x3b], [0x71, 0x3c], [0x72, 0x3d], [0x73, 0x3e], [0x74, 0x3f], [0x75, 0x40], [0x76, 0x41], [0x77, 0x42],
+  [0x78, 0x43], [0x79, 0x44], [0x7a, 0x57], [0x7b, 0x58],
+  [0xa0, 0x2a], [0xa1, 0x36], [0xa2, 0x1d], [0xa3, 0x1d], [0xa4, 0x38], [0xa5, 0x38],
+]);
+
+/** lParam of a WM_KEYDOWN/UP with the key's scan code filled in when the client sent none. */
+export function keyLParamWithScan(vk, lParam) {
+  const scanBits = Math.floor(lParam / 0x10000) & 0xff; // also right for a negative (signed) lParam
+  if (scanBits !== 0 || !SCAN_CODES.has(vk)) return lParam;
+  return lParam + SCAN_CODES.get(vk) * 0x10000;
+}
 
 /**
  * @param {{kind:string,msg:number,x?:number,y?:number,wParam:number,lParam?:number}} input from parseInput()
@@ -73,9 +106,10 @@ export function translateInput(input, geo, tracking, popup = false) {
         ],
       };
     }
-    return { tracking, cursor: null, posts: [{ msg: input.msg, wParam: input.wParam, lParam: input.lParam }] };
+    return { tracking, cursor: null, posts: [{ msg: input.msg, wParam: input.wParam, lParam: keyLParamWithScan(input.wParam, input.lParam) }] };
   }
 
+  const msg = DBLCLK_AS_DOWN.get(input.msg) ?? input.msg;
   const sx = geo.panelX + input.x;
   const sy = geo.panelY + input.y;
   const screen = mouseLParam(sx, sy);
@@ -87,7 +121,7 @@ export function translateInput(input, geo, tracking, popup = false) {
     if (BUTTON_DOWN.has(input.msg)) next = true;
     else if (BUTTON_UP.has(input.msg)) next = false;
     else return { tracking, cursor: null, posts: [] }; // moves and wheel: dropped
-    return { tracking: next, cursor: { x: sx, y: sy }, posts: [{ msg: input.msg, wParam: input.wParam, lParam: screen }] };
+    return { tracking: next, cursor: { x: sx, y: sy }, posts: [{ msg, wParam: input.wParam, lParam: screen }] };
   }
   if (input.msg === 0x20a) {
     lParam = screen;
@@ -100,7 +134,7 @@ export function translateInput(input, geo, tracking, popup = false) {
   } else {
     lParam = tracking ? screen : client; // WM_MOUSEMOVE
   }
-  return { tracking: next, cursor: null, posts: [{ msg: input.msg, wParam: input.wParam, lParam }] };
+  return { tracking: next, cursor: null, posts: [{ msg, wParam: input.wParam, lParam }] };
 }
 
 export const MOD_SHIFT = 1;

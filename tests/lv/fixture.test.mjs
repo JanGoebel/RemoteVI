@@ -108,16 +108,22 @@ test('moving the pointer over a control fires Mouse Enter and Mouse Leave', opts
   await waitLog(([k, l]) => k === 'leave' && l === 'Button', { since: s });
 });
 
+/** Latest logged value of a control, or `initial` if it never changed. */
+const current = (label, initial) => readLog().filter(([k, l]) => k === 'value' && l === label).at(-1)?.[2] ?? initial;
+
 test('a ring opens its menu in the browser and an item can be chosen', opts, async () => {
+  const items = ['Off', 'Slow', 'Fast'];
+  // Choose an item other than the current one, so Value Change must fire on every run.
+  const target = (items.indexOf(current('Mode', 'Off')) + 1) % items.length;
   const s = mark();
   const r = at('Mode');
   await click(c, r.cx, r.cy, { settle: 100 });
   const [menu] = await waitOverlay(c);
   assert.ok(menu.w > 20 && menu.h > 20, 'menu image has a size');
-  // Items are stacked top to bottom; pick the one in the lower third ("Fast").
-  await click(c, menu.x + 20, menu.y + Math.round(menu.h * 0.8), { settle: 100 });
+  // The three items are stacked evenly from top to bottom.
+  await click(c, menu.x + 20, menu.y + Math.round(menu.h * (2 * target + 1) / 6), { settle: 100 });
   await waitOverlay(c, (o) => o.length === 0);
-  await waitLog(([k, l, v]) => k === 'value' && l === 'Mode' && v === 'Fast', { since: s });
+  await waitLog(([k, l, v]) => k === 'value' && l === 'Mode' && v === items[target], { since: s });
 });
 
 test('a right-click menu can be dismissed by clicking outside it', opts, async () => {
@@ -129,9 +135,10 @@ test('a right-click menu can be dismissed by clicking outside it', opts, async (
 });
 
 test('clicking a tab switches the page', opts, async () => {
+  // The fixture's tabs are a fixed 80 px wide: One at x+0..80, Two at x+80..160.
+  const target = current('Tab', 'One') === 'One' ? 'Two' : 'One';
   const s = mark();
   const r = at('Tab');
-  // Page tabs sit along the top edge; the second one starts roughly 70 px in.
-  await click(c, r.x + 90, r.y + 10);
-  await waitLog(([k, l]) => k === 'value' && l === 'Tab', { since: s });
+  await click(c, r.x + (target === 'One' ? 40 : 120), r.y + 10);
+  await waitLog(([k, l, v]) => k === 'value' && l === 'Tab' && v === target, { since: s });
 });

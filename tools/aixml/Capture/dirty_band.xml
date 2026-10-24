@@ -1,0 +1,39 @@
+<VI _name="RemoteVI Dirty Band.vi" description="The changed part of one tile row (band) of two panel captures\3A rows y to y + h - 1 are compared tile by tile (tile size x h\2C tiles clipped at the right edge\2C every pixel equal - Equal? then And Array Elements). x is the left edge of the first dirty tile\2C w the distance from there to the right edge of the last dirty tile. Call it only for a band that differs (RemoteVI Dirty Rects.vi does)\3B in a band without a dirty tile x and w are meaningless. Pure and reentrant.">
+  <Control _name="previous" conIdx="0" connection="required" description="Previous capture\2C 2D U32 [row\2C column]." outputs="value:pv.value" type="array.2{uint32}" uid="pv" uid_parent="root" value="[]"/>
+  <Control _name="current" conIdx="5" connection="required" description="Current capture\2C same size as previous." outputs="value:cu.value" type="array.2{uint32}" uid="cu" uid_parent="root" value="[]"/>
+  <Control _name="y" conIdx="7" connection="required" description="First row of the band." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Control _name="h" conIdx="9" connection="required" description="Rows in the band." outputs="value:h.value" type="int32" uid="h" uid_parent="root" value="0"/>
+  <Control _name="tile size" conIdx="1" connection="required" description="Tile width in pixels\2C at least 1." outputs="value:t.value" type="int32" uid="t" uid_parent="root" value="64"/>
+  <Control _name="width" conIdx="2" connection="required" description="Columns of the captures." outputs="value:w.value" type="int32" uid="w" uid_parent="root" value="0"/>
+  <Node _name="Add" inputs="x:w.value,y:t.value" outputs="x+y:wt.x+y" uid="wt" uid_parent="root"/>
+  <Node _name="Decrement" inputs="x:wt.x+y" outputs="x-1:wt1.x-1" uid="wt1" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:wt1.x-1,y:t.value" outputs="floor(x/y):nt.floor(x/y)" uid="nt" uid_parent="root"/>
+  <Structure _name="For Loop" count="tl.value" label="One tile per iteration" maxin="nt.floor(x/y)" maxout="" uid="tl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pv.value" outputs="value:t_pv.value" uid="t_pv" uid_parent="tl"/>
+    <Tunnel _id="In2" inputs="value:cu.value" outputs="value:t_cu.value" uid="t_cu" uid_parent="tl"/>
+    <Tunnel _id="In3" inputs="value:t.value" outputs="value:t_t.value" uid="t_t" uid_parent="tl"/>
+    <Tunnel _id="In4" inputs="value:w.value" outputs="value:t_w.value" uid="t_w" uid_parent="tl"/>
+    <Tunnel _id="In5" inputs="value:y.value" outputs="value:t_y.value" uid="t_y" uid_parent="tl"/>
+    <Tunnel _id="In6" inputs="value:h.value" outputs="value:t_h.value" uid="t_h" uid_parent="tl"/>
+    <Node _name="Multiply" inputs="x:tl.value,y:t_t.value" outputs="x*y:tx.x*y" uid="tx" uid_parent="tl"/>
+    <Node _name="Subtract" inputs="x:t_w.value,y:tx.x*y" outputs="x-y:tr.x-y" uid="tr" uid_parent="tl"/>
+    <Node _name="Max &amp; Min" inputs="x:t_t.value,y:tr.x-y" outputs="min(x\2Cy):tw.min(x\2Cy)" uid="tw" uid_parent="tl"/>
+    <Node _name="Array Subset" dimensions="2" inputs="array:t_pv.value,index:t_y.value,length:t_h.value,index:tx.x*y,length:tw.min(x\2Cy)" outputs="subarray:sp.subarray" uid="sp" uid_parent="tl"/>
+    <Node _name="Array Subset" dimensions="2" inputs="array:t_cu.value,index:t_y.value,length:t_h.value,index:tx.x*y,length:tw.min(x\2Cy)" outputs="subarray:sc.subarray" uid="sc" uid_parent="tl"/>
+    <Node _name="Equal?" inputs="x:sp.subarray,y:sc.subarray" outputs="x = y?:eqe.x = y?" uid="eqe" uid_parent="tl"/>
+    <Node _name="And Array Elements" inputs="Boolean array:eqe.x = y?" outputs="logical AND:eq.logical AND" uid="eq" uid_parent="tl"/>
+    <Node _name="Not" inputs="x:eq.logical AND" outputs=".not. x?:dt..not. x?" uid="dt" uid_parent="tl"/>
+    <Tunnel _id="Out1" inputs="value:dt..not. x?" mode="index" outputs="value:dirty.value" uid="dirty" uid_parent="tl"/>
+  </Structure>
+  <Constant _name="dirty" outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Node _name="Search 1D Array" inputs="1D array:dirty.value,element:kt.value" outputs="index of element:first.index of element" uid="first" uid_parent="root"/>
+  <Node _name="Reverse 1D Array" inputs="array:dirty.value" outputs="reversed array:rev.reversed array" uid="rev" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:rev.reversed array,element:kt.value" outputs="index of element:last.index of element" uid="last" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:first.index of element,y:t.value" outputs="x*y:x0.x*y" uid="x0" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:nt.floor(x/y),y:last.index of element" outputs="x-y:nl.x-y" uid="nl" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:nl.x-y,y:t.value" outputs="x*y:x1.x*y" uid="x1" uid_parent="root"/>
+  <Node _name="Max &amp; Min" inputs="x:x1.x*y,y:w.value" outputs="min(x\2Cy):x1c.min(x\2Cy)" uid="x1c" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:x1c.min(x\2Cy),y:x0.x*y" outputs="x-y:bw.x-y" uid="bw" uid_parent="root"/>
+  <Indicator _name="x" conIdx="4" connection="recommended" description="Left edge of the first dirty tile." inputs="value:x0.x*y" type="int32" uid="o_x" uid_parent="root" value="0"/>
+  <Indicator _name="w" conIdx="6" connection="recommended" description="From x to the right edge of the last dirty tile (clipped at width)." inputs="value:bw.x-y" type="int32" uid="o_w" uid_parent="root" value="0"/>
+</VI>

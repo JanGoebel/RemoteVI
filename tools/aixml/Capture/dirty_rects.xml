@@ -1,0 +1,111 @@
+<VI _name="RemoteVI Dirty Rects.vi" description="Compares two panel captures (2D U32 pixmaps [row\2C column]\2C 0x00RRGGBB) in a grid of tile size x tile size tiles and returns the rectangles that changed. The dirty tiles of each tile row are merged into ONE rectangle from the first dirty tile's left edge to the last dirty tile's right edge (tiles are clipped at the panel edges\3B RemoteVI Dirty Band.vi)\3B rows without a dirty tile give no rectangle. A tile row whose whole band is unchanged is skipped with a single comparison. If previous is empty or its dimensions differ from current\2C the result is one rectangle covering the whole current panel. A band or tile is unchanged when every pixel is equal (Equal? then And Array Elements). A tile size below 1 is treated as 1. Pure and reentrant\3A no error terminals because nothing here can fail. Mirrors dirtyRects() in tools/lib/rects.mjs.">
+  <FreeLabel comment="Unchanged band\3A one compare\2C no tile scan" uid="lbl" uid_parent="root"/>
+  <Control _name="previous" conIdx="11" connection="recommended" description="The previous capture\3B empty for the first frame." outputs="value:pv.value" type="array.2{uint32}" uid="pv" uid_parent="root" value="[]"/>
+  <Control _name="current" conIdx="10" connection="required" description="The current capture." outputs="value:cu.value" type="array.2{uint32}" uid="cu" uid_parent="root" value="[]"/>
+  <Control _name="tile size" conIdx="9" connection="recommended" description="Tile edge in pixels." outputs="value:ts.value" type="int32" uid="ts" uid_parent="root" value="64"/>
+  <Constant _name="one" outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Constant _name="zero" outputs="value:zero.value" type="int32" uid="zero" uid_parent="root" value="0"/>
+  <Node _name="Max &amp; Min" inputs="x:ts.value,y:one.value" outputs="max(x\2Cy):t.max(x\2Cy)" uid="t" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:cu.value,disabled index (row):,index (col):zero.value" outputs="subarray:cc0.subarray" uid="cc0" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:cc0.subarray" outputs="size(s):ch.size(s)" uid="ch" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:cu.value,index (row):zero.value,disabled index (col):" outputs="subarray:cr0.subarray" uid="cr0" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:cr0.subarray" outputs="size(s):cw.size(s)" uid="cw" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:pv.value,disabled index (row):,index (col):zero.value" outputs="subarray:pc0.subarray" uid="pc0" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:pc0.subarray" outputs="size(s):ph.size(s)" uid="ph" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:pv.value,index (row):zero.value,disabled index (col):" outputs="subarray:pr0.subarray" uid="pr0" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:pr0.subarray" outputs="size(s):pw.size(s)" uid="pw" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:ph.size(s),y:ch.size(s)" outputs="x = y?:eh.x = y?" uid="eh" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:pw.size(s),y:cw.size(s)" outputs="x = y?:ew.x = y?" uid="ew" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:ph.size(s),y:pw.size(s)" outputs="x*y:pn.x*y" uid="pn" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:pn.x*y,y:zero.value" outputs="x &gt; y?:has.x &gt; y?" uid="has" uid_parent="root"/>
+  <Node _name="And" inputs="x:eh.x = y?,y:ew.x = y?" outputs="x .and. y?:same0.x .and. y?" uid="same0" uid_parent="root"/>
+  <Node _name="And" inputs="x:same0.x .and. y?,y:has.x &gt; y?" outputs="x .and. y?:same.x .and. y?" uid="same" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="same.x .and. y?" uid="cs1" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pv.value" uid="c_i1" uid_parent="cs1"/>
+    <Tunnel _id="In2" inputs="value:cu.value" uid="c_i2" uid_parent="cs1"/>
+    <Tunnel _id="In3" inputs="value:t.max(x\2Cy)" uid="c_i3" uid_parent="cs1"/>
+    <Tunnel _id="In4" inputs="value:ch.size(s)" uid="c_i4" uid_parent="cs1"/>
+    <Tunnel _id="In5" inputs="value:cw.size(s)" uid="c_i5" uid_parent="cs1"/>
+    <CaseFrame label="No comparable previous\3A whole panel" selector="False" selectout="" uid="cf" uid_parent="cs1">
+      <Tunnel _id="In1" outputs="value:" uid="f_pv" uid_parent="cf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_cu" uid_parent="cf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_t" uid_parent="cf"/>
+      <Tunnel _id="In4" outputs="value:f_h.value" uid="f_h" uid_parent="cf"/>
+      <Tunnel _id="In5" outputs="value:f_w.value" uid="f_w" uid_parent="cf"/>
+      <Constant _name="rect" outputs="value:r0.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="r0" uid_parent="cf" value="[0,0,0,0]"/>
+      <Node _name="Bundle By Name" fields="w,h" inputs="w:f_w.value,h:f_h.value,input cluster:r0.value" outputs="output cluster:wr.output cluster" uid="wr" uid_parent="cf"/>
+      <Node _name="Build Array" inputs="element:wr.output cluster" outputs="appended array:wa.appended array" uid="wa" uid_parent="cf"/>
+      <Tunnel _id="Out1" inputs="value:wa.appended array" uid="f_o1" uid_parent="cf"/>
+    </CaseFrame>
+    <CaseFrame label="Same size\3A compare per tile row" selector="True" selectout="" uid="ct" uid_parent="cs1">
+      <Tunnel _id="In1" outputs="value:t_pv.value" uid="t_pv" uid_parent="ct"/>
+      <Tunnel _id="In2" outputs="value:t_cu.value" uid="t_cu" uid_parent="ct"/>
+      <Tunnel _id="In3" outputs="value:t_t.value" uid="t_t" uid_parent="ct"/>
+      <Tunnel _id="In4" outputs="value:t_h.value" uid="t_h" uid_parent="ct"/>
+      <Tunnel _id="In5" outputs="value:t_w.value" uid="t_w" uid_parent="ct"/>
+      <Node _name="Add" inputs="x:t_h.value,y:t_t.value" outputs="x+y:ht.x+y" uid="ht" uid_parent="ct"/>
+      <Node _name="Decrement" inputs="x:ht.x+y" outputs="x-1:ht1.x-1" uid="ht1" uid_parent="ct"/>
+      <Node _name="Quotient &amp; Remainder" inputs="x:ht1.x-1,y:t_t.value" outputs="floor(x/y):nr.floor(x/y)" uid="nr" uid_parent="ct"/>
+      <Constant _name="no rects" outputs="value:nor.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h}}" uid="nor" uid_parent="ct" value="[]"/>
+      <Constant _name="rect" outputs="value:r1.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="r1" uid_parent="ct" value="[0,0,0,0]"/>
+      <Structure _name="For Loop" count="rl.value" label="One tile row per iteration" maxin="nr.floor(x/y)" maxout="" uid="rl" uid_parent="ct">
+        <Tunnel _id="In1" inputs="value:t_pv.value" outputs="value:l_pv.value" uid="l_pv" uid_parent="rl"/>
+        <Tunnel _id="In2" inputs="value:t_cu.value" outputs="value:l_cu.value" uid="l_cu" uid_parent="rl"/>
+        <Tunnel _id="In3" inputs="value:t_t.value" outputs="value:l_t.value" uid="l_t" uid_parent="rl"/>
+        <Tunnel _id="In4" inputs="value:t_h.value" outputs="value:l_h.value" uid="l_h" uid_parent="rl"/>
+        <Tunnel _id="In5" inputs="value:t_w.value" outputs="value:l_w.value" uid="l_w" uid_parent="rl"/>
+        <Tunnel _id="In6" inputs="value:r1.value" outputs="value:l_r.value" uid="l_r" uid_parent="rl"/>
+        <ShiftReg uid="sr" uid_parent="rl">
+          <Left inputs="value:nor.value" outputs="value:acc.value" uid="srl" uid_parent="sr"/>
+          <Right inputs="value:bc_o1.value" outputs="value:rects.value" uid="srr" uid_parent="sr"/>
+        </ShiftReg>
+        <Node _name="Multiply" inputs="x:rl.value,y:l_t.value" outputs="x*y:by.x*y" uid="by" uid_parent="rl"/>
+        <Node _name="Subtract" inputs="x:l_h.value,y:by.x*y" outputs="x-y:brem.x-y" uid="brem" uid_parent="rl"/>
+        <Node _name="Max &amp; Min" inputs="x:l_t.value,y:brem.x-y" outputs="min(x\2Cy):bh.min(x\2Cy)" uid="bh" uid_parent="rl"/>
+        <Node _name="Array Subset" dimensions="2" inputs="array:l_pv.value,index:by.x*y,length:bh.min(x\2Cy)" outputs="subarray:bp.subarray" uid="bp" uid_parent="rl"/>
+        <Node _name="Array Subset" dimensions="2" inputs="array:l_cu.value,index:by.x*y,length:bh.min(x\2Cy)" outputs="subarray:bq.subarray" uid="bq" uid_parent="rl"/>
+        <Node _name="Equal?" inputs="x:bp.subarray,y:bq.subarray" outputs="x = y?:beqe.x = y?" uid="beqe" uid_parent="rl"/>
+        <Node _name="And Array Elements" inputs="Boolean array:beqe.x = y?" outputs="logical AND:beq.logical AND" uid="beq" uid_parent="rl"/>
+        <Structure _name="Case Structure" selectin="beq.logical AND" uid="bc" uid_parent="rl">
+          <Tunnel _id="In1" inputs="value:acc.value" uid="bc_i1" uid_parent="bc"/>
+          <Tunnel _id="In2" inputs="value:l_pv.value" uid="bc_i2" uid_parent="bc"/>
+          <Tunnel _id="In3" inputs="value:l_cu.value" uid="bc_i3" uid_parent="bc"/>
+          <Tunnel _id="In4" inputs="value:by.x*y" uid="bc_i4" uid_parent="bc"/>
+          <Tunnel _id="In5" inputs="value:bh.min(x\2Cy)" uid="bc_i5" uid_parent="bc"/>
+          <Tunnel _id="In6" inputs="value:l_t.value" uid="bc_i6" uid_parent="bc"/>
+          <Tunnel _id="In7" inputs="value:l_w.value" uid="bc_i7" uid_parent="bc"/>
+          <Tunnel _id="In8" inputs="value:l_r.value" uid="bc_i8" uid_parent="bc"/>
+          <CaseFrame label="Band unchanged\3A keep" selector="True" selectout="" uid="bct" uid_parent="bc">
+            <Tunnel _id="In1" outputs="value:k_acc.value" uid="k_acc" uid_parent="bct"/>
+            <Tunnel _id="In2" outputs="value:" uid="k_pv" uid_parent="bct"/>
+            <Tunnel _id="In3" outputs="value:" uid="k_cu" uid_parent="bct"/>
+            <Tunnel _id="In4" outputs="value:" uid="k_y" uid_parent="bct"/>
+            <Tunnel _id="In5" outputs="value:" uid="k_h" uid_parent="bct"/>
+            <Tunnel _id="In6" outputs="value:" uid="k_t" uid_parent="bct"/>
+            <Tunnel _id="In7" outputs="value:" uid="k_w" uid_parent="bct"/>
+            <Tunnel _id="In8" outputs="value:" uid="k_r" uid_parent="bct"/>
+            <Tunnel _id="Out1" inputs="value:k_acc.value" uid="k_o1" uid_parent="bct"/>
+          </CaseFrame>
+          <CaseFrame label="Band changed\3A first to last dirty tile" selector="False" selectout="" uid="bcf" uid_parent="bc">
+            <Tunnel _id="In1" outputs="value:d_acc.value" uid="d_acc" uid_parent="bcf"/>
+            <Tunnel _id="In2" outputs="value:d_pv.value" uid="d_pv" uid_parent="bcf"/>
+            <Tunnel _id="In3" outputs="value:d_cu.value" uid="d_cu" uid_parent="bcf"/>
+            <Tunnel _id="In4" outputs="value:d_y.value" uid="d_y" uid_parent="bcf"/>
+            <Tunnel _id="In5" outputs="value:d_h.value" uid="d_h" uid_parent="bcf"/>
+            <Tunnel _id="In6" outputs="value:d_t.value" uid="d_t" uid_parent="bcf"/>
+            <Tunnel _id="In7" outputs="value:d_w.value" uid="d_w" uid_parent="bcf"/>
+            <Tunnel _id="In8" outputs="value:d_r.value" uid="d_r" uid_parent="bcf"/>
+            <Call inputs="previous:d_pv.value,current:d_cu.value,y:d_y.value,h:d_h.value,tile size:d_t.value,width:d_w.value" outputs="x:db.x,w:db.w" target="RemoteVI Dirty Band.vi" uid="db" uid_parent="bcf"/>
+            <Node _name="Bundle By Name" fields="x,y,w,h" inputs="x:db.x,y:d_y.value,w:db.w,h:d_h.value,input cluster:d_r.value" outputs="output cluster:dr.output cluster" uid="dr" uid_parent="bcf"/>
+            <Node _name="Build Array" inputs="array:d_acc.value,element:dr.output cluster" outputs="appended array:da.appended array" uid="da" uid_parent="bcf"/>
+            <Tunnel _id="Out1" inputs="value:da.appended array" uid="d_o1" uid_parent="bcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:bc_o1.value" uid="bc_o1" uid_parent="bc"/>
+        </Structure>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:rects.value" uid="t_o1" uid_parent="ct"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:c_o1.value" uid="c_o1" uid_parent="cs1"/>
+  </Structure>
+  <Indicator _name="rects" conIdx="3" connection="recommended" description="Changed rectangles in panel pixels\2C one per tile row with changes\2C top to bottom." inputs="value:c_o1.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h}}" uid="o_r" uid_parent="root" value="[]"/>
+</VI>

@@ -18,7 +18,7 @@
 | `rects.json` | Dirty Rects | first capture, identical, single pixel, row merging, clipped edge tiles |
 | `frame.json` | Frame Encode | complete FRAME messages |
 | `input.json` | Parse Input | valid and malformed client messages |
-| `translate.json` | Translate Input | client/screen coordinate rules while tracking, wheel, WM_CHAR wrapping, allow list |
+| `translate.json` | Translate Input, Track Modifiers | client/screen coordinate rules with and without mouse capture, wheel, WM_CHAR wrapping, allow list; `modifiers`: modifier keys held after a message |
 
 Bytes are lowercase hex. Pixels are `0x00RRGGBB` integers, row-major.
 

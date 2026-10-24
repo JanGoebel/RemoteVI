@@ -20,7 +20,7 @@ The HTTP side is deliberately tiny, so writing it on IG HTTP Utils plus our own 
 * `GET /` returns one constant string (the embedded client). No file system access, so no path traversal is possible.
 * `GET /ws` performs the upgrade. Everything else is `404`.
 * One request per connection, and no request bodies are used.
-* IG HTTP Utils parses the request head.
+* IG HTTP Utils parses the request head. The head is read without blocking the server loop (zero-timeout reads, one per loop iteration); a head over 16 KiB is closed unanswered, and a connection that has not sent a complete head within 5 s is closed. So idle connections, such as a browser's speculative preconnects, cannot stall the server.
 
 ## Response headers
 

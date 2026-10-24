@@ -4,7 +4,7 @@
 |---|---|---|
 | Pure G VIs | Caraya unit tests generated from the vectors (`tests/caraya/`, see below) | Protocol, Dirty Rects, Translate Input and Track Modifiers against `tests/vectors/*.json` |
 | Live G checks | spike VIs in `spikes/` | capture timing, PNG compression, input injection on `spikes/Injection Fixture.vi` through the production input chain |
-| Server acceptance | `node tools/check-server.mjs --url http://127.0.0.1:8080 [--click x,y] [--png out.png]` | black-box checks of a running server, the LabVIEW one or the reference one: HTTP surface, first frame pixel coverage, flow control, input, robustness |
+| Server acceptance | `node tools/check-server.mjs --url http://127.0.0.1:8088 [--click x,y] [--png out.png]` | black-box checks of a running server, the LabVIEW one or the reference one: HTTP surface, first frame pixel coverage, flow control, input, robustness |
 | Client and reference | `node:test` (`npm test`, Node 22+, no install) | WebSocket and HTTP parsers, end-to-end against the reference server, client file is pure ASCII and self-contained |
 | Input fidelity in LabVIEW | `RVI_LV=1 npm run test:lv` against `tests/fixtures/RemoteVI Fixture.vi` (see below) | clicks, latched buttons, typing, modifiers, hover, ring and right-click menus, tabs, wheel, double click, Shift+arrow, tip strips, run-time shortcut menu with a submenu |
 
@@ -72,7 +72,7 @@ The fixture is generated: `tests/fixtures/aixml/compose_fixture.py <labview-mcp 
 ## Manual acceptance
 
 1. Open and run `spikes/RemoteVI Demo.vi`.
-2. Browse to `http://127.0.0.1:8080/`.
+2. Browse to `http://127.0.0.1:8088/`.
 3. Operate every control. Type into the string, drag the slide, watch the chart update.
 4. Repeat from another machine and from a phone.
-5. Stop the demo. The browser shows "Disconnected" and port 8080 is freed.
+5. Stop the demo. The browser shows "Disconnected" and port 8088 is freed.

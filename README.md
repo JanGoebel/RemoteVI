@@ -7,14 +7,14 @@ RemoteVI replaces LabVIEW *Remote Panels*. The browser shows the panel exactly a
 ## Use it
 
 ```
-RemoteVI Start.vi   (VI: unwired = this VI, port, fps)  ──►  URL
+RemoteVI Start.vi   (VI: unwired = this VI, port = 8088, fps)  ──►  URL
 ... your application ...
-RemoteVI Stop.vi    (port)
+RemoteVI Stop.vi    (port = 8088)
 ```
 
 Then browse to `http://<machine>:<port>/`. The server also stops by itself when the published VI stops. Try `spikes/RemoteVI Demo.vi` (port 8088).
 
-> On many NI machines port 8080 is taken by NI's Application Web Server. Pick another port.
+> The default port is 8088, not 8080: on many NI machines port 8080 is taken by NI's Application Web Server.
 
 ## How it works
 
@@ -42,7 +42,6 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 
 * LabVIEW popups (ring and enum menus, right-click menus, combo-box lists, graph palette) are streamed as an overlay and clicked by borrowing the host cursor for about 50-100 ms per click. While one is open there is no hover highlight (moves are dropped), and the panel image does not update. Popups opened remotely are invisible on the host; one opened at the host stays visible there.
 * Only one server per LabVIEW instance (the Server Loop isn't reentrant). A second `RemoteVI Start.vi` returns error 5001; a port in use returns the listener's error (60).
-* A TCP connection that sends nothing stalls the loop for up to 1 s (head read timeout).
 
 ## Development
 

@@ -25,9 +25,11 @@ The first version (protocol v1, see git history) modelled each control through V
  │  Your VI  ── RemoteVI Start.vi (This VI, port) ──► Server Loop (async)  │
  │                                                                         │
  │  Server Loop.vi (one loop, no event structure)                          │
- │   ├ TCP Wait On Listener (short timeout)                                │
- │   │    └ Handle Connection.vi: IG Read From TCP → GET / → index.html    │
+ │   ├ TCP Wait On Listener (5 ms) → Accept Clients.vi: pending list       │
+ │   │    per pending connection: TCP Read (immediate, timeout 0)          │
+ │   │    head complete → Handle Connection.vi: GET / → index.html         │
  │   │                                       → GET /ws → IG upgrade → client │
+ │   │    no complete head within 5 s, or peer gone → close                │
  │   ├ per client: TCP Read (immediate) → WS Decode Client Frame           │
  │   │    → Parse Input → ack | Post Input (ScreenToClient + PostMessageW) │
  │   └ every 1/fps, if any client:                                         │
@@ -46,7 +48,7 @@ The first version (protocol v1, see git history) modelled each control through V
 
 * `FP.Get Image` with *visible area only*, 24-bit. Spike result: 10–45 ms for a 950 × 620 panel. It runs in the UI thread, so the server loop captures only while clients are connected, at most at the configured fps.
 * `Unflatten Pixmap` → 2D U32 `[row, column]`, `0x00RRGGBB`.
-* **Dirty Rects**: a 64 × 64 tile grid. The dirty tiles of each tile row merge into one band. Tiles are compared with `Array Subset` + `Equal?` on aggregates.
+* **Dirty Rects**: a 64 × 64 tile grid. The dirty tiles of each tile row merge into one band. Tiles are compared with `Array Subset` + `Equal?` element by element + `And Array Elements` (`RemoteVI Dirty Band.vi`); an unchanged band costs one comparison.
 * **Encode Rect PNG**: `Array Subset` → `Flatten Pixmap` → NI's `LV Image to PNG Data.vi` with compression on. The default (no compression) gives 1.7 MB for a full panel, so compression matters.
 * Each client keeps the last pixmap it was sent, plus `seq`/`acked` for flow control (at most 2 frames in flight).
 
@@ -94,7 +96,8 @@ Ring and enum menus, right-click menus, combo-box lists and graph-palette popups
 ```
 source/
 ├── API/        RemoteVI Start.vi, RemoteVI Stop.vi           (what you put in your VI)
-├── Server/     Server Loop.vi, Handle Connection.vi, Index HTML.vi, client state
+├── Server/     Server Loop.vi and its parts (Accept Clients, Track Popups, Service Clients,
+│               Capture And Send, Send Overlay, ...), Handle Connection.vi, Index HTML.vi
 ├── Capture/    RemoteVI Capture Panel.vi, RemoteVI Dirty Rects.vi, RemoteVI Encode Rect PNG.vi
 ├── Protocol/   RemoteVI Frame Encode.vi, RemoteVI Overlay Encode.vi, RemoteVI Parse Input.vi,
 │               RemoteVI WS Encode Server Frame.vi, RemoteVI WS Decode Client Frame.vi

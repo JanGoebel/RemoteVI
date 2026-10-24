@@ -2,7 +2,7 @@
 // Black-box acceptance check for a running RemoteVI server (the LabVIEW toolkit
 // or the reference server): HTTP surface, first frame, flow control, input.
 //
-//   node tools/check-server.mjs [--url http://127.0.0.1:8080] [--png first.png]
+//   node tools/check-server.mjs [--url http://127.0.0.1:8088] [--png first.png]
 //        [--click x,y]   also click at panel pixel (x,y) and expect a changed frame
 //
 // Exit code 0 when every check passes. Prints one line per check.
@@ -14,7 +14,7 @@ import { parseArgs } from 'node:util';
 
 const { values } = parseArgs({
   options: {
-    url: { type: 'string', default: 'http://127.0.0.1:8080' },
+    url: { type: 'string', default: 'http://127.0.0.1:8088' },
     png: { type: 'string' },
     click: { type: 'string' },
   },

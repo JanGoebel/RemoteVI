@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Fixture Arrange.vi" description="Build tool of RemoteVI Fixture.vi\3A run it ONCE after composing the fixture (aixml\5Ccompose_fixture.py)\2C with the fixture idle. AIXML cannot create a tab control\2C so this copies the tab control of Tab Panel (a VI whose panel holds only a tab control labelled Tab with empty pages One and Two - see aixml\5CRemoteVI Fixture Prep Tab Panel.xml) onto the fixture's panel\2C then lays the panel out\3A the controls in a column on the left (empty space right of Stop)\2C Graph and Tab to their right\2C no overlap\3B Number without increment/decrement buttons\2C Text limited to one line\2C Graph with its palette visible\2C tabs of a fixed 80 px width (Tab Size 2 = fixed\2C measured)\2C Switch switch when pressed\2C Button and Stop latch when released\2C fixed-width tabs\3B window origin 0\2C0. Saves the fixture.">
+<VI _name="RemoteVI Fixture Arrange.vi" description="Build tool of RemoteVI Fixture.vi\3A run it ONCE after composing the fixture (aixml\5Ccompose_fixture.py)\2C with the fixture idle. AIXML cannot create a tab control\2C so this copies the tab control of Tab Panel (a VI whose panel holds only a tab control labelled Tab with empty pages One and Two - see aixml\5CRemoteVI Fixture Prep Tab Panel.xml) onto the fixture's panel\2C then lays the panel out\3A the controls in a column on the left (empty space right of Stop)\2C Graph and Tab to their right\2C List and error out right of Tab\2C no overlap\3B Number without increment/decrement buttons\2C Text limited to one line\2C Graph with its palette visible\2C List (a single-column multicolumn listbox) with the rows Alpha\2C Beta\2C Gamma\2C Delta\2C four rows high\2C no column headers\2C no horizontal scrollbar\2C label visible (Bounds is read-only on it\2C error 1029)\2C Button with the tip strip Press me\2C tabs of a fixed 80 px width (Tab Size 2 = fixed\2C measured)\2C Switch switch when pressed\2C Button and Stop latch when released\2C fixed-width tabs\3B window origin 0\2C0. Saves the fixture.">
   <FreeLabel comment="Paste the tab\2C then lay out and save" uid="lbl" uid_parent="root"/>
   <Control _name="Fixture" conIdx="0" connection="required" description="Path of RemoteVI Fixture.vi. Saved in place." outputs="value:fx.value" type="path" uid="fx" uid_parent="root" value=""/>
   <Control _name="Tab Panel" conIdx="5" connection="required" description="Path of the VI whose only control is the tab control to copy." outputs="value:tp.value" type="path" uid="tp" uid_parent="root" value=""/>
@@ -15,8 +15,8 @@
   <Constant _name="paste at" outputs="value:pa.value" type="cluster{int32.Left,int32.Top}" uid="pa" uid_parent="root" value="[330,330]"/>
   <Node _name="Invoke Node" target="Paste Selection" type="{LV.Panel}" inputs="reference:fpf.fp,error in (no error):fpf.error out,Pos:pa.value" outputs="reference out:,error out:ps.error out" uid="ps" uid_parent="root"/>
 
-  <Constant _name="labels" outputs="value:nm.value" type="array{string}" uid="nm" uid_parent="root" value="[Switch,Button,Number,Text,Mode,Stop,Graph,Tab,Log Path,error out]"/>
-  <Constant _name="positions" outputs="value:po.value" type="array{cluster{int32.Left,int32.Top}}" uid="po" uid_parent="root" value="[[80,40],[80,110],[80,180],[80,240],[80,300],[80,370],[330,40],[330,330],[80,520],[660,330]]"/>
+  <Constant _name="labels" outputs="value:nm.value" type="array{string}" uid="nm" uid_parent="root" value="[Switch,Button,Number,Text,Mode,Stop,List,Graph,Tab,Log Path,error out]"/>
+  <Constant _name="positions" outputs="value:po.value" type="array{cluster{int32.Left,int32.Top}}" uid="po" uid_parent="root" value="[[80,40],[80,110],[80,180],[80,240],[80,300],[80,370],[640,330],[330,40],[330,330],[80,520],[640,450]]"/>
   <Structure _name="For Loop" count="" label="Place each control by label" maxin="" maxout="" uid="fl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:nm.value" mode="index" outputs="value:l_n.value" uid="l_n" uid_parent="fl"/>
     <Tunnel _id="In2" inputs="value:po.value" mode="index" outputs="value:l_p.value" uid="l_p" uid_parent="fl"/>
@@ -51,8 +51,23 @@
   <Node _name="Property Node" fields="write+Plot Area\3ASize,write+Palette\3AVisible" inputs="reference:tgr.specific class reference,error in (no error):tgr.error out,Plot Area\3ASize:pas.value,Palette\3AVisible:tru.value" outputs="error out:wgr.error out" type="{LV.WaveformGraph}" uid="wgr" uid_parent="root"/>
 
 
+  <Constant _name="List" outputs="value:lli.value" type="string" uid="lli" uid_parent="root" value="List"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lli.value,error in:wgr.error out" outputs="Control Ref:fli.Control Ref,error out:fli.error out" uid="fli" uid_parent="root"/>
+  <Constant _name="multicolumn listbox class" outputs="value:cli.value" type="ref{LV.MulticolumnListbox}" uid="cli" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:cli.value,reference:fli.Control Ref,error in:fli.error out" outputs="specific class reference:tli.specific class reference,error out:tli.error out" uid="tli" uid_parent="root"/>
+  <Constant _name="rows" outputs="value:rli.value" type="array.2{string}" uid="rli" uid_parent="root" value="[[Alpha],[Beta],[Gamma],[Delta]]"/>
+  <Constant _name="one" outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Constant _name="four" outputs="value:four.value" type="int32" uid="four" uid_parent="root" value="4"/>
+  <Node _name="Property Node" fields="write+Item Names,write+Number of Columns,write+Number of Rows,write+Visible Items\3AColumn Headers Visible,write+Visible Items\3AHorizontal Scrollbar Visible" inputs="reference:tli.specific class reference,error in (no error):tli.error out,Item Names:rli.value,Number of Columns:one.value,Number of Rows:four.value,Visible Items\3AColumn Headers Visible:fls.value,Visible Items\3AHorizontal Scrollbar Visible:fls.value" outputs="reference out:wl0.ref,error out:wl0.error out" type="{LV.MulticolumnListbox}" uid="wl0" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:wl0.ref,error in (no error):wl0.error out,Label.Visible:tru.value" outputs="error out:wli.error out" type="{LV.Control}" uid="wli" uid_parent="root"/>
+
+  <Constant _name="Button" outputs="value:lbu.value" type="string" uid="lbu" uid_parent="root" value="Button"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lbu.value,error in:wli.error out" outputs="Control Ref:fbu.Control Ref,error out:fbu.error out" uid="fbu" uid_parent="root"/>
+  <Constant _name="tip" outputs="value:tip.value" type="string" uid="tip" uid_parent="root" value="Press me"/>
+  <Node _name="Property Node" fields="write+Tip Strip" inputs="reference:fbu.Control Ref,error in (no error):fbu.error out,Tip Strip:tip.value" outputs="error out:wbu.error out" type="{LV.Control}" uid="wbu" uid_parent="root"/>
+
   <Constant _name="Tab" outputs="value:lta.value" type="string" uid="lta" uid_parent="root" value="Tab"/>
-  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lta.value,error in:wgr.error out" outputs="Control Ref:fta.Control Ref,error out:fta.error out" uid="fta" uid_parent="root"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lta.value,error in:wbu.error out" outputs="Control Ref:fta.Control Ref,error out:fta.error out" uid="fta" uid_parent="root"/>
   <Constant _name="tab class" outputs="value:cta.value" type="ref{LV.TabControl}" uid="cta" uid_parent="root" value=""/>
   <Node _name="To More Specific Class" inputs="target class:cta.value,reference:fta.Control Ref,error in:fta.error out" outputs="specific class reference:tta.specific class reference,error out:tta.error out" uid="tta" uid_parent="root"/>
   <Constant _name="fixed tab size" outputs="value:tsz.value" type="int32" uid="tsz" uid_parent="root" value="2"/>

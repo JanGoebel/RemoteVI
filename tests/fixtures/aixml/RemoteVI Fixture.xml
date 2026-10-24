@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
+<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number\2C double click on List with the row\2C mouse wheel on Number with the delta\2C and the selection in the run-time shortcut menu of Text by item tag (the menu is rebuilt in Shortcut Menu Activation? as Top and More with the submenu item Deep) - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
   <FreeLabel comment="One log line per handled event" uid="lbl" uid_parent="root"/>
   <Control _name="Log Path" description="Where the event log is written. Empty: RemoteVI Fixture.log in the system temp directory. The file is truncated at start." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
   <Call target="RemoteVI Fixture Log Path.vi" inputs="Log Path:lp.value,error in:" outputs="path:lpath.path,error out:" uid="lpath" uid_parent="root"/>
@@ -148,6 +148,52 @@
         <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lta.value,value:sta.resulting string,error in:" outputs="line:cta.line,error out:" uid="cta" uid_parent="fta"/>
         <Tunnel _id="Out1" inputs="value:" uid="ftaO1" uid_parent="fta"/>
         <Tunnel _id="Out2" inputs="value:cta.line" uid="ftaO2" uid_parent="fta"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;List&quot;\3A Double Click " uid="fdc" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fdcI1" uid_parent="fdc"/>
+        <Tunnel _id="In2" outputs="value:" uid="fdcI2" uid_parent="fdc"/>
+        <Control _name="List" description="Single-column multicolumn listbox (system style) with four rows\2C items set by RemoteVI Fixture Arrange.vi. Its Double Click is logged with the row." outputs="value:" style="Listbox" type="int32" uid="lst" uid_parent="fdc" value="0"/>
+        <Node _name="Event Data Node" fields="CtlRef,Row" outputs="CtlRef:,Row:eddc.Row" uid="eddc" uid_parent="fdc"/>
+        <Constant _name="dblclick line" outputs="value:fdc2.value" type="string" uid="fdc2" uid_parent="fdc" value="dblclick\09List\09%d\0A"/>
+        <Node _name="Format Into String" inputs="format string:fdc2.value,input 1:eddc.Row" outputs="resulting string:sdc.resulting string,error out:" uid="sdc" uid_parent="fdc"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fdcO1" uid_parent="fdc"/>
+        <Tunnel _id="Out2" inputs="value:sdc.resulting string" uid="fdcO2" uid_parent="fdc"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Number&quot;\3A Mouse Wheel " uid="fwh" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fwhI1" uid_parent="fwh"/>
+        <Tunnel _id="In2" outputs="value:" uid="fwhI2" uid_parent="fwh"/>
+        <Node _name="Event Data Node" fields="CtlRef,Delta" outputs="CtlRef:,Delta:edwh.Delta" uid="edwh" uid_parent="fwh"/>
+        <Constant _name="wheel line" outputs="value:fwh2.value" type="string" uid="fwh2" uid_parent="fwh" value="wheel\09Number\09%d\0A"/>
+        <Node _name="Format Into String" inputs="format string:fwh2.value,input 1:edwh.Delta" outputs="resulting string:swh.resulting string,error out:" uid="swh" uid_parent="fwh"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fwhO1" uid_parent="fwh"/>
+        <Tunnel _id="Out2" inputs="value:swh.resulting string" uid="fwhO2" uid_parent="fwh"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Text&quot;\3A Shortcut Menu Activation? " uid="fsa" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fsaI1" uid_parent="fsa"/>
+        <Tunnel _id="In2" outputs="value:" uid="fsaI2" uid_parent="fsa"/>
+        <Node _name="Event Data Node" fields="MenuRef" outputs="MenuRef:edsa.MenuRef" uid="edsa" uid_parent="fsa"/>
+        <Node _name="Delete Menu Items" inputs="menu reference:edsa.MenuRef,menu tag:,items:,error in (no error):" outputs="menu reference out:dmi.menu reference out,error out:dmi.error out" uid="dmi" uid_parent="fsa"/>
+        <Constant _name="top items" outputs="value:tpi.value" type="array{string}" uid="tpi" uid_parent="fsa" value="[Top,More]"/>
+        <Node _name="Insert Menu Items" inputs="menu reference:dmi.menu reference out,item names:tpi.value,item tags:tpi.value,error in (no error):dmi.error out,menu tag:,after item:" outputs="menu reference out:imt.menu reference out,item tags out:,error out:imt.error out" uid="imt" uid_parent="fsa"/>
+        <Constant _name="submenu items" outputs="value:sbi.value" type="array{string}" uid="sbi" uid_parent="fsa" value="[Deep]"/>
+        <Constant _name="submenu tag" outputs="value:sbt.value" type="string" uid="sbt" uid_parent="fsa" value="More"/>
+        <Node _name="Insert Menu Items" inputs="menu reference:imt.menu reference out,item names:sbi.value,item tags:sbi.value,error in (no error):imt.error out,menu tag:sbt.value,after item:" outputs="menu reference out:,item tags out:,error out:" uid="ims" uid_parent="fsa"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fsaO1" uid_parent="fsa"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fsaO2" uid_parent="fsa"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Text&quot;\3A Shortcut Menu Selection (User) " uid="fss" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fssI1" uid_parent="fss"/>
+        <Tunnel _id="In2" outputs="value:" uid="fssI2" uid_parent="fss"/>
+        <Node _name="Event Data Node" fields="ItemTag" outputs="ItemTag:edss.ItemTag" uid="edss" uid_parent="fss"/>
+        <Constant _name="menu kind" outputs="value:kss.value" type="string" uid="kss" uid_parent="fss" value="menu\09Text\09"/>
+        <Constant _name="line feed" outputs="value:lfss.value" type="string" uid="lfss" uid_parent="fss" value="\0A"/>
+        <Node _name="Concatenate Strings" inputs="string:kss.value,string:edss.ItemTag,string:lfss.value" outputs="concatenated string:css.concatenated string" uid="css" uid_parent="fss"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fssO1" uid_parent="fss"/>
+        <Tunnel _id="Out2" inputs="value:css.concatenated string" uid="fssO2" uid_parent="fss"/>
       </CaseFrame>
 
       <CaseFrame selector=" &quot;Stop&quot;\3A Value Change " uid="fst" uid_parent="ev">

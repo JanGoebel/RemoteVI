@@ -1,0 +1,11 @@
+<VI _name="Spike Start Errors.vi" description="Manual check of RemoteVI Start.vi's error reporting. Publishes this VI on port with RemoteVI Start.vi\2C keeps running for hold ms and returns Start's error out and URL\3B the server ends by itself once this VI is idle. Expected\3A no error on a free port with no RemoteVI server running in this LabVIEW instance\3B 5001 while another RemoteVI server runs here (e.g. the fixture on 8089)\3B 60 (from TCP Create Listener in RemoteVI Server Loop.vi) when another process holds the port.">
+  <FreeLabel comment="Start, report, hold" uid="lbl" uid_parent="root"/>
+  <Control _name="port" description="Port to publish on." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8090"/>
+  <Control _name="hold ms" description="How long the panel stays published before this VI ends." outputs="value:wms.value" type="int32" uid="wms" uid_parent="root" value="0"/>
+  <Node _name="Current VI's Path" outputs="path:cp.path" uid="cp" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:cp.path,error in (no error):" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Call target="RemoteVI Start.vi" inputs="VI:ov.vi reference,port:port.value,error in:ov.error out" outputs="URL:st.URL,error out:st.error out" uid="st" uid_parent="root"/>
+  <Node _name="Wait (ms)" inputs="milliseconds to wait:wms.value" outputs="millisecond timer value:" uid="w" uid_parent="root"/>
+  <Indicator _name="URL" description="Start's URL." inputs="value:st.URL" type="string" uid="ourl" uid_parent="root" value=""/>
+  <Indicator _name="error out" description="Start's error out." inputs="value:st.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

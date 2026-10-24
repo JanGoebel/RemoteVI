@@ -31,17 +31,23 @@
 //    VK 0xE8, a key that produces no character.
 //  * While a LabVIEW popup (ring/enum menu, right-click menu, graph palette
 //    popup ...) is open, LabVIEW hit-tests clicks with the REAL cursor position
-//    against the popup window's REAL position. The host cursor is never moved:
-//    the server moves the (invisible) popup windows so that the point the
-//    remote user clicked (`cursor` in the result, the popup's logical screen
-//    point) lies under wherever the host cursor is, then posts the click with
-//    the real cursor position in lParam. Moves and wheel are dropped: LabVIEW
-//    only updates the hover highlight on real cursor motion, so there is none.
-//    A click outside every popup is not posted; the server closes the popups
-//    with WM_CANCELMODE. Submenus are driven with VK_LEFT / VK_RIGHT around the
-//    click (RemoteVI Post Input.vi), and tip strips do not count as a popup
-//    here. Popups travel as OVERLAY messages at their logical position, see
-//    docs/protocol.md.
+//    against the popup window's REAL position and ignores posted coordinates.
+//    This function only reports the clicked screen point (`cursor`, with the
+//    button message in screen coordinates) and drops moves and the wheel; what
+//    the server then does is not translation (RemoteVI Post Input.vi,
+//    docs/protocol.md 4.1): the host cursor is never moved, and LabVIEW menus
+//    are not moved either - they are driven with keys posted to the panel
+//    window (VK_DOWN/VK_UP move the highlight onto the row under the pointer,
+//    VK_RETURN chooses it or opens its submenu, VK_LEFT closes submenus), so a
+//    submenu opens beside its parent exactly as locally. A pointer move over a
+//    menu (dropped here) is noted by the server and moves the highlight like
+//    local hover; resting 400 ms on an item opens its submenu with VK_RIGHT.
+//    Popups that take no keys (colour picker, line width popup, graph palette
+//    popups) are clicked by moving only that window under the host cursor for
+//    the message and back. A click outside every popup is not posted; the
+//    server closes the popups with WM_CANCELMODE. Tip strips do not count as a
+//    popup here. Popups travel as OVERLAY messages at their real position
+//    relative to the panel, see docs/protocol.md.
 //
 // Two rules live in the server rather than here, because they are timing and
 // thread state, not translation:

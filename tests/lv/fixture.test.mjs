@@ -214,10 +214,12 @@ test('hovering over a menu item highlights that item, like locally', opts, async
     let rows = [];
     while (Date.now() < end) {
       rows = c.overlay[0] ? highlightedRows(c.overlay[0]) : [];
-      if (rows.includes(y - menu.y)) break;
+      // The highlight is one band across the item; the item's text crosses the middle column,
+      // so test the band's extent, not the single pixel at the pointer's row.
+      if (rows.length && rows[0] <= y - menu.y && y - menu.y <= rows.at(-1)) break;
       await sleep(50);
     }
-    assert.ok(rows.includes(y - menu.y), `row under the pointer (y=${y - menu.y}) is highlighted; highlighted rows: ${rows[0]}..${rows.at(-1)}`);
+    assert.ok(rows.length && rows[0] <= y - menu.y && y - menu.y <= rows.at(-1), `row under the pointer (y=${y - menu.y}) is highlighted; highlighted rows: ${rows[0]}..${rows.at(-1)}`);
   }
   await click(c, 5, 5, { settle: 100 }); // close without choosing
   await waitOverlay(c, (o) => o.length === 0);

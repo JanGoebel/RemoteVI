@@ -31,7 +31,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Capture, diff, PNG (`source/Capture`) | ✅ vectors and benchmarks |
 | Protocol, WebSocket framing (`source/Protocol`) | ✅ all vectors pass |
 | Input (`source/Input`, `source/Win32`) | ✅ clicks, drags, double clicks, wheel, typing, Shift/Ctrl/Alt, hover enter/leave; host cursor and keyboard never touched |
-| Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay (may extend past the panel), invisible on the host when opened remotely, panel keeps updating underneath |
+| Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay at their real place (may extend past the panel), hover highlight, submenus beside their parent, invisible on the host when opened remotely, panel keeps updating underneath |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
 | Tests | ✅ `npm test` (18), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (16) |
@@ -42,7 +42,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 
 ## Known limits
 
-* **No hover highlight in remote menus.** LabVIEW updates it only when the real cursor moves. A submenu opens when its entry is clicked.
+* **Menus are driven with keys.** The highlight follows the remote pointer and a submenu opens after 400 ms on its entry, but through arrow keys posted to LabVIEW, so a menu that takes no keys (colour picker, line width popup) shows no hover highlight remotely; it is clicked by moving just that window under the host cursor for the click. While such a popup is open its parent menus react to clicks only by closing.
 * **Remote tip strips can flash on the host.** One triggered remotely shows on the host for 20–90 ms before it is hidden, or stays visible if the host cursor is over the panel.
 * **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
 * **One server per LabVIEW instance.** The Server Loop isn't reentrant. A second `RemoteVI Start.vi` returns error 5001, and a port in use returns the listener's error (60).

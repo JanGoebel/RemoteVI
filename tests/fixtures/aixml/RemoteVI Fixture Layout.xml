@@ -1,0 +1,73 @@
+<VI _name="RemoteVI Fixture Layout.vi" description="Event-log helper of RemoteVI Fixture.vi. Builds the layout lines of the log\3A for every control on Panel whose label is one of Switch\2C Button\2C Number\2C Text\2C Mode\2C Tab\2C Graph\2C Stop one line layout TAB label TAB x y w h LF\2C the control's body rectangle (Position and Bounds\2C without the label) in panel-image coordinates\2C that is minus the window Origin. Other controls are skipped. Errors of the property reads go to error out.">
+  <FreeLabel comment="Body rect minus window origin" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel of the VI whose controls are laid out." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="Origin" conIdx="5" connection="required" description="Front Panel Window\3AOrigin of the VI." outputs="value:og.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="og" uid_parent="root" value="[0,0]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:pa.value,error in (no error):ei.value" outputs="Controls[]:pcs.c,reference out:,error out:pcs.error out" type="{LV.Panel}" uid="pcs" uid_parent="root"/>
+  <Constant _name="logged labels" outputs="value:nm.value" type="array{string}" uid="nm" uid_parent="root" value="[Switch,Button,Number,Text,Mode,Tab,Graph,Stop]"/>
+  <Constant _name="no lines" outputs="value:e0.value" type="string" uid="e0" uid_parent="root" value=""/>
+  <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:og.value" outputs="Horizontal:uo.h,Vertical:uo.v" uid="uo" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One line per logged control" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pcs.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:nm.value" outputs="value:l_nm.value" uid="l_nm" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:uo.h" outputs="value:l_h.value" uid="l_h" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:uo.v" outputs="value:l_v.value" uid="l_v" uid_parent="fl"/>
+    <ShiftReg uid="srt" uid_parent="fl">
+      <Left inputs="value:e0.value" outputs="value:txt.value" uid="srtl" uid_parent="srt"/>
+      <Right inputs="value:cso.text" outputs="value:all.value" uid="srtr" uid_parent="srt"/>
+    </ShiftReg>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:pcs.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:pn.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Constant _name="hide label" outputs="value:hl.value" type="bool" uid="hl" uid_parent="fl" value="false"/>
+    <Node _name="Property Node" fields="read+Label.Text,read+Label.Visible" inputs="reference:c.value,error in (no error):le.value" outputs="Label.Text:pn.lt,Label.Visible:pn.lv,reference out:pn.ref,error out:pn0.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
+    <Node _name="Property Node" fields="write+Label.Visible,read+Position,read+Bounds" inputs="reference:pn.ref,error in (no error):pn0.error out,Label.Visible:hl.value" outputs="Position:pb.pos,Bounds:pb.bnd,reference out:pb.ref,error out:pb.error out" type="{LV.Control}" uid="pb" uid_parent="fl"/>
+    <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:pb.ref,error in (no error):pb.error out,Label.Visible:pn.lv" outputs="reference out:,error out:pn.error out" type="{LV.Control}" uid="pr" uid_parent="fl"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_nm.value,element:pn.lt" outputs="index of element:sa.index of element" uid="sa" uid_parent="fl"/>
+    <Constant _name="zero" outputs="value:z.value" type="int32" uid="z" uid_parent="fl" value="0"/>
+    <Node _name="Greater Or Equal?" inputs="x:sa.index of element,y:z.value" outputs="x &gt;= y?:ge.x &gt;= y?" uid="ge" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:pb.pos" outputs="Left:up.l,Top:up.t" uid="up" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:pb.bnd" outputs="Width:ub.w,Height:ub.h" uid="ub" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:up.l,y:l_h.value" outputs="x-y:sx.x-y" uid="sx" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:up.t,y:l_v.value" outputs="x-y:sy.x-y" uid="sy" uid_parent="fl"/>
+    <Structure _name="Case Structure" selectin="ge.x &gt;= y?" uid="cso" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:txt.value" uid="ci1" uid_parent="cso"/>
+      <Tunnel _id="In2" inputs="value:pn.lt" uid="ci2" uid_parent="cso"/>
+      <Tunnel _id="In3" inputs="value:sx.x-y" uid="ci3" uid_parent="cso"/>
+      <Tunnel _id="In4" inputs="value:sy.x-y" uid="ci4" uid_parent="cso"/>
+      <Tunnel _id="In5" inputs="value:ub.w" uid="ci5" uid_parent="cso"/>
+      <Tunnel _id="In6" inputs="value:ub.h" uid="ci6" uid_parent="cso"/>
+      <CaseFrame label="A logged control\3A add its line" selector="True" selectout="" uid="cst" uid_parent="cso">
+        <Tunnel _id="In1" outputs="value:t1.value" uid="t1" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:t2.value" uid="t2" uid_parent="cst"/>
+        <Tunnel _id="In3" outputs="value:t3.value" uid="t3" uid_parent="cst"/>
+        <Tunnel _id="In4" outputs="value:t4.value" uid="t4" uid_parent="cst"/>
+        <Tunnel _id="In5" outputs="value:t5.value" uid="t5" uid_parent="cst"/>
+        <Tunnel _id="In6" outputs="value:t6.value" uid="t6" uid_parent="cst"/>
+        <Node _name="Number To Decimal String" inputs="number:t3.value" outputs="decimal integer string:n3.s" uid="n3" uid_parent="cst"/>
+        <Node _name="Number To Decimal String" inputs="number:t4.value" outputs="decimal integer string:n4.s" uid="n4" uid_parent="cst"/>
+        <Node _name="Number To Decimal String" inputs="number:t5.value" outputs="decimal integer string:n5.s" uid="n5" uid_parent="cst"/>
+        <Node _name="Number To Decimal String" inputs="number:t6.value" outputs="decimal integer string:n6.s" uid="n6" uid_parent="cst"/>
+        <Constant _name="kind" outputs="value:ck.value" type="string" uid="ck" uid_parent="cst" value="layout"/>
+        <Constant _name="tab" outputs="value:ct.value" type="string" uid="ct" uid_parent="cst" value="\09"/>
+        <Constant _name="space" outputs="value:csp.value" type="string" uid="csp" uid_parent="cst" value=" "/>
+        <Constant _name="line feed" outputs="value:cl.value" type="string" uid="cl" uid_parent="cst" value="\0A"/>
+        <Node _name="Concatenate Strings" inputs="string:t1.value,string:ck.value,string:ct.value,string:t2.value,string:ct.value,string:n3.s,string:csp.value,string:n4.s,string:csp.value,string:n5.s,string:csp.value,string:n6.s,string:cl.value" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="cst"/>
+        <Tunnel _id="Out1" inputs="value:cat.concatenated string" uid="to1" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame label="Any other control\3A skip" selector="False" selectout="" uid="csf" uid_parent="cso">
+        <Tunnel _id="In1" outputs="value:f1.value" uid="f1" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:" uid="f2" uid_parent="csf"/>
+        <Tunnel _id="In3" outputs="value:" uid="f3" uid_parent="csf"/>
+        <Tunnel _id="In4" outputs="value:" uid="f4" uid_parent="csf"/>
+        <Tunnel _id="In5" outputs="value:" uid="f5" uid_parent="csf"/>
+        <Tunnel _id="In6" outputs="value:" uid="f6" uid_parent="csf"/>
+        <Tunnel _id="Out1" inputs="value:f1.value" uid="fo1" uid_parent="csf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cso.text" uid="co1" uid_parent="cso"/>
+    </Structure>
+  </Structure>
+  <Indicator _name="layout" conIdx="4" connection="recommended" description="The layout lines\2C each terminated by a line feed." inputs="value:all.value" type="string" uid="lo" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:lerr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

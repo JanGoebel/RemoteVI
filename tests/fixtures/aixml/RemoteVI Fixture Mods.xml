@@ -1,0 +1,19 @@
+<VI _name="RemoteVI Fixture Mods.vi" description="Event-log helper of RemoteVI Fixture.vi. Turns an event's PlatMods cluster into the log's modifier field: S for Shift\2C C for Ctrl\2C A for Alt\2C in that order\2C or - when none is held. error in is passed through unchanged.">
+  <FreeLabel comment="S C A in order; - for none" uid="lbl" uid_parent="root"/>
+  <Control _name="PlatMods" conIdx="0" connection="required" description="The PlatMods cluster of a Mouse or Key event." outputs="value:pm.value" type="cluster{bool.Shift,bool.Ctrl,bool.Alt,bool.Cmd,bool.Opt}" uid="pm" uid_parent="root" value="[false,false,false,false,false]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Passed through to error out." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Unbundle By Name" fields="Shift,Ctrl,Alt" inputs="input cluster:pm.value" outputs="Shift:ub.Shift,Ctrl:ub.Ctrl,Alt:ub.Alt" uid="ub" uid_parent="root"/>
+  <Constant _name="S" outputs="value:cs.value" type="string" uid="cs" uid_parent="root" value="S"/>
+  <Constant _name="C" outputs="value:cc.value" type="string" uid="cc" uid_parent="root" value="C"/>
+  <Constant _name="A" outputs="value:ca.value" type="string" uid="ca" uid_parent="root" value="A"/>
+  <Constant _name="none" outputs="value:ce.value" type="string" uid="ce" uid_parent="root" value=""/>
+  <Constant _name="dash" outputs="value:cd.value" type="string" uid="cd" uid_parent="root" value="-"/>
+  <Node _name="Select" inputs="t:cs.value,s:ub.Shift,f:ce.value" outputs="s? t\3Af:ss.s? t\3Af" uid="ss" uid_parent="root"/>
+  <Node _name="Select" inputs="t:cc.value,s:ub.Ctrl,f:ce.value" outputs="s? t\3Af:sc.s? t\3Af" uid="sc" uid_parent="root"/>
+  <Node _name="Select" inputs="t:ca.value,s:ub.Alt,f:ce.value" outputs="s? t\3Af:sa.s? t\3Af" uid="sa" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:ss.s? t\3Af,string:sc.s? t\3Af,string:sa.s? t\3Af" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:cat.concatenated string" outputs="empty?:em.empty?" uid="em" uid_parent="root"/>
+  <Node _name="Select" inputs="t:cd.value,s:em.empty?,f:cat.concatenated string" outputs="s? t\3Af:sm.s? t\3Af" uid="sm" uid_parent="root"/>
+  <Indicator _name="mods" conIdx="4" connection="recommended" description="S\2C C\2C A for the held modifiers\2C or - for none." inputs="value:sm.s? t\3Af" type="string" uid="mo" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C unchanged." inputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

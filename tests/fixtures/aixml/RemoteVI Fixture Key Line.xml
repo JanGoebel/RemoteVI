@@ -1,0 +1,23 @@
+<VI _name="RemoteVI Fixture Key Line.vi" description="Event-log helper of RemoteVI Fixture.vi. Builds one key line of the log\3A keydown TAB label TAB key TAB mods LF\2C where label is read from the event's control reference\2C key is the typed character when Char is printable (32 to 126) and the VKey name otherwise\2C and mods the held modifiers as RemoteVI Fixture Mods.vi writes them. Errors of reading the label go to error out.">
+  <FreeLabel comment="printable Char\2C else the VKey name" uid="lbl" uid_parent="root"/>
+  <Control _name="CtlRef" conIdx="0" connection="required" description="The event's control reference\3B its label goes into the line." outputs="value:cr.value" type="ref{LV.Control}" uid="cr" uid_parent="root" value=""/>
+  <Control _name="Char" conIdx="1" connection="required" description="The event's Char." outputs="value:ch.value" type="int16" uid="ch" uid_parent="root" value="0"/>
+  <Control _name="VKey" conIdx="2" connection="required" description="The event's VKey\2C as its item name." outputs="value:vk.value" type="string" uid="vk" uid_parent="root" value=""/>
+  <Control _name="PlatMods" conIdx="3" connection="required" description="The event's PlatMods." outputs="value:pm.value" type="cluster{bool.Shift,bool.Ctrl,bool.Alt,bool.Cmd,bool.Opt}" uid="pm" uid_parent="root" value="[false,false,false,false,false]"/>
+  <Control _name="error in" conIdx="5" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Label.Text" inputs="reference:cr.value,error in (no error):ei.value" outputs="Label.Text:pl.Label.Text,reference out:,error out:pl.error out" type="{LV.Control}" uid="pl" uid_parent="root"/>
+  <Constant _name="last printable" outputs="value:hi.value" type="int16" uid="hi" uid_parent="root" value="126"/>
+  <Constant _name="first printable" outputs="value:lo.value" type="int16" uid="lo" uid_parent="root" value="32"/>
+  <Node _name="In Range and Coerce" inputs="upper limit:hi.value,x:ch.value,lower limit:lo.value" outputs="coerced(x):,In Range?:ir.In Range?" uid="ir" uid_parent="root"/>
+  <Node _name="To Unsigned Byte Integer" inputs="number:ch.value" outputs="unsigned 8bit integer:u8.b" uid="u8" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:u8.b" outputs="appended array:ba.appended array" uid="ba" uid_parent="root"/>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:ba.appended array" outputs="string:bs.string" uid="bs" uid_parent="root"/>
+  <Node _name="Select" inputs="t:bs.string,s:ir.In Range?,f:vk.value" outputs="s? t\3Af:sk.s? t\3Af" uid="sk" uid_parent="root"/>
+  <Call target="RemoteVI Fixture Mods.vi" inputs="PlatMods:pm.value,error in:pl.error out" outputs="mods:md.mods,error out:md.error out" uid="md" uid_parent="root"/>
+  <Constant _name="kind" outputs="value:ck.value" type="string" uid="ck" uid_parent="root" value="keydown"/>
+  <Constant _name="tab" outputs="value:ct.value" type="string" uid="ct" uid_parent="root" value="\09"/>
+  <Constant _name="line feed" outputs="value:cl.value" type="string" uid="cl" uid_parent="root" value="\0A"/>
+  <Node _name="Concatenate Strings" inputs="string:ck.value,string:ct.value,string:pl.Label.Text,string:ct.value,string:sk.s? t\3Af,string:ct.value,string:md.mods,string:cl.value" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="root"/>
+  <Indicator _name="line" conIdx="14" connection="recommended" description="One log line\2C terminated by a line feed." inputs="value:cat.concatenated string" type="string" uid="li" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="19" connection="recommended" description="Errors of reading the control's label." inputs="value:md.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

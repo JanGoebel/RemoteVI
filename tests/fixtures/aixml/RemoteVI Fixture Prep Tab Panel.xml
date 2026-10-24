@@ -1,0 +1,74 @@
+<VI _name="RemoteVI Fixture Prep Tab Panel.vi" description="Build helper of RemoteVI Fixture.vi (AIXML cannot create a tab control). Edits the VI at path - a COPY of NI's example Programmatically Manipulate a Tab Control.vi - so that its front panel holds nothing but its tab control\3A every other control and every decoration is deleted\2C the tab control is relabelled Tab\2C its two pages are relabelled One and Two (label and caption) and emptied\2C and the VI is saved. Its diagram is left for lvai_graft_diagram (replaceDiagram) to discard.">
+  <FreeLabel comment="Keep only the tab control" uid="lbl" uid_parent="root"/>
+  <Control _name="path" conIdx="0" connection="required" description="The copy to edit. Saved in place." outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Open VI Reference" inputs="vi path:p.value,error in (no error):ei.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:pv.reference out,error out:pv.error out,Front Panel:pv.fp" type="{LV.VI}" uid="pv" uid_parent="root"/>
+  <Constant _name="FP" outputs="value:tt.value" type="uint16{FP,BD,Other}" uid="tt" uid_parent="root" value="0"/>
+  <Constant _name="Control" outputs="value:ccn.value" type="string" uid="ccn" uid_parent="root" value="Control"/>
+  <Constant _name="Decoration" outputs="value:dcn.value" type="string" uid="dcn" uid_parent="root" value="Decoration"/>
+  <Call target="VI Scripting - Traverse.lvlib\3ATraverse for GObjects.vi" inputs="Traverse Target:tt.value,error in (no error):pv.error out,VI Refnum:pv.reference out,Class Name:ccn.value" outputs="error out:trc.error out,References:trc.refs" uid="trc" uid_parent="root"/>
+  <Call target="VI Scripting - Traverse.lvlib\3ATraverse for GObjects.vi" inputs="Traverse Target:tt.value,error in (no error):trc.error out,VI Refnum:pv.reference out,Class Name:dcn.value" outputs="error out:trd.error out,References:trd.refs" uid="trd" uid_parent="root"/>
+  <Constant _name="tab class" outputs="value:tcls.value" type="ref{LV.TabControl}" uid="tcls" uid_parent="root" value=""/>
+  <Constant _name="page labels" outputs="value:pl.value" type="array{string}" uid="pl" uid_parent="root" value="[One,Two]"/>
+  <Constant _name="tab label" outputs="value:tl.value" type="string" uid="tl" uid_parent="root" value="Tab"/>
+  <Structure _name="For Loop" count="" label="Delete all but the tab control" maxin="" maxout="" uid="fc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:trc.refs" mode="index" outputs="value:c.value" uid="c" uid_parent="fc"/>
+    <Tunnel _id="In2" inputs="value:tcls.value" outputs="value:fc_t.value" uid="fc_t" uid_parent="fc"/>
+    <Tunnel _id="In3" inputs="value:pl.value" outputs="value:fc_pl.value" uid="fc_pl" uid_parent="fc"/>
+    <Tunnel _id="In4" inputs="value:tl.value" outputs="value:fc_tl.value" uid="fc_tl" uid_parent="fc"/>
+    <ShiftReg uid="sre" uid_parent="fc">
+      <Left inputs="value:trd.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:cs.err" outputs="value:loopErr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="To More Specific Class" inputs="target class:fc_t.value,reference:c.value" outputs="specific class reference:tm.specific class reference,error out:tm.error out" uid="tm" uid_parent="fc"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tm.error out" outputs="status:tms.status" uid="tms" uid_parent="fc"/>
+    <Structure _name="Case Structure" selectin="tms.status" uid="cs" uid_parent="fc">
+      <Tunnel _id="In1" inputs="value:c.value" uid="csi1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:tm.specific class reference" uid="csi2" uid_parent="cs"/>
+      <Tunnel _id="In3" inputs="value:le.value" uid="csi3" uid_parent="cs"/>
+      <Tunnel _id="In4" inputs="value:fc_pl.value" uid="csi4" uid_parent="cs"/>
+      <Tunnel _id="In5" inputs="value:fc_tl.value" uid="csi5" uid_parent="cs"/>
+      <CaseFrame label="Not the tab control\3A delete it" selector="True" selectout="" uid="cst" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:t1.value" uid="t1" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:" uid="t2" uid_parent="cst"/>
+        <Tunnel _id="In3" outputs="value:t3.value" uid="t3" uid_parent="cst"/>
+        <Tunnel _id="In4" outputs="value:" uid="t4" uid_parent="cst"/>
+        <Tunnel _id="In5" outputs="value:" uid="t5" uid_parent="cst"/>
+        <Node _name="Invoke Node" target="Delete" type="{LV.GObject}" inputs="reference:t1.value,error in (no error):t3.value" outputs="error out:del.error out" uid="del" uid_parent="cst"/>
+        <Tunnel _id="Out1" inputs="value:del.error out" uid="to1" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame label="The tab control\3A relabel and empty it" selector="False" selectout="" uid="csf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:f1.value" uid="f1" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:f2.value" uid="f2" uid_parent="csf"/>
+        <Tunnel _id="In3" outputs="value:f3.value" uid="f3" uid_parent="csf"/>
+        <Tunnel _id="In4" outputs="value:f4.value" uid="f4" uid_parent="csf"/>
+        <Tunnel _id="In5" outputs="value:f5.value" uid="f5" uid_parent="csf"/>
+        <Node _name="Property Node" fields="write+Label.Text" inputs="reference:f2.value,error in (no error):f3.value,Label.Text:f5.value" outputs="reference out:,error out:lt.error out" type="{LV.Control}" uid="lt" uid_parent="csf"/>
+        <Node _name="Property Node" fields="read+Pages" inputs="reference:f2.value,error in (no error):lt.error out" outputs="reference out:,error out:pg.error out,Pages:pg.pages" type="{LV.TabControl}" uid="pg" uid_parent="csf"/>
+        <Structure _name="For Loop" count="" label="Each page" maxin="" maxout="" uid="fp" uid_parent="csf">
+          <Tunnel _id="In1" inputs="value:pg.pages" mode="index" outputs="value:pgi.value" uid="pgi" uid_parent="fp"/>
+          <Tunnel _id="In2" inputs="value:f4.value" mode="index" outputs="value:pli.value" uid="pli" uid_parent="fp"/>
+          <ShiftReg uid="srp" uid_parent="fp">
+            <Left inputs="value:pg.error out" outputs="value:pe.value" uid="srpl" uid_parent="srp"/>
+            <Right inputs="value:po.error out" outputs="value:pageErr.value" uid="srpr" uid_parent="srp"/>
+          </ShiftReg>
+          <Node _name="Property Node" fields="write+Page Label,write+Tab Caption" inputs="reference:pgi.value,error in (no error):pe.value,Page Label:pli.value,Tab Caption:pli.value" outputs="reference out:,error out:po.error out" type="{LV.Page}" uid="pp" uid_parent="fp"/>
+        </Structure>
+        <Tunnel _id="Out1" inputs="value:pageErr.value" uid="fo1" uid_parent="csf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cs.err" uid="cso1" uid_parent="cs"/>
+    </Structure>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Delete every decoration" maxin="" maxout="" uid="fd" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:trd.refs" mode="index" outputs="value:dec.value" uid="dec" uid_parent="fd"/>
+    <ShiftReg uid="srd" uid_parent="fd">
+      <Left inputs="value:loopErr.value" outputs="value:de.value" uid="srdl" uid_parent="srd"/>
+      <Right inputs="value:dd.error out" outputs="value:decErr.value" uid="srdr" uid_parent="srd"/>
+    </ShiftReg>
+    <Node _name="Invoke Node" target="Delete" type="{LV.GObject}" inputs="reference:dec.value,error in (no error):de.value" outputs="error out:dd.error out" uid="dd" uid_parent="fd"/>
+  </Structure>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:pv.reference out,error in (no error):decErr.value" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the edit and the save." inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

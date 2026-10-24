@@ -1,0 +1,20 @@
+<VI _name="RemoteVI Fixture Find Control.vi" description="Helper of RemoteVI Fixture.vi. Returns a reference to the top-level control on Panel whose label is label\2C for registering its events dynamically (the fixture's Tab control is pasted in after generation\2C so no static event can name it). Not a Refnum when no control carries that label. Errors of the property reads go to error out.">
+  <FreeLabel comment="Control by label\3B Not a Refnum if none" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel to search." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="label" conIdx="5" connection="required" description="Label of the control wanted." outputs="value:lb.value" type="string" uid="lb" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:pa.value,error in (no error):ei.value" outputs="Controls[]:pcs.c,reference out:,error out:pcs.error out" type="{LV.Panel}" uid="pcs" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Every control's label" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pcs.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:pcs.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:pn.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value,error in (no error):le.value" outputs="Label.Text:pn.lt,reference out:,error out:pn.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:pn.lt" mode="index" outputs="value:labels.value" uid="labels" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:labels.value,element:lb.value" outputs="index of element:sa.index of element" uid="sa" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pcs.c,index:sa.index of element" outputs="element:ix.element" uid="ix" uid_parent="root"/>
+  <Indicator _name="Control Ref" conIdx="4" connection="recommended" description="The control labelled label\2C or Not a Refnum." inputs="value:ix.element" type="ref{LV.Control}" uid="cr" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:lerr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

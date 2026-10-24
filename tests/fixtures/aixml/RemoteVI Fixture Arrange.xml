@@ -1,0 +1,87 @@
+<VI _name="RemoteVI Fixture Arrange.vi" description="Build tool of RemoteVI Fixture.vi\3A run it ONCE after composing the fixture (aixml\5Ccompose_fixture.py)\2C with the fixture idle. AIXML cannot create a tab control\2C so this copies the tab control of Tab Panel (a VI whose panel holds only a tab control labelled Tab with empty pages One and Two - see aixml\5CRemoteVI Fixture Prep Tab Panel.xml) onto the fixture's panel\2C then lays the panel out\3A the controls in a column on the left (empty space right of Stop)\2C Graph and Tab to their right\2C no overlap\3B Number without increment/decrement buttons\2C Text limited to one line\2C Graph with its palette visible\2C tabs of a fixed 80 px width (Tab Size 2 = fixed\2C measured)\2C Switch switch when pressed\2C Button and Stop latch when released\2C fixed-width tabs\3B window origin 0\2C0. Saves the fixture.">
+  <FreeLabel comment="Paste the tab\2C then lay out and save" uid="lbl" uid_parent="root"/>
+  <Control _name="Fixture" conIdx="0" connection="required" description="Path of RemoteVI Fixture.vi. Saved in place." outputs="value:fx.value" type="path" uid="fx" uid_parent="root" value=""/>
+  <Control _name="Tab Panel" conIdx="5" connection="required" description="Path of the VI whose only control is the tab control to copy." outputs="value:tp.value" type="path" uid="tp" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+  <Node _name="Open VI Reference" inputs="vi path:tp.value,error in (no error):ei.value" outputs="vi reference:ot.vi reference,error out:ot.error out" uid="ot" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ot.vi reference,error in (no error):ot.error out" outputs="reference out:,error out:tpf.error out,Front Panel:tpf.fp" type="{LV.VI}" uid="tpf" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:tpf.fp,error in (no error):tpf.error out" outputs="reference out:,error out:tpc.error out,Controls[]:tpc.c" type="{LV.Panel}" uid="tpc" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Make Selection" type="{LV.Panel}" inputs="reference:tpf.fp,error in (no error):tpc.error out,Objects:tpc.c" outputs="reference out:ms.reference out,error out:ms.error out" uid="ms" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Copy Selection" type="{LV.Panel}" inputs="reference:ms.reference out,error in (no error):ms.error out" outputs="reference out:,error out:cp.error out" uid="cp" uid_parent="root"/>
+
+  <Node _name="Open VI Reference" inputs="vi path:fx.value,error in (no error):cp.error out" outputs="vi reference:of.vi reference,error out:of.error out" uid="of" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:of.vi reference,error in (no error):of.error out" outputs="reference out:,error out:fpf.error out,Front Panel:fpf.fp" type="{LV.VI}" uid="fpf" uid_parent="root"/>
+  <Constant _name="paste at" outputs="value:pa.value" type="cluster{int32.Left,int32.Top}" uid="pa" uid_parent="root" value="[330,330]"/>
+  <Node _name="Invoke Node" target="Paste Selection" type="{LV.Panel}" inputs="reference:fpf.fp,error in (no error):fpf.error out,Pos:pa.value" outputs="reference out:,error out:ps.error out" uid="ps" uid_parent="root"/>
+
+  <Constant _name="labels" outputs="value:nm.value" type="array{string}" uid="nm" uid_parent="root" value="[Switch,Button,Number,Text,Mode,Stop,Graph,Tab,Log Path,error out]"/>
+  <Constant _name="positions" outputs="value:po.value" type="array{cluster{int32.Left,int32.Top}}" uid="po" uid_parent="root" value="[[80,40],[80,110],[80,180],[80,240],[80,300],[80,370],[330,40],[330,330],[80,520],[660,330]]"/>
+  <Structure _name="For Loop" count="" label="Place each control by label" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:nm.value" mode="index" outputs="value:l_n.value" uid="l_n" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:po.value" mode="index" outputs="value:l_p.value" uid="l_p" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:fpf.fp" outputs="value:l_f.value" uid="l_f" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:ps.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:wp.error out" outputs="value:posErr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:l_f.value,label:l_n.value,error in:le.value" outputs="Control Ref:fcl.Control Ref,error out:fcl.error out" uid="fcl" uid_parent="fl"/>
+    <Node _name="Property Node" fields="write+Position" inputs="reference:fcl.Control Ref,error in (no error):fcl.error out,Position:l_p.value" outputs="error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="fl"/>
+  </Structure>
+
+  <Constant _name="Number" outputs="value:lnu.value" type="string" uid="lnu" uid_parent="root" value="Number"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lnu.value,error in:posErr.value" outputs="Control Ref:fnu.Control Ref,error out:fnu.error out" uid="fnu" uid_parent="root"/>
+  <Constant _name="digital class" outputs="value:cnu.value" type="ref{LV.Digital}" uid="cnu" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:cnu.value,reference:fnu.Control Ref,error in:fnu.error out" outputs="specific class reference:tnu.specific class reference,error out:tnu.error out" uid="tnu" uid_parent="root"/>
+  <Constant _name="no inc/dec" outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Increment/Decrement Visible?" inputs="reference:tnu.specific class reference,error in (no error):tnu.error out,Increment/Decrement Visible?:fls.value" outputs="error out:wnu.error out" type="{LV.Digital}" uid="wnu" uid_parent="root"/>
+
+  <Constant _name="Text" outputs="value:ltx.value" type="string" uid="ltx" uid_parent="root" value="Text"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:ltx.value,error in:wnu.error out" outputs="Control Ref:ftx.Control Ref,error out:ftx.error out" uid="ftx" uid_parent="root"/>
+  <Constant _name="string class" outputs="value:ctx.value" type="ref{LV.String}" uid="ctx" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:ctx.value,reference:ftx.Control Ref,error in:ftx.error out" outputs="specific class reference:ttx.specific class reference,error out:ttx.error out" uid="ttx" uid_parent="root"/>
+  <Constant _name="single line" outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Limit To Single Line?" inputs="reference:ttx.specific class reference,error in (no error):ttx.error out,Limit To Single Line?:tru.value" outputs="error out:wtx.error out" type="{LV.String}" uid="wtx" uid_parent="root"/>
+
+  <Constant _name="Graph" outputs="value:lgr.value" type="string" uid="lgr" uid_parent="root" value="Graph"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lgr.value,error in:wtx.error out" outputs="Control Ref:fgr.Control Ref,error out:fgr.error out" uid="fgr" uid_parent="root"/>
+  <Constant _name="graph class" outputs="value:cgr.value" type="ref{LV.WaveformGraph}" uid="cgr" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:cgr.value,reference:fgr.Control Ref,error in:fgr.error out" outputs="specific class reference:tgr.specific class reference,error out:tgr.error out" uid="tgr" uid_parent="root"/>
+  <Constant _name="plot area" outputs="value:pas.value" type="cluster{int32.Width,int32.Height}" uid="pas" uid_parent="root" value="[300,170]"/>
+  <Node _name="Property Node" fields="write+Plot Area\3ASize,write+Palette\3AVisible" inputs="reference:tgr.specific class reference,error in (no error):tgr.error out,Plot Area\3ASize:pas.value,Palette\3AVisible:tru.value" outputs="error out:wgr.error out" type="{LV.WaveformGraph}" uid="wgr" uid_parent="root"/>
+
+
+  <Constant _name="Tab" outputs="value:lta.value" type="string" uid="lta" uid_parent="root" value="Tab"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:fpf.fp,label:lta.value,error in:wgr.error out" outputs="Control Ref:fta.Control Ref,error out:fta.error out" uid="fta" uid_parent="root"/>
+  <Constant _name="tab class" outputs="value:cta.value" type="ref{LV.TabControl}" uid="cta" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:cta.value,reference:fta.Control Ref,error in:fta.error out" outputs="specific class reference:tta.specific class reference,error out:tta.error out" uid="tta" uid_parent="root"/>
+  <Constant _name="fixed tab size" outputs="value:tsz.value" type="int32" uid="tsz" uid_parent="root" value="2"/>
+  <Constant _name="tab dimension" outputs="value:tdm.value" type="cluster{int32.Width,int32.Height}" uid="tdm" uid_parent="root" value="[80,23]"/>
+  <Node _name="Property Node" fields="write+Tab Size" inputs="reference:tta.specific class reference,error in (no error):tta.error out,Tab Size:tsz.value" outputs="reference out:wts.ref,error out:wts.error out" type="{LV.TabControl}" uid="wts" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Fixed Tab Dimension" inputs="reference:wts.ref,error in (no error):wts.error out,Fixed Tab Dimension:tdm.value" outputs="error out:wta.error out" type="{LV.TabControl}" uid="wta" uid_parent="root"/>
+
+  <Constant _name="booleans" outputs="value:bn.value" type="array{string}" uid="bn" uid_parent="root" value="[Switch,Button,Stop]"/>
+  <Constant _name="mechanical actions" outputs="value:ma.value" type="array{int32}" uid="ma" uid_parent="root" value="[0,4,4]"/>
+  <Constant _name="boolean class" outputs="value:cbo.value" type="ref{LV.Boolean}" uid="cbo" uid_parent="root" value=""/>
+  <Structure _name="For Loop" count="" label="Mechanical action of each boolean" maxin="" maxout="" uid="fb" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:bn.value" mode="index" outputs="value:b_n.value" uid="b_n" uid_parent="fb"/>
+    <Tunnel _id="In2" inputs="value:ma.value" mode="index" outputs="value:b_a.value" uid="b_a" uid_parent="fb"/>
+    <Tunnel _id="In3" inputs="value:fpf.fp" outputs="value:b_f.value" uid="b_f" uid_parent="fb"/>
+    <Tunnel _id="In4" inputs="value:cbo.value" outputs="value:b_c.value" uid="b_c" uid_parent="fb"/>
+    <ShiftReg uid="srb" uid_parent="fb">
+      <Left inputs="value:wta.error out" outputs="value:be.value" uid="srbl" uid_parent="srb"/>
+      <Right inputs="value:wma.error out" outputs="value:boolErr.value" uid="srbr" uid_parent="srb"/>
+    </ShiftReg>
+    <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:b_f.value,label:b_n.value,error in:be.value" outputs="Control Ref:fbo.Control Ref,error out:fbo.error out" uid="fbo" uid_parent="fb"/>
+    <Node _name="To More Specific Class" inputs="target class:b_c.value,reference:fbo.Control Ref,error in:fbo.error out" outputs="specific class reference:tbo.specific class reference,error out:tbo.error out" uid="tbo" uid_parent="fb"/>
+    <Node _name="Property Node" fields="write+Mechanical Action" inputs="reference:tbo.specific class reference,error in (no error):tbo.error out,Mechanical Action:b_a.value" outputs="error out:wma.error out" type="{LV.Boolean}" uid="wma" uid_parent="fb"/>
+  </Structure>
+
+  <Constant _name="origin" outputs="value:org.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="org" uid_parent="root" value="[0,0]"/>
+  <Constant _name="window" outputs="value:wb.value" type="cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}" uid="wb" uid_parent="root" value="[120,120,1020,720]"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AOrigin,write+Front Panel Window\3APanel Bounds" inputs="reference:of.vi reference,error in (no error):boolErr.value,Front Panel Window\3AOrigin:org.value,Front Panel Window\3APanel Bounds:wb.value" outputs="reference out:wn.reference out,error out:wn.error out" type="{LV.VI}" uid="wn" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:wn.reference out,error in (no error):wn.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ot.vi reference,error in (no error):cr.error out" outputs="error out:ct.error out" uid="ct" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the paste\2C the layout and the save." inputs="value:ct.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

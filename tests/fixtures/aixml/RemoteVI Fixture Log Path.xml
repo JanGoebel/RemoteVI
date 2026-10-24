@@ -1,0 +1,12 @@
+<VI _name="RemoteVI Fixture Log Path.vi" description="Event-log helper of RemoteVI Fixture.vi. Returns Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty. error in is passed through unchanged.">
+  <FreeLabel comment="Empty Log Path: temp directory" uid="lbl" uid_parent="root"/>
+  <Control _name="Log Path" conIdx="0" connection="recommended" description="Where the log is wanted\3B empty for the default." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Passed through to error out." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Empty String/Path?" inputs="string/path:lp.value" outputs="empty?:ep.empty?" uid="ep" uid_parent="root"/>
+  <Node _name="Temporary Directory" outputs="path:td.path" uid="td" uid_parent="root"/>
+  <Constant _name="log name" outputs="value:ln.value" type="string" uid="ln" uid_parent="root" value="RemoteVI Fixture.log"/>
+  <Node _name="Build Path" inputs="base path:td.path,name or relative path:ln.value" outputs="appended path:bp.appended path" uid="bp" uid_parent="root"/>
+  <Node _name="Select" inputs="t:bp.appended path,s:ep.empty?,f:lp.value" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="root"/>
+  <Indicator _name="path" conIdx="4" connection="recommended" description="The log file to use." inputs="value:sel.s? t\3Af" type="path" uid="po" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C unchanged." inputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

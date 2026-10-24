@@ -1,0 +1,21 @@
+<VI _name="RemoteVI Fixture Mouse Line.vi" description="Event-log helper of RemoteVI Fixture.vi. Builds one mouse line of the log\3A kind TAB label TAB x y button mods LF\2C where kind is mousedown or mouseup\2C label is read from the event's control reference\2C x y are the event's Coords\2C button its Button and mods the held modifiers as RemoteVI Fixture Mods.vi writes them. Errors of reading the label go to error out.">
+  <FreeLabel comment="kind TAB label TAB x y button mods" uid="lbl" uid_parent="root"/>
+  <Control _name="kind" conIdx="0" connection="required" description="mousedown or mouseup." outputs="value:kd.value" type="string" uid="kd" uid_parent="root" value=""/>
+  <Control _name="CtlRef" conIdx="1" connection="required" description="The event's control reference\3B its label goes into the line." outputs="value:cr.value" type="ref{LV.Control}" uid="cr" uid_parent="root" value=""/>
+  <Control _name="Coords" conIdx="2" connection="required" description="The event's Coords." outputs="value:co.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="co" uid_parent="root" value="[0,0]"/>
+  <Control _name="Button" conIdx="3" connection="required" description="The event's Button." outputs="value:bt.value" type="uint16" uid="bt" uid_parent="root" value="0"/>
+  <Control _name="PlatMods" conIdx="4" connection="required" description="The event's PlatMods." outputs="value:pm.value" type="cluster{bool.Shift,bool.Ctrl,bool.Alt,bool.Cmd,bool.Opt}" uid="pm" uid_parent="root" value="[false,false,false,false,false]"/>
+  <Control _name="error in" conIdx="5" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Label.Text" inputs="reference:cr.value,error in (no error):ei.value" outputs="Label.Text:pl.Label.Text,reference out:,error out:pl.error out" type="{LV.Control}" uid="pl" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:co.value" outputs="Horizontal:ub.x,Vertical:ub.y" uid="ub" uid_parent="root"/>
+  <Node _name="Number To Decimal String" inputs="number:ub.x" outputs="decimal integer string:nx.s" uid="nx" uid_parent="root"/>
+  <Node _name="Number To Decimal String" inputs="number:ub.y" outputs="decimal integer string:ny.s" uid="ny" uid_parent="root"/>
+  <Node _name="Number To Decimal String" inputs="number:bt.value" outputs="decimal integer string:nb.s" uid="nb" uid_parent="root"/>
+  <Call target="RemoteVI Fixture Mods.vi" inputs="PlatMods:pm.value,error in:pl.error out" outputs="mods:md.mods,error out:md.error out" uid="md" uid_parent="root"/>
+  <Constant _name="tab" outputs="value:ct.value" type="string" uid="ct" uid_parent="root" value="\09"/>
+  <Constant _name="space" outputs="value:csp.value" type="string" uid="csp" uid_parent="root" value=" "/>
+  <Constant _name="line feed" outputs="value:cl.value" type="string" uid="cl" uid_parent="root" value="\0A"/>
+  <Node _name="Concatenate Strings" inputs="string:kd.value,string:ct.value,string:pl.Label.Text,string:ct.value,string:nx.s,string:csp.value,string:ny.s,string:csp.value,string:nb.s,string:csp.value,string:md.mods,string:cl.value" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="root"/>
+  <Indicator _name="line" conIdx="14" connection="recommended" description="One log line\2C terminated by a line feed." inputs="value:cat.concatenated string" type="string" uid="li" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="19" connection="recommended" description="Errors of reading the control's label." inputs="value:md.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

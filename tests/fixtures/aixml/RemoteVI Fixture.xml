@@ -1,0 +1,200 @@
+<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
+  <FreeLabel comment="One log line per handled event" uid="lbl" uid_parent="root"/>
+  <Control _name="Log Path" description="Where the event log is written. Empty: RemoteVI Fixture.log in the system temp directory. The file is truncated at start." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
+  <Call target="RemoteVI Fixture Log Path.vi" inputs="Log Path:lp.value,error in:" outputs="path:lpath.path,error out:" uid="lpath" uid_parent="root"/>
+  <Constant _name="Notifier Type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):,notification data type:nt.value,create if not found? (T):,error in (no error):" outputs="notifier out:obt.notifier out,created new?:,error out:obt.error out" uid="obt" uid_parent="root"/>
+  <Constant _name="replace or create" outputs="value:op.value" type="uint16{open,replace,create,open or create,replace or create,replace or create with confirmation}" uid="op" uid_parent="root" value="4"/>
+  <Node _name="Open/Create/Replace File" inputs="file path (use dialog):lpath.path,operation (0\3Aopen):op.value,error in:obt.error out" outputs="refnum out:of.refnum out,error out:of.error out" uid="of" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel,read+Front Panel Window\3AOrigin" inputs="reference:,error in (no error):" outputs="Front Panel:vp.fp,Front Panel Window\3AOrigin:vp.org,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="root"/>
+  <Call target="RemoteVI Fixture Layout.vi" inputs="Panel:vp.fp,Origin:vp.org,error in:vp.error out" outputs="layout:lay.layout,error out:lay.error out" uid="lay" uid_parent="root"/>
+  <Constant _name="tab label" outputs="value:tbl.value" type="string" uid="tbl" uid_parent="root" value="Tab"/>
+  <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:vp.fp,label:tbl.value,error in:lay.error out" outputs="Control Ref:fc.Control Ref,error out:fc.error out" uid="fc" uid_parent="root"/>
+  <Node _name="Register For Events" inputs="event registration refnum:,error in (no error):fc.error out,event source:fc.Control Ref" outputs="event registration refnum:reg.event registration refnum,error out:reg.error out" uid="reg" uid_parent="root"/>
+  <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8089"/>
+  <Call target="../../source/API/RemoteVI Start.vi" inputs="port:port.value,error in:of.error out" outputs="URL:,error out:st.error out" uid="st" uid_parent="root"/>
+  <Constant _name="ready line" outputs="value:rl.value" type="string" uid="rl" uid_parent="root" value="ready\0A"/>
+  <Node _name="Concatenate Strings" inputs="string:lay.layout,string:rl.value" outputs="concatenated string:lr.concatenated string" uid="lr" uid_parent="root"/>
+  <Node _name="Write to Text File" inputs="file (use dialog):of.refnum out,text:lr.concatenated string,error in:st.error out" outputs="refnum out:w2.refnum out,error out:w2.error out" uid="w2" uid_parent="root"/>
+
+  <Structure _name="While Loop" count="" label="Event loop - log every event" uid="evl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:obt.notifier out" outputs="value:evN.value" uid="evN" uid_parent="evl"/>
+    <Tunnel _id="In2" inputs="value:w2.refnum out" outputs="value:evF.value" uid="evF" uid_parent="evl"/>
+    <Tunnel _id="In3" inputs="value:reg.event registration refnum" outputs="value:evR.value" uid="evR" uid_parent="evl"/>
+    <ShiftReg uid="srE" uid_parent="evl">
+      <Left inputs="value:w2.error out" outputs="value:evE.value" uid="evEl" uid_parent="srE"/>
+      <Right inputs="value:wl.error out" outputs="value:evErr.value" uid="evEr" uid_parent="srE"/>
+    </ShiftReg>
+    <Structure _name="Event Structure" uid="ev" uid_parent="evl">
+      <Tunnel _id="In1" inputs="value:evN.value" uid="evI1" uid_parent="ev"/>
+      <Tunnel _id="In2" inputs="value:evR.value" uid="evI2" uid_parent="ev"/>
+
+      <CaseFrame selector=" &quot;Switch&quot;, &quot;Button&quot;, &quot;Number&quot;, &quot;Text&quot;\3A Mouse Down " uid="fmd" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmdI1" uid_parent="fmd"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmdI2" uid_parent="fmd"/>
+        <Node _name="Event Data Node" fields="CtlRef,Coords,Button,PlatMods" outputs="CtlRef:edmd.CtlRef,Coords:edmd.Coords,Button:edmd.Button,PlatMods:edmd.PlatMods" uid="edmd" uid_parent="fmd"/>
+        <Constant _name="kind" outputs="value:kmd.value" type="string" uid="kmd" uid_parent="fmd" value="mousedown"/>
+        <Call target="RemoteVI Fixture Mouse Line.vi" inputs="kind:kmd.value,CtlRef:edmd.CtlRef,Coords:edmd.Coords,Button:edmd.Button,PlatMods:edmd.PlatMods,error in:" outputs="line:cmd.line,error out:" uid="cmd" uid_parent="fmd"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmdO1" uid_parent="fmd"/>
+        <Tunnel _id="Out2" inputs="value:cmd.line" uid="fmdO2" uid_parent="fmd"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Switch&quot;, &quot;Button&quot;, &quot;Number&quot;, &quot;Text&quot;\3A Mouse Up " uid="fmu" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmuI1" uid_parent="fmu"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmuI2" uid_parent="fmu"/>
+        <Node _name="Event Data Node" fields="CtlRef,Coords,Button,PlatMods" outputs="CtlRef:edmu.CtlRef,Coords:edmu.Coords,Button:edmu.Button,PlatMods:edmu.PlatMods" uid="edmu" uid_parent="fmu"/>
+        <Constant _name="kind" outputs="value:kmu.value" type="string" uid="kmu" uid_parent="fmu" value="mouseup"/>
+        <Call target="RemoteVI Fixture Mouse Line.vi" inputs="kind:kmu.value,CtlRef:edmu.CtlRef,Coords:edmu.Coords,Button:edmu.Button,PlatMods:edmu.PlatMods,error in:" outputs="line:cmu.line,error out:" uid="cmu" uid_parent="fmu"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmuO1" uid_parent="fmu"/>
+        <Tunnel _id="Out2" inputs="value:cmu.line" uid="fmuO2" uid_parent="fmu"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Button&quot;\3A Mouse Enter " uid="fme" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmeI1" uid_parent="fme"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmeI2" uid_parent="fme"/>
+        <Constant _name="enter line" outputs="value:kme.value" type="string" uid="kme" uid_parent="fme" value="enter\09Button\0A"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmeO1" uid_parent="fme"/>
+        <Tunnel _id="Out2" inputs="value:kme.value" uid="fmeO2" uid_parent="fme"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Button&quot;\3A Mouse Leave " uid="fml" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmlI1" uid_parent="fml"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmlI2" uid_parent="fml"/>
+        <Constant _name="leave line" outputs="value:kml.value" type="string" uid="kml" uid_parent="fml" value="leave\09Button\0A"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmlO1" uid_parent="fml"/>
+        <Tunnel _id="Out2" inputs="value:kml.value" uid="fmlO2" uid_parent="fml"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Text&quot;, &quot;Number&quot;\3A Key Down " uid="fkd" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fkdI1" uid_parent="fkd"/>
+        <Tunnel _id="In2" outputs="value:" uid="fkdI2" uid_parent="fkd"/>
+        <Node _name="Event Data Node" fields="CtlRef,Char,VKey,PlatMods" outputs="CtlRef:edkd.CtlRef,Char:edkd.Char,VKey:edkd.VKey,PlatMods:edkd.PlatMods" uid="edkd" uid_parent="fkd"/>
+        <Constant _name="item name" outputs="value:fsk.value" type="string" uid="fsk" uid_parent="fkd" value="%s"/>
+        <Node _name="Format Into String" inputs="format string:fsk.value,input 1:edkd.VKey" outputs="resulting string:vkn.resulting string,error out:" uid="vkn" uid_parent="fkd"/>
+        <Call target="RemoteVI Fixture Key Line.vi" inputs="CtlRef:edkd.CtlRef,Char:edkd.Char,VKey:vkn.resulting string,PlatMods:edkd.PlatMods,error in:" outputs="line:ckd.line,error out:" uid="ckd" uid_parent="fkd"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fkdO1" uid_parent="fkd"/>
+        <Tunnel _id="Out2" inputs="value:ckd.line" uid="fkdO2" uid_parent="fkd"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Switch&quot;\3A Value Change " uid="fsw" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fswI1" uid_parent="fsw"/>
+        <Tunnel _id="In2" outputs="value:" uid="fswI2" uid_parent="fsw"/>
+        <Control _name="Switch" description="Switch when pressed. Its Value Change\2C Mouse Down and Mouse Up are logged." outputs="value:sw.value" type="bool" uid="sw" uid_parent="fsw" value="false"/>
+        <Constant _name="label" outputs="value:lsw.value" type="string" uid="lsw" uid_parent="fsw" value="Switch"/>
+        <Constant _name="TRUE" outputs="value:tsw.value" type="string" uid="tsw" uid_parent="fsw" value="TRUE"/>
+        <Constant _name="FALSE" outputs="value:fsw2.value" type="string" uid="fsw2" uid_parent="fsw" value="FALSE"/>
+        <Node _name="Select" inputs="t:tsw.value,s:sw.value,f:fsw2.value" outputs="s? t\3Af:ssw.s? t\3Af" uid="ssw" uid_parent="fsw"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lsw.value,value:ssw.s? t\3Af,error in:" outputs="line:csw.line,error out:" uid="csw" uid_parent="fsw"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fswO1" uid_parent="fsw"/>
+        <Tunnel _id="Out2" inputs="value:csw.line" uid="fswO2" uid_parent="fsw"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Button&quot;\3A Value Change " uid="fbt" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fbtI1" uid_parent="fbt"/>
+        <Tunnel _id="In2" outputs="value:" uid="fbtI2" uid_parent="fbt"/>
+        <Control _name="Button" description="Latched OK button\3B read in its own frame so it resets. Its Value Change\2C mouse and enter/leave events are logged." outputs="value:bt.value" style="latched" type="bool" uid="bt" uid_parent="fbt" value="false"/>
+        <Constant _name="label" outputs="value:lbt.value" type="string" uid="lbt" uid_parent="fbt" value="Button"/>
+        <Constant _name="TRUE" outputs="value:tbt.value" type="string" uid="tbt" uid_parent="fbt" value="TRUE"/>
+        <Constant _name="FALSE" outputs="value:fbt2.value" type="string" uid="fbt2" uid_parent="fbt" value="FALSE"/>
+        <Node _name="Select" inputs="t:tbt.value,s:bt.value,f:fbt2.value" outputs="s? t\3Af:sbt.s? t\3Af" uid="sbt" uid_parent="fbt"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lbt.value,value:sbt.s? t\3Af,error in:" outputs="line:cbt.line,error out:" uid="cbt" uid_parent="fbt"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fbtO1" uid_parent="fbt"/>
+        <Tunnel _id="Out2" inputs="value:cbt.line" uid="fbtO2" uid_parent="fbt"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Number&quot;\3A Value Change " uid="fnu" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fnuI1" uid_parent="fnu"/>
+        <Tunnel _id="In2" outputs="value:" uid="fnuI2" uid_parent="fnu"/>
+        <Control _name="Number" description="DBL numeric. Its Value Change (as %g)\2C mouse and key events are logged." outputs="value:nu.value" type="double" uid="nu" uid_parent="fnu" value="0"/>
+        <Constant _name="label" outputs="value:lnu.value" type="string" uid="lnu" uid_parent="fnu" value="Number"/>
+        <Constant _name="format" outputs="value:fnu2.value" type="string" uid="fnu2" uid_parent="fnu" value="%.;%#g"/>
+        <Node _name="Format Into String" inputs="format string:fnu2.value,input 1:nu.value" outputs="resulting string:snu.resulting string,error out:" uid="snu" uid_parent="fnu"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lnu.value,value:snu.resulting string,error in:" outputs="line:cnu.line,error out:" uid="cnu" uid_parent="fnu"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fnuO1" uid_parent="fnu"/>
+        <Tunnel _id="Out2" inputs="value:cnu.line" uid="fnuO2" uid_parent="fnu"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Text&quot;\3A Value Change " uid="ftx" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="ftxI1" uid_parent="ftx"/>
+        <Tunnel _id="In2" outputs="value:" uid="ftxI2" uid_parent="ftx"/>
+        <Control _name="Text" description="Single-line string. Its Value Change\2C mouse and key events are logged." outputs="value:tx.value" type="string" uid="tx" uid_parent="ftx" value=""/>
+        <Constant _name="label" outputs="value:ltx.value" type="string" uid="ltx" uid_parent="ftx" value="Text"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:ltx.value,value:tx.value,error in:" outputs="line:ctx.line,error out:" uid="ctx" uid_parent="ftx"/>
+        <Tunnel _id="Out1" inputs="value:" uid="ftxO1" uid_parent="ftx"/>
+        <Tunnel _id="Out2" inputs="value:ctx.line" uid="ftxO2" uid_parent="ftx"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Mode&quot;\3A Value Change " uid="fmo" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmoI1" uid_parent="fmo"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmoI2" uid_parent="fmo"/>
+        <Control _name="Mode" description="Text ring Off\2C Slow\2C Fast. Its Value Change is logged by item text." items="Off,Slow,Fast" outputs="value:mo.value" style="Ring" type="int32" uid="mo" uid_parent="fmo" value="0" values="[0,1,2]"/>
+        <Constant _name="label" outputs="value:lmo.value" type="string" uid="lmo" uid_parent="fmo" value="Mode"/>
+        <Constant _name="item texts" outputs="value:imo.value" type="array{string}" uid="imo" uid_parent="fmo" value="[Off,Slow,Fast]"/>
+        <Node _name="Index Array" inputs="array:imo.value,index:mo.value" outputs="element:smo.element" uid="smo" uid_parent="fmo"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lmo.value,value:smo.element,error in:" outputs="line:cmo.line,error out:" uid="cmo" uid_parent="fmo"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmoO1" uid_parent="fmo"/>
+        <Tunnel _id="Out2" inputs="value:cmo.line" uid="fmoO2" uid_parent="fmo"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &lt;Control Ref&gt;\3A Value Change " uid="fta" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="ftaI1" uid_parent="fta"/>
+        <Tunnel _id="In2" outputs="value:" uid="ftaI2" uid_parent="fta"/>
+        <Node _name="Event Data Node" fields="NewVal" outputs="NewVal:edta.NewVal" uid="edta" uid_parent="fta"/>
+        <Constant _name="tab type" outputs="value:tty.value" type="uint32{One,Two}" uid="tty" uid_parent="fta" value="0"/>
+        <Node _name="Variant To Data" inputs="variant:edta.NewVal,type:tty.value" outputs="data:vtd.data,error out:" uid="vtd" uid_parent="fta"/>
+        <Constant _name="label" outputs="value:lta.value" type="string" uid="lta" uid_parent="fta" value="Tab"/>
+        <Constant _name="item name" outputs="value:fta2.value" type="string" uid="fta2" uid_parent="fta" value="%s"/>
+        <Node _name="Format Into String" inputs="format string:fta2.value,input 1:vtd.data" outputs="resulting string:sta.resulting string,error out:" uid="sta" uid_parent="fta"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lta.value,value:sta.resulting string,error in:" outputs="line:cta.line,error out:" uid="cta" uid_parent="fta"/>
+        <Tunnel _id="Out1" inputs="value:" uid="ftaO1" uid_parent="fta"/>
+        <Tunnel _id="Out2" inputs="value:cta.line" uid="ftaO2" uid_parent="fta"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Stop&quot;\3A Value Change " uid="fst" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:stN.value" uid="stN" uid_parent="fst"/>
+        <Tunnel _id="In2" outputs="value:" uid="fstI2" uid_parent="fst"/>
+        <Control _name="Stop" description="Latched button that ends the fixture." outputs="value:stop.value" style="latched" type="bool" uid="stop" uid_parent="fst" value="false"/>
+        <Node _name="Send Notification" inputs="notifier:stN.value,notification:stop.value,error in (no error):" outputs="notifier out:,error out:" uid="snd" uid_parent="fst"/>
+        <Tunnel _id="Out1" inputs="value:stop.value" uid="fstO1" uid_parent="fst"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fstO2" uid_parent="fst"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" cond="true" outputs="value:evStop.value" uid="evStop" uid_parent="ev"/>
+      <Tunnel _id="Out2" cond="true" outputs="value:evLine.value" uid="evLine" uid_parent="ev"/>
+    </Structure>
+    <Node _name="Write to Text File" inputs="file (use dialog):evF.value,text:evLine.value,error in:evE.value" outputs="refnum out:,error out:wl.error out" uid="wl" uid_parent="evl"/>
+    <Condition inputs="value:evStop.value" uid="evlCond" uid_parent="evl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:evR.value" outputs="value:evRo.value" uid="evRo" uid_parent="evl"/>
+  </Structure>
+
+  <Constant _name="phase step" outputs="value:k.value" type="double" uid="k" uid_parent="root" value="0.2"/>
+  <Constant _name="period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
+  <Structure _name="While Loop" count="gl.value" label="Graph loop - moving sine every 50 ms" uid="gl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:obt.notifier out" outputs="value:glN.value" uid="glN" uid_parent="gl"/>
+    <Tunnel _id="In2" inputs="value:k.value" outputs="value:glK.value" uid="glK" uid_parent="gl"/>
+    <Tunnel _id="In3" inputs="value:ms.value" outputs="value:glMs.value" uid="glMs" uid_parent="gl"/>
+    <ShiftReg uid="srG" uid_parent="gl">
+      <Left inputs="value:obt.error out" outputs="value:glE.value" uid="glEl" uid_parent="srG"/>
+      <Right inputs="value:won.error out" outputs="value:glErr.value" uid="glEr" uid_parent="srG"/>
+    </ShiftReg>
+    <Node _name="Wait on Notification" inputs="notifier:glN.value,ignore previous (F):,timeout in ms (-1):glMs.value,error in (no error):glE.value" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="gl"/>
+    <Constant _name="points" outputs="value:n100.value" type="int32" uid="n100" uid_parent="gl" value="100"/>
+    <Structure _name="For Loop" count="wl2.value" label="One period of samples" maxin="n100.value" maxout="" uid="wl2" uid_parent="gl">
+      <Tunnel _id="In1" inputs="value:gl.value" outputs="value:w_i.value" uid="w_i" uid_parent="wl2"/>
+      <Tunnel _id="In2" inputs="value:glK.value" outputs="value:w_k.value" uid="w_k" uid_parent="wl2"/>
+      <Node _name="Add" inputs="x:wl2.value,y:w_i.value" outputs="x+y:ad.x+y" uid="ad" uid_parent="wl2"/>
+      <Node _name="Multiply" inputs="x:ad.x+y,y:w_k.value" outputs="x*y:ph.x*y" uid="ph" uid_parent="wl2"/>
+      <Node _name="Sine" inputs="x:ph.x*y" outputs="sin(x):sn.sin(x)" uid="sn" uid_parent="wl2"/>
+      <Tunnel _id="Out1" inputs="value:sn.sin(x)" mode="index" outputs="value:wave.value" uid="wave" uid_parent="wl2"/>
+    </Structure>
+    <Indicator _name="Graph" description="Waveform graph with its palette visible\2C fed a moving sine so the panel keeps changing." inputs="value:wave.value" style="graph21703" type="array{double}" uid="graph" uid_parent="gl" value="[]"/>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:nto..not. x?" uid="nto" uid_parent="gl"/>
+    <Condition inputs="value:nto..not. x?" uid="glCond" uid_parent="gl" value="stop"/>
+  </Structure>
+
+  <Call target="../../source/API/RemoteVI Stop.vi" inputs="port:port.value,error in:evErr.value" outputs="error out:sp.error out" uid="sp" uid_parent="root"/>
+  <Node _name="Unregister For Events" inputs="event registration refnum:evRo.value,error in:reg.error out" outputs="error out:ur.error out" uid="ur" uid_parent="root"/>
+  <Node _name="Close File" inputs="refnum:w2.refnum out,error in:sp.error out" outputs="path:,error out:cf.error out" uid="cf" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:obt.notifier out,force destroy? (F):,error in (no error):glErr.value" outputs="notifier name:,last notification:,error out:rel.error out" uid="rel" uid_parent="root"/>
+  <Node _name="Merge Errors" inputs="error in:cf.error out,error in:rel.error out,error in:ur.error out" outputs="error out:me.error out" uid="me" uid_parent="root"/>
+  <Indicator _name="error out" description="Errors of the log file\2C the layout read\2C RemoteVI Start.vi and RemoteVI Stop.vi\2C the event loop and the graph loop\2C merged." inputs="value:me.error out" type="cluster{bool.status,int32.code,string.source}" uid="eout" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -138,7 +138,9 @@ async function nextMessage(pred, ms) {
     await new Promise((r) => { wake = r; setTimeout(r, left); });
   }
 }
-const isFrame = (m) => typeof m !== 'string';
+// FRAME messages only: OVERLAY messages (type 2) can arrive at any time, e.g. for a popup
+// that is still open, and must not be mistaken for frames.
+const isFrame = (m) => typeof m !== 'string' && m.byteLength >= 2 && new Uint8Array(m)[1] === 1;
 
 const title = await nextMessage((m) => typeof m === 'string' && m.startsWith('title '), 3000);
 check(title !== null, 'title message', title ?? 'none');

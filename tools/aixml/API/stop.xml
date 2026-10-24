@@ -1,6 +1,6 @@
 <VI _name="RemoteVI Stop.vi" description="Stops the server that RemoteVI Start.vi launched on port\3A obtains the notifier RemoteVI\3A&lt;port&gt; without creating it\2C sends a notification and releases it\2C then waits up to 2 s for ..\5CServer\5CRemoteVI Server Loop.vi to go idle\2C so the port is free when this VI returns. No server on that port is not an error. Runs even when error in carries an error\2C and merges its own errors after it.">
   <FreeLabel comment="Notify the server loop and wait for it" uid="lbl" uid_parent="root"/>
-  <Control _name="port" conIdx="0" connection="recommended" description="The port given to RemoteVI Start.vi." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8080"/>
+  <Control _name="port" conIdx="0" connection="recommended" description="The port given to RemoteVI Start.vi." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
   <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>

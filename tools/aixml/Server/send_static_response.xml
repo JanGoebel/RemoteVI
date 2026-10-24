@@ -1,0 +1,49 @@
+<VI _name="RemoteVI Send Static Response.vi" description="Answers an HTTP request that is not a WebSocket upgrade and closes the connection (docs\5Cprotocol.md section 1)\3A status with html as text/html when page? is TRUE\2C otherwise an empty text/plain body\3B always with the security headers X-Content-Type-Options\2C X-Frame-Options\2C Referrer-Policy\2C Cache-Control and Content-Security-Policy (docs\5Csecurity.md). Built with IG HTTP Utils (Create Basic Response\2C Set Header\2C Write Response to TCP). connection is the TCP connection refnum type-cast to U32. Used by RemoteVI Handle Connection.vi.">
+  <Control _name="connection" conIdx="0" connection="required" description="The TCP connection refnum\2C type-cast to U32. Closed afterwards." outputs="value:cin.value" type="uint32" uid="cin" uid_parent="root" value="0"/>
+  <Control _name="status" conIdx="5" connection="required" description="HTTP status code (from RemoteVI Route Request.vi)." outputs="value:st.value" type="uint16" uid="st" uid_parent="root" value="404"/>
+  <Control _name="page?" conIdx="7" connection="recommended" description="TRUE sends html as the body." outputs="value:pg.value" type="bool" uid="pg" uid_parent="root" value="false"/>
+  <Control _name="html" conIdx="9" connection="recommended" description="The page (RemoteVI Index HTML.vi)." outputs="value:ht.value" type="string" uid="ht" uid_parent="root" value=""/>
+
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Node _name="Type Cast" inputs="x:cin.value,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
+
+  <Constant outputs="value:nob.value" type="string" uid="nob" uid_parent="root" value=""/>
+  <Constant outputs="value:cthtml.value" type="string" uid="cthtml" uid_parent="root" value="text/html\3B charset=utf-8"/>
+  <Constant outputs="value:cttext.value" type="string" uid="cttext" uid_parent="root" value="text/plain"/>
+  <Node _name="Select" inputs="t:ht.value,s:pg.value,f:nob.value" outputs="s? t\3Af:body.s? t\3Af" uid="body" uid_parent="root"/>
+  <Node _name="Select" inputs="t:cthtml.value,s:pg.value,f:cttext.value" outputs="s? t\3Af:ctype.s? t\3Af" uid="ctype" uid_parent="root"/>
+  <Call inputs="Status Code:st.value,Payload:body.s? t\3Af,Content-Type (text/plain):ctype.s? t\3Af" outputs="error out:cr.error out,Response out:cr.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ACreate Basic Response.vi" uid="cr" uid_parent="root"/>
+  <Constant outputs="value:hn1.value" type="string" uid="hn1" uid_parent="root" value="X-Content-Type-Options"/>
+  <Constant outputs="value:hv1.value" type="string" uid="hv1" uid_parent="root" value="nosniff"/>
+  <Constant outputs="value:hn2.value" type="string" uid="hn2" uid_parent="root" value="X-Frame-Options"/>
+  <Constant outputs="value:hv2.value" type="string" uid="hv2" uid_parent="root" value="DENY"/>
+  <Constant outputs="value:hn3.value" type="string" uid="hn3" uid_parent="root" value="Referrer-Policy"/>
+  <Constant outputs="value:hv3.value" type="string" uid="hv3" uid_parent="root" value="no-referrer"/>
+  <Constant outputs="value:hn4.value" type="string" uid="hn4" uid_parent="root" value="Cache-Control"/>
+  <Constant outputs="value:hv4.value" type="string" uid="hv4" uid_parent="root" value="no-store"/>
+  <Constant outputs="value:hn5.value" type="string" uid="hn5" uid_parent="root" value="Content-Security-Policy"/>
+  <Constant outputs="value:hv5.value" type="string" uid="hv5" uid_parent="root" value="default-src &apos;none&apos;\3B connect-src &apos;self&apos;\3B img-src blob:\3B style-src &apos;unsafe-inline&apos;\3B script-src &apos;unsafe-inline&apos;\3B frame-ancestors &apos;none&apos;"/>
+  <Node _name="Build Array" inputs="element:hn1.value,element:hn2.value,element:hn3.value,element:hn4.value,element:hn5.value" outputs="appended array:hns.appended array" uid="hns" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:hv1.value,element:hv2.value,element:hv3.value,element:hv4.value,element:hv5.value" outputs="appended array:hvs.appended array" uid="hvs" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Security headers" maxin="" maxout="" uid="hl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hns.appended array" mode="index" outputs="value:h_n.value" uid="h_n" uid_parent="hl"/>
+    <Tunnel _id="In2" inputs="value:hvs.appended array" mode="index" outputs="value:h_v.value" uid="h_v" uid_parent="hl"/>
+    <ShiftReg uid="sr_r" uid_parent="hl">
+      <Left inputs="value:cr.Response out" outputs="value:h_r.value" uid="sr_rl" uid_parent="sr_r"/>
+      <Right inputs="value:sh.Response out" outputs="value:resp.value" uid="sr_rr" uid_parent="sr_r"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_e" uid_parent="hl">
+      <Left inputs="value:cr.error out" outputs="value:h_e.value" uid="sr_el" uid_parent="sr_e"/>
+      <Right inputs="value:sh.error out" outputs="value:herr.value" uid="sr_er" uid_parent="sr_e"/>
+    </ShiftReg>
+    <Call inputs="Response in:h_r.value,Header:h_n.value,Value:h_v.value,error in (no error):h_e.value" outputs="error out:sh.error out,Response out:sh.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh" uid_parent="hl"/>
+  </Structure>
+  <Call inputs="Response in:resp.value,TCP Connection:conn.*(type *) &amp;x,error in (no error):herr.value" outputs="error out:fw.error out" target="HTTP Utils.lvlib\3AResponse.lvclass\3AWrite Response to TCP.vi" uid="fw" uid_parent="root"/>
+  <Node _name="TCP Close Connection" inputs="connection ID:conn.*(type *) &amp;x,error in (no error):fw.error out" outputs="error out:fx.error out" uid="fx" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="The errors of building and writing the answer." inputs="value:fx.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

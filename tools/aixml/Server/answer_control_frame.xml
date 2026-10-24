@@ -1,0 +1,73 @@
+<VI _name="RemoteVI Answer Control Frame.vi" description="Answers a client's control frame (docs\5Cprotocol.md section 4)\3A a ping with a pong carrying payload\3B close? with a close frame carrying close code\2C after which the client is closed. Writes with a 2 s timeout\3B a failed pong write closes the client too. connection is the TCP connection refnum type-cast to U32.">
+  <Control _name="connection" conIdx="0" connection="required" description="The client's TCP connection refnum\2C type-cast to U32." outputs="value:cin.value" type="uint32" uid="cin" uid_parent="root" value="0"/>
+  <Control _name="ping?" conIdx="5" connection="required" description="From RemoteVI Classify Client Frame.vi." outputs="value:png.value" type="bool" uid="png" uid_parent="root" value="false"/>
+  <Control _name="payload" conIdx="7" connection="recommended" description="The ping's payload." outputs="value:pl.value" type="string" uid="pl" uid_parent="root" value=""/>
+  <Control _name="close?" conIdx="9" connection="required" description="From RemoteVI Classify Client Frame.vi." outputs="value:cls.value" type="bool" uid="cls" uid_parent="root" value="false"/>
+  <Control _name="close code" conIdx="1" connection="recommended" description="Code of the close frame." outputs="value:cc.value" type="uint16" uid="cc" uid_parent="root" value="1000"/>
+  <Control _name="closed?" conIdx="2" connection="recommended" description="TRUE when the client is already closed (a failed read)." outputs="value:cl.value" type="bool" uid="cl" uid_parent="root" value="false"/>
+
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Node _name="Type Cast" inputs="x:cin.value,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
+  <Constant outputs="value:wto.value" type="int32" uid="wto" uid_parent="root" value="2000"/>
+
+  <Structure _name="Case Structure" selectin="png.value" uid="cg" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pl.value" uid="cg_i1" uid_parent="cg"/>
+    <Tunnel _id="In2" inputs="value:conn.*(type *) &amp;x" uid="cg_i2" uid_parent="cg"/>
+    <Tunnel _id="In3" inputs="value:cl.value" uid="cg_i3" uid_parent="cg"/>
+    <Tunnel _id="In4" inputs="value:wto.value" uid="cg_i4" uid_parent="cg"/>
+    <CaseFrame label="Ping\3A answer with a pong" selector="True" selectout="" uid="cgt" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:g_pl.value" uid="g_pl" uid_parent="cgt"/>
+      <Tunnel _id="In2" outputs="value:g_conn.value" uid="g_conn" uid_parent="cgt"/>
+      <Tunnel _id="In3" outputs="value:g_cls.value" uid="g_cls" uid_parent="cgt"/>
+      <Tunnel _id="In4" outputs="value:g_to.value" uid="g_to" uid_parent="cgt"/>
+      <Constant outputs="value:op10b.value" type="uint8" uid="op10b" uid_parent="cgt" value="10"/>
+      <Call inputs="opcode:op10b.value,payload:g_pl.value" outputs="frame:pong.frame" target="RemoteVI WS Encode Server Frame.vi" uid="pong" uid_parent="cgt"/>
+      <Node _name="TCP Write" inputs="connection ID:g_conn.value,data in:pong.frame,?parm9:g_to.value" outputs="error out:gw.error out" uid="gw" uid_parent="cgt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:gw.error out" outputs="status:gws.status" uid="gws" uid_parent="cgt"/>
+      <Node _name="Or" inputs="x:g_cls.value,y:gws.status" outputs="x .or. y?:gcl.x .or. y?" uid="gcl" uid_parent="cgt"/>
+      <Tunnel _id="Out1" inputs="value:gcl.x .or. y?" uid="g_o1" uid_parent="cgt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cgf" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:" uid="h_pl" uid_parent="cgf"/>
+      <Tunnel _id="In2" outputs="value:" uid="h_conn" uid_parent="cgf"/>
+      <Tunnel _id="In3" outputs="value:h_cls.value" uid="h_cls" uid_parent="cgf"/>
+      <Tunnel _id="In4" outputs="value:" uid="h_to" uid_parent="cgf"/>
+      <Tunnel _id="Out1" inputs="value:h_cls.value" uid="h_o1" uid_parent="cgf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cg_o1.value" uid="cg_o1" uid_parent="cg"/>
+  </Structure>
+
+  <Structure _name="Case Structure" selectin="cls.value" uid="cc2" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cc.value" uid="cc_i1" uid_parent="cc2"/>
+    <Tunnel _id="In2" inputs="value:conn.*(type *) &amp;x" uid="cc_i2" uid_parent="cc2"/>
+    <Tunnel _id="In3" inputs="value:cg_o1.value" uid="cc_i3" uid_parent="cc2"/>
+    <Tunnel _id="In4" inputs="value:wto.value" uid="cc_i4" uid_parent="cc2"/>
+    <CaseFrame label="Close\3A answer and mark closed" selector="True" selectout="" uid="cct" uid_parent="cc2">
+      <Tunnel _id="In1" outputs="value:x_cc.value" uid="x_cc" uid_parent="cct"/>
+      <Tunnel _id="In2" outputs="value:x_conn.value" uid="x_conn" uid_parent="cct"/>
+      <Tunnel _id="In3" outputs="value:" uid="x_cls" uid_parent="cct"/>
+      <Tunnel _id="In4" outputs="value:x_to.value" uid="x_to" uid_parent="cct"/>
+      <Constant outputs="value:estr.value" type="string" uid="estr" uid_parent="cct" value=""/>
+      <Node _name="Type Cast" inputs="x:x_cc.value,type:estr.value" outputs="*(type *) &amp;x:ccb.*(type *) &amp;x" uid="ccb" uid_parent="cct"/>
+      <Constant outputs="value:op8b.value" type="uint8" uid="op8b" uid_parent="cct" value="8"/>
+      <Call inputs="opcode:op8b.value,payload:ccb.*(type *) &amp;x" outputs="frame:cf.frame" target="RemoteVI WS Encode Server Frame.vi" uid="cf" uid_parent="cct"/>
+      <Node _name="TCP Write" inputs="connection ID:x_conn.value,data in:cf.frame,?parm9:x_to.value" outputs="error out:" uid="xw" uid_parent="cct"/>
+      <Constant outputs="value:xtrue.value" type="bool" uid="xtrue" uid_parent="cct" value="true"/>
+      <Tunnel _id="Out1" inputs="value:xtrue.value" uid="x_o1" uid_parent="cct"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ccf" uid_parent="cc2">
+      <Tunnel _id="In1" outputs="value:" uid="y_cc" uid_parent="ccf"/>
+      <Tunnel _id="In2" outputs="value:" uid="y_conn" uid_parent="ccf"/>
+      <Tunnel _id="In3" outputs="value:y_cls.value" uid="y_cls" uid_parent="ccf"/>
+      <Tunnel _id="In4" outputs="value:" uid="y_to" uid_parent="ccf"/>
+      <Tunnel _id="Out1" inputs="value:y_cls.value" uid="y_o1" uid_parent="ccf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cc_o1.value" uid="cc_o1" uid_parent="cc2"/>
+  </Structure>
+  <Indicator _name="closed out" conIdx="4" connection="recommended" description="TRUE when the client is closed after this frame." inputs="value:cc_o1.value" type="bool" uid="o_cl" uid_parent="root" value="false"/>
+</VI>

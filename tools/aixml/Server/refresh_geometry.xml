@@ -1,0 +1,54 @@
+<VI _name="RemoteVI Refresh Geometry.vi" description="Refreshes the server loop's cached panel geometry and window handle (RemoteVI Get Panel Geometry.vi - a VI Server call) when it is due - 500 ms after the last refresh (geometry due?) or right after the last popup closed - but only while NO popup is open and not within 300 ms of a click (recent click?)\3B on an error the cached values are kept. last refresh out is now after a refresh\2C else last refresh.">
+  <Control _name="VI" conIdx="0" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="geo" conIdx="5" connection="required" description="The cached geometry." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="hWnd" conIdx="7" connection="required" description="The cached panel window handle." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="last refresh" conIdx="9" connection="recommended" description="Tick count (ms) of the last refresh." outputs="value:last.value" type="uint32" uid="last" uid_parent="root" value="0"/>
+  <Control _name="now" conIdx="1" connection="recommended" description="Tick count (ms) of this iteration." outputs="value:now.value" type="uint32" uid="now" uid_parent="root" value="0"/>
+  <Control _name="geometry due?" conIdx="2" connection="required" description="TRUE when 500 ms have passed since the last refresh (RemoteVI Loop Flags.vi)." outputs="value:gd.value" type="bool" uid="gd" uid_parent="root" value="false"/>
+  <Control _name="popup was open?" conIdx="3" connection="recommended" description="TRUE when a popup was open in the previous iteration." outputs="value:pw.value" type="bool" uid="pw" uid_parent="root" value="false"/>
+  <Control _name="popup open?" conIdx="12" connection="recommended" description="TRUE while a modal popup is open\3A no refresh." outputs="value:po.value" type="bool" uid="po" uid_parent="root" value="false"/>
+  <Control _name="recent click?" conIdx="13" connection="recommended" description="TRUE within 300 ms after a click\3A no refresh." outputs="value:rec.value" type="bool" uid="rec" uid_parent="root" value="false"/>
+  <Node _name="Not" inputs="x:po.value" outputs=".not. x?:npop..not. x?" uid="npop" uid_parent="root"/>
+  <Node _name="And" inputs="x:pw.value,y:npop..not. x?" outputs="x .and. y?:pclosed.x .and. y?" uid="pclosed" uid_parent="root"/>
+  <Node _name="Or" inputs="x:gd.value,y:pclosed.x .and. y?" outputs="x .or. y?:gdue.x .or. y?" uid="gdue" uid_parent="root"/>
+  <Node _name="Not" inputs="x:rec.value" outputs=".not. x?:quiet..not. x?" uid="quiet" uid_parent="root"/>
+  <Node _name="And" inputs="x:gdue.x .or. y?,y:npop..not. x?" outputs="x .and. y?:grf0.x .and. y?" uid="grf0" uid_parent="root"/>
+  <Node _name="And" inputs="x:grf0.x .and. y?,y:quiet..not. x?" outputs="x .and. y?:rf.value" uid="rf" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="rf.value" uid="cg" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cg_i1" uid_parent="cg"/>
+    <Tunnel _id="In2" inputs="value:geo.value" uid="cg_i2" uid_parent="cg"/>
+    <Tunnel _id="In3" inputs="value:hw.value" uid="cg_i3" uid_parent="cg"/>
+    <Tunnel _id="In4" inputs="value:now.value" uid="cg_i4" uid_parent="cg"/>
+    <Tunnel _id="In5" inputs="value:last.value" uid="cg_i5" uid_parent="cg"/>
+    <CaseFrame label="Refresh geometry and hWnd" selector="True" selectout="" uid="cgt" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:h_vi.value" uid="h_vi" uid_parent="cgt"/>
+      <Tunnel _id="In2" outputs="value:h_geo.value" uid="h_geo" uid_parent="cgt"/>
+      <Tunnel _id="In3" outputs="value:h_hw.value" uid="h_hw" uid_parent="cgt"/>
+      <Tunnel _id="In4" outputs="value:h_now.value" uid="h_now" uid_parent="cgt"/>
+      <Tunnel _id="In5" outputs="value:" uid="h_last" uid_parent="cgt"/>
+      <Call inputs="VI:h_vi.value" outputs="geo:gg.geo,hWnd:gg.hWnd,error out:gg.error out" target="RemoteVI Get Panel Geometry.vi" uid="gg" uid_parent="cgt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:gg.error out" outputs="status:ggs.status" uid="ggs" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:h_geo.value,s:ggs.status,f:gg.geo" outputs="s? t\3Af:ngeo.s? t\3Af" uid="ngeo" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:h_hw.value,s:ggs.status,f:gg.hWnd" outputs="s? t\3Af:nhw.s? t\3Af" uid="nhw" uid_parent="cgt"/>
+      <Tunnel _id="Out1" inputs="value:ngeo.s? t\3Af" uid="h_o1" uid_parent="cgt"/>
+      <Tunnel _id="Out2" inputs="value:nhw.s? t\3Af" uid="h_o2" uid_parent="cgt"/>
+      <Tunnel _id="Out3" inputs="value:h_now.value" uid="h_o3" uid_parent="cgt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cgf" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:" uid="j_vi" uid_parent="cgf"/>
+      <Tunnel _id="In2" outputs="value:j_geo.value" uid="j_geo" uid_parent="cgf"/>
+      <Tunnel _id="In3" outputs="value:j_hw.value" uid="j_hw" uid_parent="cgf"/>
+      <Tunnel _id="In4" outputs="value:" uid="j_now" uid_parent="cgf"/>
+      <Tunnel _id="In5" outputs="value:j_last.value" uid="j_last" uid_parent="cgf"/>
+      <Tunnel _id="Out1" inputs="value:j_geo.value" uid="j_o1" uid_parent="cgf"/>
+      <Tunnel _id="Out2" inputs="value:j_hw.value" uid="j_o2" uid_parent="cgf"/>
+      <Tunnel _id="Out3" inputs="value:j_last.value" uid="j_o3" uid_parent="cgf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cg_o1.value" uid="cg_o1" uid_parent="cg"/>
+    <Tunnel _id="Out2" outputs="value:cg_o2.value" uid="cg_o2" uid_parent="cg"/>
+    <Tunnel _id="Out3" outputs="value:cg_o3.value" uid="cg_o3" uid_parent="cg"/>
+  </Structure>
+  <Indicator _name="geo out" conIdx="4" connection="recommended" description="The (refreshed) geometry." inputs="value:cg_o1.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="o_geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Indicator _name="hWnd out" conIdx="6" connection="recommended" description="The (refreshed) window handle." inputs="value:cg_o2.value" type="uint64" uid="o_hw" uid_parent="root" value="0"/>
+  <Indicator _name="last refresh out" conIdx="8" connection="recommended" description="now after a refresh\2C else last refresh." inputs="value:cg_o3.value" type="uint32" uid="o_last" uid_parent="root" value="0"/>
+</VI>

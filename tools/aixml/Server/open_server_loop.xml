@@ -1,0 +1,15 @@
+<VI _name="RemoteVI Open Server Loop.vi" description="Opens a VI reference to RemoteVI Server Loop.vi\2C found next to this VI (both live in source\5CServer)\2C and reads its Execution\3AState\3A running? is TRUE when it is running already (state 2 or more) - one server per LabVIEW application instance\2C the Server Loop is not reentrant. Nothing is opened on an incoming error.">
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):ei.value" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:dir.stripped path" uid="dir" uid_parent="root"/>
+  <Constant outputs="value:svi.value" type="string" uid="svi" uid_parent="root" value="RemoteVI Server Loop.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:svi.value" outputs="appended path:spath.appended path" uid="spath" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:spath.appended path,error in (no error):me.error out" outputs="vi reference:os.vi reference,error out:os.error out" uid="os" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:os.vi reference,error in (no error):os.error out" outputs="reference out:es.reference out,error out:es.error out,Execution\3AState:es.Execution\3AState" type="{LV.VI}" uid="es" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:es.Execution\3AState" outputs="32bit integer:est.32bit integer" uid="est" uid_parent="root"/>
+  <Constant _name="2 = running" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Greater Or Equal?" inputs="x:est.32bit integer,y:k2.value" outputs="x &gt;= y?:busy.x &gt;= y?" uid="busy" uid_parent="root"/>
+  <Indicator _name="Server Loop" conIdx="4" connection="recommended" description="Reference to RemoteVI Server Loop.vi." inputs="value:es.reference out" type="ref{LV.VI}" uid="o_sl" uid_parent="root" value=""/>
+  <Indicator _name="running?" conIdx="6" connection="recommended" description="TRUE when the Server Loop is running already." inputs="value:busy.x &gt;= y?" type="bool" uid="o_run" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or an error opening the Server Loop or reading its state." inputs="value:es.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

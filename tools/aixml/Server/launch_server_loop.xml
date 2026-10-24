@@ -1,0 +1,25 @@
+<VI _name="RemoteVI Launch Server Loop.vi" description="Runs RemoteVI Server Loop.vi asynchronously and waits until it listens\3A sets its controls (RemoteVI Set Server Loop Inputs.vi)\2C obtains the notifier &lt;stop notifier name&gt;\3Astarted\2C runs the loop without waiting and with Auto Dispose Ref\2C and waits up to 2 s for the loop's listener result. error out is that result (e.g. 60 when the port is in use - the loop has then already ended)\2C 5002 when nothing arrived within 2 s\2C or an error of setting the controls or running the loop.">
+  <Control _name="Server Loop" conIdx="0" connection="required" description="Reference to RemoteVI Server Loop.vi (RemoteVI Open Server Loop.vi)." outputs="value:sl.value" type="ref{LV.VI}" uid="sl" uid_parent="root" value=""/>
+  <Control _name="VI" conIdx="5" connection="required" description="The VI to publish." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="port" conIdx="7" connection="required" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Control _name="fps" conIdx="9" connection="required" description="Most frames per second." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
+  <Control _name="stop notifier name" conIdx="1" connection="required" description="RemoteVI\3A&lt;port&gt;." outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is launched on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="Server Loop:sl.value,VI:vi.value,port:port.value,fps:fps.value,stop notifier name:nn.value,error in:ei.value" outputs="Server Loop out:si.Server Loop out,error out:si.error out" target="RemoteVI Set Server Loop Inputs.vi" uid="si" uid_parent="root"/>
+  <Constant outputs="value:sfx.value" type="string" uid="sfx" uid_parent="root" value="\3Astarted"/>
+  <Node _name="Concatenate Strings" inputs="string:nn.value,string:sfx.value" outputs="concatenated string:snn.concatenated string" uid="snn" uid_parent="root"/>
+  <Constant _name="listener result" outputs="value:ety.value" type="cluster{bool.status,int32.code,string.source}" uid="ety" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):snn.concatenated string,notification data type:ety.value,error in (no error):si.error out" outputs="notifier out:sno.notifier out,error out:sno.error out" uid="sno" uid_parent="root"/>
+  <Constant outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:si.Server Loop out,error in (no error):sno.error out,Wait until done:fls.value,Auto Dispose Ref:tru.value" outputs="reference out:,error out:run.error out" uid="run" uid_parent="root"/>
+  <Constant _name="2 s to start listening" outputs="value:k2000.value" type="int32" uid="k2000" uid_parent="root" value="2000"/>
+  <Node _name="Wait on Notification" inputs="notifier:sno.notifier out,ignore previous (F):,timeout in ms (-1):k2000.value,error in (no error):run.error out" outputs="notifier out:,notification:won.notification,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="root"/>
+  <Constant _name="did not start" outputs="value:e5002.value" type="cluster{bool.status,int32.code,string.source}" uid="e5002" uid_parent="root" value="[true,5002,]"/>
+  <Constant _name="message" outputs="value:m5002.value" type="string" uid="m5002" uid_parent="root" value="RemoteVI Start.vi\0A&lt;APPEND&gt;\0ARemoteVI Server Loop.vi did not report a listener within 2 s."/>
+  <Node _name="Bundle By Name" fields="source" inputs="source:m5002.value,input cluster:e5002.value" outputs="output cluster:b5002.output cluster" uid="b5002" uid_parent="root"/>
+  <Node _name="Select" inputs="t:b5002.output cluster,s:won.timed out?,f:won.notification" outputs="s? t\3Af:lres.s? t\3Af" uid="lres" uid_parent="root"/>
+  <Node _name="Merge Errors" inputs="error in:won.error out,error in:lres.s? t\3Af" outputs="error out:lme.error out" uid="lme" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:sno.notifier out,force destroy? (F):,error in (no error):lme.error out" outputs="notifier name:,last notification:,error out:rls.error out" uid="rls" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="The listener result\2C 5002\2C or an error of launching." inputs="value:rls.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

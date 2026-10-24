@@ -1,0 +1,10 @@
+<VI _name="RemoteVI Announce Listener.vi" description="Tells RemoteVI Start.vi whether the server is listening\3A sends listener result (the error cluster of TCP Create Listener) on the notifier named &lt;stop notifier name&gt;\3Astarted and releases it. Start.vi has obtained that notifier before it launched the loop and waits on it\2C so a port in use is reported to the caller.">
+  <Control _name="stop notifier name" conIdx="0" connection="required" description="The stop notifier name\2C RemoteVI\3A&lt;port&gt;." outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value=""/>
+  <Control _name="listener result" conIdx="5" connection="required" description="The error out of TCP Create Listener." outputs="value:lr.value" type="cluster{bool.status,int32.code,string.source}" uid="lr" uid_parent="root" value="[false,0,]"/>
+  <Constant outputs="value:ssfx.value" type="string" uid="ssfx" uid_parent="root" value="\3Astarted"/>
+  <Node _name="Concatenate Strings" inputs="string:nn.value,string:ssfx.value" outputs="concatenated string:snm.concatenated string" uid="snm" uid_parent="root"/>
+  <Constant _name="listener result" outputs="value:sty.value" type="cluster{bool.status,int32.code,string.source}" uid="sty" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):snm.concatenated string,notification data type:sty.value,error in (no error):" outputs="notifier out:sob.notifier out,error out:sob.error out" uid="sob" uid_parent="root"/>
+  <Node _name="Send Notification" inputs="notifier:sob.notifier out,notification:lr.value,error in (no error):sob.error out" outputs="notifier out:ssn.notifier out,error out:ssn.error out" uid="ssn" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:ssn.notifier out,force destroy? (F):,error in (no error):ssn.error out" outputs="notifier name:,last notification:,error out:" uid="srl" uid_parent="root"/>
+</VI>

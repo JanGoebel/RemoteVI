@@ -1,0 +1,46 @@
+<VI _name="RemoteVI Write To Clients.vi" description="Writes data (a complete WebSocket frame) to every client that is not closed\2C with timeout ms per client\3B a client whose write fails is marked closed. Connections are TCP refnums type-cast to U32.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="data" conIdx="5" connection="required" description="The bytes to write." outputs="value:dat.value" type="string" uid="dat" uid_parent="root" value=""/>
+  <Control _name="timeout ms" conIdx="7" connection="recommended" description="TCP Write timeout per client." outputs="value:to.value" type="int32" uid="to" uid_parent="root" value="500"/>
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="Write to each client" maxin="" maxout="" uid="ow" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" mode="index" outputs="value:r_cl.value" uid="r_cl" uid_parent="ow"/>
+    <Tunnel _id="In2" inputs="value:dat.value" outputs="value:r_fr.value" uid="r_fr" uid_parent="ow"/>
+    <Tunnel _id="In3" inputs="value:tplo.value" outputs="value:r_tpl.value" uid="r_tpl" uid_parent="ow"/>
+    <Tunnel _id="In4" inputs="value:to.value" outputs="value:r_to.value" uid="r_to" uid_parent="ow"/>
+    <Node _name="Unbundle By Name" fields="connection,closed" inputs="input cluster:r_cl.value" outputs="connection:ru.connection,closed:ru.closed" uid="ru" uid_parent="ow"/>
+    <Structure _name="Case Structure" selectin="ru.closed" uid="rw" uid_parent="ow">
+      <Tunnel _id="In1" inputs="value:ru.connection" uid="rw_i1" uid_parent="rw"/>
+      <Tunnel _id="In2" inputs="value:r_fr.value" uid="rw_i2" uid_parent="rw"/>
+      <Tunnel _id="In3" inputs="value:r_tpl.value" uid="rw_i3" uid_parent="rw"/>
+      <Tunnel _id="In4" inputs="value:r_to.value" uid="rw_i4" uid_parent="rw"/>
+      <CaseFrame label="Closed\3A skip" selector="True" selectout="" uid="rwt" uid_parent="rw">
+        <Tunnel _id="In1" outputs="value:" uid="rt_c" uid_parent="rwt"/>
+        <Tunnel _id="In2" outputs="value:" uid="rt_f" uid_parent="rwt"/>
+        <Tunnel _id="In3" outputs="value:" uid="rt_t" uid_parent="rwt"/>
+        <Tunnel _id="In4" outputs="value:" uid="rt_o" uid_parent="rwt"/>
+        <Constant outputs="value:rtt.value" type="bool" uid="rtt" uid_parent="rwt" value="true"/>
+        <Tunnel _id="Out1" inputs="value:rtt.value" uid="rt_o1" uid_parent="rwt"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="rwf" uid_parent="rw">
+        <Tunnel _id="In1" outputs="value:rf_c.value" uid="rf_c" uid_parent="rwf"/>
+        <Tunnel _id="In2" outputs="value:rf_f.value" uid="rf_f" uid_parent="rwf"/>
+        <Tunnel _id="In3" outputs="value:rf_t.value" uid="rf_t" uid_parent="rwf"/>
+        <Tunnel _id="In4" outputs="value:rf_o.value" uid="rf_o" uid_parent="rwf"/>
+        <Node _name="Type Cast" inputs="x:rf_c.value,type:rf_t.value" outputs="*(type *) &amp;x:rc.*(type *) &amp;x" uid="rc" uid_parent="rwf"/>
+        <Node _name="TCP Write" inputs="connection ID:rc.*(type *) &amp;x,data in:rf_f.value,?parm9:rf_o.value" outputs="error out:rtw.error out" uid="rtw" uid_parent="rwf"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:rtw.error out" outputs="status:rts.status" uid="rts" uid_parent="rwf"/>
+        <Tunnel _id="Out1" inputs="value:rts.status" uid="rf_o1" uid_parent="rwf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:rw_o1.value" uid="rw_o1" uid_parent="rw"/>
+    </Structure>
+    <Node _name="Bundle By Name" fields="closed" inputs="closed:rw_o1.value,input cluster:r_cl.value" outputs="output cluster:orb.output cluster" uid="orb" uid_parent="ow"/>
+    <Tunnel _id="Out1" inputs="value:orb.output cluster" mode="index" outputs="value:ow_o1.value" uid="ow_o1" uid_parent="ow"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="clients\3B closed is set where the write failed." inputs="value:ow_o1.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+</VI>

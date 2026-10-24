@@ -1,0 +1,20 @@
+<VI _name="RemoteVI Logical Popups.vi" description="Builds the popups cluster that RemoteVI Service Client.vi and RemoteVI Post Input.vi work with\3A every window of modal popups at its LOGICAL position = real window position - d (the displacement by which the popups are currently moved\2C docs\5Carchitecture.md\2C Popups)\2C with its size\2C plus d itself. Pure.">
+  <Control _name="modal popups" conIdx="0" connection="required" description="The modal popups open now (RemoteVI List Popups.vi)\2C at their real positions." outputs="value:mp.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="mp" uid_parent="root" value="[]"/>
+  <Control _name="d" conIdx="5" connection="required" description="The current displacement of the popups (0\2C 0 when they have not been moved)." outputs="value:d.value" type="cluster{int32.dx,int32.dy}" uid="d" uid_parent="root" value="[0,0]"/>
+  <Node _name="Unbundle By Name" fields="dx,dy" inputs="input cluster:d.value" outputs="dx:dcu.dx,dy:dcu.dy" uid="dcu" uid_parent="root"/>
+  <Constant _name="popup window" outputs="value:lw0.value" type="cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}" uid="lw0" uid_parent="root" value="[0,0,0,0,0]"/>
+  <Structure _name="For Loop" count="" label="Logical popup positions\3A real - d" maxin="" maxout="" uid="fw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:mp.value" mode="index" outputs="value:w_p.value" uid="w_p" uid_parent="fw"/>
+    <Tunnel _id="In2" inputs="value:dcu.dx" outputs="value:w_dx.value" uid="w_dx" uid_parent="fw"/>
+    <Tunnel _id="In3" inputs="value:dcu.dy" outputs="value:w_dy.value" uid="w_dy" uid_parent="fw"/>
+    <Tunnel _id="In4" inputs="value:lw0.value" outputs="value:w_l0.value" uid="w_l0" uid_parent="fw"/>
+    <Node _name="Unbundle By Name" fields="hwnd,x,y,w,h" inputs="input cluster:w_p.value" outputs="hwnd:wu.hwnd,x:wu.x,y:wu.y,w:wu.w,h:wu.h" uid="wu" uid_parent="fw"/>
+    <Node _name="Subtract" inputs="x:wu.x,y:w_dx.value" outputs="x-y:wlx.x-y" uid="wlx" uid_parent="fw"/>
+    <Node _name="Subtract" inputs="x:wu.y,y:w_dy.value" outputs="x-y:wly.x-y" uid="wly" uid_parent="fw"/>
+    <Node _name="Bundle By Name" fields="hwnd,x,y,w,h" inputs="hwnd:wu.hwnd,x:wlx.x-y,y:wly.x-y,w:wu.w,h:wu.h,input cluster:w_l0.value" outputs="output cluster:wb.output cluster" uid="wb" uid_parent="fw"/>
+    <Tunnel _id="Out1" inputs="value:wb.output cluster" mode="index" outputs="value:logw.value" uid="logw" uid_parent="fw"/>
+  </Structure>
+  <Control _name="popups template" connection="optional" description="Not on the connector pane\3A the empty popups cluster that windows\2C dx and dy are bundled into (a diagram constant of this type is drawn many elements tall)." outputs="value:pp0.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="pp0" uid_parent="root" value="[[],0,0]"/>
+  <Node _name="Bundle By Name" fields="windows,dx,dy" inputs="windows:logw.value,dx:dcu.dx,dy:dcu.dy,input cluster:pp0.value" outputs="output cluster:pops.output cluster" uid="pops" uid_parent="root"/>
+  <Indicator _name="popups" conIdx="4" connection="recommended" description="windows at their logical positions\2C dx\2C dy = d." inputs="value:pops.output cluster" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
+</VI>

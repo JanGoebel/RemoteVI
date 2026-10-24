@@ -1,0 +1,31 @@
+<VI _name="RemoteVI Drop Closed Clients.vi" description="Closes the TCP connection of every client marked closed and returns the others\2C in order. Connections are TCP refnums type-cast to U32.">
+  <Control _name="clients" conIdx="0" connection="required" description="The clients after this iteration." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="Drop closed clients" maxin="" maxout="" uid="fd" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" mode="index" outputs="value:k_cl.value" uid="k_cl" uid_parent="fd"/>
+    <Tunnel _id="In2" inputs="value:tplo.value" outputs="value:k_tpl.value" uid="k_tpl" uid_parent="fd"/>
+    <Node _name="Unbundle By Name" fields="connection,closed" inputs="input cluster:k_cl.value" outputs="connection:ku.connection,closed:ku.closed" uid="ku" uid_parent="fd"/>
+    <Structure _name="Case Structure" selectin="ku.closed" uid="kk" uid_parent="fd">
+      <Tunnel _id="In1" inputs="value:ku.connection" uid="kk_i1" uid_parent="kk"/>
+      <Tunnel _id="In2" inputs="value:k_tpl.value" uid="kk_i2" uid_parent="kk"/>
+      <CaseFrame label="Closed\3A close the connection" selector="True" selectout="" uid="kkt" uid_parent="kk">
+        <Tunnel _id="In1" outputs="value:x_cu.value" uid="x_cu" uid_parent="kkt"/>
+        <Tunnel _id="In2" outputs="value:x_tpl.value" uid="x_tpl" uid_parent="kkt"/>
+        <Node _name="Type Cast" inputs="x:x_cu.value,type:x_tpl.value" outputs="*(type *) &amp;x:xc.*(type *) &amp;x" uid="xc" uid_parent="kkt"/>
+        <Node _name="TCP Close Connection" inputs="connection ID:xc.*(type *) &amp;x" outputs="" uid="xx" uid_parent="kkt"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="kkf" uid_parent="kk">
+        <Tunnel _id="In1" outputs="value:" uid="y_cu" uid_parent="kkf"/>
+        <Tunnel _id="In2" outputs="value:" uid="y_tpl" uid_parent="kkf"/>
+      </CaseFrame>
+    </Structure>
+    <Node _name="Not" inputs="x:ku.closed" outputs=".not. x?:keep..not. x?" uid="keep" uid_parent="fd"/>
+    <Tunnel _id="Out1" inputs="value:k_cl.value" mode="index" cond="keep..not. x?" outputs="value:kept.value" uid="kept" uid_parent="fd"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="The clients still open." inputs="value:kept.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+</VI>

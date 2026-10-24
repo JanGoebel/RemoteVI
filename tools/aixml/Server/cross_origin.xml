@@ -1,0 +1,12 @@
+<VI _name="RemoteVI Cross Origin.vi" description="TRUE when a request carries an Origin header that names another host than its Host header\3A the part of origin after &quot;\3A//&quot; is compared with host. A request without an Origin header (origin exists? FALSE) is never cross-origin. Used by RemoteVI Handle Connection.vi to answer a cross-origin WebSocket upgrade with 403 (docs\5Csecurity.md). Pure.">
+  <Control _name="origin exists?" conIdx="0" connection="required" description="TRUE when the request has an Origin header." outputs="value:oex.value" type="bool" uid="oex" uid_parent="root" value="false"/>
+  <Control _name="origin" conIdx="5" connection="required" description="Value of the Origin header\2C e.g. http\3A//host\3A8088." outputs="value:org.value" type="string" uid="org" uid_parent="root" value=""/>
+  <Control _name="host" conIdx="7" connection="required" description="Value of the Host header\2C e.g. host\3A8088." outputs="value:hst.value" type="string" uid="hst" uid_parent="root" value=""/>
+  <Constant outputs="value:sep.value" type="string" uid="sep" uid_parent="root" value="\3A//"/>
+  <Node _name="Search/Split String" inputs="string:org.value,search string/char (-):sep.value" outputs="match + rest of string:ms.match + rest of string" uid="ms" uid_parent="root"/>
+  <Constant outputs="value:three.value" type="int32" uid="three" uid_parent="root" value="3"/>
+  <Node _name="String Subset" inputs="string:ms.match + rest of string,offset (0):three.value" outputs="substring:oh.substring" uid="oh" uid_parent="root"/>
+  <Node _name="Not Equal?" inputs="x:oh.substring,y:hst.value" outputs="x != y?:diff.x != y?" uid="diff" uid_parent="root"/>
+  <Node _name="And" inputs="x:oex.value,y:diff.x != y?" outputs="x .and. y?:forb.x .and. y?" uid="forb" uid_parent="root"/>
+  <Indicator _name="cross origin?" conIdx="4" connection="recommended" description="TRUE when Origin is present and names another host than Host." inputs="value:forb.x .and. y?" type="bool" uid="o_x" uid_parent="root" value="false"/>
+</VI>

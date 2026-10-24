@@ -1,0 +1,35 @@
+<VI _name="RemoteVI Read Request Head.vi" description="Reads whatever bytes of an HTTP request head are waiting on a pending connection WITHOUT waiting\3A TCP Read in immediate mode with timeout 0 (4 KiB at most)\2C appended to head in. complete? is TRUE once the head contains the blank line (CR LF CR LF) or is longer than 16 KiB (RemoteVI Handle Connection.vi then closes it quietly). gone? is TRUE when the read reported any error other than 56 (timeout - nothing waiting)\2C i.e. the peer closed or reset the connection. Called by RemoteVI Serve Pending Connection.vi once per server loop iteration\2C so a connection that sends nothing never blocks the loop. connection is the TCP connection refnum type-cast to U32.">
+  <FreeLabel comment="Non-blocking read of the request head" uid="lbl" uid_parent="root"/>
+  <Control _name="connection" conIdx="0" connection="required" description="The pending TCP connection refnum\2C type-cast to U32." outputs="value:cin.value" type="uint32" uid="cin" uid_parent="root" value="0"/>
+  <Control _name="head in" conIdx="5" connection="recommended" description="The bytes of the request head read so far." outputs="value:hin.value" type="string" uid="hin" uid_parent="root" value=""/>
+
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Node _name="Type Cast" inputs="x:cin.value,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
+
+  <Constant outputs="value:rdlen.value" type="int32" uid="rdlen" uid_parent="root" value="4096"/>
+  <Constant _name="do not wait" outputs="value:rdto.value" type="int32" uid="rdto" uid_parent="root" value="0"/>
+  <Constant outputs="value:imm.value" type="uint16{standard,buffered,CRLF,immediate}" uid="imm" uid_parent="root" value="3"/>
+  <Node _name="TCP Read" inputs="connection ID:conn.*(type *) &amp;x,bytes to read:rdlen.value,?parm9:rdto.value,?parm7:imm.value" outputs="data out:rd.data out,error out:rd.error out" uid="rd" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:hin.value,string:rd.data out" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="root"/>
+  <Constant outputs="value:crlf2.value" type="string" uid="crlf2" uid_parent="root" value="\0D\0A\0D\0A"/>
+  <Node _name="Search/Split String" inputs="string:cat.concatenated string,search string/char (-):crlf2.value" outputs="offset of match:ss.offset of match" uid="ss" uid_parent="root"/>
+  <Constant outputs="value:zero.value" type="int32" uid="zero" uid_parent="root" value="0"/>
+  <Node _name="Greater Or Equal?" inputs="x:ss.offset of match,y:zero.value" outputs="x &gt;= y?:fnd.x &gt;= y?" uid="fnd" uid_parent="root"/>
+  <Node _name="String Length" inputs="string:cat.concatenated string" outputs="length:hl.length" uid="hl" uid_parent="root"/>
+  <Constant _name="16 KiB at most" outputs="value:maxhead.value" type="int32" uid="maxhead" uid_parent="root" value="16384"/>
+  <Node _name="Greater?" inputs="x:hl.length,y:maxhead.value" outputs="x &gt; y?:big.x &gt; y?" uid="big" uid_parent="root"/>
+  <Node _name="Or" inputs="x:fnd.x &gt;= y?,y:big.x &gt; y?" outputs="x .or. y?:done.x .or. y?" uid="done" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:rd.error out" outputs="status:re.status,code:re.code" uid="re" uid_parent="root"/>
+  <Constant _name="56 = nothing waiting" outputs="value:c56.value" type="int32" uid="c56" uid_parent="root" value="56"/>
+  <Node _name="Not Equal?" inputs="x:re.code,y:c56.value" outputs="x != y?:n56.x != y?" uid="n56" uid_parent="root"/>
+  <Node _name="And" inputs="x:re.status,y:n56.x != y?" outputs="x .and. y?:gone.x .and. y?" uid="gone" uid_parent="root"/>
+
+  <Indicator _name="head out" conIdx="4" connection="recommended" description="head in with the bytes read now appended." inputs="value:cat.concatenated string" type="string" uid="o_head" uid_parent="root" value=""/>
+  <Indicator _name="complete?" conIdx="6" connection="recommended" description="TRUE when head out contains the blank line or is longer than 16 KiB." inputs="value:done.x .or. y?" type="bool" uid="o_done" uid_parent="root" value="false"/>
+  <Indicator _name="gone?" conIdx="8" connection="recommended" description="TRUE when the read failed with an error other than 56 (the peer closed or reset the connection)." inputs="value:gone.x .and. y?" type="bool" uid="o_gone" uid_parent="root" value="false"/>
+</VI>

@@ -1,0 +1,82 @@
+<VI _name="RemoteVI Accept Clients.vi" description="Turns accepted TCP connections into WebSocket clients WITHOUT blocking the server loop. A connection accepted in this iteration (accepted? TRUE) joins pending with an empty head and the current tick count. Then every pending connection gets one step of RemoteVI Serve Pending Connection.vi\3A whatever has arrived of its request head is read with timeout 0\3B a complete head is answered (RemoteVI Handle Connection.vi - 503 for an upgrade while 8 clients are connected)\2C and an upgraded connection is greeted and added to clients (RemoteVI Add Client.vi)\3B a connection that is gone or has sent no complete head within 5 s is closed\3B the rest stay pending. So an idle connection - a browser's speculative preconnect - costs one zero-timeout read per iteration instead of stalling the loop. Connections are TCP refnums type-cast to U32.">
+  <FreeLabel comment="Pending connections\3A read\2C serve or drop" uid="lbl" uid_parent="root"/>
+  <Control _name="new connection" conIdx="0" connection="required" description="The connection TCP Wait On Listener returned\2C type-cast to U32." outputs="value:nc.value" type="uint32" uid="nc" uid_parent="root" value="0"/>
+  <Control _name="accepted?" conIdx="5" connection="required" description="TRUE when new connection is a connection accepted in this iteration." outputs="value:acc.value" type="bool" uid="acc" uid_parent="root" value="false"/>
+  <Control _name="pending" conIdx="7" connection="required" description="Connections accepted but not answered yet\3A connection\2C head read so far\2C tick count when accepted." outputs="value:pin.value" type="array{cluster{uint32.connection,string.head,uint32.accepted}}" uid="pin" uid_parent="root" value="[]"/>
+  <Control _name="clients" conIdx="9" connection="required" description="The connected WebSocket clients (same cluster as in RemoteVI Server Loop.vi)." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="html" conIdx="1" connection="required" description="The page served for / and /index.html." outputs="value:html.value" type="string" uid="html" uid_parent="root" value=""/>
+  <Control _name="hello" conIdx="2" connection="required" description="The greeting frames for a new client." outputs="value:hel.value" type="string" uid="hel" uid_parent="root" value=""/>
+  <Control _name="overlay frame" conIdx="3" connection="recommended" description="The current OVERLAY frame\2C sent to a new client after hello." outputs="value:ovf.value" type="string" uid="ovf" uid_parent="root" value=""/>
+  <Control _name="hWnd" conIdx="12" connection="recommended" description="Native handle of the served front panel window (restored when a client connects)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="acc.value" uid="ca" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pin.value" uid="ca_i1" uid_parent="ca"/>
+    <Tunnel _id="In2" inputs="value:nc.value" uid="ca_i2" uid_parent="ca"/>
+    <Tunnel _id="In3" inputs="value:now.millisecond timer value" uid="ca_i3" uid_parent="ca"/>
+    <CaseFrame label="New connection\3A pending\2C nothing read yet" selector="True" selectout="" uid="cat" uid_parent="ca">
+      <Tunnel _id="In1" outputs="value:a_p.value" uid="a_p" uid_parent="cat"/>
+      <Tunnel _id="In2" outputs="value:a_c.value" uid="a_c" uid_parent="cat"/>
+      <Tunnel _id="In3" outputs="value:a_t.value" uid="a_t" uid_parent="cat"/>
+      <Constant outputs="value:p0.value" type="cluster{uint32.connection,string.head,uint32.accepted}" uid="p0" uid_parent="cat" value="[0,,0]"/>
+      <Node _name="Bundle By Name" fields="connection,accepted" inputs="connection:a_c.value,accepted:a_t.value,input cluster:p0.value" outputs="output cluster:np.output cluster" uid="np" uid_parent="cat"/>
+      <Node _name="Build Array" inputs="array:a_p.value,element:np.output cluster" outputs="appended array:pa.appended array" uid="pa" uid_parent="cat"/>
+      <Tunnel _id="Out1" inputs="value:pa.appended array" uid="a_o1" uid_parent="cat"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="caf" uid_parent="ca">
+      <Tunnel _id="In1" outputs="value:b_p.value" uid="b_p" uid_parent="caf"/>
+      <Tunnel _id="In2" outputs="value:" uid="b_c" uid_parent="caf"/>
+      <Tunnel _id="In3" outputs="value:" uid="b_t" uid_parent="caf"/>
+      <Tunnel _id="Out1" inputs="value:b_p.value" uid="b_o1" uid_parent="caf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ca_o1.value" uid="ca_o1" uid_parent="ca"/>
+  </Structure>
+
+  <Constant _name="at most 8 clients" outputs="value:max.value" type="int32" uid="max" uid_parent="root" value="8"/>
+  <Structure _name="For Loop" count="" label="One step per pending connection" maxin="" maxout="" uid="fp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ca_o1.value" mode="index" outputs="value:f_p.value" uid="f_p" uid_parent="fp"/>
+    <Tunnel _id="In2" inputs="value:html.value" outputs="value:f_ht.value" uid="f_ht" uid_parent="fp"/>
+    <Tunnel _id="In3" inputs="value:now.millisecond timer value" outputs="value:f_now.value" uid="f_now" uid_parent="fp"/>
+    <Tunnel _id="In4" inputs="value:max.value" outputs="value:f_max.value" uid="f_max" uid_parent="fp"/>
+    <Tunnel _id="In5" inputs="value:hel.value" outputs="value:f_hel.value" uid="f_hel" uid_parent="fp"/>
+    <Tunnel _id="In6" inputs="value:ovf.value" outputs="value:f_ovf.value" uid="f_ovf" uid_parent="fp"/>
+    <Tunnel _id="In7" inputs="value:hw.value" outputs="value:f_hw.value" uid="f_hw" uid_parent="fp"/>
+    <ShiftReg uid="sr_cl" uid_parent="fp">
+      <Left inputs="value:cl.value" outputs="value:f_cl.value" uid="sr_cll" uid_parent="sr_cl"/>
+      <Right inputs="value:cw_o1.value" outputs="value:cl_end.value" uid="sr_clr" uid_parent="sr_cl"/>
+    </ShiftReg>
+    <Node _name="Array Size" inputs="array:f_cl.value" outputs="size(s):n.size(s)" uid="n" uid_parent="fp"/>
+    <Node _name="Greater Or Equal?" inputs="x:n.size(s),y:f_max.value" outputs="x &gt;= y?:full.x &gt;= y?" uid="full" uid_parent="fp"/>
+    <Call inputs="pending:f_p.value,html:f_ht.value,max clients reached?:full.x &gt;= y?,now:f_now.value" outputs="pending out:sp.pending out,keep?:sp.keep?,websocket?:sp.websocket?" target="RemoteVI Serve Pending Connection.vi" uid="sp" uid_parent="fp"/>
+    <Node _name="Unbundle By Name" fields="connection" inputs="input cluster:f_p.value" outputs="connection:fpu.connection" uid="fpu" uid_parent="fp"/>
+    <Structure _name="Case Structure" selectin="sp.websocket?" uid="cw" uid_parent="fp">
+      <Tunnel _id="In1" inputs="value:f_cl.value" uid="cw_i1" uid_parent="cw"/>
+      <Tunnel _id="In2" inputs="value:fpu.connection" uid="cw_i2" uid_parent="cw"/>
+      <Tunnel _id="In3" inputs="value:f_hel.value" uid="cw_i3" uid_parent="cw"/>
+      <Tunnel _id="In4" inputs="value:f_ovf.value" uid="cw_i4" uid_parent="cw"/>
+      <Tunnel _id="In5" inputs="value:f_hw.value" uid="cw_i5" uid_parent="cw"/>
+      <CaseFrame label="WebSocket\3A greet and add the client" selector="True" selectout="" uid="cwt" uid_parent="cw">
+        <Tunnel _id="In1" outputs="value:w_cl.value" uid="w_cl" uid_parent="cwt"/>
+        <Tunnel _id="In2" outputs="value:w_c.value" uid="w_c" uid_parent="cwt"/>
+        <Tunnel _id="In3" outputs="value:w_hel.value" uid="w_hel" uid_parent="cwt"/>
+        <Tunnel _id="In4" outputs="value:w_ovf.value" uid="w_ovf" uid_parent="cwt"/>
+        <Tunnel _id="In5" outputs="value:w_hw.value" uid="w_hw" uid_parent="cwt"/>
+        <Call inputs="connection:w_c.value,clients:w_cl.value,hello:w_hel.value,overlay frame:w_ovf.value,hWnd:w_hw.value" outputs="clients out:ac.clients out" target="RemoteVI Add Client.vi" uid="ac" uid_parent="cwt"/>
+        <Tunnel _id="Out1" inputs="value:ac.clients out" uid="w_o1" uid_parent="cwt"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="cwf" uid_parent="cw">
+        <Tunnel _id="In1" outputs="value:v_cl.value" uid="v_cl" uid_parent="cwf"/>
+        <Tunnel _id="In2" outputs="value:" uid="v_c" uid_parent="cwf"/>
+        <Tunnel _id="In3" outputs="value:" uid="v_hel" uid_parent="cwf"/>
+        <Tunnel _id="In4" outputs="value:" uid="v_ovf" uid_parent="cwf"/>
+        <Tunnel _id="In5" outputs="value:" uid="v_hw" uid_parent="cwf"/>
+        <Tunnel _id="Out1" inputs="value:v_cl.value" uid="v_o1" uid_parent="cwf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
+    </Structure>
+    <Tunnel _id="Out1" inputs="value:sp.pending out" mode="index" cond="sp.keep?" outputs="value:kept.value" uid="kept" uid_parent="fp"/>
+  </Structure>
+
+  <Indicator _name="pending out" conIdx="4" connection="recommended" description="The connections still pending." inputs="value:kept.value" type="array{cluster{uint32.connection,string.head,uint32.accepted}}" uid="o_p" uid_parent="root" value="[]"/>
+  <Indicator _name="clients out" conIdx="6" connection="recommended" description="clients with the newly upgraded connections appended." inputs="value:cl_end.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+</VI>

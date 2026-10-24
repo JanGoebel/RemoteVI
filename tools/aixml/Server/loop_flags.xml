@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Loop Flags.vi" description="The timing decisions at the start of a server loop iteration\3A now (tick count ms)\3B geometry due? when 500 ms have passed since last geometry\3B look? (list the popups) when a client is connected\2C the geometry is due or a popup was open last time\3B remote click? within 1 s and recent click? within 300 ms after a client last posted a message that may open a popup (last click). Pure apart from reading the tick count.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="last geometry" conIdx="5" connection="required" description="Tick count (ms) of the last geometry refresh." outputs="value:lg.value" type="uint32" uid="lg" uid_parent="root" value="0"/>
+  <Control _name="last click" conIdx="7" connection="required" description="Tick count (ms) when a client last posted a message that may open a popup." outputs="value:lc.value" type="uint32" uid="lc" uid_parent="root" value="0"/>
+  <Control _name="popup was open?" conIdx="9" connection="required" description="TRUE when a popup was open in the previous iteration." outputs="value:pw.value" type="bool" uid="pw" uid_parent="root" value="false"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:cl.value" outputs="empty?:none0.empty?" uid="none0" uid_parent="root"/>
+  <Node _name="Not" inputs="x:none0.empty?" outputs=".not. x?:any0..not. x?" uid="any0" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.millisecond timer value,y:lg.value" outputs="x-y:elg.x-y" uid="elg" uid_parent="root"/>
+  <Constant _name="geometry every 500 ms" outputs="value:k500.value" type="uint32" uid="k500" uid_parent="root" value="500"/>
+  <Node _name="Greater Or Equal?" inputs="x:elg.x-y,y:k500.value" outputs="x &gt;= y?:gtime.x &gt;= y?" uid="gtime" uid_parent="root"/>
+  <Node _name="Or" inputs="x:any0..not. x?,y:gtime.x &gt;= y?" outputs="x .or. y?:nf1.x .or. y?" uid="nf1" uid_parent="root"/>
+  <Node _name="Or" inputs="x:nf1.x .or. y?,y:pw.value" outputs="x .or. y?:nfind.x .or. y?" uid="nfind" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.millisecond timer value,y:lc.value" outputs="x-y:elk.x-y" uid="elk" uid_parent="root"/>
+  <Constant _name="hide popups up to 1 s after a remote click" outputs="value:k1000c.value" type="uint32" uid="k1000c" uid_parent="root" value="1000"/>
+  <Node _name="Less?" inputs="x:elk.x-y,y:k1000c.value" outputs="x &lt; y?:rclk.x &lt; y?" uid="rclk" uid_parent="root"/>
+  <Constant _name="hold VI Server 300 ms after a click" outputs="value:k300.value" type="uint32" uid="k300" uid_parent="root" value="300"/>
+  <Node _name="Less?" inputs="x:elk.x-y,y:k300.value" outputs="x &lt; y?:recent.x &lt; y?" uid="recent" uid_parent="root"/>
+  <Indicator _name="now" conIdx="4" connection="recommended" description="Tick count (ms) of this iteration." inputs="value:now.millisecond timer value" type="uint32" uid="o_now" uid_parent="root" value="0"/>
+  <Indicator _name="look?" conIdx="6" connection="recommended" description="TRUE lists the popups in this iteration." inputs="value:nfind.x .or. y?" type="bool" uid="o_look" uid_parent="root" value="false"/>
+  <Indicator _name="geometry due?" conIdx="8" connection="recommended" description="TRUE when 500 ms have passed since the last geometry refresh." inputs="value:gtime.x &gt;= y?" type="bool" uid="o_gd" uid_parent="root" value="false"/>
+  <Indicator _name="remote click?" conIdx="10" connection="recommended" description="TRUE within 1 s after last click." inputs="value:rclk.x &lt; y?" type="bool" uid="o_rc" uid_parent="root" value="false"/>
+  <Indicator _name="recent click?" conIdx="15" connection="recommended" description="TRUE within 300 ms after last click." inputs="value:recent.x &lt; y?" type="bool" uid="o_rec" uid_parent="root" value="false"/>
+</VI>

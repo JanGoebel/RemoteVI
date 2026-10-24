@@ -1,0 +1,69 @@
+<VI _name="RemoteVI Capture And Send.vi" description="The frame part of one server loop iteration\3A when at least one client is connected and period ms have passed since the last frame (cache.time)\2C a frame is made once (RemoteVI Capture Frame.vi) and RemoteVI Send Frame.vi runs for each client (each client's own flow control decides whether it is sent). no VI Server? (a popup is open or a client clicked within 300 ms) makes the frame without FP.Get Image\3B while no capture is cached yet nothing is sent then. cache out holds the capture\2C its size and the tick count of this frame. captured? is TRUE when a frame was made.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="VI" conIdx="5" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="cache" conIdx="7" connection="required" description="The last FP.Get Image capture with its size\2C and the tick count of the last frame." outputs="value:ca.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="ca" uid_parent="root" value="[[],0,0,0]"/>
+  <Control _name="period" conIdx="9" connection="required" description="Shortest time between frames in ms (1000 / fps)." outputs="value:per.value" type="double" uid="per" uid_parent="root" value="50"/>
+  <Control _name="no VI Server?" conIdx="1" connection="recommended" description="TRUE while a popup is open or a click is recent\3A the frame is drawn by PrintWindow." outputs="value:nov.value" type="bool" uid="nov" uid_parent="root" value="false"/>
+  <Control _name="hWnd" conIdx="2" connection="recommended" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="geo" conIdx="3" connection="recommended" description="Panel origin and client-area origin in screen coordinates." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="pixmap,time" inputs="input cluster:ca.value" outputs="pixmap:cau.pixmap,time:cau.time" uid="cau" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.millisecond timer value,y:cau.time" outputs="x-y:el.x-y" uid="el" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:el.x-y,y:per.value" outputs="x &gt;= y?:due.x &gt;= y?" uid="due" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:cl.value" outputs="empty?:none.empty?" uid="none" uid_parent="root"/>
+  <Node _name="Not" inputs="x:none.empty?" outputs=".not. x?:any..not. x?" uid="any" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:cau.pixmap" outputs="empty?:nocache.empty?" uid="nocache" uid_parent="root"/>
+  <Node _name="And" inputs="x:nov.value,y:nocache.empty?" outputs="x .and. y?:blind.x .and. y?" uid="blind" uid_parent="root"/>
+  <Node _name="Not" inputs="x:blind.x .and. y?" outputs=".not. x?:canf..not. x?" uid="canf" uid_parent="root"/>
+  <Node _name="And" inputs="x:due.x &gt;= y?,y:any..not. x?" outputs="x .and. y?:cap0.x .and. y?" uid="cap0" uid_parent="root"/>
+  <Node _name="And" inputs="x:cap0.x .and. y?,y:canf..not. x?" outputs="x .and. y?:cap.x .and. y?" uid="cap" uid_parent="root"/>
+
+  <Structure _name="Case Structure" selectin="cap.x .and. y?" uid="cc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" uid="cc_i1" uid_parent="cc"/>
+    <Tunnel _id="In2" inputs="value:vi.value" uid="cc_i2" uid_parent="cc"/>
+    <Tunnel _id="In3" inputs="value:ca.value" uid="cc_i3" uid_parent="cc"/>
+    <Tunnel _id="In4" inputs="value:nov.value" uid="cc_i4" uid_parent="cc"/>
+    <Tunnel _id="In5" inputs="value:hw.value" uid="cc_i5" uid_parent="cc"/>
+    <Tunnel _id="In6" inputs="value:geo.value" uid="cc_i6" uid_parent="cc"/>
+    <Tunnel _id="In7" inputs="value:now.millisecond timer value" uid="cc_i7" uid_parent="cc"/>
+    <CaseFrame label="Capture once\2C send to each client" selector="True" selectout="" uid="cct" uid_parent="cc">
+      <Tunnel _id="In1" outputs="value:c_cl.value" uid="c_cl" uid_parent="cct"/>
+      <Tunnel _id="In2" outputs="value:c_vi.value" uid="c_vi" uid_parent="cct"/>
+      <Tunnel _id="In3" outputs="value:c_ca.value" uid="c_ca" uid_parent="cct"/>
+      <Tunnel _id="In4" outputs="value:c_pop.value" uid="c_pop" uid_parent="cct"/>
+      <Tunnel _id="In5" outputs="value:c_hw.value" uid="c_hw" uid_parent="cct"/>
+      <Tunnel _id="In6" outputs="value:c_geo.value" uid="c_geo" uid_parent="cct"/>
+      <Tunnel _id="In7" outputs="value:c_now.value" uid="c_now" uid_parent="cct"/>
+      <Call inputs="VI:c_vi.value,cache:c_ca.value,popup?:c_pop.value,hWnd:c_hw.value,geo:c_geo.value" outputs="frame:cf.frame,cache out:cf.cache out" target="RemoteVI Capture Frame.vi" uid="cf" uid_parent="cct"/>
+      <Node _name="Unbundle By Name" fields="width,height" inputs="input cluster:cf.cache out" outputs="width:cfu.width,height:cfu.height" uid="cfu" uid_parent="cct"/>
+      <Structure _name="For Loop" count="" label="Send to each client" maxin="" maxout="" uid="ff" uid_parent="cct">
+        <Tunnel _id="In1" inputs="value:c_cl.value" mode="index" outputs="value:f_cl.value" uid="f_cl" uid_parent="ff"/>
+        <Tunnel _id="In2" inputs="value:cf.frame" outputs="value:f_pm.value" uid="f_pm" uid_parent="ff"/>
+        <Tunnel _id="In3" inputs="value:cfu.width" outputs="value:f_w.value" uid="f_w" uid_parent="ff"/>
+        <Tunnel _id="In4" inputs="value:cfu.height" outputs="value:f_h.value" uid="f_h" uid_parent="ff"/>
+        <Call inputs="Client:f_cl.value,pixmap:f_pm.value,width:f_w.value,height:f_h.value" outputs="Client out:sf.Client out,sent?:,error out:" target="RemoteVI Send Frame.vi" uid="sf" uid_parent="ff"/>
+        <Tunnel _id="Out1" inputs="value:sf.Client out" mode="index" outputs="value:sent.value" uid="sent" uid_parent="ff"/>
+      </Structure>
+      <Node _name="Bundle By Name" fields="time" inputs="time:c_now.value,input cluster:cf.cache out" outputs="output cluster:nca.output cluster" uid="nca" uid_parent="cct"/>
+      <Tunnel _id="Out1" inputs="value:sent.value" uid="c_o1" uid_parent="cct"/>
+      <Tunnel _id="Out2" inputs="value:nca.output cluster" uid="c_o2" uid_parent="cct"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ccf" uid_parent="cc">
+      <Tunnel _id="In1" outputs="value:d_cl.value" uid="d_cl" uid_parent="ccf"/>
+      <Tunnel _id="In2" outputs="value:" uid="d_vi" uid_parent="ccf"/>
+      <Tunnel _id="In3" outputs="value:d_ca.value" uid="d_ca" uid_parent="ccf"/>
+      <Tunnel _id="In4" outputs="value:" uid="d_pop" uid_parent="ccf"/>
+      <Tunnel _id="In5" outputs="value:" uid="d_hw" uid_parent="ccf"/>
+      <Tunnel _id="In6" outputs="value:" uid="d_geo" uid_parent="ccf"/>
+      <Tunnel _id="In7" outputs="value:" uid="d_now" uid_parent="ccf"/>
+      <Tunnel _id="Out1" inputs="value:d_cl.value" uid="d_o1" uid_parent="ccf"/>
+      <Tunnel _id="Out2" inputs="value:d_ca.value" uid="d_o2" uid_parent="ccf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cc_o1.value" uid="cc_o1" uid_parent="cc"/>
+    <Tunnel _id="Out2" outputs="value:cc_o2.value" uid="cc_o2" uid_parent="cc"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="The clients after Send Frame." inputs="value:cc_o1.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+  <Indicator _name="cache out" conIdx="6" connection="recommended" description="The cache after this call\3B time is now when a frame was made." inputs="value:cc_o2.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="o_ca" uid_parent="root" value="[[],0,0,0]"/>
+  <Indicator _name="captured?" conIdx="8" connection="recommended" description="TRUE when a frame was made in this call." inputs="value:cap.x .and. y?" type="bool" uid="o_cap" uid_parent="root" value="false"/>
+</VI>

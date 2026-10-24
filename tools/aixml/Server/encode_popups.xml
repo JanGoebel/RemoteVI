@@ -1,0 +1,31 @@
+<VI _name="RemoteVI Encode Popups.vi" description="Captures each popup window (RemoteVI Capture Window.vi - PrintWindow\2C so hidden\2C covered or off-screen popups are captured too)\2C PNG-encodes it (RemoteVI Encode Rect PNG.vi) and places it at its window position minus origin\2C bottom-most first (popups is ordered top-most first\2C so it is walked from the end). A popup whose capture or encoding failed is left out. The result is the input of RemoteVI Overlay Encode.vi (docs\5Cprotocol.md section 3.2).">
+  <Control _name="popups" conIdx="0" connection="required" description="The popups to capture\2C top-most first (RemoteVI List Popups.vi overlay popups)." outputs="value:pp.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="pp" uid_parent="root" value="[]"/>
+  <Control _name="origin x" conIdx="5" connection="required" description="Screen x that maps to panel x 0 (panel origin + d)." outputs="value:ox.value" type="int32" uid="ox" uid_parent="root" value="0"/>
+  <Control _name="origin y" conIdx="7" connection="required" description="Screen y that maps to panel y 0 (panel origin + d)." outputs="value:oy.value" type="int32" uid="oy" uid_parent="root" value="0"/>
+  <Node _name="Array Size" inputs="array:pp.value" outputs="size(s):onp.size(s)" uid="onp" uid_parent="root"/>
+  <Node _name="Decrement" inputs="x:onp.size(s)" outputs="x-1:olast.x-1" uid="olast" uid_parent="root"/>
+  <Constant _name="whole window" outputs="value:orz.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="orz" uid_parent="root" value="[0,0,0,0]"/>
+  <Constant _name="popup" outputs="value:op0.value" type="cluster{int16.x,int16.y,string.png}" uid="op0" uid_parent="root" value="[0,0,]"/>
+  <Structure _name="For Loop" count="oc.value" label="Capture each popup\2C bottom-most first" maxin="onp.size(s)" maxout="" uid="oc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pp.value" outputs="value:q_all.value" uid="q_all" uid_parent="oc"/>
+    <Tunnel _id="In2" inputs="value:olast.x-1" outputs="value:q_last.value" uid="q_last" uid_parent="oc"/>
+    <Tunnel _id="In3" inputs="value:ox.value" outputs="value:q_px.value" uid="q_px" uid_parent="oc"/>
+    <Tunnel _id="In4" inputs="value:oy.value" outputs="value:q_py.value" uid="q_py" uid_parent="oc"/>
+    <Tunnel _id="In5" inputs="value:orz.value" outputs="value:q_rz.value" uid="q_rz" uid_parent="oc"/>
+    <Tunnel _id="In6" inputs="value:op0.value" outputs="value:q_p0.value" uid="q_p0" uid_parent="oc"/>
+    <Node _name="Subtract" inputs="x:q_last.value,y:oc.value" outputs="x-y:qri.x-y" uid="qri" uid_parent="oc"/>
+    <Node _name="Index Array" inputs="array:q_all.value,index:qri.x-y" outputs="element:q_p.element" uid="q_p" uid_parent="oc"/>
+    <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:q_p.element" outputs="hwnd:qu.hwnd" uid="qu" uid_parent="oc"/>
+    <Call inputs="hwnd:qu.hwnd" outputs="pixmap:cwin.pixmap,rect:cwin.rect,error out:cwin.error out" target="RemoteVI Capture Window.vi" uid="cwin" uid_parent="oc"/>
+    <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:cwin.rect" outputs="x:qr.x,y:qr.y,w:qr.w,h:qr.h" uid="qr" uid_parent="oc"/>
+    <Node _name="Bundle By Name" fields="w,h" inputs="w:qr.w,h:qr.h,input cluster:q_rz.value" outputs="output cluster:qwr.output cluster" uid="qwr" uid_parent="oc"/>
+    <Call inputs="pixmap:cwin.pixmap,rect:qwr.output cluster,error in:cwin.error out" outputs="png:qpng.png,error out:qpng.error out" target="RemoteVI Encode Rect PNG.vi" uid="qpng" uid_parent="oc"/>
+    <Node _name="Subtract" inputs="x:qr.x,y:q_px.value" outputs="x-y:qx.x-y" uid="qx" uid_parent="oc"/>
+    <Node _name="Subtract" inputs="x:qr.y,y:q_py.value" outputs="x-y:qy.x-y" uid="qy" uid_parent="oc"/>
+    <Node _name="Bundle By Name" fields="x,y,png" inputs="x:qx.x-y,y:qy.x-y,png:qpng.png,input cluster:q_p0.value" outputs="output cluster:qb.output cluster" uid="qb" uid_parent="oc"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:qpng.error out" outputs="status:qes.status" uid="qes" uid_parent="oc"/>
+    <Node _name="Not" inputs="x:qes.status" outputs=".not. x?:qok..not. x?" uid="qok" uid_parent="oc"/>
+    <Tunnel _id="Out1" inputs="value:qb.output cluster" mode="index" cond="qok..not. x?" outputs="value:oarr.value" uid="oarr" uid_parent="oc"/>
+  </Structure>
+  <Indicator _name="overlay popups" conIdx="4" connection="recommended" description="Each popup as x\2C y (panel coordinates) and PNG\2C bottom-most first." inputs="value:oarr.value" type="array{cluster{int16.x,int16.y,string.png}}" uid="o_ov" uid_parent="root" value="[]"/>
+</VI>

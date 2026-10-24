@@ -1,0 +1,23 @@
+<VI _name="RemoteVI List Popups.vi" description="Lists the LabVIEW popups open now (RemoteVI Find Popups.vi\2C Win32 only - no VI Server call\2C so it works while a popup blocks LabVIEW's UI thread) and splits them for the server loop\3A all popups (everything Find Popups returns)\2C overlay popups (all but SysShadow\2C a menu's drop shadow - what the OVERLAY shows)\2C and modal popups (overlay popups without tip strips\2C class LVTipStrip - a tip strip is not modal\2C so it does not switch input into popup mode). Order is kept\2C bottom-most first.">
+  <Control _name="panel hWnd" conIdx="0" connection="required" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Call inputs="panel hWnd:hw.value" outputs="popups:fnd.popups,error out:" target="RemoteVI Find Popups.vi" uid="fnd" uid_parent="root"/>
+  <Constant outputs="value:shadow.value" type="string" uid="shadow" uid_parent="root" value="SysShadow"/>
+  <Structure _name="For Loop" count="" label="Keep all but SysShadow" maxin="" maxout="" uid="fk" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:fnd.popups" mode="index" outputs="value:pk.value" uid="pk" uid_parent="fk"/>
+    <Tunnel _id="In2" inputs="value:shadow.value" outputs="value:pk_sh.value" uid="pk_sh" uid_parent="fk"/>
+    <Node _name="Unbundle By Name" fields="class" inputs="input cluster:pk.value" outputs="class:pku.class" uid="pku" uid_parent="fk"/>
+    <Node _name="Not Equal?" inputs="x:pku.class,y:pk_sh.value" outputs="x != y?:nosh.x != y?" uid="nosh" uid_parent="fk"/>
+    <Tunnel _id="Out1" inputs="value:pk.value" mode="index" cond="nosh.x != y?" outputs="value:pkept.value" uid="pkept" uid_parent="fk"/>
+  </Structure>
+  <Constant _name="tip strip" outputs="value:tipc.value" type="string" uid="tipc" uid_parent="root" value="LVTipStrip"/>
+  <Structure _name="For Loop" count="" label="Modal popups\3A all but tip strips" maxin="" maxout="" uid="fmo" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pkept.value" mode="index" outputs="value:mo_p.value" uid="mo_p" uid_parent="fmo"/>
+    <Tunnel _id="In2" inputs="value:tipc.value" outputs="value:mo_t.value" uid="mo_t" uid_parent="fmo"/>
+    <Node _name="Unbundle By Name" fields="class" inputs="input cluster:mo_p.value" outputs="class:mou.class" uid="mou" uid_parent="fmo"/>
+    <Node _name="Not Equal?" inputs="x:mou.class,y:mo_t.value" outputs="x != y?:mont.x != y?" uid="mont" uid_parent="fmo"/>
+    <Tunnel _id="Out1" inputs="value:mo_p.value" mode="index" cond="mont.x != y?" outputs="value:pmodal.value" uid="pmodal" uid_parent="fmo"/>
+  </Structure>
+  <Indicator _name="all popups" conIdx="4" connection="recommended" description="Every popup RemoteVI Find Popups.vi found." inputs="value:fnd.popups" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="o_all" uid_parent="root" value="[]"/>
+  <Indicator _name="overlay popups" conIdx="6" connection="recommended" description="All popups but SysShadow." inputs="value:pkept.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="o_ov" uid_parent="root" value="[]"/>
+  <Indicator _name="modal popups" conIdx="8" connection="recommended" description="Overlay popups without tip strips\3B not empty means a popup is open." inputs="value:pmodal.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="o_mo" uid_parent="root" value="[]"/>
+</VI>

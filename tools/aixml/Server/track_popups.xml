@@ -1,0 +1,44 @@
+<VI _name="RemoteVI Track Popups.vi" description="The popup part of one server loop iteration (docs\5Carchitecture.md\2C Popups). When look? is TRUE the popups are listed (RemoteVI List Popups.vi - Win32 only\2C no VI Server call)\3B otherwise there are none. Popups a remote user opened are hidden on the host (RemoteVI Hide Remote Popups.vi). popup open? is TRUE when a modal popup (anything but a tip strip or a drop shadow) is open\3B d is reset to 0\2C 0 when none is. popups carries the modal popups at their LOGICAL positions (real - d\2C RemoteVI Logical Popups.vi) for servicing the clients\2C overlay popups every popup but SysShadow (tip strips included) for the OVERLAY.">
+  <Control _name="look?" conIdx="0" connection="required" description="TRUE lists the popups (a client is connected\2C a popup was open last time or the geometry is due)." outputs="value:look.value" type="bool" uid="look" uid_parent="root" value="false"/>
+  <Control _name="panel hWnd" conIdx="5" connection="required" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="d" conIdx="7" connection="recommended" description="The displacement by which the popups are moved\2C from the previous iteration." outputs="value:d.value" type="cluster{int32.dx,int32.dy}" uid="d" uid_parent="root" value="[0,0]"/>
+  <Control _name="previous popup hWnds" conIdx="9" connection="recommended" description="popup hWnds of the previous iteration." outputs="value:prev.value" type="array{uint64}" uid="prev" uid_parent="root" value="[]"/>
+  <Control _name="previously hidden" conIdx="1" connection="recommended" description="hidden hWnds of the previous iteration." outputs="value:phid.value" type="array{uint64}" uid="phid" uid_parent="root" value="[]"/>
+  <Control _name="remote click?" conIdx="2" connection="recommended" description="TRUE within 1 s after a client posted a button or key message." outputs="value:rc.value" type="bool" uid="rc" uid_parent="root" value="false"/>
+
+  <Constant outputs="value:nopop.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="nopop" uid_parent="root" value="[]"/>
+  <Structure _name="Case Structure" selectin="look.value" uid="fp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hw.value" uid="fp_i1" uid_parent="fp"/>
+    <Tunnel _id="In2" inputs="value:nopop.value" uid="fp_i2" uid_parent="fp"/>
+    <CaseFrame label="List the popups" selector="True" selectout="" uid="fpt" uid_parent="fp">
+      <Tunnel _id="In1" outputs="value:p_hw.value" uid="p_hw" uid_parent="fpt"/>
+      <Tunnel _id="In2" outputs="value:" uid="p_none" uid_parent="fpt"/>
+      <Call inputs="panel hWnd:p_hw.value" outputs="all popups:lp.all popups,overlay popups:lp.overlay popups,modal popups:lp.modal popups" target="RemoteVI List Popups.vi" uid="lp" uid_parent="fpt"/>
+      <Tunnel _id="Out1" inputs="value:lp.modal popups" uid="fpt_o1" uid_parent="fpt"/>
+      <Tunnel _id="Out2" inputs="value:lp.all popups" uid="fpt_o2" uid_parent="fpt"/>
+      <Tunnel _id="Out3" inputs="value:lp.overlay popups" uid="fpt_o3" uid_parent="fpt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="fpf" uid_parent="fp">
+      <Tunnel _id="In1" outputs="value:" uid="u_hw" uid_parent="fpf"/>
+      <Tunnel _id="In2" outputs="value:u_none.value" uid="u_none" uid_parent="fpf"/>
+      <Tunnel _id="Out1" inputs="value:u_none.value" uid="fpf_o1" uid_parent="fpf"/>
+      <Tunnel _id="Out2" inputs="value:u_none.value" uid="fpf_o2" uid_parent="fpf"/>
+      <Tunnel _id="Out3" inputs="value:u_none.value" uid="fpf_o3" uid_parent="fpf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:fp_o1.value" uid="fp_o1" uid_parent="fp"/>
+    <Tunnel _id="Out2" outputs="value:fp_o2.value" uid="fp_o2" uid_parent="fp"/>
+    <Tunnel _id="Out3" outputs="value:fp_o3.value" uid="fp_o3" uid_parent="fp"/>
+  </Structure>
+  <Call inputs="panel hWnd:hw.value,all popups:fp_o2.value,previous popup hWnds:prev.value,previously hidden:phid.value,remote click?:rc.value" outputs="popup hWnds:hr.popup hWnds,hidden hWnds:hr.hidden hWnds" target="RemoteVI Hide Remote Popups.vi" uid="hr" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:fp_o1.value" outputs="empty?:npop.empty?" uid="npop" uid_parent="root"/>
+  <Node _name="Not" inputs="x:npop.empty?" outputs=".not. x?:popup..not. x?" uid="popup" uid_parent="root"/>
+  <Constant _name="popups not moved" outputs="value:d0.value" type="cluster{int32.dx,int32.dy}" uid="d0" uid_parent="root" value="[0,0]"/>
+  <Node _name="Select" inputs="t:d0.value,s:npop.empty?,f:d.value" outputs="s? t\3Af:dcur.s? t\3Af" uid="dcur" uid_parent="root"/>
+  <Call inputs="modal popups:fp_o1.value,d:dcur.s? t\3Af" outputs="popups:lg.popups" target="RemoteVI Logical Popups.vi" uid="lg" uid_parent="root"/>
+
+  <Indicator _name="popups" conIdx="4" connection="recommended" description="The modal popups at their logical positions\2C with d (0\2C 0 when none is open)." inputs="value:lg.popups" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
+  <Indicator _name="overlay popups" conIdx="6" connection="recommended" description="Every popup but SysShadow\2C at its real position\2C for the OVERLAY." inputs="value:fp_o3.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="o_ov" uid_parent="root" value="[]"/>
+  <Indicator _name="popup open?" conIdx="8" connection="recommended" description="TRUE when a modal popup is open." inputs="value:popup..not. x?" type="bool" uid="o_open" uid_parent="root" value="false"/>
+  <Indicator _name="popup hWnds" conIdx="10" connection="recommended" description="All popup window handles\2C for the next iteration." inputs="value:hr.popup hWnds" type="array{uint64}" uid="o_all" uid_parent="root" value="[]"/>
+  <Indicator _name="hidden hWnds" conIdx="3" connection="recommended" description="The popups hidden in this iteration\2C for the next one." inputs="value:hr.hidden hWnds" type="array{uint64}" uid="o_hid" uid_parent="root" value="[]"/>
+</VI>

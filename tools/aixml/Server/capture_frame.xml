@@ -1,0 +1,49 @@
+<VI _name="RemoteVI Capture Frame.vi" description="Makes the panel image for one frame. Without a popup (popup? FALSE) it is a fresh capture (RemoteVI Capture Panel.vi\2C VI Server FP.Get Image)\2C which also becomes the cache. With a popup open or right after a click (popup? TRUE) NO VI Server call is made\3A the panel window is drawn by PrintWindow (RemoteVI Capture Window.vi on hWnd - LabVIEW keeps redrawing the panel while a menu is open\2C measured)\2C cut at the panel bounds (geo panelX\2C panelY minus the window rectangle) and pasted over the cached capture\2C except the right and bottom 17 px\2C where the window shows LabVIEW's scrollbars and FP.Get Image shows panel - those strips stay as last captured (measured pixel-identical to FP.Get Image elsewhere)\3B the cache is left as it was\3B if PrintWindow fails the cached capture is the frame. The frame's width and height are those of cache out.">
+  <Control _name="VI" conIdx="0" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="cache" conIdx="5" connection="required" description="The last FP.Get Image capture with its size and the tick count of the last frame." outputs="value:ca.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="ca" uid_parent="root" value="[[],0,0,0]"/>
+  <Control _name="popup?" conIdx="7" connection="required" description="TRUE while a popup is open or right after a click\3A no VI Server call." outputs="value:pop.value" type="bool" uid="pop" uid_parent="root" value="false"/>
+  <Control _name="hWnd" conIdx="9" connection="recommended" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="geo" conIdx="1" connection="recommended" description="Panel origin and client-area origin in screen coordinates." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Structure _name="Case Structure" selectin="pop.value" uid="cq" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cq_i1" uid_parent="cq"/>
+    <Tunnel _id="In2" inputs="value:ca.value" uid="cq_i2" uid_parent="cq"/>
+    <Tunnel _id="In3" inputs="value:hw.value" uid="cq_i3" uid_parent="cq"/>
+    <Tunnel _id="In4" inputs="value:geo.value" uid="cq_i4" uid_parent="cq"/>
+    <CaseFrame label="Popup or click\3A PrintWindow the panel" selector="True" selectout="" uid="cqt" uid_parent="cq">
+      <Tunnel _id="In1" outputs="value:" uid="m_vi" uid_parent="cqt"/>
+      <Tunnel _id="In2" outputs="value:m_ca.value" uid="m_ca" uid_parent="cqt"/>
+      <Tunnel _id="In3" outputs="value:m_hw.value" uid="m_hw" uid_parent="cqt"/>
+      <Tunnel _id="In4" outputs="value:m_geo.value" uid="m_geo" uid_parent="cqt"/>
+      <Node _name="Unbundle By Name" fields="pixmap,width,height" inputs="input cluster:m_ca.value" outputs="pixmap:mcu.pixmap,width:mcu.width,height:mcu.height" uid="mcu" uid_parent="cqt"/>
+      <Call inputs="hwnd:m_hw.value" outputs="pixmap:pwc.pixmap,rect:pwc.rect,error out:pwc.error out" target="RemoteVI Capture Window.vi" uid="pwc" uid_parent="cqt"/>
+      <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pwc.rect" outputs="x:pwr.x,y:pwr.y" uid="pwr" uid_parent="cqt"/>
+      <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:m_geo.value" outputs="panelX:pwg.panelX,panelY:pwg.panelY" uid="pwg" uid_parent="cqt"/>
+      <Node _name="Subtract" inputs="x:pwg.panelX,y:pwr.x" outputs="x-y:pwx.x-y" uid="pwx" uid_parent="cqt"/>
+      <Node _name="Subtract" inputs="x:pwg.panelY,y:pwr.y" outputs="x-y:pwy.x-y" uid="pwy" uid_parent="cqt"/>
+      <Constant _name="scrollbar 17 px\3A keep the cached strip" outputs="value:k17.value" type="int32" uid="k17" uid_parent="cqt" value="17"/>
+      <Node _name="Subtract" inputs="x:mcu.width,y:k17.value" outputs="x-y:pvw.x-y" uid="pvw" uid_parent="cqt"/>
+      <Node _name="Subtract" inputs="x:mcu.height,y:k17.value" outputs="x-y:pvh.x-y" uid="pvh" uid_parent="cqt"/>
+      <Node _name="Array Subset" dimensions="2" inputs="array:pwc.pixmap,index:pwy.x-y,length:pvh.x-y,index:pwx.x-y,length:pvw.x-y" outputs="subarray:pws.subarray" uid="pws" uid_parent="cqt"/>
+      <Constant outputs="value:pz0.value" type="int32" uid="pz0" uid_parent="cqt" value="0"/>
+      <Node _name="Replace Array Subset" dimensions="2" inputs="array:mcu.pixmap,index (row):pz0.value,index (col):pz0.value,new element/subarray:pws.subarray" outputs="output array:pwm.output array" uid="pwm" uid_parent="cqt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pwc.error out" outputs="status:pwe.status" uid="pwe" uid_parent="cqt"/>
+      <Node _name="Select" inputs="t:mcu.pixmap,s:pwe.status,f:pwm.output array" outputs="s? t\3Af:pwf.s? t\3Af" uid="pwf" uid_parent="cqt"/>
+      <Tunnel _id="Out1" inputs="value:pwf.s? t\3Af" uid="m_o1" uid_parent="cqt"/>
+      <Tunnel _id="Out2" inputs="value:m_ca.value" uid="m_o2" uid_parent="cqt"/>
+    </CaseFrame>
+    <CaseFrame label="No popup\3A capture the panel" selector="False" selectout="" uid="cqf" uid_parent="cq">
+      <Tunnel _id="In1" outputs="value:n_vi.value" uid="n_vi" uid_parent="cqf"/>
+      <Tunnel _id="In2" outputs="value:n_ca.value" uid="n_ca" uid_parent="cqf"/>
+      <Tunnel _id="In3" outputs="value:" uid="n_hw" uid_parent="cqf"/>
+      <Tunnel _id="In4" outputs="value:" uid="n_geo" uid_parent="cqf"/>
+      <Call inputs="VI:n_vi.value" outputs="pixmap:cp.pixmap,width:cp.width,height:cp.height,error out:" target="RemoteVI Capture Panel.vi" uid="cp" uid_parent="cqf"/>
+      <Node _name="Bundle By Name" fields="pixmap,width,height" inputs="pixmap:cp.pixmap,width:cp.width,height:cp.height,input cluster:n_ca.value" outputs="output cluster:nca.output cluster" uid="nca" uid_parent="cqf"/>
+      <Tunnel _id="Out1" inputs="value:cp.pixmap" uid="n_o1" uid_parent="cqf"/>
+      <Tunnel _id="Out2" inputs="value:nca.output cluster" uid="n_o2" uid_parent="cqf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cq_o1.value" uid="cq_o1" uid_parent="cq"/>
+    <Tunnel _id="Out2" outputs="value:cq_o2.value" uid="cq_o2" uid_parent="cq"/>
+  </Structure>
+  <Indicator _name="frame" conIdx="4" connection="recommended" description="The panel image to send." inputs="value:cq_o1.value" type="array.2{uint32}" uid="o_fr" uid_parent="root" value="[]"/>
+  <Indicator _name="cache out" conIdx="6" connection="recommended" description="The fresh capture without a popup\2C else cache unchanged. time is passed through." inputs="value:cq_o2.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="o_ca" uid_parent="root" value="[[],0,0,0]"/>
+</VI>

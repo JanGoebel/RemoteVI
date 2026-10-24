@@ -1,0 +1,17 @@
+<VI _name="RemoteVI Click State.vi" description="The state the server loop keeps after servicing the clients\3A d (dx\2C dy of popups out - the displacement a popup click used\2C for the next iteration)\3B last click out (now when a client posted a message that may open a popup in this iteration\2C else last click)\3B and no VI Server? - TRUE while a popup is open\2C a click is recent or happened in this iteration\3A the loop then makes no VI Server UI call (a popup that is still opening must not catch FP.Get Image in its modal loop). Pure.">
+  <Control _name="popups out" conIdx="0" connection="required" description="popups out of RemoteVI Service Clients.vi." outputs="value:pp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="pp" uid_parent="root" value="[[],0,0]"/>
+  <Control _name="clicked?" conIdx="5" connection="required" description="clicked? of RemoteVI Service Clients.vi." outputs="value:clk.value" type="bool" uid="clk" uid_parent="root" value="false"/>
+  <Control _name="now" conIdx="7" connection="required" description="Tick count (ms) of this iteration." outputs="value:now.value" type="uint32" uid="now" uid_parent="root" value="0"/>
+  <Control _name="last click" conIdx="9" connection="required" description="Tick count (ms) of the last click." outputs="value:lc.value" type="uint32" uid="lc" uid_parent="root" value="0"/>
+  <Control _name="recent click?" conIdx="1" connection="recommended" description="TRUE within 300 ms after last click." outputs="value:rec.value" type="bool" uid="rec" uid_parent="root" value="false"/>
+  <Control _name="popup open?" conIdx="2" connection="recommended" description="TRUE while a modal popup is open." outputs="value:po.value" type="bool" uid="po" uid_parent="root" value="false"/>
+  <Node _name="Unbundle By Name" fields="dx,dy" inputs="input cluster:pp.value" outputs="dx:dnu.dx,dy:dnu.dy" uid="dnu" uid_parent="root"/>
+  <Constant outputs="value:d0.value" type="cluster{int32.dx,int32.dy}" uid="d0" uid_parent="root" value="[0,0]"/>
+  <Node _name="Bundle By Name" fields="dx,dy" inputs="dx:dnu.dx,dy:dnu.dy,input cluster:d0.value" outputs="output cluster:dnext.output cluster" uid="dnext" uid_parent="root"/>
+  <Node _name="Select" inputs="t:now.value,s:clk.value,f:lc.value" outputs="s? t\3Af:nlc.s? t\3Af" uid="nlc" uid_parent="root"/>
+  <Node _name="Or" inputs="x:rec.value,y:clk.value" outputs="x .or. y?:hold.x .or. y?" uid="hold" uid_parent="root"/>
+  <Node _name="Or" inputs="x:po.value,y:hold.x .or. y?" outputs="x .or. y?:novis.x .or. y?" uid="novis" uid_parent="root"/>
+  <Indicator _name="d" conIdx="4" connection="recommended" description="The displacement for the next iteration." inputs="value:dnext.output cluster" type="cluster{int32.dx,int32.dy}" uid="o_d" uid_parent="root" value="[0,0]"/>
+  <Indicator _name="last click out" conIdx="6" connection="recommended" description="now after a click\2C else last click." inputs="value:nlc.s? t\3Af" type="uint32" uid="o_lc" uid_parent="root" value="0"/>
+  <Indicator _name="no VI Server?" conIdx="8" connection="recommended" description="TRUE while no VI Server UI call may be made." inputs="value:novis.x .or. y?" type="bool" uid="o_nv" uid_parent="root" value="false"/>
+</VI>

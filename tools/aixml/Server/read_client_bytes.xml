@@ -1,0 +1,22 @@
+<VI _name="RemoteVI Read Client Bytes.vi" description="Reads whatever bytes a WebSocket client has sent WITHOUT waiting (TCP Read\2C immediate mode\2C timeout 0\2C 64 KiB at most) and appends them to rx buffer. gone? is TRUE when the read reported any error other than 56 (timeout - nothing waiting)\2C i.e. the peer closed or reset the connection. connection is the TCP connection refnum type-cast to U32.">
+  <Control _name="connection" conIdx="0" connection="required" description="The client's TCP connection refnum\2C type-cast to U32." outputs="value:cin.value" type="uint32" uid="cin" uid_parent="root" value="0"/>
+  <Control _name="rx buffer" conIdx="5" connection="recommended" description="Bytes received but not decoded yet." outputs="value:rx.value" type="string" uid="rx" uid_parent="root" value=""/>
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Node _name="Type Cast" inputs="x:cin.value,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
+  <Constant outputs="value:rdlen.value" type="int32" uid="rdlen" uid_parent="root" value="65536"/>
+  <Constant _name="do not wait" outputs="value:rdto.value" type="int32" uid="rdto" uid_parent="root" value="0"/>
+  <Constant outputs="value:imm.value" type="uint16{standard,buffered,CRLF,immediate}" uid="imm" uid_parent="root" value="3"/>
+  <Node _name="TCP Read" inputs="connection ID:conn.*(type *) &amp;x,bytes to read:rdlen.value,?parm9:rdto.value,?parm7:imm.value" outputs="data out:rd.data out,error out:rd.error out" uid="rd" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:rx.value,string:rd.data out" outputs="concatenated string:buf.concatenated string" uid="buf" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:rd.error out" outputs="status:re.status,code:re.code" uid="re" uid_parent="root"/>
+  <Constant _name="56 = nothing waiting" outputs="value:c56.value" type="int32" uid="c56" uid_parent="root" value="56"/>
+  <Node _name="Not Equal?" inputs="x:re.code,y:c56.value" outputs="x != y?:n56.x != y?" uid="n56" uid_parent="root"/>
+  <Node _name="And" inputs="x:re.status,y:n56.x != y?" outputs="x .and. y?:gone.x .and. y?" uid="gone" uid_parent="root"/>
+  <Indicator _name="rx buffer out" conIdx="4" connection="recommended" description="rx buffer with the bytes read now appended." inputs="value:buf.concatenated string" type="string" uid="o_buf" uid_parent="root" value=""/>
+  <Indicator _name="gone?" conIdx="6" connection="recommended" description="TRUE when the peer closed or reset the connection." inputs="value:gone.x .and. y?" type="bool" uid="o_gone" uid_parent="root" value="false"/>
+</VI>

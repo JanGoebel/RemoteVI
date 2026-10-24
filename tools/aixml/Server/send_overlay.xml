@@ -1,0 +1,99 @@
+<VI _name="RemoteVI Send Overlay.vi" description="The OVERLAY part of one server loop iteration (docs\5Cprotocol.md section 3.2). While a popup is open or one was (state.message not empty\2C to clear it)\2C at most every period ms and only while a client is connected\2C each popup is captured and PNG-encoded at its LOGICAL position = window position minus (panel origin + d)\2C NOT clipped to the panel\2C bottom-most first (RemoteVI Encode Popups.vi)\3B RemoteVI Overlay Encode.vi builds the message and it is written to every client (RemoteVI Write To Clients.vi\2C 500 ms) only when it differs from state.message - an empty OVERLAY when the last popup has closed. state holds the last message\2C the last frame (sent to a client that connects while a popup is open) - both reset to empty once no popup is open - and the tick count of the last check.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="overlay popups" conIdx="5" connection="required" description="Every popup but SysShadow\2C top-most first (RemoteVI Track Popups.vi)." outputs="value:ovp.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="ovp" uid_parent="root" value="[]"/>
+  <Control _name="geo" conIdx="7" connection="required" description="Panel origin and client-area origin in screen coordinates." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="d" conIdx="9" connection="recommended" description="The displacement by which the popups are moved." outputs="value:d.value" type="cluster{int32.dx,int32.dy}" uid="d" uid_parent="root" value="[0,0]"/>
+  <Control _name="state" conIdx="1" connection="required" description="message and frame of the last OVERLAY sent\2C time of the last check." outputs="value:st.value" type="cluster{string.message,string.frame,uint32.time}" uid="st" uid_parent="root" value="[,,0]"/>
+  <Control _name="period" conIdx="2" connection="required" description="Shortest time between OVERLAY checks in ms (1000 / fps)." outputs="value:per.value" type="double" uid="per" uid_parent="root" value="50"/>
+
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="message,frame,time" inputs="input cluster:st.value" outputs="message:su.message,frame:su.frame,time:su.time" uid="su" uid_parent="root"/>
+  <Node _name="String Length" inputs="string:su.message" outputs="length:ovl.length" uid="ovl" uid_parent="root"/>
+  <Node _name="Greater Than 0?" inputs="x:ovl.length" outputs="x &gt; 0?:ovhad.x &gt; 0?" uid="ovhad" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:ovp.value" outputs="empty?:ovnone.empty?" uid="ovnone" uid_parent="root"/>
+  <Node _name="Not" inputs="x:ovnone.empty?" outputs=".not. x?:ovpop..not. x?" uid="ovpop" uid_parent="root"/>
+  <Node _name="Or" inputs="x:ovpop..not. x?,y:ovhad.x &gt; 0?" outputs="x .or. y?:ovany.x .or. y?" uid="ovany" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.millisecond timer value,y:su.time" outputs="x-y:elo.x-y" uid="elo" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:elo.x-y,y:per.value" outputs="x &gt;= y?:ovtime.x &gt;= y?" uid="ovtime" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:cl.value" outputs="empty?:ovnoc.empty?" uid="ovnoc" uid_parent="root"/>
+  <Node _name="Not" inputs="x:ovnoc.empty?" outputs=".not. x?:ovcl..not. x?" uid="ovcl" uid_parent="root"/>
+  <Node _name="And" inputs="x:ovany.x .or. y?,y:ovtime.x &gt;= y?" outputs="x .and. y?:ov0.x .and. y?" uid="ov0" uid_parent="root"/>
+  <Node _name="And" inputs="x:ov0.x .and. y?,y:ovcl..not. x?" outputs="x .and. y?:ovdue.x .and. y?" uid="ovdue" uid_parent="root"/>
+
+  <Structure _name="Case Structure" selectin="ovdue.x .and. y?" uid="ov" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" uid="ov_i1" uid_parent="ov"/>
+    <Tunnel _id="In2" inputs="value:ovp.value" uid="ov_i2" uid_parent="ov"/>
+    <Tunnel _id="In3" inputs="value:geo.value" uid="ov_i3" uid_parent="ov"/>
+    <Tunnel _id="In4" inputs="value:su.message" uid="ov_i4" uid_parent="ov"/>
+    <Tunnel _id="In5" inputs="value:su.frame" uid="ov_i5" uid_parent="ov"/>
+    <Tunnel _id="In6" inputs="value:now.millisecond timer value" uid="ov_i6" uid_parent="ov"/>
+    <Tunnel _id="In7" inputs="value:st.value" uid="ov_i7" uid_parent="ov"/>
+    <Tunnel _id="In8" inputs="value:d.value" uid="ov_i8" uid_parent="ov"/>
+    <CaseFrame label="Popups open or just closed\3A OVERLAY if changed" selector="True" selectout="" uid="ovt" uid_parent="ov">
+      <Tunnel _id="In1" outputs="value:o_cl.value" uid="o_cl" uid_parent="ovt"/>
+      <Tunnel _id="In2" outputs="value:o_pops.value" uid="o_pops" uid_parent="ovt"/>
+      <Tunnel _id="In3" outputs="value:o_geo.value" uid="o_geo" uid_parent="ovt"/>
+      <Tunnel _id="In4" outputs="value:o_prev.value" uid="o_prev" uid_parent="ovt"/>
+      <Tunnel _id="In5" outputs="value:o_fprev.value" uid="o_fprev" uid_parent="ovt"/>
+      <Tunnel _id="In6" outputs="value:o_now.value" uid="o_now" uid_parent="ovt"/>
+      <Tunnel _id="In7" outputs="value:" uid="o_st" uid_parent="ovt"/>
+      <Tunnel _id="In8" outputs="value:o_d.value" uid="o_d" uid_parent="ovt"/>
+      <Node _name="Unbundle By Name" fields="dx,dy" inputs="input cluster:o_d.value" outputs="dx:odu.dx,dy:odu.dy" uid="odu" uid_parent="ovt"/>
+      <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:o_geo.value" outputs="panelX:og.panelX,panelY:og.panelY" uid="og" uid_parent="ovt"/>
+      <Node _name="Add" inputs="x:og.panelX,y:odu.dx" outputs="x+y:oox.x+y" uid="oox" uid_parent="ovt"/>
+      <Node _name="Add" inputs="x:og.panelY,y:odu.dy" outputs="x+y:ooy.x+y" uid="ooy" uid_parent="ovt"/>
+      <Call inputs="popups:o_pops.value,origin x:oox.x+y,origin y:ooy.x+y" outputs="overlay popups:ep.overlay popups" target="RemoteVI Encode Popups.vi" uid="ep" uid_parent="ovt"/>
+      <Call inputs="popups:ep.overlay popups" outputs="message:oenc.message" target="RemoteVI Overlay Encode.vi" uid="oenc" uid_parent="ovt"/>
+      <Node _name="Not Equal?" inputs="x:oenc.message,y:o_prev.value" outputs="x != y?:ochg.x != y?" uid="ochg" uid_parent="ovt"/>
+      <Structure _name="Case Structure" selectin="ochg.x != y?" uid="os" uid_parent="ovt">
+        <Tunnel _id="In1" inputs="value:o_cl.value" uid="os_i1" uid_parent="os"/>
+        <Tunnel _id="In2" inputs="value:oenc.message" uid="os_i2" uid_parent="os"/>
+        <Tunnel _id="In3" inputs="value:o_fprev.value" uid="os_i3" uid_parent="os"/>
+        <CaseFrame label="Changed\3A send to every client" selector="True" selectout="" uid="ost" uid_parent="os">
+          <Tunnel _id="In1" outputs="value:s1_cl.value" uid="s1_cl" uid_parent="ost"/>
+          <Tunnel _id="In2" outputs="value:s1_msg.value" uid="s1_msg" uid_parent="ost"/>
+          <Tunnel _id="In3" outputs="value:" uid="s1_fp" uid_parent="ost"/>
+          <Constant _name="binary" outputs="value:op2.value" type="uint8" uid="op2" uid_parent="ost" value="2"/>
+          <Call inputs="opcode:op2.value,payload:s1_msg.value" outputs="frame:ofr.frame" target="RemoteVI WS Encode Server Frame.vi" uid="ofr" uid_parent="ost"/>
+          <Constant outputs="value:oto.value" type="int32" uid="oto" uid_parent="ost" value="500"/>
+          <Call inputs="clients:s1_cl.value,data:ofr.frame,timeout ms:oto.value" outputs="clients out:wc.clients out" target="RemoteVI Write To Clients.vi" uid="wc" uid_parent="ost"/>
+          <Tunnel _id="Out1" inputs="value:wc.clients out" uid="st_o1" uid_parent="ost"/>
+          <Tunnel _id="Out2" inputs="value:ofr.frame" uid="st_o2" uid_parent="ost"/>
+        </CaseFrame>
+        <CaseFrame selector="False" selectout="" uid="osf" uid_parent="os">
+          <Tunnel _id="In1" outputs="value:s0_cl.value" uid="s0_cl" uid_parent="osf"/>
+          <Tunnel _id="In2" outputs="value:" uid="s0_msg" uid_parent="osf"/>
+          <Tunnel _id="In3" outputs="value:s0_fp.value" uid="s0_fp" uid_parent="osf"/>
+          <Tunnel _id="Out1" inputs="value:s0_cl.value" uid="sf_o1" uid_parent="osf"/>
+          <Tunnel _id="Out2" inputs="value:s0_fp.value" uid="sf_o2" uid_parent="osf"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:os_o1.value" uid="os_o1" uid_parent="os"/>
+        <Tunnel _id="Out2" outputs="value:os_o2.value" uid="os_o2" uid_parent="os"/>
+      </Structure>
+      <Node _name="Empty Array?" inputs="array:o_pops.value" outputs="empty?:onone.empty?" uid="onone" uid_parent="ovt"/>
+      <Constant outputs="value:oes.value" type="string" uid="oes" uid_parent="ovt" value=""/>
+      <Node _name="Select" inputs="t:oes.value,s:onone.empty?,f:oenc.message" outputs="s? t\3Af:okeep.s? t\3Af" uid="okeep" uid_parent="ovt"/>
+      <Node _name="Select" inputs="t:oes.value,s:onone.empty?,f:os_o2.value" outputs="s? t\3Af:ofkeep.s? t\3Af" uid="ofkeep" uid_parent="ovt"/>
+      <Constant outputs="value:st0.value" type="cluster{string.message,string.frame,uint32.time}" uid="st0" uid_parent="ovt" value="[,,0]"/>
+      <Node _name="Bundle By Name" fields="message,frame,time" inputs="message:okeep.s? t\3Af,frame:ofkeep.s? t\3Af,time:o_now.value,input cluster:st0.value" outputs="output cluster:nst.output cluster" uid="nst" uid_parent="ovt"/>
+      <Tunnel _id="Out1" inputs="value:os_o1.value" uid="ot_o1" uid_parent="ovt"/>
+      <Tunnel _id="Out2" inputs="value:nst.output cluster" uid="ot_o2" uid_parent="ovt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ovf" uid_parent="ov">
+      <Tunnel _id="In1" outputs="value:p_cl.value" uid="p_cl" uid_parent="ovf"/>
+      <Tunnel _id="In2" outputs="value:" uid="p_pops" uid_parent="ovf"/>
+      <Tunnel _id="In3" outputs="value:" uid="p_geo" uid_parent="ovf"/>
+      <Tunnel _id="In4" outputs="value:" uid="p_prev" uid_parent="ovf"/>
+      <Tunnel _id="In5" outputs="value:" uid="p_fprev" uid_parent="ovf"/>
+      <Tunnel _id="In6" outputs="value:" uid="p_now" uid_parent="ovf"/>
+      <Tunnel _id="In7" outputs="value:p_st.value" uid="p_st" uid_parent="ovf"/>
+      <Tunnel _id="In8" outputs="value:" uid="p_d" uid_parent="ovf"/>
+      <Tunnel _id="Out1" inputs="value:p_cl.value" uid="pf_o1" uid_parent="ovf"/>
+      <Tunnel _id="Out2" inputs="value:p_st.value" uid="pf_o2" uid_parent="ovf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ov_o1.value" uid="ov_o1" uid_parent="ov"/>
+    <Tunnel _id="Out2" outputs="value:ov_o2.value" uid="ov_o2" uid_parent="ov"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="clients\3B closed is set where writing the OVERLAY failed." inputs="value:ov_o1.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+  <Indicator _name="state out" conIdx="6" connection="recommended" description="state after this call." inputs="value:ov_o2.value" type="cluster{string.message,string.frame,uint32.time}" uid="o_st" uid_parent="root" value="[,,0]"/>
+</VI>

@@ -1,7 +1,7 @@
-<VI _name="RemoteVI Start.vi" description="Publishes the front panel of VI at http\3A//&lt;this computer&gt;\3A&lt;port&gt;/ and returns immediately. Leave VI unwired to publish the CALLER (the VI one level up in the call chain\2C opened by name). Launches ..\5CServer\5CRemoteVI Server Loop.vi (found next to this VI's own folder) asynchronously through VI Server\3A Open VI Reference\2C Set Control Value [Variant] for VI\2C port\2C fps and the stop notifier name RemoteVI\3A&lt;port&gt;\2C then Run VI without waiting and with Auto Dispose Ref. The server stops on RemoteVI Stop.vi with the same port\2C or by itself once VI is no longer running. One server per LabVIEW application instance (the Server Loop is not reentrant)\3A when the Server Loop is already running (Execution\3AState) nothing is launched and error 5001 is returned. Otherwise Start waits until the Server Loop has created its TCP listener\3A the loop sends the listener's error cluster on the notifier RemoteVI\3A&lt;port&gt;\3Astarted\2C and Start returns that error (e.g. 60 when the port is in use - the loop has then already ended)\2C or 5002 when nothing arrives within 2 s. So error out is clean only when the panel is being served.">
+<VI _name="RemoteVI Start.vi" description="Publishes the front panel of VI at http\3A//&lt;this computer&gt;\3A&lt;port&gt;/ and returns immediately. Leave VI unwired to publish the CALLER (the VI one level up in the call chain\2C opened by name). Opens ..\5CServer\5CRemoteVI Server Loop.vi (RemoteVI Open Server Loop.vi) and launches it asynchronously through VI Server (RemoteVI Launch Server Loop.vi)\3A Set Control Value [Variant] for VI\2C port\2C fps and the stop notifier name RemoteVI\3A&lt;port&gt;\2C then Run VI without waiting and with Auto Dispose Ref. The server stops on RemoteVI Stop.vi with the same port\2C or by itself once VI is no longer running. One server per LabVIEW application instance (the Server Loop is not reentrant)\3A when the Server Loop is already running (Execution\3AState) nothing is launched and error 5001 is returned. Otherwise Start waits until the Server Loop has created its TCP listener\3A the loop sends the listener's error cluster on the notifier RemoteVI\3A&lt;port&gt;\3Astarted\2C and Start returns that error (e.g. 60 when the port is in use - the loop has then already ended)\2C or 5002 when nothing arrives within 2 s. So error out is clean only when the panel is being served.">
   <FreeLabel comment="Launch the server loop and return" uid="lbl" uid_parent="root"/>
   <Control _name="VI" conIdx="0" connection="recommended" description="The VI to publish. Unwired (not a valid refnum)\3A the VI that calls RemoteVI Start.vi." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
-  <Control _name="port" conIdx="5" connection="recommended" description="TCP port\2C all interfaces." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8080"/>
+  <Control _name="port" conIdx="5" connection="recommended" description="TCP port\2C all interfaces." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
   <Control _name="fps" conIdx="7" connection="recommended" description="Most frames per second sent to a client." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is started on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
@@ -29,26 +29,14 @@
     <Tunnel _id="Out2" outputs="value:e1.value" uid="e1" uid_parent="cs"/>
   </Structure>
 
-  <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):e1.value" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="root"/>
-  <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:api.stripped path" uid="api" uid_parent="root"/>
-  <Node _name="Strip Path" inputs="path:api.stripped path" outputs="stripped path:src.stripped path" uid="src" uid_parent="root"/>
-  <Constant outputs="value:sub.value" type="string" uid="sub" uid_parent="root" value="Server"/>
-  <Constant outputs="value:svi.value" type="string" uid="svi" uid_parent="root" value="RemoteVI Server Loop.vi"/>
-  <Node _name="Build Path" inputs="base path:src.stripped path,name or relative path:sub.value" outputs="appended path:sdir.appended path" uid="sdir" uid_parent="root"/>
-  <Node _name="Build Path" inputs="base path:sdir.appended path,name or relative path:svi.value" outputs="appended path:spath.appended path" uid="spath" uid_parent="root"/>
-  <Node _name="Open VI Reference" inputs="vi path:spath.appended path,error in (no error):me.error out" outputs="vi reference:os.vi reference,error out:os.error out" uid="os" uid_parent="root"/>
-
+  <Call inputs="error in:e1.value" outputs="Server Loop:osl.Server Loop,running?:osl.running?,error out:osl.error out" target="RemoteVI Open Server Loop.vi" uid="osl" uid_parent="root"/>
   <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>
   <Node _name="Number To Decimal String" inputs="number:port.value" outputs="decimal integer string:ps.decimal integer string" uid="ps" uid_parent="root"/>
   <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
 
-  <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:os.vi reference,error in (no error):os.error out" outputs="reference out:es.reference out,error out:es.error out,Execution\3AState:es.Execution\3AState" type="{LV.VI}" uid="es" uid_parent="root"/>
-  <Node _name="To Long Integer" inputs="number:es.Execution\3AState" outputs="32bit integer:est.32bit integer" uid="est" uid_parent="root"/>
-  <Constant _name="2 = running" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
-  <Node _name="Greater Or Equal?" inputs="x:est.32bit integer,y:k2.value" outputs="x &gt;= y?:busy.x &gt;= y?" uid="busy" uid_parent="root"/>
-  <Structure _name="Case Structure" selectin="busy.x &gt;= y?" uid="cl" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:es.reference out" uid="cl_i1" uid_parent="cl"/>
-    <Tunnel _id="In2" inputs="value:es.error out" uid="cl_i2" uid_parent="cl"/>
+  <Structure _name="Case Structure" selectin="osl.running?" uid="cl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:osl.Server Loop" uid="cl_i1" uid_parent="cl"/>
+    <Tunnel _id="In2" inputs="value:osl.error out" uid="cl_i2" uid_parent="cl"/>
     <Tunnel _id="In3" inputs="value:target.value" uid="cl_i3" uid_parent="cl"/>
     <Tunnel _id="In4" inputs="value:port.value" uid="cl_i4" uid_parent="cl"/>
     <Tunnel _id="In5" inputs="value:fps.value" uid="cl_i5" uid_parent="cl"/>
@@ -73,34 +61,8 @@
       <Tunnel _id="In4" outputs="value:l_port.value" uid="l_port" uid_parent="clf"/>
       <Tunnel _id="In5" outputs="value:l_fps.value" uid="l_fps" uid_parent="clf"/>
       <Tunnel _id="In6" outputs="value:l_nn.value" uid="l_nn" uid_parent="clf"/>
-      <Constant outputs="value:nVI.value" type="string" uid="nVI" uid_parent="clf" value="VI"/>
-      <Constant outputs="value:nport.value" type="string" uid="nport" uid_parent="clf" value="port"/>
-      <Constant outputs="value:nfps.value" type="string" uid="nfps" uid_parent="clf" value="fps"/>
-      <Constant outputs="value:nname.value" type="string" uid="nname" uid_parent="clf" value="stop notifier name"/>
-      <Node _name="To Variant" inputs="anything:l_vi.value" outputs="Variant:v1.Variant" uid="v1" uid_parent="clf"/>
-      <Node _name="To Variant" inputs="anything:l_port.value" outputs="Variant:v2.Variant" uid="v2" uid_parent="clf"/>
-      <Node _name="To Variant" inputs="anything:l_fps.value" outputs="Variant:v3.Variant" uid="v3" uid_parent="clf"/>
-      <Node _name="To Variant" inputs="anything:l_nn.value" outputs="Variant:v4.Variant" uid="v4" uid_parent="clf"/>
-      <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:l_ref.value,error in (no error):l_ei.value,Control Name:nVI.value,Value:v1.Variant" outputs="reference out:s1.reference out,error out:s1.error out" uid="s1" uid_parent="clf"/>
-      <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s1.reference out,error in (no error):s1.error out,Control Name:nport.value,Value:v2.Variant" outputs="reference out:s2.reference out,error out:s2.error out" uid="s2" uid_parent="clf"/>
-      <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s2.reference out,error in (no error):s2.error out,Control Name:nfps.value,Value:v3.Variant" outputs="reference out:s3.reference out,error out:s3.error out" uid="s3" uid_parent="clf"/>
-      <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s3.reference out,error in (no error):s3.error out,Control Name:nname.value,Value:v4.Variant" outputs="reference out:s4.reference out,error out:s4.error out" uid="s4" uid_parent="clf"/>
-      <Constant outputs="value:sfx.value" type="string" uid="sfx" uid_parent="clf" value="\3Astarted"/>
-      <Node _name="Concatenate Strings" inputs="string:l_nn.value,string:sfx.value" outputs="concatenated string:snn.concatenated string" uid="snn" uid_parent="clf"/>
-      <Constant _name="listener result" outputs="value:ety.value" type="cluster{bool.status,int32.code,string.source}" uid="ety" uid_parent="clf" value="[false,0,]"/>
-      <Node _name="Obtain Notifier" inputs="name (unnamed):snn.concatenated string,notification data type:ety.value,error in (no error):s4.error out" outputs="notifier out:sno.notifier out,error out:sno.error out" uid="sno" uid_parent="clf"/>
-      <Constant outputs="value:fls.value" type="bool" uid="fls" uid_parent="clf" value="false"/>
-      <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="clf" value="true"/>
-      <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:s4.reference out,error in (no error):sno.error out,Wait until done:fls.value,Auto Dispose Ref:tru.value" outputs="reference out:,error out:run.error out" uid="run" uid_parent="clf"/>
-      <Constant _name="2 s to start listening" outputs="value:k2000.value" type="int32" uid="k2000" uid_parent="clf" value="2000"/>
-      <Node _name="Wait on Notification" inputs="notifier:sno.notifier out,ignore previous (F):,timeout in ms (-1):k2000.value,error in (no error):run.error out" outputs="notifier out:,notification:won.notification,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="clf"/>
-      <Constant _name="did not start" outputs="value:e5002.value" type="cluster{bool.status,int32.code,string.source}" uid="e5002" uid_parent="clf" value="[true,5002,]"/>
-      <Constant _name="message" outputs="value:m5002.value" type="string" uid="m5002" uid_parent="clf" value="RemoteVI Start.vi\0A&lt;APPEND&gt;\0ARemoteVI Server Loop.vi did not report a listener within 2 s."/>
-      <Node _name="Bundle By Name" fields="source" inputs="source:m5002.value,input cluster:e5002.value" outputs="output cluster:b5002.output cluster" uid="b5002" uid_parent="clf"/>
-      <Node _name="Select" inputs="t:b5002.output cluster,s:won.timed out?,f:won.notification" outputs="s? t\3Af:lres.s? t\3Af" uid="lres" uid_parent="clf"/>
-      <Node _name="Merge Errors" inputs="error in:won.error out,error in:lres.s? t\3Af" outputs="error out:lme.error out" uid="lme" uid_parent="clf"/>
-      <Node _name="Release Notifier" inputs="notifier:sno.notifier out,force destroy? (F):,error in (no error):lme.error out" outputs="notifier name:,last notification:,error out:rls.error out" uid="rls" uid_parent="clf"/>
-      <Tunnel _id="Out1" inputs="value:rls.error out" uid="l_o1" uid_parent="clf"/>
+      <Call inputs="Server Loop:l_ref.value,VI:l_vi.value,port:l_port.value,fps:l_fps.value,stop notifier name:l_nn.value,error in:l_ei.value" outputs="error out:lsl.error out" target="RemoteVI Launch Server Loop.vi" uid="lsl" uid_parent="clf"/>
+      <Tunnel _id="Out1" inputs="value:lsl.error out" uid="l_o1" uid_parent="clf"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:cl_o1.value" uid="cl_o1" uid_parent="cl"/>
   </Structure>

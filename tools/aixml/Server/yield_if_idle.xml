@@ -1,0 +1,12 @@
+<VI _name="RemoteVI Yield If Idle.vi" description="Waits 1 ms unless the server loop accepted a connection or made a frame in this iteration (busy? TRUE)\3A an idle loop yields the CPU\2C a busy one goes on at once.">
+  <Control _name="accepted?" conIdx="0" connection="required" description="TRUE when a connection was accepted in this iteration." outputs="value:acc.value" type="bool" uid="acc" uid_parent="root" value="false"/>
+  <Control _name="captured?" conIdx="5" connection="required" description="TRUE when a frame was made in this iteration." outputs="value:cap.value" type="bool" uid="cap" uid_parent="root" value="false"/>
+  <Node _name="Or" inputs="x:acc.value,y:cap.value" outputs="x .or. y?:busy.x .or. y?" uid="busy" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="busy.x .or. y?" uid="cz" uid_parent="root">
+    <CaseFrame selector="True" selectout="" uid="czt" uid_parent="cz"/>
+    <CaseFrame label="Idle\3A yield 1 ms" selector="False" selectout="" uid="czf" uid_parent="cz">
+      <Constant outputs="value:ms1.value" type="int32" uid="ms1" uid_parent="czf" value="1"/>
+      <Node _name="Wait (ms)" inputs="milliseconds to wait:ms1.value" outputs="" uid="wz" uid_parent="czf"/>
+    </CaseFrame>
+  </Structure>
+</VI>

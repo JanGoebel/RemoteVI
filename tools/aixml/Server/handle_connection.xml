@@ -1,8 +1,9 @@
-<VI _name="RemoteVI Handle Connection.vi" description="Serves ONE HTTP request on a freshly accepted TCP connection (docs\5Cprotocol.md section 1). The request head is read with TCP Read in immediate mode (1 s per read\2C 16 KiB at most) until the blank line and parsed with IG HTTP Utils Parse From String. GET / and /index.html answer 200 with html and the security headers\3B /ws answers 426 without a WebSocket upgrade\2C 403 when an Origin header names another host than Host\2C 503 when max clients reached? is TRUE\2C and otherwise the IG WebSocket upgrade response (101) - then websocket? is TRUE and the connection stays open for the caller. Any other path answers 404. Every non-upgrade answer closes the connection\3B a request that times out or does not parse is closed without an answer. connection is the TCP connection refnum type-cast to U32 (AIXML has no TCP refnum control type).">
+<VI _name="RemoteVI Handle Connection.vi" description="Serves ONE HTTP request whose head has been read completely (docs\5Cprotocol.md section 1). The head is read beforehand without blocking by RemoteVI Read Request Head.vi\2C so this VI never waits for the peer. request head must contain the blank line\3B it is parsed with IG HTTP Utils Parse From String. The status comes from RemoteVI Route Request.vi (with RemoteVI Cross Origin.vi)\3A GET / and /index.html answer 200 with html and the security headers\3B /ws answers 426 without a WebSocket upgrade\2C 403 when an Origin header names another host than Host\2C 503 when max clients reached? is TRUE\2C and otherwise the IG WebSocket upgrade response (101) - then websocket? is TRUE and the connection stays open for the caller. Any other path answers 404. Every non-upgrade answer (RemoteVI Send Static Response.vi) closes the connection\3B a head without the blank line (more than 16 KiB) or one that does not parse is closed without an answer. connection is the TCP connection refnum type-cast to U32 (AIXML has no TCP refnum control type).">
   <FreeLabel comment="One request per connection" uid="lbl" uid_parent="root"/>
   <Control _name="connection" conIdx="0" connection="required" description="The accepted TCP connection refnum\2C type-cast to U32." outputs="value:cin.value" type="uint32" uid="cin" uid_parent="root" value="0"/>
   <Control _name="html" conIdx="5" connection="required" description="The page served for / and /index.html (RemoteVI Index HTML.vi)." outputs="value:html.value" type="string" uid="html" uid_parent="root" value=""/>
   <Control _name="max clients reached?" conIdx="7" connection="recommended" description="TRUE answers a WebSocket upgrade with 503." outputs="value:maxr.value" type="bool" uid="maxr" uid_parent="root" value="false"/>
+  <Control _name="request head" conIdx="9" connection="required" description="The request head as read by RemoteVI Read Request Head.vi." outputs="value:head.value" type="string" uid="head" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
   <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
@@ -13,103 +14,53 @@
   <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
   <Node _name="Type Cast" inputs="x:cin.value,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
 
-  <Constant outputs="value:emptys.value" type="string" uid="emptys" uid_parent="root" value=""/>
-  <Constant outputs="value:rdlen.value" type="int32" uid="rdlen" uid_parent="root" value="4096"/>
-  <Constant outputs="value:rdto.value" type="int32" uid="rdto" uid_parent="root" value="1000"/>
-  <Constant outputs="value:imm.value" type="uint16{standard,buffered,CRLF,immediate}" uid="imm" uid_parent="root" value="3"/>
   <Constant outputs="value:crlf2.value" type="string" uid="crlf2" uid_parent="root" value="\0D\0A\0D\0A"/>
-  <Constant outputs="value:maxhead.value" type="int32" uid="maxhead" uid_parent="root" value="16384"/>
+  <Node _name="Search/Split String" inputs="string:head.value,search string/char (-):crlf2.value" outputs="offset of match:ss.offset of match" uid="ss" uid_parent="root"/>
   <Constant outputs="value:zero.value" type="int32" uid="zero" uid_parent="root" value="0"/>
-  <Structure _name="While Loop" count="" label="Read the request head" uid="rl" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:conn.*(type *) &amp;x" outputs="value:rl_c.value" uid="rl_c" uid_parent="rl"/>
-    <Tunnel _id="In2" inputs="value:rdlen.value" outputs="value:rl_n.value" uid="rl_n" uid_parent="rl"/>
-    <Tunnel _id="In3" inputs="value:rdto.value" outputs="value:rl_t.value" uid="rl_t" uid_parent="rl"/>
-    <Tunnel _id="In4" inputs="value:imm.value" outputs="value:rl_m.value" uid="rl_m" uid_parent="rl"/>
-    <Tunnel _id="In5" inputs="value:crlf2.value" outputs="value:rl_s.value" uid="rl_s" uid_parent="rl"/>
-    <Tunnel _id="In6" inputs="value:maxhead.value" outputs="value:rl_x.value" uid="rl_x" uid_parent="rl"/>
-    <Tunnel _id="In7" inputs="value:zero.value" outputs="value:rl_z.value" uid="rl_z" uid_parent="rl"/>
-    <ShiftReg uid="srb" uid_parent="rl">
-      <Left inputs="value:emptys.value" outputs="value:srbl.value" uid="srbl" uid_parent="srb"/>
-      <Right inputs="value:cat.concatenated string" outputs="value:head.value" uid="srbr" uid_parent="srb"/>
-    </ShiftReg>
-    <Node _name="TCP Read" inputs="connection ID:rl_c.value,bytes to read:rl_n.value,?parm9:rl_t.value,?parm7:rl_m.value" outputs="data out:rd.data out,error out:rd.error out" uid="rd" uid_parent="rl"/>
-    <Node _name="Concatenate Strings" inputs="string:srbl.value,string:rd.data out" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="rl"/>
-    <Node _name="Search/Split String" inputs="string:cat.concatenated string,search string/char (-):rl_s.value" outputs="offset of match:ss.offset of match" uid="ss" uid_parent="rl"/>
-    <Node _name="Greater Or Equal?" inputs="x:ss.offset of match,y:rl_z.value" outputs="x &gt;= y?:fnd.x &gt;= y?" uid="fnd" uid_parent="rl"/>
-    <Node _name="String Length" inputs="string:cat.concatenated string" outputs="length:hl.length" uid="hl" uid_parent="rl"/>
-    <Node _name="Greater?" inputs="x:hl.length,y:rl_x.value" outputs="x &gt; y?:big.x &gt; y?" uid="big" uid_parent="rl"/>
-    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:rd.error out" outputs="status:rst.status" uid="rst" uid_parent="rl"/>
-    <Node _name="Or" inputs="x:fnd.x &gt;= y?,y:big.x &gt; y?" outputs="x .or. y?:o1.x .or. y?" uid="o1" uid_parent="rl"/>
-    <Node _name="Or" inputs="x:o1.x .or. y?,y:rst.status" outputs="x .or. y?:stop.x .or. y?" uid="stop" uid_parent="rl"/>
-    <Tunnel _id="Out1" inputs="value:fnd.x &gt;= y?" outputs="value:found.value" uid="found" uid_parent="rl"/>
-    <Condition inputs="value:stop.x .or. y?" uid="rlc" uid_parent="rl" value="stop"/>
-  </Structure>
-
+  <Node _name="Greater Or Equal?" inputs="x:ss.offset of match,y:zero.value" outputs="x &gt;= y?:found.x &gt;= y?" uid="found" uid_parent="root"/>
   <Call inputs="Request String:head.value" outputs="error out:pr.error out,Request out:pr.Request out" target="HTTP Utils.lvlib\3ARequest.lvclass\3AParse From String.vi" uid="pr" uid_parent="root"/>
   <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pr.error out" outputs="status:prs.status" uid="prs" uid_parent="root"/>
   <Node _name="Not" inputs="x:prs.status" outputs=".not. x?:prok..not. x?" uid="prok" uid_parent="root"/>
-  <Node _name="And" inputs="x:found.value,y:prok..not. x?" outputs="x .and. y?:ok.x .and. y?" uid="ok" uid_parent="root"/>
+  <Node _name="And" inputs="x:found.x &gt;= y?,y:prok..not. x?" outputs="x .and. y?:ok.x .and. y?" uid="ok" uid_parent="root"/>
 
   <Structure _name="Case Structure" selectin="ok.x .and. y?" uid="cs" uid_parent="root">
     <Tunnel _id="In1" inputs="value:pr.Request out" uid="cs_i1" uid_parent="cs"/>
     <Tunnel _id="In2" inputs="value:conn.*(type *) &amp;x" uid="cs_i2" uid_parent="cs"/>
     <Tunnel _id="In3" inputs="value:html.value" uid="cs_i3" uid_parent="cs"/>
     <Tunnel _id="In4" inputs="value:maxr.value" uid="cs_i4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:cin.value" uid="cs_i5" uid_parent="cs"/>
     <CaseFrame label="A request\3A route it" selector="True" selectout="" uid="cft" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_req.value" uid="t_req" uid_parent="cft"/>
       <Tunnel _id="In2" outputs="value:t_conn.value" uid="t_conn" uid_parent="cft"/>
       <Tunnel _id="In3" outputs="value:t_html.value" uid="t_html" uid_parent="cft"/>
       <Tunnel _id="In4" outputs="value:t_max.value" uid="t_max" uid_parent="cft"/>
+      <Tunnel _id="In5" outputs="value:t_cu.value" uid="t_cu" uid_parent="cft"/>
       <Call inputs="Request in:t_req.value" outputs="Request out:gu.Request out,Target URI:gu.Target URI" target="HTTP Utils.lvlib\3ARequest.lvclass\3AGet Target URI.vi" uid="gu" uid_parent="cft"/>
       <Call inputs="URI in:gu.Target URI" outputs="Path:gp.Path" target="Stream.lvlib\3AURI.lvclass\3AGet Path.vi" uid="gp" uid_parent="cft"/>
-      <Constant outputs="value:paths.value" type="array{string}" uid="paths" uid_parent="cft" value="[/,/index.html,/ws]"/>
-      <Node _name="Search 1D Array" inputs="1D array:paths.value,element:gp.Path" outputs="index of element:sa.index of element" uid="sa" uid_parent="cft"/>
-      <Node _name="Increment" inputs="x:sa.index of element" outputs="x+1:inc.x+1" uid="inc" uid_parent="cft"/>
-      <Constant outputs="value:routes.value" type="array{int32}" uid="routes" uid_parent="cft" value="[0,1,1,2]"/>
-      <Node _name="Index Array" inputs="array:routes.value,index:inc.x+1" outputs="element:route.element" uid="route" uid_parent="cft"/>
-      <Constant outputs="value:r1.value" type="int32" uid="r1" uid_parent="cft" value="1"/>
-      <Constant outputs="value:r2.value" type="int32" uid="r2" uid_parent="cft" value="2"/>
-      <Node _name="Equal?" inputs="x:route.element,y:r1.value" outputs="x = y?:isPage.x = y?" uid="isPage" uid_parent="cft"/>
-      <Node _name="Equal?" inputs="x:route.element,y:r2.value" outputs="x = y?:isWs.x = y?" uid="isWs" uid_parent="cft"/>
-
       <Call inputs="Request in:gu.Request out" outputs="Upgrade Request?:up.Upgrade Request?" target="Stream-Websocket.lvlib\3ACheck is Upgrade Request.vi" uid="up" uid_parent="cft"/>
       <Constant outputs="value:hOrigin.value" type="string" uid="hOrigin" uid_parent="cft" value="Origin"/>
       <Constant outputs="value:hHost.value" type="string" uid="hHost" uid_parent="cft" value="Host"/>
       <Call inputs="Request in:gu.Request out,Header:hOrigin.value" outputs="Exists:ho.Exists,Value:ho.Value" target="HTTP Utils.lvlib\3ARequest.lvclass\3AHeader Value.vi" uid="ho" uid_parent="cft"/>
       <Call inputs="Request in:gu.Request out,Header:hHost.value" outputs="Value:hh.Value" target="HTTP Utils.lvlib\3ARequest.lvclass\3AHeader Value.vi" uid="hh" uid_parent="cft"/>
-      <Constant outputs="value:sep.value" type="string" uid="sep" uid_parent="cft" value="\3A//"/>
-      <Node _name="Search/Split String" inputs="string:ho.Value,search string/char (-):sep.value" outputs="match + rest of string:ms.match + rest of string" uid="ms" uid_parent="cft"/>
-      <Constant outputs="value:three.value" type="int32" uid="three" uid_parent="cft" value="3"/>
-      <Node _name="String Subset" inputs="string:ms.match + rest of string,offset (0):three.value" outputs="substring:oh.substring" uid="oh" uid_parent="cft"/>
-      <Node _name="Not Equal?" inputs="x:oh.substring,y:hh.Value" outputs="x != y?:diff.x != y?" uid="diff" uid_parent="cft"/>
-      <Node _name="And" inputs="x:ho.Exists,y:diff.x != y?" outputs="x .and. y?:forb.x .and. y?" uid="forb" uid_parent="cft"/>
-      <Node _name="Not" inputs="x:up.Upgrade Request?" outputs=".not. x?:noup..not. x?" uid="noup" uid_parent="cft"/>
-
+      <Call inputs="origin exists?:ho.Exists,origin:ho.Value,host:hh.Value" outputs="cross origin?:xo.cross origin?" target="RemoteVI Cross Origin.vi" uid="xo" uid_parent="cft"/>
+      <Call inputs="path:gp.Path,upgrade request?:up.Upgrade Request?,cross origin?:xo.cross origin?,max clients reached?:t_max.value" outputs="status:rr.status,page?:rr.page?" target="RemoteVI Route Request.vi" uid="rr" uid_parent="cft"/>
       <Constant outputs="value:s101.value" type="uint16" uid="s101" uid_parent="cft" value="101"/>
-      <Constant outputs="value:s200.value" type="uint16" uid="s200" uid_parent="cft" value="200"/>
-      <Constant outputs="value:s403.value" type="uint16" uid="s403" uid_parent="cft" value="403"/>
-      <Constant outputs="value:s404.value" type="uint16" uid="s404" uid_parent="cft" value="404"/>
-      <Constant outputs="value:s426.value" type="uint16" uid="s426" uid_parent="cft" value="426"/>
-      <Constant outputs="value:s503.value" type="uint16" uid="s503" uid_parent="cft" value="503"/>
-      <Node _name="Select" inputs="t:s503.value,s:t_max.value,f:s101.value" outputs="s? t\3Af:w1.s? t\3Af" uid="w1" uid_parent="cft"/>
-      <Node _name="Select" inputs="t:s403.value,s:forb.x .and. y?,f:w1.s? t\3Af" outputs="s? t\3Af:w2.s? t\3Af" uid="w2" uid_parent="cft"/>
-      <Node _name="Select" inputs="t:s426.value,s:noup..not. x?,f:w2.s? t\3Af" outputs="s? t\3Af:w3.s? t\3Af" uid="w3" uid_parent="cft"/>
-      <Node _name="Select" inputs="t:s200.value,s:isPage.x = y?,f:s404.value" outputs="s? t\3Af:p1.s? t\3Af" uid="p1" uid_parent="cft"/>
-      <Node _name="Select" inputs="t:w3.s? t\3Af,s:isWs.x = y?,f:p1.s? t\3Af" outputs="s? t\3Af:status.s? t\3Af" uid="status" uid_parent="cft"/>
-      <Node _name="Equal?" inputs="x:status.s? t\3Af,y:s101.value" outputs="x = y?:doup.x = y?" uid="doup" uid_parent="cft"/>
+      <Node _name="Equal?" inputs="x:rr.status,y:s101.value" outputs="x = y?:doup.x = y?" uid="doup" uid_parent="cft"/>
 
       <Structure _name="Case Structure" selectin="doup.x = y?" uid="cu" uid_parent="cft">
         <Tunnel _id="In1" inputs="value:gu.Request out" uid="cu_i1" uid_parent="cu"/>
         <Tunnel _id="In2" inputs="value:t_conn.value" uid="cu_i2" uid_parent="cu"/>
-        <Tunnel _id="In3" inputs="value:status.s? t\3Af" uid="cu_i3" uid_parent="cu"/>
-        <Tunnel _id="In4" inputs="value:isPage.x = y?" uid="cu_i4" uid_parent="cu"/>
+        <Tunnel _id="In3" inputs="value:rr.status" uid="cu_i3" uid_parent="cu"/>
+        <Tunnel _id="In4" inputs="value:rr.page?" uid="cu_i4" uid_parent="cu"/>
         <Tunnel _id="In5" inputs="value:t_html.value" uid="cu_i5" uid_parent="cu"/>
+        <Tunnel _id="In6" inputs="value:t_cu.value" uid="cu_i6" uid_parent="cu"/>
         <CaseFrame label="WebSocket upgrade\3A keep it open" selector="True" selectout="" uid="cut" uid_parent="cu">
           <Tunnel _id="In1" outputs="value:u_req.value" uid="u_req" uid_parent="cut"/>
           <Tunnel _id="In2" outputs="value:u_conn.value" uid="u_conn" uid_parent="cut"/>
           <Tunnel _id="In3" outputs="value:" uid="u_st" uid_parent="cut"/>
           <Tunnel _id="In4" outputs="value:" uid="u_pg" uid_parent="cut"/>
           <Tunnel _id="In5" outputs="value:" uid="u_ht" uid_parent="cut"/>
+          <Tunnel _id="In6" outputs="value:" uid="u_cu" uid_parent="cut"/>
           <Call inputs="Request:u_req.value" outputs="WebSocket Response:wr.WebSocket Response" target="Stream-Websocket.lvlib\3APrepare WebSocket Upgrade Response.vi" uid="wr" uid_parent="cut"/>
           <Call inputs="Response in:wr.WebSocket Response,TCP Connection:u_conn.value" outputs="error out:ww.error out" target="HTTP Utils.lvlib\3AResponse.lvclass\3AWrite Response to TCP.vi" uid="ww" uid_parent="cut"/>
           <Node _name="Unbundle By Name" fields="status" inputs="input cluster:ww.error out" outputs="status:wws.status" uid="wws" uid_parent="cut"/>
@@ -129,36 +80,15 @@
         </CaseFrame>
         <CaseFrame label="Static answer\2C then close" selector="False" selectout="" uid="cuf" uid_parent="cu">
           <Tunnel _id="In1" outputs="value:" uid="f_req" uid_parent="cuf"/>
-          <Tunnel _id="In2" outputs="value:f_conn.value" uid="f_conn" uid_parent="cuf"/>
+          <Tunnel _id="In2" outputs="value:" uid="f_conn" uid_parent="cuf"/>
           <Tunnel _id="In3" outputs="value:f_st.value" uid="f_st" uid_parent="cuf"/>
           <Tunnel _id="In4" outputs="value:f_pg.value" uid="f_pg" uid_parent="cuf"/>
           <Tunnel _id="In5" outputs="value:f_ht.value" uid="f_ht" uid_parent="cuf"/>
-          <Constant outputs="value:nob.value" type="string" uid="nob" uid_parent="cuf" value=""/>
-          <Constant outputs="value:cthtml.value" type="string" uid="cthtml" uid_parent="cuf" value="text/html\3B charset=utf-8"/>
-          <Constant outputs="value:cttext.value" type="string" uid="cttext" uid_parent="cuf" value="text/plain"/>
-          <Node _name="Select" inputs="t:f_ht.value,s:f_pg.value,f:nob.value" outputs="s? t\3Af:body.s? t\3Af" uid="body" uid_parent="cuf"/>
-          <Node _name="Select" inputs="t:cthtml.value,s:f_pg.value,f:cttext.value" outputs="s? t\3Af:ctype.s? t\3Af" uid="ctype" uid_parent="cuf"/>
-          <Call inputs="Status Code:f_st.value,Payload:body.s? t\3Af,Content-Type (text/plain):ctype.s? t\3Af" outputs="error out:cr.error out,Response out:cr.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ACreate Basic Response.vi" uid="cr" uid_parent="cuf"/>
-          <Constant outputs="value:hn1.value" type="string" uid="hn1" uid_parent="cuf" value="X-Content-Type-Options"/>
-          <Constant outputs="value:hv1.value" type="string" uid="hv1" uid_parent="cuf" value="nosniff"/>
-          <Constant outputs="value:hn2.value" type="string" uid="hn2" uid_parent="cuf" value="X-Frame-Options"/>
-          <Constant outputs="value:hv2.value" type="string" uid="hv2" uid_parent="cuf" value="DENY"/>
-          <Constant outputs="value:hn3.value" type="string" uid="hn3" uid_parent="cuf" value="Referrer-Policy"/>
-          <Constant outputs="value:hv3.value" type="string" uid="hv3" uid_parent="cuf" value="no-referrer"/>
-          <Constant outputs="value:hn4.value" type="string" uid="hn4" uid_parent="cuf" value="Cache-Control"/>
-          <Constant outputs="value:hv4.value" type="string" uid="hv4" uid_parent="cuf" value="no-store"/>
-          <Constant outputs="value:hn5.value" type="string" uid="hn5" uid_parent="cuf" value="Content-Security-Policy"/>
-          <Constant outputs="value:hv5.value" type="string" uid="hv5" uid_parent="cuf" value="default-src &apos;none&apos;\3B connect-src &apos;self&apos;\3B img-src blob:\3B style-src &apos;unsafe-inline&apos;\3B script-src &apos;unsafe-inline&apos;\3B frame-ancestors &apos;none&apos;"/>
-          <Call inputs="Response in:cr.Response out,Header:hn1.value,Value:hv1.value,error in (no error):cr.error out" outputs="error out:sh1.error out,Response out:sh1.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh1" uid_parent="cuf"/>
-          <Call inputs="Response in:sh1.Response out,Header:hn2.value,Value:hv2.value,error in (no error):sh1.error out" outputs="error out:sh2.error out,Response out:sh2.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh2" uid_parent="cuf"/>
-          <Call inputs="Response in:sh2.Response out,Header:hn3.value,Value:hv3.value,error in (no error):sh2.error out" outputs="error out:sh3.error out,Response out:sh3.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh3" uid_parent="cuf"/>
-          <Call inputs="Response in:sh3.Response out,Header:hn4.value,Value:hv4.value,error in (no error):sh3.error out" outputs="error out:sh4.error out,Response out:sh4.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh4" uid_parent="cuf"/>
-          <Call inputs="Response in:sh4.Response out,Header:hn5.value,Value:hv5.value,error in (no error):sh4.error out" outputs="error out:sh5.error out,Response out:sh5.Response out" target="HTTP Utils.lvlib\3AResponse.lvclass\3ASet Header.vi" uid="sh5" uid_parent="cuf"/>
-          <Call inputs="Response in:sh5.Response out,TCP Connection:f_conn.value,error in (no error):sh5.error out" outputs="error out:fw.error out" target="HTTP Utils.lvlib\3AResponse.lvclass\3AWrite Response to TCP.vi" uid="fw" uid_parent="cuf"/>
-          <Node _name="TCP Close Connection" inputs="connection ID:f_conn.value,error in (no error):fw.error out" outputs="error out:fx.error out" uid="fx" uid_parent="cuf"/>
+          <Tunnel _id="In6" outputs="value:f_cu.value" uid="f_cu" uid_parent="cuf"/>
+          <Call inputs="connection:f_cu.value,status:f_st.value,page?:f_pg.value,html:f_ht.value" outputs="error out:ssr.error out" target="RemoteVI Send Static Response.vi" uid="ssr" uid_parent="cuf"/>
           <Constant outputs="value:ffalse.value" type="bool" uid="ffalse" uid_parent="cuf" value="false"/>
           <Tunnel _id="Out1" inputs="value:ffalse.value" uid="f_o1" uid_parent="cuf"/>
-          <Tunnel _id="Out2" inputs="value:fx.error out" uid="f_o2" uid_parent="cuf"/>
+          <Tunnel _id="Out2" inputs="value:ssr.error out" uid="f_o2" uid_parent="cuf"/>
         </CaseFrame>
         <Tunnel _id="Out1" outputs="value:cu_o1.value" uid="cu_o1" uid_parent="cu"/>
         <Tunnel _id="Out2" outputs="value:cu_o2.value" uid="cu_o2" uid_parent="cu"/>
@@ -166,11 +96,12 @@
       <Tunnel _id="Out1" inputs="value:cu_o1.value" uid="t_o1" uid_parent="cft"/>
       <Tunnel _id="Out2" inputs="value:cu_o2.value" uid="t_o2" uid_parent="cft"/>
     </CaseFrame>
-    <CaseFrame label="Timeout or not HTTP\3A close quietly" selector="False" selectout="" uid="cff" uid_parent="cs">
+    <CaseFrame label="Too long or not HTTP\3A close quietly" selector="False" selectout="" uid="cff" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:" uid="x_req" uid_parent="cff"/>
       <Tunnel _id="In2" outputs="value:x_conn.value" uid="x_conn" uid_parent="cff"/>
       <Tunnel _id="In3" outputs="value:" uid="x_html" uid_parent="cff"/>
       <Tunnel _id="In4" outputs="value:" uid="x_max" uid_parent="cff"/>
+      <Tunnel _id="In5" outputs="value:" uid="x_cu" uid_parent="cff"/>
       <Node _name="TCP Close Connection" inputs="connection ID:x_conn.value" outputs="" uid="xx" uid_parent="cff"/>
       <Constant outputs="value:xfalse.value" type="bool" uid="xfalse" uid_parent="cff" value="false"/>
       <Constant outputs="value:xnoerr.value" type="cluster{bool.status,int32.code,string.source}" uid="xnoerr" uid_parent="cff" value="[false,0,]"/>
@@ -183,5 +114,5 @@
 
   <Node _name="Merge Errors" inputs="error in:ei.value,error in:cs_o2.value" outputs="error out:me.error out" uid="me" uid_parent="root"/>
   <Indicator _name="websocket?" conIdx="4" connection="recommended" description="TRUE when the connection was upgraded to a WebSocket and is still open\3B the caller now owns it." inputs="value:cs_o1.value" type="bool" uid="o_ws" uid_parent="root" value="false"/>
-  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with the error of writing the answer. A request that timed out or did not parse is not an error." inputs="value:me.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with the error of writing the answer. A request that does not parse is not an error." inputs="value:me.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

@@ -1,0 +1,40 @@
+<VI _name="RemoteVI VI Stopped.vi" description="Checks once a second whether the published VI has stopped\3A when VI Server may be called (VI Server ok? - no popup open\2C no recent click) and 1000 ms have passed since last check\2C reads Execution\3AState\3B stopped? is TRUE when it is idle or bad (1 or less) or cannot be read. Otherwise stopped? is FALSE and nothing is read. So the server ends with your application.">
+  <Control _name="VI" conIdx="0" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="last check" conIdx="5" connection="required" description="Tick count (ms) of the last check." outputs="value:last.value" type="uint32" uid="last" uid_parent="root" value="0"/>
+  <Control _name="VI Server ok?" conIdx="7" connection="required" description="FALSE while a popup is open or a click is recent\3A no check then." outputs="value:ok.value" type="bool" uid="ok" uid_parent="root" value="true"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.millisecond timer value,y:last.value" outputs="x-y:elc.x-y" uid="elc" uid_parent="root"/>
+  <Constant _name="once a second" outputs="value:k1s.value" type="uint32" uid="k1s" uid_parent="root" value="1000"/>
+  <Node _name="Greater Or Equal?" inputs="x:elc.x-y,y:k1s.value" outputs="x &gt;= y?:chk0.x &gt;= y?" uid="chk0" uid_parent="root"/>
+  <Node _name="And" inputs="x:chk0.x &gt;= y?,y:ok.value" outputs="x .and. y?:chk.x .and. y?" uid="chk" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="chk.x .and. y?" uid="ck" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="ck_i1" uid_parent="ck"/>
+    <Tunnel _id="In2" inputs="value:now.millisecond timer value" uid="ck_i2" uid_parent="ck"/>
+    <Tunnel _id="In3" inputs="value:last.value" uid="ck_i3" uid_parent="ck"/>
+    <CaseFrame label="Is VI still running?" selector="True" selectout="" uid="ckt" uid_parent="ck">
+      <Tunnel _id="In1" outputs="value:e_vi.value" uid="e_vi" uid_parent="ckt"/>
+      <Tunnel _id="In2" outputs="value:e_now.value" uid="e_now" uid_parent="ckt"/>
+      <Tunnel _id="In3" outputs="value:" uid="e_last" uid_parent="ckt"/>
+      <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:e_vi.value" outputs="error out:es.error out,Execution\3AState:es.Execution\3AState" type="{LV.VI}" uid="es" uid_parent="ckt"/>
+      <Node _name="To Long Integer" inputs="number:es.Execution\3AState" outputs="32bit integer:st.32bit integer" uid="st" uid_parent="ckt"/>
+      <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="ckt" value="1"/>
+      <Node _name="Less Or Equal?" inputs="x:st.32bit integer,y:k1.value" outputs="x &lt;= y?:idle.x &lt;= y?" uid="idle" uid_parent="ckt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:es.error out" outputs="status:ess.status" uid="ess" uid_parent="ckt"/>
+      <Node _name="Or" inputs="x:idle.x &lt;= y?,y:ess.status" outputs="x .or. y?:gone.x .or. y?" uid="gone" uid_parent="ckt"/>
+      <Tunnel _id="Out1" inputs="value:gone.x .or. y?" uid="e_o1" uid_parent="ckt"/>
+      <Tunnel _id="Out2" inputs="value:e_now.value" uid="e_o2" uid_parent="ckt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ckf" uid_parent="ck">
+      <Tunnel _id="In1" outputs="value:" uid="g_vi" uid_parent="ckf"/>
+      <Tunnel _id="In2" outputs="value:" uid="g_now" uid_parent="ckf"/>
+      <Tunnel _id="In3" outputs="value:g_last.value" uid="g_last" uid_parent="ckf"/>
+      <Constant outputs="value:gf.value" type="bool" uid="gf" uid_parent="ckf" value="false"/>
+      <Tunnel _id="Out1" inputs="value:gf.value" uid="g_o1" uid_parent="ckf"/>
+      <Tunnel _id="Out2" inputs="value:g_last.value" uid="g_o2" uid_parent="ckf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ck_o1.value" uid="ck_o1" uid_parent="ck"/>
+    <Tunnel _id="Out2" outputs="value:ck_o2.value" uid="ck_o2" uid_parent="ck"/>
+  </Structure>
+  <Indicator _name="stopped?" conIdx="4" connection="recommended" description="TRUE when VI was checked and is no longer running." inputs="value:ck_o1.value" type="bool" uid="o_st" uid_parent="root" value="false"/>
+  <Indicator _name="last check out" conIdx="6" connection="recommended" description="now after a check\2C else last check." inputs="value:ck_o2.value" type="uint32" uid="o_last" uid_parent="root" value="0"/>
+</VI>

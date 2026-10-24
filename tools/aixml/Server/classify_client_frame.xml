@@ -1,0 +1,35 @@
+<VI _name="RemoteVI Classify Client Frame.vi" description="Decides what to do with a decoded client frame (RemoteVI WS Decode Client Frame.vi\2C docs\5Cprotocol.md section 4)\3A text? for a complete final text frame\3B ping? for a complete ping\3B close? for a complete close frame (answered with 1000)\2C a complete binary\2C continuation or other unexpected frame (1008 - policy violation) or a protocol violation the decoder reported (its close code). Pure.">
+  <Control _name="complete?" conIdx="0" connection="required" description="From the decoder." outputs="value:cpl.value" type="bool" uid="cpl" uid_parent="root" value="false"/>
+  <Control _name="fin" conIdx="5" connection="required" description="From the decoder." outputs="value:fin.value" type="bool" uid="fin" uid_parent="root" value="false"/>
+  <Control _name="opcode" conIdx="7" connection="required" description="From the decoder." outputs="value:op.value" type="uint8" uid="op" uid_parent="root" value="0"/>
+  <Control _name="close code" conIdx="9" connection="required" description="From the decoder\3B 0 unless the frame violates the protocol." outputs="value:cc.value" type="uint16" uid="cc" uid_parent="root" value="0"/>
+  <Constant outputs="value:op1.value" type="uint8" uid="op1" uid_parent="root" value="1"/>
+  <Constant outputs="value:op8.value" type="uint8" uid="op8" uid_parent="root" value="8"/>
+  <Constant outputs="value:op9.value" type="uint8" uid="op9" uid_parent="root" value="9"/>
+  <Constant outputs="value:op10.value" type="uint8" uid="op10" uid_parent="root" value="10"/>
+  <Node _name="Equal?" inputs="x:op.value,y:op1.value" outputs="x = y?:e1.x = y?" uid="e1" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:op.value,y:op8.value" outputs="x = y?:e8.x = y?" uid="e8" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:op.value,y:op9.value" outputs="x = y?:e9.x = y?" uid="e9" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:op.value,y:op10.value" outputs="x = y?:e10.x = y?" uid="e10" uid_parent="root"/>
+  <Node _name="And" inputs="x:e1.x = y?,y:fin.value" outputs="x .and. y?:t1.x .and. y?" uid="t1" uid_parent="root"/>
+  <Node _name="And" inputs="x:t1.x .and. y?,y:cpl.value" outputs="x .and. y?:isText.x .and. y?" uid="isText" uid_parent="root"/>
+  <Node _name="And" inputs="x:e9.x = y?,y:cpl.value" outputs="x .and. y?:isPing.x .and. y?" uid="isPing" uid_parent="root"/>
+  <Node _name="And" inputs="x:e8.x = y?,y:cpl.value" outputs="x .and. y?:isClose.x .and. y?" uid="isClose" uid_parent="root"/>
+  <Node _name="Or" inputs="x:t1.x .and. y?,y:e9.x = y?" outputs="x .or. y?:k1.x .or. y?" uid="k1" uid_parent="root"/>
+  <Node _name="Or" inputs="x:e8.x = y?,y:e10.x = y?" outputs="x .or. y?:k2.x .or. y?" uid="k2" uid_parent="root"/>
+  <Node _name="Or" inputs="x:k1.x .or. y?,y:k2.x .or. y?" outputs="x .or. y?:known.x .or. y?" uid="known" uid_parent="root"/>
+  <Node _name="Not" inputs="x:known.x .or. y?" outputs=".not. x?:unk..not. x?" uid="unk" uid_parent="root"/>
+  <Node _name="And" inputs="x:unk..not. x?,y:cpl.value" outputs="x .and. y?:isPolicy.x .and. y?" uid="isPolicy" uid_parent="root"/>
+  <Constant outputs="value:u0.value" type="uint16" uid="u0" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:cc.value,y:u0.value" outputs="x != y?:ccnz.x != y?" uid="ccnz" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isClose.x .and. y?,y:isPolicy.x .and. y?" outputs="x .or. y?:d1.x .or. y?" uid="d1" uid_parent="root"/>
+  <Node _name="Or" inputs="x:d1.x .or. y?,y:ccnz.x != y?" outputs="x .or. y?:doClose.x .or. y?" uid="doClose" uid_parent="root"/>
+  <Constant outputs="value:c1000.value" type="uint16" uid="c1000" uid_parent="root" value="1000"/>
+  <Constant outputs="value:c1008.value" type="uint16" uid="c1008" uid_parent="root" value="1008"/>
+  <Node _name="Select" inputs="t:c1000.value,s:isClose.x .and. y?,f:c1008.value" outputs="s? t\3Af:cc1.s? t\3Af" uid="cc1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:cc.value,s:ccnz.x != y?,f:cc1.s? t\3Af" outputs="s? t\3Af:ccode.s? t\3Af" uid="ccode" uid_parent="root"/>
+  <Indicator _name="text?" conIdx="4" connection="recommended" description="A complete final text frame." inputs="value:isText.x .and. y?" type="bool" uid="o_t" uid_parent="root" value="false"/>
+  <Indicator _name="ping?" conIdx="6" connection="recommended" description="A complete ping." inputs="value:isPing.x .and. y?" type="bool" uid="o_p" uid_parent="root" value="false"/>
+  <Indicator _name="close?" conIdx="8" connection="recommended" description="Answer with a close frame and mark the client closed." inputs="value:doClose.x .or. y?" type="bool" uid="o_c" uid_parent="root" value="false"/>
+  <Indicator _name="close code out" conIdx="10" connection="recommended" description="The code of that close frame\3A 1000\2C 1008 or the decoder's." inputs="value:ccode.s? t\3Af" type="uint16" uid="o_cc" uid_parent="root" value="0"/>
+</VI>

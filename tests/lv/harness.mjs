@@ -21,6 +21,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { inflateSync } from 'node:zlib';
 
 export const URL_BASE = process.env.RVI_URL ?? 'http://127.0.0.1:8089';
 export const LOG_PATH = process.env.RVI_FIXTURE_LOG ?? path.join(os.tmpdir(), 'RemoteVI Fixture.log');
@@ -70,7 +71,7 @@ export async function connect() {
       for (let i = 0, n = v.getUint16(2); i < n; i++) {
         const len = v.getUint32(o + 4);
         const png = Buffer.from(ev.data, o + 8, len);
-        popups.push({ x: v.getInt16(o), y: v.getInt16(o + 2), w: png.readUInt32BE(16), h: png.readUInt32BE(20) });
+        popups.push({ x: v.getInt16(o), y: v.getInt16(o + 2), w: png.readUInt32BE(16), h: png.readUInt32BE(20), png: Buffer.from(png) });
         o += 8 + len;
       }
       c.overlay = popups;
@@ -130,3 +131,47 @@ export async function waitOverlay(c, pred = (o) => o.length > 0, ms = 3000) {
 }
 
 export const VK = { BACK: 0x08, TAB: 0x09, ENTER: 0x0d, SHIFT: 0x10, CONTROL: 0x11, ESCAPE: 0x1b, END: 0x23, HOME: 0x24, LEFT: 0x25, RIGHT: 0x27 };
+
+/** Decode an 8-bit RGB/RGBA PNG (all filter types) to {w, h, rgb(x, y) -> 0xRRGGBB}. */
+export function decodePng(png) {
+  let o = 8, w = 0, h = 0, colorType = 0;
+  const idat = [];
+  while (o < png.length) {
+    const len = png.readUInt32BE(o);
+    const type = png.subarray(o + 4, o + 8).toString('latin1');
+    const data = png.subarray(o + 8, o + 8 + len);
+    if (type === 'IHDR') { w = data.readUInt32BE(0); h = data.readUInt32BE(4); colorType = data[9]; }
+    if (type === 'IDAT') idat.push(data);
+    o += 12 + len;
+  }
+  const bpp = colorType === 6 ? 4 : 3;
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = w * bpp;
+  const out = Buffer.alloc(h * stride);
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)];
+    for (let x = 0; x < stride; x++) {
+      const v = raw[y * (stride + 1) + 1 + x];
+      const a = x >= bpp ? out[y * stride + x - bpp] : 0;
+      const b = y > 0 ? out[(y - 1) * stride + x] : 0;
+      const c = x >= bpp && y > 0 ? out[(y - 1) * stride + x - bpp] : 0;
+      let p = 0;
+      if (f === 1) p = a; else if (f === 2) p = b; else if (f === 3) p = (a + b) >> 1;
+      else if (f === 4) { const pa = Math.abs(b - c), pb = Math.abs(a - c), pc = Math.abs(a + b - 2 * c); p = pa <= pb && pa <= pc ? a : pb <= pc ? b : c; }
+      out[y * stride + x] = (v + p) & 0xff;
+    }
+  }
+  return { w, h, rgb: (x, y) => { const i = y * stride + x * bpp; return (out[i] << 16) | (out[i + 1] << 8) | out[i + 2]; } };
+}
+
+/** Rows (menu-local y) whose middle pixel is a Windows highlight blue: the highlighted menu item. */
+export function highlightedRows(popup) {
+  const img = decodePng(popup.png);
+  const rows = [];
+  for (let y = 0; y < img.h; y++) {
+    const p = img.rgb(Math.round(img.w / 2), y);
+    const r = p >> 16, g = (p >> 8) & 0xff, b = p & 0xff;
+    if (b > 150 && r < 80 && g > 60 && g < 200) rows.push(y);
+  }
+  return rows;
+}

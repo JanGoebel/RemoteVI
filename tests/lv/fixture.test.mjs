@@ -9,7 +9,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  enabled, connect, layout, readLog, waitLog, click, move, keyDown, keyUp, typeText, waitOverlay, sleep, VK,
+  enabled, connect, layout, readLog, waitLog, click, move, keyDown, keyUp, typeText, waitOverlay, sleep, VK, highlightedRows,
 } from './harness.mjs';
 
 const opts = { skip: !enabled && 'set RVI_LV=1 and run tests/fixtures/RemoteVI Fixture.vi' };
@@ -199,4 +199,40 @@ test('an item in a submenu of a run-time shortcut menu can be chosen', opts, asy
   await click(c, sub.x + 20, sub.y + Math.round(sub.h / 2), { settle: 100 });
   await waitOverlay(c, (o) => o.length === 0);
   await waitLog(([k, l, tag]) => k === 'menu' && l === 'Text' && tag === 'Deep', { since: s });
+});
+
+// --- round 3: menus behave like local menus ------------------------------------------------
+
+test('hovering over a menu item highlights that item, like locally', opts, async () => {
+  const r = at('Mode');
+  await click(c, r.cx, r.cy, { settle: 100 });
+  const [menu] = await waitOverlay(c);
+  for (const target of [2, 0]) {
+    const y = menu.y + Math.round(menu.h * (2 * target + 1) / 6);
+    move(c, menu.x + 20, y);
+    const end = Date.now() + 2000;
+    let rows = [];
+    while (Date.now() < end) {
+      rows = c.overlay[0] ? highlightedRows(c.overlay[0]) : [];
+      if (rows.includes(y - menu.y)) break;
+      await sleep(50);
+    }
+    assert.ok(rows.includes(y - menu.y), `row under the pointer (y=${y - menu.y}) is highlighted; highlighted rows: ${rows[0]}..${rows.at(-1)}`);
+  }
+  await click(c, 5, 5, { settle: 100 }); // close without choosing
+  await waitOverlay(c, (o) => o.length === 0);
+});
+
+test('a submenu opens beside its parent, not on top of it', opts, async () => {
+  const r = at('Text');
+  await click(c, r.cx, r.cy, { button: 'right', settle: 100 });
+  const [menu] = await waitOverlay(c);
+  const rowH = Math.round(menu.h / 2);
+  await click(c, menu.x + 20, menu.y + Math.round(rowH * 1.5), { settle: 100 });
+  const popups = await waitOverlay(c, (o) => o.length >= 2, 3000);
+  const [parent, sub] = [popups[0], popups.at(-1)];
+  const overlapX = Math.min(parent.x + parent.w, sub.x + sub.w) - Math.max(parent.x, sub.x);
+  assert.ok(overlapX <= 6, `submenu x ${sub.x}..${sub.x + sub.w} must not cover parent x ${parent.x}..${parent.x + parent.w}`);
+  await click(c, 5, 5, { settle: 100 });
+  await waitOverlay(c, (o) => o.length === 0);
 });

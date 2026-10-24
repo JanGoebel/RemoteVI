@@ -1,5 +1,5 @@
 {
- "description": "Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. input is a client message (see input.json); trackingBefore/After is the per-client button-held state; popup: a LabVIEW popup is open; cursor: screen point to move the host cursor to first (null = do not move). lParam is unsigned 32-bit.",
+ "description": "Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. input is a client message (see input.json); trackingBefore: LabVIEW tracks a press, i.e. its UI thread holds the mouse capture (the server reads it before translating); trackingAfter: button-down until button-up; popup: a LabVIEW popup is open; cursor: screen point to move the host cursor to first (null = do not move). lParam is unsigned 32-bit.",
  "geo": {
   "panelX": 100,
   "panelY": 200,
@@ -38,7 +38,7 @@
    ]
   },
   {
-   "name": "drag move while tracking: screen coords",
+   "name": "drag move while LabVIEW tracks (mouse captured): screen coords",
    "input": "m 512 50 20 1",
    "popup": false,
    "trackingBefore": true,
@@ -53,7 +53,7 @@
    ]
   },
   {
-   "name": "left up while tracking: screen coords, ends tracking",
+   "name": "left up while LabVIEW tracks (mouse captured): screen coords, ends tracking",
    "input": "m 514 50 20 0",
    "popup": false,
    "trackingBefore": true,
@@ -68,7 +68,7 @@
    ]
   },
   {
-   "name": "up without tracking: client coords",
+   "name": "up without capture (e.g. a switch): client coords",
    "input": "m 514 50 20 0",
    "popup": false,
    "trackingBefore": false,
@@ -335,6 +335,81 @@
      "lParam": 3221225473
     }
    ]
+  }
+ ],
+ "modifiersDescription": "Input/RemoteVI Track Modifiers.vi: modifier keys held after the message (1 Shift, 2 Ctrl, 4 Alt).",
+ "modifiers": [
+  {
+   "name": "Shift key down",
+   "input": "k 256 16 1",
+   "modsBefore": 0,
+   "modsAfter": 1
+  },
+  {
+   "name": "Shift key up",
+   "input": "k 257 16 3221225473",
+   "modsBefore": 1,
+   "modsAfter": 0
+  },
+  {
+   "name": "left Shift (VK_LSHIFT) down keeps Ctrl",
+   "input": "k 256 160 1",
+   "modsBefore": 2,
+   "modsAfter": 3
+  },
+  {
+   "name": "right Ctrl up",
+   "input": "k 257 163 3238002689",
+   "modsBefore": 3,
+   "modsAfter": 1
+  },
+  {
+   "name": "Alt down",
+   "input": "k 256 18 1",
+   "modsBefore": 0,
+   "modsAfter": 4
+  },
+  {
+   "name": "other key leaves mods",
+   "input": "k 256 13 1",
+   "modsBefore": 5,
+   "modsAfter": 5
+  },
+  {
+   "name": "char leaves mods",
+   "input": "k 258 1 1",
+   "modsBefore": 2,
+   "modsAfter": 2
+  },
+  {
+   "name": "mouse with MK_SHIFT",
+   "input": "m 513 10 20 5",
+   "modsBefore": 0,
+   "modsAfter": 1
+  },
+  {
+   "name": "mouse with MK_CONTROL keeps Alt, drops Shift",
+   "input": "m 512 10 20 8",
+   "modsBefore": 5,
+   "modsAfter": 6
+  },
+  {
+   "name": "mouse without flags clears Shift and Ctrl",
+   "input": "m 514 10 20 0",
+   "modsBefore": 3,
+   "modsAfter": 0
+  },
+  {
+   "name": "not allowed mouse message leaves mods",
+   "input": "m 16 1 1 0",
+   "modsBefore": 3,
+   "modsAfter": 3
+  },
+  {
+   "name": "ack leaves mods",
+   "input": "a 5",
+   "modsBefore": 1,
+   "modsAfter": 1
   }
  ]
 }

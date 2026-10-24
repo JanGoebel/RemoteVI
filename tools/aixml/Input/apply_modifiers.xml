@@ -1,0 +1,34 @@
+<VI _name="RemoteVI Apply Modifiers.vi" description="Brings the modifier keys LabVIEW sees in line with the ones the remote user holds. When mods differs from mods set (what was last written) and no LabVIEW popup is open\2C mods is written into the key state of LabVIEW's UI thread with RemoteVI Set Modifier Keys.vi and mods set out becomes mods\3B otherwise nothing is written and mods set passes through\2C so a change made while a popup is open is written with the first message after it closes. A popup's modal loop holds the UI thread\2C and Set Modifier Keys.vi runs in it\2C so it would block until the popup closes. Mouse tracking does not block it (measured). An incoming error skips the write.">
+  <FreeLabel comment="Write only on change\2C never under a popup" uid="lbl" uid_parent="root"/>
+  <Control _name="mods" conIdx="0" connection="required" description="Modifiers the remote user holds\3A 1 Shift\2C 2 Ctrl\2C 4 Alt (RemoteVI Track Modifiers.vi)." outputs="value:mods.value" type="uint8" uid="mods" uid_parent="root" value="0"/>
+  <Control _name="mods set" conIdx="5" connection="required" description="Modifiers last written into LabVIEW's key state for this client." outputs="value:mset.value" type="uint8" uid="mset" uid_parent="root" value="0"/>
+  <Control _name="popup" conIdx="7" connection="recommended" description="TRUE while a LabVIEW popup is open - nothing is written then." outputs="value:pop.value" type="bool" uid="pop" uid_parent="root" value="false"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is written when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Not Equal?" inputs="x:mods.value,y:mset.value" outputs="x != y?:chg.x != y?" uid="chg" uid_parent="root"/>
+  <Node _name="Not" inputs="x:pop.value" outputs=".not. x?:npop..not. x?" uid="npop" uid_parent="root"/>
+  <Node _name="And" inputs="x:chg.x != y?,y:npop..not. x?" outputs="x .and. y?:wr.x .and. y?" uid="wr" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="wr.x .and. y?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:mods.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:mset.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:ei.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="Changed\3A write the key state" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_m.value" uid="t_m" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:" uid="t_s" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_e.value" uid="t_e" uid_parent="cst"/>
+      <Call inputs="mods:t_m.value,error in:t_e.value" outputs="error out:smk.error out" target="RemoteVI Set Modifier Keys.vi" uid="smk" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:t_m.value" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:smk.error out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Unchanged\2C or a popup holds the UI thread" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_m" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_s.value" uid="f_s" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_e.value" uid="f_e" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_s.value" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_e.value" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="mods set out" conIdx="4" connection="recommended" description="Modifiers now in LabVIEW's key state as far as this client knows." inputs="value:cs_o1.value" type="uint8" uid="o_ms" uid_parent="root" value="0"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the error of writing the key state." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

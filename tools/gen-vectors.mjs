@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import { dirtyRects } from './lib/rects.mjs';
 import { encodeFrame, encodeOverlay, parseInput, mouseLParam } from './lib/protocol.mjs';
-import { translateInput } from './lib/input.mjs';
+import { translateInput, trackModifiers } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
 
@@ -177,9 +177,9 @@ function translateVectors() {
   const steps = [
     ['hover', 'm 512 10 20 0', false],
     ['left down: client coords, starts tracking', 'm 513 10 20 1', false],
-    ['drag move while tracking: screen coords', 'm 512 50 20 1', true],
-    ['left up while tracking: screen coords, ends tracking', 'm 514 50 20 0', true],
-    ['up without tracking: client coords', 'm 514 50 20 0', false],
+    ['drag move while LabVIEW tracks (mouse captured): screen coords', 'm 512 50 20 1', true],
+    ['left up while LabVIEW tracks (mouse captured): screen coords, ends tracking', 'm 514 50 20 0', true],
+    ['up without capture (e.g. a switch): client coords', 'm 514 50 20 0', false],
     ['double click down: client, tracking', 'm 515 10 20 1', false],
     ['right down', 'm 516 5 5 2', false],
     ['wheel: always screen coords', 'm 522 10 20 7864320', false],
@@ -200,7 +200,8 @@ function translateVectors() {
   ];
   return {
     description: 'Input/Translate Input.vi. geo = panel and client-area origins in screen coordinates. '
-      + 'input is a client message (see input.json); trackingBefore/After is the per-client button-held state; '
+      + 'input is a client message (see input.json); trackingBefore: LabVIEW tracks a press, i.e. its UI thread '
+      + 'holds the mouse capture (the server reads it before translating); trackingAfter: button-down until button-up; '
       + 'popup: a LabVIEW popup is open; cursor: screen point to move the host cursor to first (null = do not move). '
       + 'lParam is unsigned 32-bit.',
     geo,
@@ -208,6 +209,21 @@ function translateVectors() {
       const r = translateInput(parseInput(text), geo, tracking, popup);
       return { name, input: text, popup, trackingBefore: tracking, trackingAfter: r.tracking, cursor: r.cursor, posts: r.posts };
     }),
+    modifiersDescription: 'Input/RemoteVI Track Modifiers.vi: modifier keys held after the message (1 Shift, 2 Ctrl, 4 Alt).',
+    modifiers: [
+      ['Shift key down', 'k 256 16 1', 0],
+      ['Shift key up', 'k 257 16 3221225473', 1],
+      ['left Shift (VK_LSHIFT) down keeps Ctrl', 'k 256 160 1', 2],
+      ['right Ctrl up', 'k 257 163 3238002689', 3],
+      ['Alt down', 'k 256 18 1', 0],
+      ['other key leaves mods', 'k 256 13 1', 5],
+      ['char leaves mods', 'k 258 1 1', 2],
+      ['mouse with MK_SHIFT', 'm 513 10 20 5', 0],
+      ['mouse with MK_CONTROL keeps Alt, drops Shift', 'm 512 10 20 8', 5],
+      ['mouse without flags clears Shift and Ctrl', 'm 514 10 20 0', 3],
+      ['not allowed mouse message leaves mods', 'm 16 1 1 0', 3],
+      ['ack leaves mods', 'a 5', 1],
+    ].map(([name, text, before]) => ({ name, input: text, modsBefore: before, modsAfter: trackModifiers(parseInput(text), before) })),
   };
 }
 

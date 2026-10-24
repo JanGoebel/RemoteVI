@@ -6,6 +6,7 @@
 | Live G checks | spike VIs in `spikes/` | capture timing, PNG compression, input injection on `spikes/Injection Fixture.vi` through the production input chain |
 | Server acceptance | `node tools/check-server.mjs --url http://127.0.0.1:8080 [--click x,y] [--png out.png]` | black-box checks of a running server, the LabVIEW one or the reference one: HTTP surface, first frame pixel coverage, flow control, input, robustness |
 | Client and reference | `node:test` (`npm test`, Node 22+, no install) | WebSocket and HTTP parsers, end-to-end against the reference server, client file is pure ASCII and self-contained |
+| Input fidelity in LabVIEW | `RVI_LV=1 npm run test:lv` against `tests/fixtures/RemoteVI Fixture.vi` (see below) | clicks, latched buttons, typing, modifiers, hover, ring and right-click menus, tabs, wheel, double click, Shift+arrow, tip strips, run-time shortcut menu with a submenu |
 
 ## Shared test vectors
 
@@ -18,7 +19,7 @@
 | `rects.json` | Dirty Rects | first capture, identical, single pixel, row merging, clipped edge tiles |
 | `frame.json` | Frame Encode | complete FRAME messages |
 | `input.json` | Parse Input | valid and malformed client messages |
-| `translate.json` | Translate Input, Track Modifiers | client/screen coordinate rules with and without mouse capture, wheel, WM_CHAR wrapping, allow list; `modifiers`: modifier keys held after a message |
+| `translate.json` | Translate Input, Track Modifiers | client/screen coordinate rules with and without mouse capture, wheel, double click as a second down, key scan codes, WM_CHAR wrapping, allow list; `modifiers`: modifier keys held after a message |
 
 Bytes are lowercase hex. Pixels are `0x00RRGGBB` integers, row-major.
 
@@ -61,6 +62,12 @@ Headless, with G-CLI and its Caraya tool (`lvos_lib_caraya_cli_extension`):
 It checks that Caraya is installed for the LabVIEW version, optionally regenerates the tests, runs every VI in `tests/caraya/unit`, writes the JUnit report and prints tests and failures per suite. LabVIEW is left running unless `-QuitLabVIEW` is given.
 
 In the IDE: run `tests/caraya/RemoteVI Caraya Runner.vi` (report beside it, or at `Report Path`). Its `error out` is 7002 when an assertion failed; the report names which one. Without Caraya, run a `support/RemoteVI Check <VI>.vi` and read `failures`.
+
+## LabVIEW integration suite
+
+`tests/lv/fixture.test.mjs` drives `tests/fixtures/RemoteVI Fixture.vi` through the real server on port 8089, exactly as the browser does, and reads LabVIEW's side from the fixture's event log (format in `tests/lv/harness.mjs`). Run the fixture (one RemoteVI server per LabVIEW instance: stop any other first), then `RVI_LV=1 npm run test:lv`; stop it with its Stop button.
+
+The fixture is generated: `tests/fixtures/aixml/compose_fixture.py <labview-mcp bin>` composes it (through `listbox_composer.py`, which adds `style="Listbox"` to the composer, and `fix_event_data_nodes.py`, which corrects the Event Data Node indices), then `RemoteVI Fixture Arrange.vi` (Fixture = the fixture, Tab Panel = a VI holding only the tab control, made by `RemoteVI Fixture Prep Tab Panel.vi` from a copy of NI's *Programmatically Manipulate a Tab Control.vi*) pastes the tab control, sets the List rows, the Button tip strip and the layout, and saves. Run Arrange once per compose: it pastes the tab again on a second run.
 
 ## Manual acceptance
 

@@ -62,7 +62,7 @@ The client resizes its canvas to the panel size when it changes, then draws each
 
 ### 3.2 OVERLAY (binary message)
 
-The LabVIEW popups that are open over the panel: ring/enum menus, right-click menus, combo-box lists, graph-palette popups. Each OVERLAY **replaces** the previous one; an empty list clears it. The server sends one whenever the popups or their pixels change, outside flow control (they are small and rare), and sends the current one to a client that connects while a popup is open.
+The LabVIEW popups that are open over the panel: ring/enum menus, right-click menus and their submenus, combo-box lists, graph-palette popups, tip strips. Each OVERLAY **replaces** the previous one; an empty list clears it. The server sends one whenever the popups or their pixels change, outside flow control (they are small and rare), and sends the current one to a client that connects while a popup is open.
 
 | Offset | Type | Field |
 |---|---|---|
@@ -100,7 +100,7 @@ ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not f
 |---|---|---|
 | 512 (0x200) | `WM_MOUSEMOVE` | pointer move, at most once per animation frame |
 | 513 / 514 | `WM_LBUTTONDOWN` / `UP` | left button |
-| 515 | `WM_LBUTTONDBLCLK` | second press of a double click, instead of DOWN |
+| 515 | `WM_LBUTTONDBLCLK` | second press of a double click, instead of DOWN (the server posts it as DOWN, see below) |
 | 516 / 517 / 518 | `WM_RBUTTON…` | right button, likewise |
 | 519 / 520 / 521 | `WM_MBUTTON…` | middle button, likewise |
 | 522 (0x20A) | `WM_MOUSEWHEEL` | wheel; high word of `wParam` is the signed delta, ±120 per notch |
@@ -113,7 +113,13 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 * **screen** coordinates: moves and the button-up while LabVIEW *tracks* a press. LabVIEW tracks, and then holds the mouse capture, for latched buttons, sliders, text selection, graph drags and the like, and reads posted moves and the button-up as screen coordinates while it does (measured in `spikes/Spike Input Injection.vi`). A switch-when-pressed boolean does not track: its button-up must be in client coordinates, or LabVIEW loses it and behaves as if the button were still held (measured). So the server does not guess from the button state; before translating it asks Windows whether LabVIEW's UI thread holds the mouse capture (`GetGUIThreadInfo` → `hwndCapture`, `RemoteVI Mouse Captured.vi`), which it can, because the previous message has been handled by then (§4.4);
 * **screen** coordinates: `WM_MOUSEWHEEL`, as Windows defines it.
 
-**While a popup is open**, LabVIEW hit-tests clicks with the real cursor position against the popup window's real position. The server never moves the host cursor. It moves the popup windows (invisible on the host) by the offset that puts the clicked point under the real cursor, then posts the button message with the real cursor position in `lParam`. Moves and wheel are dropped, because LabVIEW updates the hover highlight only on real cursor motion. A click outside every popup is not posted: the server closes all popups (`WM_CANCELMODE`, sent). A submenu opens on the second click on its entry; entries inside a submenu cannot be chosen remotely. Frames keep coming while a popup is open (the panel is drawn with `PrintWindow`). OVERLAY positions stay the popups' logical positions (real position minus that offset).
+**Double clicks** are posted as a second button-down: `WM_LBUTTONDBLCLK`, `WM_RBUTTONDBLCLK` and `WM_MBUTTONDBLCLK` become `WM_LBUTTONDOWN`, `WM_RBUTTONDOWN` and `WM_MBUTTONDOWN`. LabVIEW's panel window class has no `CS_DBLCLKS`, so Windows never sends it the DBLCLK messages; LabVIEW detects the double click itself from two downs, and it ignores a posted DBLCLK (measured: a listbox Double Click event fires for down-up-down-up, never for down-up-DBLCLK-up). The client keeps sending DBLCLK, so a server for a window class that does want it can post it unchanged.
+
+**While a popup is open**, LabVIEW hit-tests clicks with the real cursor position against the popup window's real position. The server never moves the host cursor. It moves the popup windows (invisible on the host) by the offset that puts the clicked point under the real cursor, then posts the button message with the real cursor position in `lParam`. Moves and wheel are dropped, because LabVIEW updates the hover highlight only on real cursor motion. A click outside every popup is not posted: the server closes all popups (`WM_CANCELMODE`, sent). Frames keep coming while a popup is open (the panel is drawn with `PrintWindow`). OVERLAY positions stay the popups' logical positions (real position minus that offset).
+
+**Submenus.** LabVIEW hit-tests a submenu against the place where it opened it: once a submenu is open, posted clicks are ignored after the popups were moved - in the submenu and in its parent alike - while posted keys still work (measured). So for a button-down on a LabVIEW menu while a submenu is open, the server first closes submenus with `VK_LEFT` (each key waits until that menu closed): all of them when the click is on the bottom-most menu, otherwise every menu above the clicked one and the clicked one itself. It then moves only the menus still open and reopens a closed clicked submenu with `VK_RIGHT`; LabVIEW places it next to its moved parent, so the clicked point lies under the host cursor in a menu LabVIEW knows at that place, and the click follows 350 ms later. A click on an entry that opens a submenu only highlights it (a second click would open it); when the popups are unchanged 300 ms after a button-up on a menu, the server presses `VK_RIGHT`, which opens the highlighted entry's submenu and does nothing on an entry without one (measured). Keys reach the menus as posted `WM_KEYDOWN`/`WM_KEYUP` to the panel window, which holds the mouse capture while a LabVIEW menu is open.
+
+**Tip strips** (window class `LVTipStrip`) are part of the OVERLAY but are not a popup in the sense above: input stays in normal mode while one is shown, so the remote pointer's next move hides it as on the host (measured: a posted move off the control closes it). LabVIEW shows a tip strip for posted hover moves; no real cursor dwell is needed (measured).
 
 ### 4.2 Keyboard
 
@@ -123,6 +129,8 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 | 258 | `WM_CHAR` | printable characters (the character code), and Ctrl+A…Z as codes 1–26 |
 
 Printable characters go as `WM_CHAR` so the result doesn't depend on the host's keyboard layout. `lParam` for key messages is repeat count 1, bit 24 for extended keys, and bits 30–31 set on key-up.
+
+Server side, a `WM_KEYDOWN`/`WM_KEYUP` whose `lParam` has no scan code (bits 16–23 zero, as the client sends it) gets the key's set-1 scan code, as a real keyboard delivers it (`SCAN_CODES` and `keyLParamWithScan()` in `tools/lib/input.mjs`; the listed keys and Shift/Ctrl/Alt have the same scan code in every layout). Measured: with a posted Shift and a posted Right arrow both at scan code 0, LabVIEW lost the arrow; with either scan code set, Shift+Right arrived.
 
 Server side, each `WM_CHAR` is posted as `WM_KEYDOWN(0xE8)`, `WM_CHAR`, `WM_KEYUP(0xE8)`. A bare posted `WM_CHAR` right after a non-character key is dropped by LabVIEW, and a key-down of the character's own key would make LabVIEW's message loop produce the character twice. VK `0xE8` produces no character.
 

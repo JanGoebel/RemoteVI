@@ -33,7 +33,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Input (`source/Input`, `source/Win32`) | ✅ click, drag, typing, latched Stop on a live panel, also when the window is covered |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ `tools/check-server.mjs` passes against LabVIEW, about 16–18 fps, about 1–2 % of one core |
 | Browser client (`web/index.html`) | ✅ |
-| Popups (ring/enum menus, right-click menus, graph palette) | ✅ streamed as an overlay, may extend past the panel, invisible on the host when opened remotely |
+| Popups (ring/enum menus, right-click menus with submenus, graph palette, tip strips) | ✅ streamed as an overlay, may extend past the panel, invisible on the host when opened remotely |
 | Splitter dragging | ❓ didn't move in NI's example (possibly locked splitters). Untested on an unlocked one. |
 | Access token, bind address | planned |
 | `.lvlib`, palette, VI package | planned |
@@ -41,7 +41,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 ## Known issues
 
 * LabVIEW popups (ring and enum menus, right-click menus, combo-box lists, graph palette) are streamed as an overlay and clicked by borrowing the host cursor for about 50-100 ms per click. While one is open there is no hover highlight (moves are dropped), and the panel image does not update. Popups opened remotely are invisible on the host; one opened at the host stays visible there.
-* Only one server per LabVIEW instance (the Server Loop isn't reentrant).
+* Only one server per LabVIEW instance (the Server Loop isn't reentrant). A second `RemoteVI Start.vi` returns error 5001; a port in use returns the listener's error (60).
 * A TCP connection that sends nothing stalls the loop for up to 1 s (head read timeout).
 
 ## Development

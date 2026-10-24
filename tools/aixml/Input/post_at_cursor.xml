@@ -1,0 +1,22 @@
+<VI _name="RemoteVI Post At Cursor.vi" description="Posts a WM_MOUSEMOVE and then each message of posts to hWnd (the served panel) with lParam = the host cursor position in screen coordinates (RemoteVI Pack Point lParam.vi of GetCursorPos)\2C each waiting until LabVIEW has handled it (RemoteVI Wait Input Handled.vi). Used by RemoteVI Plain Popup Click.vi once the clicked popup has been moved under the cursor\3A a popup ignores a click without the move before it (measured). An incoming error posts nothing.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="posts" conIdx="5" connection="required" description="The messages to post\3B their lParam is replaced." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Control _name="lParam" conIdx="7" connection="required" description="The cursor position packed as a mouse lParam." outputs="value:lp.value" type="int64" uid="lp" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="WM_MOUSEMOVE" outputs="value:kmm.value" type="uint32" uid="kmm" uid_parent="root" value="512"/>
+  <Constant _name="no buttons" outputs="value:kw0.value" type="uint64" uid="kw0" uid_parent="root" value="0"/>
+  <Call inputs="hWnd:hw.value,Msg:kmm.value,wParam:kw0.value,lParam:lp.value,error in (no error):ei.value" outputs="return value:,error out:pmm.error out" target="user32 PostMessageW.vi" uid="pmm" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Post each message at the cursor" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ps.value" mode="index" outputs="value:l_p.value" uid="l_p" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:hw.value" outputs="value:l_hw.value" uid="l_hw" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:lp.value" outputs="value:l_lp.value" uid="l_lp" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:pmm.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:wih.error out" outputs="value:eend.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="msg,wParam" inputs="input cluster:l_p.value" outputs="msg:ub.msg,wParam:ub.wParam" uid="ub" uid_parent="fl"/>
+    <Call inputs="hWnd:l_hw.value,Msg:ub.msg,wParam:ub.wParam,lParam:l_lp.value,error in (no error):le.value" outputs="return value:,error out:pm.error out" target="user32 PostMessageW.vi" uid="pm" uid_parent="fl"/>
+    <Call inputs="hWnd:l_hw.value,error in:pm.error out" outputs="error out:wih.error out" target="RemoteVI Wait Input Handled.vi" uid="wih" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:eend.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

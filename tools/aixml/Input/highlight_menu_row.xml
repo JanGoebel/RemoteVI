@@ -1,0 +1,134 @@
+<VI _name="RemoteVI Highlight Menu Row.vi" description="Moves the highlight of an open LabVIEW menu onto the item at window row y WITHOUT moving the host cursor or the menu: LabVIEW menus take VK_DOWN / VK_UP posted to the panel window (RemoteVI Post Menu Key.vi)\2C so the menu is captured (RemoteVI Menu Highlight.vi)\2C the highlighted band is compared with y and one key is posted towards it\2C until the band contains y (hit? TRUE). It stops without a hit when the band did not move after a key (nothing selectable further on)\2C when it jumped past y (y lies on a separator or a disabled item)\2C or after 100 keys. Menus wrap around at the ends (measured)\3B a wrap is undone with one key in the other direction and ends the search. When nothing is highlighted yet\2C probe? is TRUE and the window has the menu background colour (RemoteVI Menu Highlight.vi menu colours? - a key posted into the colour picker spoils its next click\2C measured)\2C one key is posted first (it is not a step\3A where it lands depends on the menu - a ring menu highlights its first item for VK_UP too\2C measured - so no wrap or overshoot is concluded from it) - VK_DOWN when y lies in the upper half (it highlights the first item)\2C VK_UP otherwise (the last item)\3B when that still shows no highlight the window is no keyboard menu (colour picker\2C line width popup) and keyed? is FALSE. top and bottom are the band last seen\2C in window pixels. After each key the menu is captured until its highlight moved (RemoteVI Wait Highlight Change.vi\2C at most 120 ms) - the repaint can lag the key by 100 ms (measured)\2C and reading the old highlight would end the search one item short. Win32 only\2C no VI Server call\2C so it runs while the menu's modal loop holds LabVIEW's UI thread.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window\3B the keys are posted to it." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="menu" conIdx="5" connection="required" description="The menu window (LVMenuWnd) - it must be the deepest open menu\2C the one the keys go to." outputs="value:mn.value" type="uint64" uid="mn" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="7" connection="required" description="The row to highlight\2C in window pixels (0 = top edge of the menu window)." outputs="value:ty.value" type="int32" uid="ty" uid_parent="root" value="0"/>
+  <Control _name="probe?" conIdx="9" connection="recommended" description="TRUE\3A when nothing is highlighted\2C post one key to find out whether the window is a keyboard menu." outputs="value:pr.value" type="bool" uid="pr" uid_parent="root" value="true"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="no band yet" outputs="value:kp0.value" type="int32" uid="kp0" uid_parent="root" value="-9999"/>
+  <Constant _name="no key yet" outputs="value:kl0.value" type="int32" uid="kl0" uid_parent="root" value="0"/>
+  <Constant _name="not probed" outputs="value:kb0.value" type="bool" uid="kb0" uid_parent="root" value="false"/>
+  <Structure _name="While Loop" count="wl.value" label="One key per pass until the band holds y" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hw.value" outputs="value:l_hw.value" uid="l_hw" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:mn.value" outputs="value:l_mn.value" uid="l_mn" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:ty.value" outputs="value:l_y.value" uid="l_y" uid_parent="wl"/>
+    <Tunnel _id="In4" inputs="value:pr.value" outputs="value:l_pr.value" uid="l_pr" uid_parent="wl"/>
+    <ShiftReg uid="srp" uid_parent="wl">
+      <Left inputs="value:kp0.value" outputs="value:prev.value" uid="srpl" uid_parent="srp"/>
+      <Right inputs="value:nprev.s? t\3Af" outputs="value:" uid="srpr" uid_parent="srp"/>
+    </ShiftReg>
+    <ShiftReg uid="srk" uid_parent="wl">
+      <Left inputs="value:kl0.value" outputs="value:last.value" uid="srkl" uid_parent="srk"/>
+      <Right inputs="value:nlast.s? t\3Af" outputs="value:" uid="srkr" uid_parent="srk"/>
+    </ShiftReg>
+    <ShiftReg uid="srb" uid_parent="wl">
+      <Left inputs="value:kb0.value" outputs="value:probed.value" uid="srbl" uid_parent="srb"/>
+      <Right inputs="value:nprb.x .or. y?" outputs="value:" uid="srbr" uid_parent="srb"/>
+    </ShiftReg>
+    <ShiftReg uid="sre" uid_parent="wl">
+      <Left inputs="value:ei.value" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:cpk_o1.value" outputs="value:errend.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Call inputs="hwnd:l_mn.value,error in:le.value" outputs="found?:mh.found?,top:mh.top,bottom:mh.bottom,height:mh.height,menu colours?:mh.menu colours?,error out:mh.error out" target="RemoteVI Menu Highlight.vi" uid="mh" uid_parent="wl"/>
+    <Node _name="Less Or Equal?" inputs="x:mh.top,y:l_y.value" outputs="x &lt;= y?:c1.x &lt;= y?" uid="c1" uid_parent="wl"/>
+    <Node _name="Less Or Equal?" inputs="x:l_y.value,y:mh.bottom" outputs="x &lt;= y?:c2.x &lt;= y?" uid="c2" uid_parent="wl"/>
+    <Node _name="And" inputs="x:c1.x &lt;= y?,y:c2.x &lt;= y?" outputs="x .and. y?:c12.x .and. y?" uid="c12" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:c12.x .and. y?" outputs="x .and. y?:inb.x .and. y?" uid="inb" uid_parent="wl"/>
+    <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="wl" value="1"/>
+    <Constant outputs="value:k2.value" type="int32" uid="k2" uid_parent="wl" value="2"/>
+    <Node _name="Equal?" inputs="x:last.value,y:k1.value" outputs="x = y?:isd.x = y?" uid="isd" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:last.value,y:k2.value" outputs="x = y?:isu.x = y?" uid="isu" uid_parent="wl"/>
+    <Node _name="Not Equal To 0?" inputs="x:last.value" outputs="x != 0?:anyk.x != 0?" uid="anyk" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:mh.top,y:prev.value" outputs="x = y?:same.x = y?" uid="same" uid_parent="wl"/>
+    <Node _name="And" inputs="x:anyk.x != 0?,y:same.x = y?" outputs="x .and. y?:nm0.x .and. y?" uid="nm0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:nm0.x .and. y?" outputs="x .and. y?:nomv.x .and. y?" uid="nomv" uid_parent="wl"/>
+    <Node _name="Less?" inputs="x:mh.top,y:prev.value" outputs="x &lt; y?:lt.x &lt; y?" uid="lt" uid_parent="wl"/>
+    <Node _name="Greater?" inputs="x:mh.top,y:prev.value" outputs="x &gt; y?:gt.x &gt; y?" uid="gt" uid_parent="wl"/>
+    <Node _name="And" inputs="x:isd.x = y?,y:lt.x &lt; y?" outputs="x .and. y?:wd0.x .and. y?" uid="wd0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:wd0.x .and. y?" outputs="x .and. y?:wd.x .and. y?" uid="wd" uid_parent="wl"/>
+    <Node _name="And" inputs="x:isu.x = y?,y:gt.x &gt; y?" outputs="x .and. y?:wu0.x .and. y?" uid="wu0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:wu0.x .and. y?" outputs="x .and. y?:wu.x .and. y?" uid="wu" uid_parent="wl"/>
+    <Node _name="Greater?" inputs="x:mh.top,y:l_y.value" outputs="x &gt; y?:pdg.x &gt; y?" uid="pdg" uid_parent="wl"/>
+    <Node _name="And" inputs="x:isd.x = y?,y:pdg.x &gt; y?" outputs="x .and. y?:pd0.x .and. y?" uid="pd0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:pd0.x .and. y?" outputs="x .and. y?:pdn.x .and. y?" uid="pdn" uid_parent="wl"/>
+    <Node _name="Less?" inputs="x:mh.bottom,y:l_y.value" outputs="x &lt; y?:pul.x &lt; y?" uid="pul" uid_parent="wl"/>
+    <Node _name="And" inputs="x:isu.x = y?,y:pul.x &lt; y?" outputs="x .and. y?:pu0.x .and. y?" uid="pu0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:mh.found?,y:pu0.x .and. y?" outputs="x .and. y?:pup.x .and. y?" uid="pup" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:mh.found?" outputs=".not. x?:nf..not. x?" uid="nf" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:probed.value" outputs=".not. x?:np..not. x?" uid="np" uid_parent="wl"/>
+    <Node _name="And" inputs="x:nf..not. x?,y:np..not. x?" outputs="x .and. y?:nq0.x .and. y?" uid="nq0" uid_parent="wl"/>
+    <Node _name="And" inputs="x:nq0.x .and. y?,y:l_pr.value" outputs="x .and. y?:nq1.x .and. y?" uid="nq1" uid_parent="wl"/>
+    <Node _name="And" inputs="x:nq1.x .and. y?,y:mh.menu colours?" outputs="x .and. y?:nprobe.x .and. y?" uid="nprobe" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:nprobe.x .and. y?" outputs=".not. x?:nnp..not. x?" uid="nnp" uid_parent="wl"/>
+    <Node _name="And" inputs="x:nf..not. x?,y:nnp..not. x?" outputs="x .and. y?:giveup.x .and. y?" uid="giveup" uid_parent="wl"/>
+    <Constant _name="at most 100 keys" outputs="value:k100.value" type="int32" uid="k100" uid_parent="wl" value="100"/>
+    <Node _name="Greater Or Equal?" inputs="x:wl.value,y:k100.value" outputs="x &gt;= y?:imax.x &gt;= y?" uid="imax" uid_parent="wl"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:mh.error out" outputs="status:es.status" uid="es" uid_parent="wl"/>
+    <Node _name="Build Array" inputs="element:inb.x .and. y?,element:nomv.x .and. y?,element:wd.x .and. y?,element:wu.x .and. y?,element:pdn.x .and. y?,element:pup.x .and. y?,element:giveup.x .and. y?,element:imax.x &gt;= y?,element:es.status" outputs="appended array:why.appended array" uid="why" uid_parent="wl"/>
+    <Node _name="Or Array Elements" inputs="Boolean array:why.appended array" outputs="logical OR:stop.logical OR" uid="stop" uid_parent="wl"/>
+    <Node _name="Greater?" inputs="x:l_y.value,y:mh.bottom" outputs="x &gt; y?:stepd.x &gt; y?" uid="stepd" uid_parent="wl"/>
+    <Node _name="Multiply" inputs="x:l_y.value,y:k2.value" outputs="x*y:y2.x*y" uid="y2" uid_parent="wl"/>
+    <Node _name="Less?" inputs="x:y2.x*y,y:mh.height" outputs="x &lt; y?:prd.x &lt; y?" uid="prd" uid_parent="wl"/>
+    <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="wl" value="true"/>
+    <Constant outputs="value:kf.value" type="bool" uid="kf" uid_parent="wl" value="false"/>
+    <Node _name="Select" inputs="t:kt.value,s:wu.x .and. y?,f:stepd.x &gt; y?" outputs="s? t\3Af:s1.s? t\3Af" uid="s1" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:kf.value,s:wd.x .and. y?,f:s1.s? t\3Af" outputs="s? t\3Af:s2.s? t\3Af" uid="s2" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:prd.x &lt; y?,s:nprobe.x .and. y?,f:s2.s? t\3Af" outputs="s? t\3Af:kdn.s? t\3Af" uid="kdn" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:stop.logical OR" outputs=".not. x?:go..not. x?" uid="go" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:wd.x .and. y?,y:wu.x .and. y?" outputs="x .or. y?:wrap.x .or. y?" uid="wrap" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:go..not. x?,y:wrap.x .or. y?" outputs="x .or. y?:pk.x .or. y?" uid="pk" uid_parent="wl"/>
+    <Constant _name="VK_DOWN" outputs="value:kvd.value" type="uint64" uid="kvd" uid_parent="wl" value="40"/>
+    <Constant _name="VK_UP" outputs="value:kvu.value" type="uint64" uid="kvu" uid_parent="wl" value="38"/>
+    <Constant _name="Down scan 0x50 extended" outputs="value:kld.value" type="int64" uid="kld" uid_parent="wl" value="22020097"/>
+    <Constant _name="Up scan 0x48 extended" outputs="value:klu.value" type="int64" uid="klu" uid_parent="wl" value="21495809"/>
+    <Node _name="Select" inputs="t:kvd.value,s:kdn.s? t\3Af,f:kvu.value" outputs="s? t\3Af:vk.s? t\3Af" uid="vk" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:kld.value,s:kdn.s? t\3Af,f:klu.value" outputs="s? t\3Af:klp.s? t\3Af" uid="klp" uid_parent="wl"/>
+    <Structure _name="Case Structure" selectin="pk.x .or. y?" uid="cpk" uid_parent="wl">
+      <Tunnel _id="In1" inputs="value:mh.error out" uid="cpk_i1" uid_parent="cpk"/>
+      <Tunnel _id="In2" inputs="value:l_hw.value" uid="cpk_i2" uid_parent="cpk"/>
+      <Tunnel _id="In3" inputs="value:vk.s? t\3Af" uid="cpk_i3" uid_parent="cpk"/>
+      <Tunnel _id="In4" inputs="value:klp.s? t\3Af" uid="cpk_i4" uid_parent="cpk"/>
+      <Tunnel _id="In5" inputs="value:l_mn.value" uid="cpk_i5" uid_parent="cpk"/>
+      <Tunnel _id="In6" inputs="value:mh.found?" uid="cpk_i6" uid_parent="cpk"/>
+      <Tunnel _id="In7" inputs="value:mh.top" uid="cpk_i7" uid_parent="cpk"/>
+      <CaseFrame label="Post one key" selector="True" selectout="" uid="cpkt" uid_parent="cpk">
+        <Tunnel _id="In1" outputs="value:t_e.value" uid="t_e" uid_parent="cpkt"/>
+        <Tunnel _id="In2" outputs="value:t_hw.value" uid="t_hw" uid_parent="cpkt"/>
+        <Tunnel _id="In3" outputs="value:t_vk.value" uid="t_vk" uid_parent="cpkt"/>
+        <Tunnel _id="In4" outputs="value:t_lp.value" uid="t_lp" uid_parent="cpkt"/>
+        <Tunnel _id="In5" outputs="value:t_mn.value" uid="t_mn" uid_parent="cpkt"/>
+        <Tunnel _id="In6" outputs="value:t_fb.value" uid="t_fb" uid_parent="cpkt"/>
+        <Tunnel _id="In7" outputs="value:t_tb.value" uid="t_tb" uid_parent="cpkt"/>
+        <Call inputs="hWnd:t_hw.value,vk:t_vk.value,key lParam:t_lp.value,error in:t_e.value" outputs="error out:pmk.error out" target="RemoteVI Post Menu Key.vi" uid="pmk" uid_parent="cpkt"/>
+        <Call inputs="menu:t_mn.value,found before:t_fb.value,top before:t_tb.value,error in:pmk.error out" outputs="changed?:,error out:whc.error out" target="RemoteVI Wait Highlight Change.vi" uid="whc" uid_parent="cpkt"/>
+        <Tunnel _id="Out1" inputs="value:whc.error out" uid="t_o1" uid_parent="cpkt"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="cpkf" uid_parent="cpk">
+        <Tunnel _id="In1" outputs="value:f_e.value" uid="f_e" uid_parent="cpkf"/>
+        <Tunnel _id="In2" outputs="value:" uid="f_hw" uid_parent="cpkf"/>
+        <Tunnel _id="In3" outputs="value:" uid="f_vk" uid_parent="cpkf"/>
+        <Tunnel _id="In4" outputs="value:" uid="f_lp" uid_parent="cpkf"/>
+        <Tunnel _id="In5" outputs="value:" uid="f_mn" uid_parent="cpkf"/>
+        <Tunnel _id="In6" outputs="value:" uid="f_fb" uid_parent="cpkf"/>
+        <Tunnel _id="In7" outputs="value:" uid="f_tb" uid_parent="cpkf"/>
+        <Tunnel _id="Out1" inputs="value:f_e.value" uid="f_o1" uid_parent="cpkf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cpk_o1.value" uid="cpk_o1" uid_parent="cpk"/>
+    </Structure>
+    <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="wl" value="0"/>
+    <Node _name="Select" inputs="t:k1.value,s:kdn.s? t\3Af,f:k2.value" outputs="s? t\3Af:kc.s? t\3Af" uid="kc" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:k0.value,s:nprobe.x .and. y?,f:kc.s? t\3Af" outputs="s? t\3Af:kc2.s? t\3Af" uid="kc2" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:kc2.s? t\3Af,s:pk.x .or. y?,f:k0.value" outputs="s? t\3Af:nlast.s? t\3Af" uid="nlast" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:mh.top,s:mh.found?,f:prev.value" outputs="s? t\3Af:nprev.s? t\3Af" uid="nprev" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:probed.value,y:nprobe.x .and. y?" outputs="x .or. y?:nprb.x .or. y?" uid="nprb" uid_parent="wl"/>
+    <Condition inputs="value:stop.logical OR" uid="wlc" uid_parent="wl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:mh.found?" outputs="value:ofnd.value" uid="ofnd" uid_parent="wl"/>
+    <Tunnel _id="Out2" inputs="value:inb.x .and. y?" outputs="value:ohit.value" uid="ohit" uid_parent="wl"/>
+    <Tunnel _id="Out3" inputs="value:mh.top" outputs="value:otop.value" uid="otop" uid_parent="wl"/>
+    <Tunnel _id="Out4" inputs="value:mh.bottom" outputs="value:obot.value" uid="obot" uid_parent="wl"/>
+  </Structure>
+  <Indicator _name="keyed?" conIdx="4" connection="recommended" description="TRUE when the window shows a highlight band - it is a keyboard menu." inputs="value:ofnd.value" type="bool" uid="o_k" uid_parent="root" value="false"/>
+  <Indicator _name="hit?" conIdx="6" connection="recommended" description="TRUE when the highlighted item contains row y." inputs="value:ohit.value" type="bool" uid="o_h" uid_parent="root" value="false"/>
+  <Indicator _name="top" conIdx="8" connection="recommended" description="Top row of the highlighted item\2C window pixels." inputs="value:otop.value" type="int32" uid="o_t" uid_parent="root" value="0"/>
+  <Indicator _name="bottom" conIdx="10" connection="recommended" description="Bottom row of the highlighted item\2C window pixels." inputs="value:obot.value" type="int32" uid="o_b" uid_parent="root" value="0"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:errend.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

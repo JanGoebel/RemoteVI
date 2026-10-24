@@ -1,0 +1,30 @@
+<VI _name="RemoteVI Hover Decision.vi" description="Decides what the remote pointer (state.x\2C state.y) asks of the open LabVIEW menus (RemoteVI List Menus.vi\2C deepest first)\3A k is the menu under the pointer (RemoteVI Point On Popup.vi). navigate? - it is over the DEEPEST menu at a position not applied yet\3B dwell? - it has stayed on the highlighted item of the deepest menu (state.menu\2C state.hit) for 400 ms since row since and VK_RIGHT has not been posted for it\3B parent? - it is over a parent of open submenus at a position not applied yet. All three are FALSE when the pointer is over no menu\2C or when the deepest popup takes no keys (state.plain\3A colour picker\2C line width popup - neither it nor its parents can be driven with keys then). Pure.">
+  <Control _name="menus" conIdx="0" connection="required" description="The open menu windows\2C deepest first." outputs="value:ms.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="ms" uid_parent="root" value="[]"/>
+  <Control _name="state" conIdx="5" connection="required" description="The menu pointer state." outputs="value:st.value" type="cluster{bool.active,int32.x,int32.y,uint32.moved,bool.navigated,uint64.menu,int32.top,bool.hit,uint32.row since,bool.dwelled,uint64.plain,bool.swallow up}" uid="st" uid_parent="root" value="[false,0,0,0,false,0,0,false,0,false,0,false]"/>
+  <Control _name="now" conIdx="7" connection="required" description="Tick count (ms)." outputs="value:nw.value" type="uint32" uid="nw" uid_parent="root" value="0"/>
+  <Node _name="Unbundle By Name" fields="x,y,navigated,menu,hit,row since,dwelled,plain" inputs="input cluster:st.value" outputs="x:gu.x,y:gu.y,navigated:gu.navigated,menu:gu.menu,hit:gu.hit,row since:gu.row since,dwelled:gu.dwelled,plain:gu.plain" uid="gu" uid_parent="root"/>
+  <Call inputs="windows:ms.value,x:gu.x,y:gu.y" outputs="on popup?:pp.on popup?,index:pp.index" target="RemoteVI Point On Popup.vi" uid="pp" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:ms.value,index:k0.value" outputs="element:m0.element" uid="m0" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:m0.element" outputs="hwnd:m0u.hwnd" uid="m0u" uid_parent="root"/>
+  <Node _name="Not Equal?" inputs="x:m0u.hwnd,y:gu.plain" outputs="x != y?:keys.x != y?" uid="keys" uid_parent="root"/>
+  <Node _name="And" inputs="x:keys.x != y?,y:pp.on popup?" outputs="x .and. y?:ok.x .and. y?" uid="ok" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:pp.index" outputs="x = 0?:k0q.x = 0?" uid="k0q" uid_parent="root"/>
+  <Node _name="Not" inputs="x:k0q.x = 0?" outputs=".not. x?:kp..not. x?" uid="kp" uid_parent="root"/>
+  <Node _name="Not" inputs="x:gu.navigated" outputs=".not. x?:nn..not. x?" uid="nn" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:ok.x .and. y?,element:nn..not. x?,element:k0q.x = 0?" outputs="appended array:na.appended array" uid="na" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:na.appended array" outputs="logical AND:nav.logical AND" uid="nav" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:ok.x .and. y?,element:nn..not. x?,element:kp..not. x?" outputs="appended array:pa.appended array" uid="pa" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:pa.appended array" outputs="logical AND:par.logical AND" uid="par" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:nw.value,y:gu.row since" outputs="x-y:age.x-y" uid="age" uid_parent="root"/>
+  <Constant _name="dwell 400 ms" outputs="value:k400.value" type="uint32" uid="k400" uid_parent="root" value="400"/>
+  <Node _name="Greater Or Equal?" inputs="x:age.x-y,y:k400.value" outputs="x &gt;= y?:old.x &gt;= y?" uid="old" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:m0u.hwnd,y:gu.menu" outputs="x = y?:same.x = y?" uid="same" uid_parent="root"/>
+  <Node _name="Not" inputs="x:gu.dwelled" outputs=".not. x?:nd..not. x?" uid="nd" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:ok.x .and. y?,element:k0q.x = 0?,element:gu.navigated,element:gu.hit,element:nd..not. x?,element:same.x = y?,element:old.x &gt;= y?" outputs="appended array:dwa.appended array" uid="dwa" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:dwa.appended array" outputs="logical AND:dwl.logical AND" uid="dwl" uid_parent="root"/>
+  <Indicator _name="navigate?" conIdx="4" connection="recommended" description="Highlight the item under the pointer in the deepest menu." inputs="value:nav.logical AND" type="bool" uid="o_n" uid_parent="root" value="false"/>
+  <Indicator _name="dwell?" conIdx="6" connection="recommended" description="Post VK_RIGHT for the dwell." inputs="value:dwl.logical AND" type="bool" uid="o_d" uid_parent="root" value="false"/>
+  <Indicator _name="parent?" conIdx="8" connection="recommended" description="The pointer is over a parent of open submenus." inputs="value:par.logical AND" type="bool" uid="o_p" uid_parent="root" value="false"/>
+  <Indicator _name="k" conIdx="10" connection="recommended" description="Index of the menu under the pointer\2C -1 when none." inputs="value:pp.index" type="int32" uid="o_k" uid_parent="root" value="-1"/>
+</VI>

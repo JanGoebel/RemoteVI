@@ -1,0 +1,34 @@
+<VI _name="RemoteVI Note Popup Pointer.vi" description="Remembers the remote pointer while a LabVIEW popup is open (docs\5Carchitecture.md\2C Popups)\3A for a WM_MOUSEMOVE (512) with popup? TRUE the menu pointer state (RemoteVI Menu Pointer.vi) gets active TRUE\2C x\2C y = the LOGICAL screen point (panel origin geo.panelX\2C panelY + x\2C y)\2C moved = now and navigated FALSE. Nothing is posted - a posted move does not move LabVIEW's menu highlight (it follows the real cursor)\3B RemoteVI Menu Hover.vi applies the latest position with keys once per server loop iteration\2C so a burst of moves costs one navigation. Anything else does nothing. Pure G apart from the state.">
+  <Control _name="popup?" conIdx="0" connection="required" description="A modal LabVIEW popup is open." outputs="value:po.value" type="bool" uid="po" uid_parent="root" value="false"/>
+  <Control _name="msg" conIdx="5" connection="required" description="The client's message number." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
+  <Control _name="x" conIdx="7" connection="required" description="Panel pixel x." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="9" connection="required" description="Panel pixel y." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Control _name="geo" conIdx="1" connection="required" description="Panel geometry (RemoteVI Get Panel Geometry.vi)." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Constant _name="WM_MOUSEMOVE" outputs="value:kmv.value" type="uint32" uid="kmv" uid_parent="root" value="512"/>
+  <Node _name="Equal?" inputs="x:msg.value,y:kmv.value" outputs="x = y?:ismv.x = y?" uid="ismv" uid_parent="root"/>
+  <Node _name="And" inputs="x:po.value,y:ismv.x = y?" outputs="x .and. y?:go.x .and. y?" uid="go" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="go.x .and. y?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:x.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:y.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:geo.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="Pointer moved over a popup\3A remember it" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_x.value" uid="t_x" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_y.value" uid="t_y" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_g.value" uid="t_g" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:t_g.value" outputs="panelX:gu.panelX,panelY:gu.panelY" uid="gu" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelX,y:t_x.value" outputs="x+y:sx.x+y" uid="sx" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelY,y:t_y.value" outputs="x+y:sy.x+y" uid="sy" uid_parent="cst"/>
+      <Node _name="Tick Count (ms)" outputs="millisecond timer value:tn.millisecond timer value" uid="tn" uid_parent="cst"/>
+      <Call inputs="" outputs="state:rd.state" target="RemoteVI Menu Pointer.vi" uid="rd" uid_parent="cst"/>
+      <Constant outputs="value:tt.value" type="bool" uid="tt" uid_parent="cst" value="true"/>
+      <Constant outputs="value:tf.value" type="bool" uid="tf" uid_parent="cst" value="false"/>
+      <Node _name="Bundle By Name" fields="active,x,y,moved,navigated" inputs="active:tt.value,x:sx.x+y,y:sy.x+y,moved:tn.millisecond timer value,navigated:tf.value,input cluster:rd.state" outputs="output cluster:nb.output cluster" uid="nb" uid_parent="cst"/>
+      <Call inputs="write?:tt.value,state in:nb.output cluster" outputs="state:" target="RemoteVI Menu Pointer.vi" uid="wr" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_x" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_y" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_g" uid_parent="csf"/>
+    </CaseFrame>
+  </Structure>
+</VI>

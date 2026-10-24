@@ -1,5 +1,5 @@
-<VI _name="RemoteVI Point On Popup.vi" description="TRUE when the screen point (x\2C y) lies inside any of windows (logical rectangles\2C right and bottom exclusive). Pure.">
-  <Control _name="windows" conIdx="0" connection="required" description="The popups at their logical positions." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
+<VI _name="RemoteVI Point On Popup.vi" description="TRUE when the screen point (x\2C y) lies inside any of windows (logical rectangles\2C right and bottom exclusive)\3B index is the first such window - windows are listed top-most first\2C so that is the one on top - or -1 when none. Pure.">
+  <Control _name="windows" conIdx="0" connection="required" description="The popups at their logical positions\2C top-most first." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
   <Control _name="x" conIdx="5" connection="required" description="Screen x of the point." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
   <Control _name="y" conIdx="7" connection="required" description="Screen y of the point." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
   <Structure _name="For Loop" count="" label="Is the point on this popup?" maxin="" maxout="" uid="fin" uid_parent="root">
@@ -19,5 +19,8 @@
     <Tunnel _id="Out1" inputs="value:a3.x .and. y?" mode="index" outputs="value:ina.value" uid="ina" uid_parent="fin"/>
   </Structure>
   <Node _name="Or Array Elements" inputs="Boolean array:ina.value" outputs="logical OR:onp.logical OR" uid="onp" uid_parent="root"/>
+  <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Node _name="Search 1D Array" inputs="1D array:ina.value,element:kt.value" outputs="index of element:idx.index of element" uid="idx" uid_parent="root"/>
   <Indicator _name="on popup?" conIdx="4" connection="recommended" description="TRUE when the point is on a popup." inputs="value:onp.logical OR" type="bool" uid="o_on" uid_parent="root" value="false"/>
+  <Indicator _name="index" conIdx="6" connection="recommended" description="Index of the first window that contains the point\2C -1 when none." inputs="value:idx.index of element" type="int32" uid="o_ix" uid_parent="root" value="-1"/>
 </VI>

@@ -1,0 +1,36 @@
+<VI _name="RemoteVI Swallow Button Up.vi" description="Drops the button-up of a click that RemoteVI Menu Click.vi turned into keys (docs\5Carchitecture.md\2C Popups)\3A the button-down chose a menu item with VK_RETURN\2C the menu closed\2C and the up would otherwise reach the panel as a stray WM_xBUTTONUP at whatever control lies under the menu. When posts starts with a button-up (WM_LBUTTONUP 514\2C WM_RBUTTONUP 517\2C WM_MBUTTONUP 520) and the menu pointer state (RemoteVI Menu Pointer.vi) has swallow up set\2C posts out is empty. Any button-up or button-down clears swallow up\2C so at most the one next up is dropped. Otherwise posts passes through.">
+  <Control _name="posts" conIdx="0" connection="required" description="The messages from RemoteVI Translate Input.vi." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Call inputs="" outputs="state:rd.state" target="RemoteVI Menu Pointer.vi" uid="rd" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="swallow up" inputs="input cluster:rd.state" outputs="swallow up:su.swallow up" uid="su" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:ps.value,index:k0.value" outputs="element:p0.element" uid="p0" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="msg" inputs="input cluster:p0.element" outputs="msg:pm.msg" uid="pm" uid_parent="root"/>
+  <Constant outputs="value:kl.value" type="uint32" uid="kl" uid_parent="root" value="514"/>
+  <Constant outputs="value:kr.value" type="uint32" uid="kr" uid_parent="root" value="517"/>
+  <Constant outputs="value:km.value" type="uint32" uid="km" uid_parent="root" value="520"/>
+  <Node _name="Equal?" inputs="x:pm.msg,y:kl.value" outputs="x = y?:el.x = y?" uid="el" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:pm.msg,y:kr.value" outputs="x = y?:er.x = y?" uid="er" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:pm.msg,y:km.value" outputs="x = y?:em.x = y?" uid="em" uid_parent="root"/>
+  <Node _name="Or" inputs="x:el.x = y?,y:er.x = y?" outputs="x .or. y?:o1.x .or. y?" uid="o1" uid_parent="root"/>
+  <Node _name="Or" inputs="x:o1.x .or. y?,y:em.x = y?" outputs="x .or. y?:isup.x .or. y?" uid="isup" uid_parent="root"/>
+  <Call inputs="posts:ps.value" outputs="button down?:bd.button down?" target="RemoteVI Is Button Down.vi" uid="bd" uid_parent="root"/>
+  <Node _name="And" inputs="x:isup.x .or. y?,y:su.swallow up" outputs="x .and. y?:drop.x .and. y?" uid="drop" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isup.x .or. y?,y:bd.button down?" outputs="x .or. y?:btn.x .or. y?" uid="btn" uid_parent="root"/>
+  <Node _name="And" inputs="x:btn.x .or. y?,y:su.swallow up" outputs="x .and. y?:clr.x .and. y?" uid="clr" uid_parent="root"/>
+  <Constant _name="post nothing" outputs="value:none.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="none" uid_parent="root" value="[]"/>
+  <Node _name="Select" inputs="t:none.value,s:drop.x .and. y?,f:ps.value" outputs="s? t\3Af:po.s? t\3Af" uid="po" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="clr.x .and. y?" uid="cc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rd.state" uid="cc_i1" uid_parent="cc"/>
+    <CaseFrame label="Clear swallow up" selector="True" selectout="" uid="cct" uid_parent="cc">
+      <Tunnel _id="In1" outputs="value:t_st.value" uid="t_st" uid_parent="cct"/>
+      <Constant outputs="value:tf.value" type="bool" uid="tf" uid_parent="cct" value="false"/>
+      <Constant outputs="value:tt.value" type="bool" uid="tt" uid_parent="cct" value="true"/>
+      <Node _name="Bundle By Name" fields="swallow up" inputs="swallow up:tf.value,input cluster:t_st.value" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cct"/>
+      <Call inputs="write?:tt.value,state in:tb.output cluster" outputs="state:" target="RemoteVI Menu Pointer.vi" uid="tw" uid_parent="cct"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ccf" uid_parent="cc">
+      <Tunnel _id="In1" outputs="value:" uid="f_st" uid_parent="ccf"/>
+    </CaseFrame>
+  </Structure>
+  <Indicator _name="posts out" conIdx="4" connection="recommended" description="posts\2C or empty when the button-up is dropped." inputs="value:po.s? t\3Af" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="o_p" uid_parent="root" value="[]"/>
+</VI>

@@ -1,0 +1,102 @@
+<VI _name="RemoteVI Menu Click.vi" description="A remote click on an open LabVIEW menu window menus[k] (RemoteVI List Menus.vi\2C deepest first)\2C done with keys only - no cursor and no window is moved\2C so every menu stays where LabVIEW put it. A BUTTON-DOWN\3A on a parent menu (k &gt; 0) on the item that opened the open submenu nothing happens (as locally)\3B otherwise the k submenus above are closed with VK_LEFT (RemoteVI Close Submenus.vi)\2C the highlight is moved onto the clicked item (RemoteVI Highlight Menu Row.vi\2C VK_DOWN / VK_UP) and\2C when the item is under the click\2C VK_RETURN is posted - it chooses the item\2C or opens its submenu next to the menu when it has one (measured on LabVIEW 2025\3A plot legend\2C ring and shortcut menus). A click on a separator or a disabled item moves the highlight but chooses nothing. The menu pointer state (RemoteVI Menu Pointer.vi) records the click as navigated and dwelled (no hover action follows) and sets swallow up\2C so the matching button-up is not posted. A BUTTON-UP on a menu is dropped (the menu was already handled on the down\3B the release of the click that opened a menu must not choose an item). handled? is FALSE - the caller then clicks with the mouse path - when the window takes no keys\3A it showed no highlight even after a VK_DOWN probe (colour picker\2C line width popup\3B recorded as state.plain\2C and a button-up on it is passed on too)\2C or when such a popup is open above the clicked parent (it takes no VK_LEFT\2C measured). No VI Server call.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window\3B the keys are posted to it." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="menus" conIdx="5" connection="required" description="The open menu windows\2C top-most (deepest) first." outputs="value:ms.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="ms" uid_parent="root" value="[]"/>
+  <Control _name="k" conIdx="7" connection="required" description="Index of the clicked menu in menus." outputs="value:k.value" type="int32" uid="k" uid_parent="root" value="0"/>
+  <Control _name="point" conIdx="9" connection="required" description="The clicked point\2C LOGICAL screen pixels (menus are never moved\2C so logical = real)." outputs="value:pt.value" type="cluster{int32.x,int32.y}" uid="pt" uid_parent="root" value="[0,0]"/>
+  <Control _name="button down?" conIdx="1" connection="required" description="TRUE for a button-down (or double click)\2C FALSE for a button-up." outputs="value:bd.value" type="bool" uid="bd" uid_parent="root" value="false"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="" outputs="state:rd.state" target="RemoteVI Menu Pointer.vi" uid="rd" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="plain" inputs="input cluster:rd.state" outputs="plain:su.plain" uid="su" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pt.value" outputs="x:pu.x,y:pu.y" uid="pu" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:ms.value,index:k.value" outputs="element:mk.element" uid="mk" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hwnd,y" inputs="input cluster:mk.element" outputs="hwnd:mku.hwnd,y:mku.y" uid="mku" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:ms.value,index:k0.value" outputs="element:m0.element" uid="m0" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:m0.element" outputs="hwnd:m0u.hwnd" uid="m0u" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:m0u.hwnd,y:su.plain" outputs="x = y?:plo.x = y?" uid="plo" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:k.value" outputs="x = 0?:isk0.x = 0?" uid="isk0" uid_parent="root"/>
+  <Node _name="Not" inputs="x:isk0.x = 0?" outputs=".not. x?:par..not. x?" uid="par" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:pu.y,y:mku.y" outputs="x-y:ly.x-y" uid="ly" uid_parent="root"/>
+  <Call inputs="hwnd:mku.hwnd,error in:ei.value" outputs="found?:mh.found?,top:mh.top,bottom:mh.bottom,height:,error out:mh.error out" target="RemoteVI Menu Highlight.vi" uid="mh" uid_parent="root"/>
+  <Node _name="Less Or Equal?" inputs="x:mh.top,y:ly.x-y" outputs="x &lt;= y?:c1.x &lt;= y?" uid="c1" uid_parent="root"/>
+  <Node _name="Less Or Equal?" inputs="x:ly.x-y,y:mh.bottom" outputs="x &lt;= y?:c2.x &lt;= y?" uid="c2" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:par..not. x?,element:mh.found?,element:c1.x &lt;= y?,element:c2.x &lt;= y?" outputs="appended array:owa.appended array" uid="owa" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:owa.appended array" outputs="logical AND:own.logical AND" uid="own" uid_parent="root"/>
+  <Node _name="Not" inputs="x:plo.x = y?" outputs=".not. x?:npl..not. x?" uid="npl" uid_parent="root"/>
+  <Node _name="Not" inputs="x:own.logical AND" outputs=".not. x?:nown..not. x?" uid="nown" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:bd.value,element:npl..not. x?,element:nown..not. x?" outputs="appended array:dka.appended array" uid="dka" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:dka.appended array" outputs="logical AND:dok.logical AND" uid="dok" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="dok.logical AND" uid="ck" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:mh.error out" uid="ck_i1" uid_parent="ck"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="ck_i2" uid_parent="ck"/>
+    <Tunnel _id="In3" inputs="value:k.value" uid="ck_i3" uid_parent="ck"/>
+    <Tunnel _id="In4" inputs="value:mku.hwnd" uid="ck_i4" uid_parent="ck"/>
+    <Tunnel _id="In5" inputs="value:ly.x-y" uid="ck_i5" uid_parent="ck"/>
+    <Tunnel _id="In6" inputs="value:rd.state" uid="ck_i6" uid_parent="ck"/>
+    <Tunnel _id="In7" inputs="value:pu.x" uid="ck_i7" uid_parent="ck"/>
+    <Tunnel _id="In8" inputs="value:pu.y" uid="ck_i8" uid_parent="ck"/>
+    <Tunnel _id="In9" inputs="value:su.plain" uid="ck_i9" uid_parent="ck"/>
+    <CaseFrame label="Close the submenus above\2C highlight\2C Enter" selector="True" selectout="" uid="ckt" uid_parent="ck">
+      <Tunnel _id="In1" outputs="value:t_e.value" uid="t_e" uid_parent="ckt"/>
+      <Tunnel _id="In2" outputs="value:t_hw.value" uid="t_hw" uid_parent="ckt"/>
+      <Tunnel _id="In3" outputs="value:t_k.value" uid="t_k" uid_parent="ckt"/>
+      <Tunnel _id="In4" outputs="value:t_m.value" uid="t_m" uid_parent="ckt"/>
+      <Tunnel _id="In5" outputs="value:t_y.value" uid="t_y" uid_parent="ckt"/>
+      <Tunnel _id="In6" outputs="value:t_st.value" uid="t_st" uid_parent="ckt"/>
+      <Tunnel _id="In7" outputs="value:t_px.value" uid="t_px" uid_parent="ckt"/>
+      <Tunnel _id="In8" outputs="value:t_py.value" uid="t_py" uid_parent="ckt"/>
+      <Tunnel _id="In9" outputs="value:t_pl.value" uid="t_pl" uid_parent="ckt"/>
+      <Call inputs="hWnd:t_hw.value,count:t_k.value,error in:t_e.value" outputs="error out:cs.error out" target="RemoteVI Close Submenus.vi" uid="cs" uid_parent="ckt"/>
+      <Constant outputs="value:tt.value" type="bool" uid="tt" uid_parent="ckt" value="true"/>
+      <Call inputs="hWnd:t_hw.value,menu:t_m.value,y:t_y.value,probe?:tt.value,error in:cs.error out" outputs="keyed?:hmr.keyed?,hit?:hmr.hit?,top:hmr.top,bottom:,error out:hmr.error out" target="RemoteVI Highlight Menu Row.vi" uid="hmr" uid_parent="ckt"/>
+      <Node _name="And" inputs="x:hmr.keyed?,y:hmr.hit?" outputs="x .and. y?:ent.x .and. y?" uid="ent" uid_parent="ckt"/>
+      <Structure _name="Case Structure" selectin="ent.x .and. y?" uid="ce" uid_parent="ckt">
+        <Tunnel _id="In1" inputs="value:hmr.error out" uid="ce_i1" uid_parent="ce"/>
+        <Tunnel _id="In2" inputs="value:t_hw.value" uid="ce_i2" uid_parent="ce"/>
+        <CaseFrame label="VK_RETURN chooses the item or opens its submenu" selector="True" selectout="" uid="cet" uid_parent="ce">
+          <Tunnel _id="In1" outputs="value:e_e.value" uid="e_e" uid_parent="cet"/>
+          <Tunnel _id="In2" outputs="value:e_hw.value" uid="e_hw" uid_parent="cet"/>
+          <Constant _name="VK_RETURN" outputs="value:kvr.value" type="uint64" uid="kvr" uid_parent="cet" value="13"/>
+          <Constant _name="scan 0x1C" outputs="value:klr.value" type="int64" uid="klr" uid_parent="cet" value="1835009"/>
+          <Call inputs="hWnd:e_hw.value,vk:kvr.value,key lParam:klr.value,error in:e_e.value" outputs="error out:pe.error out" target="RemoteVI Post Menu Key.vi" uid="pe" uid_parent="cet"/>
+          <Tunnel _id="Out1" inputs="value:pe.error out" uid="e_o1" uid_parent="cet"/>
+        </CaseFrame>
+        <CaseFrame selector="False" selectout="" uid="cef" uid_parent="ce">
+          <Tunnel _id="In1" outputs="value:f_e.value" uid="f_e" uid_parent="cef"/>
+          <Tunnel _id="In2" outputs="value:" uid="f_hw" uid_parent="cef"/>
+          <Tunnel _id="Out1" inputs="value:f_e.value" uid="f_o1" uid_parent="cef"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:ce_o1.value" uid="ce_o1" uid_parent="ce"/>
+      </Structure>
+      <Node _name="Tick Count (ms)" outputs="millisecond timer value:tn.millisecond timer value" uid="tn" uid_parent="ckt"/>
+      <Node _name="Select" inputs="t:t_pl.value,s:hmr.keyed?,f:t_m.value" outputs="s? t\3Af:nplain.s? t\3Af" uid="nplain" uid_parent="ckt"/>
+      <Node _name="Bundle By Name" fields="active,x,y,moved,navigated,menu,top,hit,row since,dwelled,plain,swallow up" inputs="active:tt.value,x:t_px.value,y:t_py.value,moved:tn.millisecond timer value,navigated:tt.value,menu:t_m.value,top:hmr.top,hit:hmr.hit?,row since:tn.millisecond timer value,dwelled:tt.value,plain:nplain.s? t\3Af,swallow up:hmr.keyed?,input cluster:t_st.value" outputs="output cluster:nb.output cluster" uid="nb" uid_parent="ckt"/>
+      <Call inputs="write?:tt.value,state in:nb.output cluster" outputs="state:" target="RemoteVI Menu Pointer.vi" uid="wr" uid_parent="ckt"/>
+      <Tunnel _id="Out1" inputs="value:ce_o1.value" uid="t_o1" uid_parent="ckt"/>
+      <Tunnel _id="Out2" inputs="value:hmr.keyed?" uid="t_o2" uid_parent="ckt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="ckf" uid_parent="ck">
+      <Tunnel _id="In1" outputs="value:u_e.value" uid="u_e" uid_parent="ckf"/>
+      <Tunnel _id="In2" outputs="value:" uid="u_hw" uid_parent="ckf"/>
+      <Tunnel _id="In3" outputs="value:" uid="u_k" uid_parent="ckf"/>
+      <Tunnel _id="In4" outputs="value:" uid="u_m" uid_parent="ckf"/>
+      <Tunnel _id="In5" outputs="value:" uid="u_y" uid_parent="ckf"/>
+      <Tunnel _id="In6" outputs="value:" uid="u_st" uid_parent="ckf"/>
+      <Tunnel _id="In7" outputs="value:" uid="u_px" uid_parent="ckf"/>
+      <Tunnel _id="In8" outputs="value:" uid="u_py" uid_parent="ckf"/>
+      <Tunnel _id="In9" outputs="value:" uid="u_pl" uid_parent="ckf"/>
+      <Constant outputs="value:uf.value" type="bool" uid="uf" uid_parent="ckf" value="false"/>
+      <Tunnel _id="Out1" inputs="value:u_e.value" uid="u_o1" uid_parent="ckf"/>
+      <Tunnel _id="Out2" inputs="value:uf.value" uid="u_o2" uid_parent="ckf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ck_o1.value" uid="ck_o1" uid_parent="ck"/>
+    <Tunnel _id="Out2" outputs="value:ck_o2.value" uid="ck_o2" uid_parent="ck"/>
+  </Structure>
+  <Node _name="Or" inputs="x:own.logical AND,y:ck_o2.value" outputs="x .or. y?:dh0.x .or. y?" uid="dh0" uid_parent="root"/>
+  <Node _name="And" inputs="x:npl..not. x?,y:dh0.x .or. y?" outputs="x .and. y?:dh.x .and. y?" uid="dh" uid_parent="root"/>
+  <Node _name="And" inputs="x:isk0.x = 0?,y:plo.x = y?" outputs="x .and. y?:upm.x .and. y?" uid="upm" uid_parent="root"/>
+  <Node _name="Not" inputs="x:upm.x .and. y?" outputs=".not. x?:uh..not. x?" uid="uh" uid_parent="root"/>
+  <Node _name="Select" inputs="t:dh.x .and. y?,s:bd.value,f:uh..not. x?" outputs="s? t\3Af:hd.s? t\3Af" uid="hd" uid_parent="root"/>
+  <Indicator _name="handled?" conIdx="4" connection="recommended" description="TRUE when the click was handled with keys or dropped\3B FALSE when the caller must click with the mouse path (the window takes no keys)." inputs="value:hd.s? t\3Af" type="bool" uid="o_h" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:ck_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

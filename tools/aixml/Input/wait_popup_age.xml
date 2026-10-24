@@ -1,0 +1,26 @@
+<VI _name="RemoteVI Wait Popup Age.vi" description="Waits until the open popup is 350 ms old (popup since = tick count when the server first saw it) before a mouse-path click is posted to it\3A LabVIEW ignored clicks on a freshly opened ring menu (measured with posted messages\3A 200 ms ignored\2C 250 ms taken). Returns at once when the popup is older. Menus are clicked with keys\2C which LabVIEW takes right after a menu opened (measured\3A VK_DOWN 70 ms after the plot legend menu appeared)\2C so only the mouse path waits. An incoming error is passed through\3B it does not skip the wait.">
+  <Control _name="popup since" conIdx="0" connection="required" description="Tick count (ms) when the server first saw a popup open." outputs="value:since.value" type="uint32" uid="since" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:pnow.millisecond timer value" uid="pnow" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:pnow.millisecond timer value,y:since.value" outputs="x-y:page.x-y" uid="page" uid_parent="root"/>
+  <Constant _name="popup ready after 350 ms" outputs="value:k350.value" type="uint32" uid="k350" uid_parent="root" value="350"/>
+  <Node _name="Less?" inputs="x:page.x-y,y:k350.value" outputs="x &lt; y?:young.x &lt; y?" uid="young" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:k350.value,y:page.x-y" outputs="x-y:prem.x-y" uid="prem" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="young.x &lt; y?" uid="cw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ei.value" uid="cw_i1" uid_parent="cw"/>
+    <Tunnel _id="In2" inputs="value:prem.x-y" uid="cw_i2" uid_parent="cw"/>
+    <CaseFrame label="Popup younger than 350 ms\3A wait" selector="True" selectout="" uid="cwt" uid_parent="cw">
+      <Tunnel _id="In1" outputs="value:w_e.value" uid="w_e" uid_parent="cwt"/>
+      <Tunnel _id="In2" outputs="value:w_ms.value" uid="w_ms" uid_parent="cwt"/>
+      <Node _name="Wait (ms)" inputs="milliseconds to wait:w_ms.value" outputs="millisecond timer value:" uid="wms" uid_parent="cwt"/>
+      <Tunnel _id="Out1" inputs="value:w_e.value" uid="w_o1" uid_parent="cwt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cwf" uid_parent="cw">
+      <Tunnel _id="In1" outputs="value:v_e.value" uid="v_e" uid_parent="cwf"/>
+      <Tunnel _id="In2" outputs="value:" uid="v_ms" uid_parent="cwf"/>
+      <Tunnel _id="Out1" inputs="value:v_e.value" uid="v_o1" uid_parent="cwf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in." inputs="value:cw_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

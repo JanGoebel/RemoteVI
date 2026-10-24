@@ -1,0 +1,47 @@
+<VI _name="RemoteVI Plain Popup Click.vi" description="Clicks into a LabVIEW popup that takes no keys (colour picker\2C line width popup of a plot legend\2C graph palette popups\2C drop-downs) WITHOUT moving the host cursor\3A LabVIEW hit-tests such a click with the real cursor position (GetCursorPos) against the window's real position\2C and ignores posted coordinates (measured). So only the clicked window is moved\2C by d = real cursor - clicked point\2C from the window's ACTUAL position (window\2C listed fresh by the caller)\2C which puts the clicked point under the host cursor\3B RemoteVI Post At Cursor.vi posts a WM_MOUSEMOVE and the message(s) with the cursor position as lParam\2C each waiting until LabVIEW has handled it\3B and if the window is still open afterwards it is moved back to where LabVIEW put it. So no other popup ever moves\2C and between messages every window is at its natural place - the OVERLAY shows it where LabVIEW shows it locally\2C and a submenu LabVIEW opens later opens beside an unmoved parent. A down and its up are each moved and moved back (measured with the line width popup\3A the width is chosen). The click waits until the popup is 350 ms old (RemoteVI Wait Popup Age.vi). No VI Server call.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window\3B the messages are posted to it." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="window" conIdx="5" connection="required" description="The clicked popup window with its real screen rectangle." outputs="value:win.value" type="cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}" uid="win" uid_parent="root" value="[0,0,0,0,0]"/>
+  <Control _name="point" conIdx="7" connection="required" description="The clicked point\2C screen pixels\2C where LabVIEW shows the popup." outputs="value:pt.value" type="cluster{int32.x,int32.y}" uid="pt" uid_parent="root" value="[0,0]"/>
+  <Control _name="posts" conIdx="9" connection="required" description="The button message(s) to post (RemoteVI Translate Input.vi)\3B their lParam is replaced by the cursor position." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Control _name="popup since" conIdx="1" connection="recommended" description="Tick count when the server first saw a popup open." outputs="value:since.value" type="uint32" uid="since" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="popup since:since.value,error in:ei.value" outputs="error out:wpa.error out" target="RemoteVI Wait Popup Age.vi" uid="wpa" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hwnd,x,y" inputs="input cluster:win.value" outputs="hwnd:wu.hwnd,x:wu.x,y:wu.y" uid="wu" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pt.value" outputs="x:pu.x,y:pu.y" uid="pu" uid_parent="root"/>
+  <Call inputs="error in:wpa.error out" outputs="X:gcp.X,Y:gcp.Y,return value:,error out:gcp.error out" target="user32 GetCursorPos.vi" uid="gcp" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:wu.x,y:pu.x" outputs="x-y:ox.x-y" uid="ox" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:wu.y,y:pu.y" outputs="x-y:oy.x-y" uid="oy" uid_parent="root"/>
+  <Node _name="Add" inputs="x:gcp.X,y:ox.x-y" outputs="x+y:nx.x+y" uid="nx" uid_parent="root"/>
+  <Node _name="Add" inputs="x:gcp.Y,y:oy.x-y" outputs="x+y:ny.x+y" uid="ny" uid_parent="root"/>
+  <Constant _name="SWP_NOSIZE|NOZORDER|NOACTIVATE" outputs="value:kswp.value" type="uint32" uid="kswp" uid_parent="root" value="21"/>
+  <Call inputs="hWnd:wu.hwnd,X:nx.x+y,Y:ny.x+y,uFlags:kswp.value,error in:gcp.error out" outputs="return value:,error out:swp.error out" target="user32 SetWindowPos.vi" uid="swp" uid_parent="root"/>
+  <Call inputs="x:gcp.X,y:gcp.Y" outputs="lParam:ppl.lParam" target="RemoteVI Pack Point lParam.vi" uid="ppl" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,posts:ps.value,lParam:ppl.lParam,error in:swp.error out" outputs="error out:pac.error out" target="RemoteVI Post At Cursor.vi" uid="pac" uid_parent="root"/>
+  <Call inputs="hWnd:wu.hwnd,error in:pac.error out" outputs="visible?:vis.visible?,error out:vis.error out" target="user32 IsWindowVisible.vi" uid="vis" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="vis.visible?" uid="cb" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vis.error out" uid="cb_i1" uid_parent="cb"/>
+    <Tunnel _id="In2" inputs="value:wu.hwnd" uid="cb_i2" uid_parent="cb"/>
+    <Tunnel _id="In3" inputs="value:wu.x" uid="cb_i3" uid_parent="cb"/>
+    <Tunnel _id="In4" inputs="value:wu.y" uid="cb_i4" uid_parent="cb"/>
+    <Tunnel _id="In5" inputs="value:kswp.value" uid="cb_i5" uid_parent="cb"/>
+    <CaseFrame label="Still open\3A put it back" selector="True" selectout="" uid="cbt" uid_parent="cb">
+      <Tunnel _id="In1" outputs="value:b_e.value" uid="b_e" uid_parent="cbt"/>
+      <Tunnel _id="In2" outputs="value:b_h.value" uid="b_h" uid_parent="cbt"/>
+      <Tunnel _id="In3" outputs="value:b_x.value" uid="b_x" uid_parent="cbt"/>
+      <Tunnel _id="In4" outputs="value:b_y.value" uid="b_y" uid_parent="cbt"/>
+      <Tunnel _id="In5" outputs="value:b_f.value" uid="b_f" uid_parent="cbt"/>
+      <Call inputs="hWnd:b_h.value,X:b_x.value,Y:b_y.value,uFlags:b_f.value,error in:b_e.value" outputs="return value:,error out:sb.error out" target="user32 SetWindowPos.vi" uid="sb" uid_parent="cbt"/>
+      <Tunnel _id="Out1" inputs="value:sb.error out" uid="b_o1" uid_parent="cbt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cbf" uid_parent="cb">
+      <Tunnel _id="In1" outputs="value:c_e.value" uid="c_e" uid_parent="cbf"/>
+      <Tunnel _id="In2" outputs="value:" uid="c_h" uid_parent="cbf"/>
+      <Tunnel _id="In3" outputs="value:" uid="c_x" uid_parent="cbf"/>
+      <Tunnel _id="In4" outputs="value:" uid="c_y" uid_parent="cbf"/>
+      <Tunnel _id="In5" outputs="value:" uid="c_f" uid_parent="cbf"/>
+      <Tunnel _id="Out1" inputs="value:c_e.value" uid="c_o1" uid_parent="cbf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cb_o1.value" uid="cb_o1" uid_parent="cb"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:cb_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

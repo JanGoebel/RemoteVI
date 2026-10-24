@@ -18,8 +18,10 @@
 //    point) lies under wherever the host cursor is, then posts the click with
 //    the real cursor position in lParam. Moves and wheel are dropped: LabVIEW
 //    only updates the hover highlight on real cursor motion, so there is none;
-//    a submenu opens when its entry is clicked. Popups travel as OVERLAY
-//    messages at their logical position, see docs/protocol.md.
+//    a submenu opens on the second click on its entry. A click outside every
+//    popup is not posted; the server closes the popups with WM_CANCELMODE.
+//    Popups travel as OVERLAY messages at their logical position, see
+//    docs/protocol.md.
 
 import { ALLOWED_MESSAGES, mouseLParam } from './protocol.mjs';
 

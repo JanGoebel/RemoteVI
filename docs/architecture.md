@@ -95,6 +95,7 @@ Ring and enum menus, right-click menus, combo-box lists and graph-palette popups
 
 ```
 source/
+├── RemoteVI.lvlib  the library: every VI below is a member (RemoteVI.lvlib:<VI name>)
 ├── API/        RemoteVI Start.vi, RemoteVI Stop.vi           (what you put in your VI)
 ├── Server/     Server Loop.vi and its parts (Accept Clients, Track Popups, Service Clients,
 │               Capture And Send, Send Overlay, ...), Handle Connection.vi, Index HTML.vi
@@ -116,5 +117,9 @@ examples/       RemoteVI Demo.vi (and the layout helper that arranges its panel)
 spikes/         benchmarks (Dirty Rects, PNG levels) and a Start/Stop error check; the original
                 measurement spikes are in git history (before the cleanup commit)
 ```
+
+`source/RemoteVI.lvlib` owns every VI under `source/`. Its virtual folders (API, Server, Capture, Protocol, Input, Win32) mirror the disk folders; no file was moved, and the VIs' qualified names are `RemoteVI.lvlib:<VI name>`. Every member is public on purpose: the check VIs in `tests/caraya/support`, the fixture, the examples and the spikes call internal VIs directly. The entry points are `API/RemoteVI Start.vi` and `API/RemoteVI Stop.vi` (the library description says so); everything else may change. Start opens `Server/RemoteVI Server Loop.vi` by path through VI Server, which works for a library member unchanged. In `RemoteVI.lvproj` the library appears inside the auto-populating `source` folder; it has no entry of its own.
+
+Regenerating a member - composing it from `tools/aixml/` or rebuilding a Win32 wrapper with `scripts/Build Win32 Wrappers.vi` - writes a VI that belongs to no library. Add it back through LabVIEW (Project Explorer, or `{LV.ProjectItem} AddItem` on the library) with its callers loaded, so they relink to the qualified name, and save the callers.
 
 Every pure VI (Protocol, Dirty Rects) has a JS reference function and shared vectors in `tests/vectors/`.

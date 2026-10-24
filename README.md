@@ -34,10 +34,11 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay (may extend past the panel), invisible on the host when opened remotely, panel keeps updating underneath |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Tests | ✅ `npm test` (18), unit-test check VIs (89 vectors), LabVIEW integration suite `tests/lv` (16) |
+| Tests | ✅ `npm test` (18), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (16) |
 | Caraya runner | ⏳ needs Caraya installed for LabVIEW 2025 (`tests/caraya/build.py`, `scripts/run-caraya.ps1`) |
 | Splitter dragging | ❓ untested on a panel with an unlocked splitter |
-| Access token, bind address, `.lvlib`, palette, VI package | planned |
+| Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
+| Access token, bind address, palette, VI package | planned |
 
 ## Known limits
 

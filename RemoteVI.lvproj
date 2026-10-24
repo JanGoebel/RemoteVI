@@ -15,7 +15,10 @@
 		<Item Name="source" Type="Folder" URL="../source">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
-		<Item Name="tests" Type="Folder" URL="../tests/caraya">
+		<Item Name="tests" Type="Folder" URL="../tests">
+			<Property Name="NI.DISK" Type="Bool">true</Property>
+		</Item>
+		<Item Name="examples" Type="Folder" URL="../examples">
 			<Property Name="NI.DISK" Type="Bool">true</Property>
 		</Item>
 		<Item Name="web" Type="Folder" URL="../web">

@@ -12,7 +12,7 @@ RemoteVI Start.vi   (VI: unwired = this VI, port = 8088, fps)  ──►  URL
 RemoteVI Stop.vi    (port = 8088)
 ```
 
-Then browse to `http://<machine>:<port>/`. The server also stops by itself when the published VI stops. Try `spikes/RemoteVI Demo.vi` (port 8088).
+Then browse to `http://<machine>:<port>/`. The server also stops by itself when the published VI stops. Try `examples/RemoteVI Demo.vi` (port 8088).
 
 > The default port is 8088, not 8080: on many NI machines port 8080 is taken by NI's Application Web Server.
 

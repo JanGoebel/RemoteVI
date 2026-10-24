@@ -112,7 +112,9 @@ scripts/        Build Win32 Wrappers.vi (+ builder subVIs and templates)
 tools/aixml/    AIXML sources of the generated VIs, for regeneration
 tools/lib, tools/mock-server   JS reference implementation + reference server
 web/index.html  the browser client
-spikes/         throwaway measurements (capture speed, input injection)
+examples/       RemoteVI Demo.vi (and the layout helper that arranges its panel)
+spikes/         benchmarks (Dirty Rects, PNG levels) and a Start/Stop error check; the original
+                measurement spikes are in git history (before the cleanup commit)
 ```
 
 Every pure VI (Protocol, Dirty Rects) has a JS reference function and shared vectors in `tests/vectors/`.

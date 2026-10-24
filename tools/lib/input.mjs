@@ -1,6 +1,7 @@
 // Reference for Input/Translate Input.vi: turns one parsed client input message
 // into the Win32 messages the server posts to the panel window. The rules come
-// from spikes/Spike Input Injection.vi (LabVIEW 2025, posted messages):
+// from the input-injection spike (git history) and the LabVIEW integration suite
+// tests/lv (LabVIEW 2025, posted messages):
 //
 //  * Mouse messages carry CLIENT coordinates in lParam - except while LabVIEW
 //    TRACKS a press ("tracking"), when it reads the moves and the button-up as

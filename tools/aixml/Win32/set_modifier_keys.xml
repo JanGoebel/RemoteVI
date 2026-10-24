@@ -1,0 +1,32 @@
+<VI _name="RemoteVI Set Modifier Keys.vi" description="Makes the key state of LabVIEW's UI thread show the modifier keys mods as held (1 Shift\2C 2 Ctrl\2C 4 Alt - see RemoteVI Track Modifiers.vi) and all others of the three as released. LabVIEW reads the modifiers of every mouse and key event with GetKeyState\2C and a POSTED message does not update that state - only real input does (measured\3A a posted Shift-click arrived without Shift). So the state is written directly\3A user32 GetKeyboardState.vi and user32 SetKeyboardState.vi\2C both configured to run in LabVIEW's UI thread\2C because a thread's key state can only be read and written by that thread. For each modifier bit 0x80 of the generic and the left key (VK_SHIFT 0x10 + VK_LSHIFT 0xA0\2C VK_CONTROL 0x11 + VK_LCONTROL 0xA2\2C VK_MENU 0x12 + VK_LMENU 0xA4) is set or cleared\2C the right key (0xA1\2C 0xA3\2C 0xA5) is cleared\3B the toggle bit 0x01 and every other key are kept. Only that thread's state changes\3A the host's keyboard\2C GetAsyncKeyState and other programs are untouched\2C and the next real input LabVIEW receives replaces it. Do NOT call it while a LabVIEW popup is open\3A its modal loop holds the UI thread (RemoteVI Service Client.vi checks). An incoming error skips the work.">
+  <FreeLabel comment="Generic + left key per modifier\2C right key up" uid="lbl" uid_parent="root"/>
+  <Control _name="mods" conIdx="0" connection="required" description="Modifiers to show as held\3A 1 Shift\2C 2 Ctrl\2C 4 Alt." outputs="value:mods.value" type="uint8" uid="mods" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is changed when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="modifier keys" outputs="value:aVK.value" type="array{int32}" uid="aVK" uid_parent="root" value="[16,160,161,17,162,163,18,164,165]"/>
+  <Constant _name="held for bit (0 = right key\2C always up)" outputs="value:aBit.value" type="array{uint8}" uid="aBit" uid_parent="root" value="[1,1,0,2,2,0,4,4,0]"/>
+  <Constant _name="0x7F" outputs="value:k7f.value" type="uint8" uid="k7f" uid_parent="root" value="127"/>
+  <Constant _name="0x80" outputs="value:k80.value" type="uint8" uid="k80" uid_parent="root" value="128"/>
+  <Constant _name="0" outputs="value:k0.value" type="uint8" uid="k0" uid_parent="root" value="0"/>
+  <Call inputs="error in:ei.value" outputs="key state:gks.key state,return value:,error out:gks.error out" target="user32 GetKeyboardState.vi" uid="gks" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Each modifier key" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:aVK.value" mode="index" outputs="value:l_vk.value" uid="l_vk" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:aBit.value" mode="index" outputs="value:l_bit.value" uid="l_bit" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:mods.value" outputs="value:l_m.value" uid="l_m" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:k7f.value" outputs="value:l_7f.value" uid="l_7f" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:k80.value" outputs="value:l_80.value" uid="l_80" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:k0.value" outputs="value:l_0.value" uid="l_0" uid_parent="fl"/>
+    <ShiftReg uid="sr" uid_parent="fl">
+      <Left inputs="value:gks.key state" outputs="value:ks.value" uid="srl" uid_parent="sr"/>
+      <Right inputs="value:rep.output array" outputs="value:ks_end.value" uid="srr" uid_parent="sr"/>
+    </ShiftReg>
+    <Node _name="Index Array" inputs="array:ks.value,index:l_vk.value" outputs="element:old.element" uid="old" uid_parent="fl"/>
+    <Node _name="And" inputs="x:old.element,y:l_7f.value" outputs="x .and. y?:keep.x .and. y?" uid="keep" uid_parent="fl"/>
+    <Node _name="And" inputs="x:l_m.value,y:l_bit.value" outputs="x .and. y?:hb.x .and. y?" uid="hb" uid_parent="fl"/>
+    <Node _name="Not Equal To 0?" inputs="x:hb.x .and. y?" outputs="x != 0?:down.x != 0?" uid="down" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:l_80.value,s:down.x != 0?,f:l_0.value" outputs="s? t\3Af:dv.s? t\3Af" uid="dv" uid_parent="fl"/>
+    <Node _name="Or" inputs="x:keep.x .and. y?,y:dv.s? t\3Af" outputs="x .or. y?:nv.x .or. y?" uid="nv" uid_parent="fl"/>
+    <Node _name="Replace Array Subset" inputs="array:ks.value,index:l_vk.value,new element/subarray:nv.x .or. y?" outputs="output array:rep.output array" uid="rep" uid_parent="fl"/>
+  </Structure>
+  <Call inputs="key state:ks_end.value,error in:gks.error out" outputs="return value:,error out:sks.error out" target="user32 SetKeyboardState.vi" uid="sks" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the errors of the two DLL calls." inputs="value:sks.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

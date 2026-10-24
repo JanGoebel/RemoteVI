@@ -1,0 +1,43 @@
+<VI _name="RemoteVI Mouse Captured.vi" description="Tells whether the thread that owns hWnd (LabVIEW's UI thread) holds the mouse capture. LabVIEW captures the mouse while it TRACKS a press - a latched button\2C a slider\2C a text selection\2C a graph drag - and while tracking it reads the coordinates of posted moves and of the button-up as SCREEN coordinates\3B without capture they are CLIENT coordinates\2C as Windows defines them (measured\3A a switch that does not track lost its posted button-up when it carried screen coordinates\2C a latched button lost it with client coordinates). RemoteVI Translate Input.vi takes the answer as tracking in. Reads user32 GetWindowThreadProcessId.vi then user32 GetGUIThreadInfo.vi with the 64-bit GUITHREADINFO (cbSize 72\2C hwndCapture in info[6\2C7])\3B when that call fails it is repeated with the 32-bit layout (cbSize 48\2C hwndCapture in info[4]). Both calls run in any thread\2C so this answers even while a LabVIEW popup holds the UI thread. An incoming error skips the work and answers FALSE.">
+  <FreeLabel comment="hwndCapture of the window's thread" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="A window of the thread to ask about - the served front panel." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is read when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="hWnd:hw.value,error in:ei.value" outputs="thread ID:gt.thread ID,process ID:,error out:gt.error out" target="user32 GetWindowThreadProcessId.vi" uid="gt" uid_parent="root"/>
+  <Constant _name="64-bit GUITHREADINFO" outputs="value:k72.value" type="uint32" uid="k72" uid_parent="root" value="72"/>
+  <Call inputs="thread ID:gt.thread ID,cbSize:k72.value,error in:gt.error out" outputs="info:g64.info,return value:g64.return value,error out:g64.error out" target="user32 GetGUIThreadInfo.vi" uid="g64" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:g64.return value" outputs="x = 0?:fail.x = 0?" uid="fail" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="fail.x = 0?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:g64.info" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:gt.thread ID" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:g64.error out" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="32-bit LabVIEW\3A ask again with cbSize 48" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_inf" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_tid.value" uid="t_tid" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_err.value" uid="t_err" uid_parent="cst"/>
+      <Constant _name="32-bit GUITHREADINFO" outputs="value:k48.value" type="uint32" uid="k48" uid_parent="cst" value="48"/>
+      <Call inputs="thread ID:t_tid.value,cbSize:k48.value,error in:t_err.value" outputs="info:g32.info,return value:,error out:g32.error out" target="user32 GetGUIThreadInfo.vi" uid="g32" uid_parent="cst"/>
+      <Constant _name="hwndCapture" outputs="value:i4.value" type="int32" uid="i4" uid_parent="cst" value="4"/>
+      <Node _name="Index Array" inputs="array:g32.info,index:i4.value" outputs="element:c32.element" uid="c32" uid_parent="cst"/>
+      <Node _name="Not Equal To 0?" inputs="x:c32.element" outputs="x != 0?:n32.x != 0?" uid="n32" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:n32.x != 0?" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:g32.error out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="64-bit LabVIEW" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_inf.value" uid="f_inf" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_tid" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_err.value" uid="f_err" uid_parent="csf"/>
+      <Constant _name="hwndCapture low" outputs="value:i6.value" type="int32" uid="i6" uid_parent="csf" value="6"/>
+      <Constant _name="hwndCapture high" outputs="value:i7.value" type="int32" uid="i7" uid_parent="csf" value="7"/>
+      <Node _name="Index Array" inputs="array:f_inf.value,index:i6.value" outputs="element:lo.element" uid="lo" uid_parent="csf"/>
+      <Node _name="Index Array" inputs="array:f_inf.value,index:i7.value" outputs="element:hi.element" uid="hi" uid_parent="csf"/>
+      <Node _name="Or" inputs="x:lo.element,y:hi.element" outputs="x .or. y?:lh.x .or. y?" uid="lh" uid_parent="csf"/>
+      <Node _name="Not Equal To 0?" inputs="x:lh.x .or. y?" outputs="x != 0?:n64.x != 0?" uid="n64" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:n64.x != 0?" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_err.value" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="captured?" conIdx="4" connection="recommended" description="TRUE while a window of hWnd's thread holds the mouse capture." inputs="value:cs_o1.value" type="bool" uid="o_c" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the errors of the DLL calls." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

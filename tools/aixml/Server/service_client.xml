@@ -1,6 +1,6 @@
-<VI _name="RemoteVI Service Client.vi" description="Services one WebSocket client without blocking (docs\5Cprotocol.md sections 4-6). Reads whatever bytes are waiting (TCP Read\2C immediate mode\2C timeout 0\3B error 56 means nothing waiting\2C any other error means the peer is gone and sets closed)\2C appends them to rx buffer and decodes every complete frame with RemoteVI WS Decode Client Frame.vi. A text frame goes through RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq) when seq is not ahead of the client's seq\3B mouse and key messages are translated (RemoteVI Translate Input.vi with geo and popup = popups.windows not empty\2C tracking carried) and posted to the window hWnd (RemoteVI Post Input.vi\2C which - while a popup is open - moves the invisible popups so that the clicked point lies under the host cursor\2C never moving the cursor\2C and waits until the popups change\2C at most 300 ms\3B the displacement it used travels on to the next message and out in popups out)\3B a minimized panel is restored first (RemoteVI Restore If Minimized.vi). No VI Server call\2C so servicing goes on while an open LabVIEW popup blocks the UI thread\3B the server loop supplies geo\2C hWnd and popups from its cache. clicked? tells the server loop that a message which may open a LabVIEW popup (anything but WM_MOUSEMOVE and WM_MOUSEWHEEL) was posted\2C so it holds its VI Server calls back until the popup has had time to appear. A ping is answered with a pong\3B a close frame with a close frame (1000)\3B a binary or fragmented message with close 1008\3B a protocol violation with the decoder's close code - each sets closed. Consumed bytes leave rx buffer. A client already closed is passed through untouched. TCP errors only set closed\3B error out carries the errors of restoring the window and posting input.">
+<VI _name="RemoteVI Service Client.vi" description="Services one WebSocket client without blocking (docs\5Cprotocol.md sections 4-6). Reads whatever bytes are waiting (TCP Read\2C immediate mode\2C timeout 0\3B error 56 means nothing waiting\2C any other error means the peer is gone and sets closed)\2C appends them to rx buffer and decodes every complete frame with RemoteVI WS Decode Client Frame.vi. A text frame goes through RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq) when seq is not ahead of the client's seq\3B mouse and key messages first update mods (RemoteVI Track Modifiers.vi) and\2C when they changed and no popup is open\2C write them into the key state of LabVIEW's UI thread (RemoteVI Apply Modifiers.vi - LabVIEW reads Shift/Ctrl/Alt with GetKeyState\2C which posted messages do not update)\2C then are translated (RemoteVI Translate Input.vi with geo\2C popup = popups.windows not empty\2C and tracking in = LabVIEW holds the mouse capture\2C RemoteVI Mouse Captured.vi) and posted to the window hWnd (RemoteVI Post Input.vi\2C which - while a popup is open - moves the invisible popups so that the clicked point lies under the host cursor\2C never moving the cursor\2C and waits until the popups change\2C at most 300 ms\3B the displacement it used travels on to the next message and out in popups out)\3B a minimized panel is restored first (RemoteVI Restore If Minimized.vi). No VI Server call\2C so servicing goes on while an open LabVIEW popup blocks the UI thread\3B the server loop supplies geo\2C hWnd and popups from its cache. clicked? tells the server loop that a message which may open a LabVIEW popup (anything but WM_MOUSEMOVE and WM_MOUSEWHEEL) was posted\2C so it holds its VI Server calls back until the popup has had time to appear. A ping is answered with a pong\3B a close frame with a close frame (1000)\3B a binary or fragmented message with close 1008\3B a protocol violation with the decoder's close code - each sets closed. Consumed bytes leave rx buffer. A click on a popup is posted no sooner than 350 ms after the popup was first seen open (popup since)\3A LabVIEW ignores a click on a ring menu that arrives within about 250 ms of opening it (measured with posted messages\3A 200 ms ignored\2C 250 ms chosen). A client that closes with modifiers written is released (mods set back to 0\2C unless a popup is open). A client already closed is passed through untouched. TCP errors only set closed\3B error out carries the errors of restoring the window and posting input.">
   <FreeLabel comment="Decode every complete frame waiting" uid="lbl" uid_parent="root"/>
-  <Control _name="Client" conIdx="0" connection="required" description="Per-client state (same cluster as in RemoteVI Server Loop.vi). connection is the TCP connection refnum type-cast to U32." outputs="value:cl.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="cl" uid_parent="root" value="[0,,0,0,[],false,false]"/>
+  <Control _name="Client" conIdx="0" connection="required" description="Per-client state (same cluster as in RemoteVI Server Loop.vi). connection is the TCP connection refnum type-cast to U32. mods are the modifier keys the remote user holds (1 Shift\2C 2 Ctrl\2C 4 Alt\2C RemoteVI Track Modifiers.vi)\2C mods set the ones last written into LabVIEW's key state for this client\2C popup since the tick (ms) at which this client first saw the current popups open (0 = none open)." outputs="value:cl.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}" uid="cl" uid_parent="root" value="[0,,0,0,[],false,false,0,0,0]"/>
   <Control _name="geo" conIdx="5" connection="required" description="Panel origin and client-area origin in screen coordinates (RemoteVI Get Panel Geometry.vi\2C cached by the server loop)." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
   <Control _name="hWnd" conIdx="7" connection="required" description="Native handle of the served front panel window (cached by the server loop)." outputs="value:hwnd.value" type="uint64" uid="hwnd" uid_parent="root" value="0"/>
   <Control _name="popups" conIdx="9" connection="recommended" description="The LabVIEW popups open now (cached by the server loop)\3A windows = each popup window (RemoteVI Find Popups.vi without SysShadow) with its LOGICAL top-left in screen pixels and its size\2C dx\2C dy = the displacement d by which the popups are currently moved (docs\5Carchitecture.md\2C Popups). windows not empty = a popup is open\3A mouse buttons are then aimed by moving the popups under the host cursor (RemoteVI Post Input.vi) and moves and the wheel are dropped." outputs="value:phw.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="phw" uid_parent="root" value="[[],0,0]"/>
@@ -17,7 +17,12 @@
   <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
   <Constant _name="panel" outputs="value:pan0.value" type="cluster{uint64.hWnd,bool.popup,cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}.geo}" uid="pan0" uid_parent="root" value="[0,false,[0,0,0,0]]"/>
   <Node _name="Bundle By Name" fields="geo,hWnd,popup" inputs="geo:geo.value,hWnd:hwnd.value,popup:popin..not. x?,input cluster:pan0.value" outputs="output cluster:pan.output cluster" uid="pan" uid_parent="root"/>
-  <Node _name="Unbundle By Name" fields="connection,rx buffer,seq,acked,tracking,closed" inputs="input cluster:cl.value" outputs="connection:ub.connection,rx buffer:ub.rx buffer,seq:ub.seq,acked:ub.acked,tracking:ub.tracking,closed:ub.closed" uid="ub" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="connection,rx buffer,seq,acked,tracking,closed,mods,mods set,popup since" inputs="input cluster:cl.value" outputs="connection:ub.connection,rx buffer:ub.rx buffer,seq:ub.seq,acked:ub.acked,tracking:ub.tracking,closed:ub.closed,mods:ub.mods,mods set:ub.mods set,popup since:ub.popup since" uid="ub" uid_parent="root"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:tnow.millisecond timer value" uid="tnow" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:ub.popup since" outputs="x = 0?:nsince.x = 0?" uid="nsince" uid_parent="root"/>
+  <Node _name="Select" inputs="t:tnow.millisecond timer value,s:nsince.x = 0?,f:ub.popup since" outputs="s? t\3Af:since1.s? t\3Af" uid="since1" uid_parent="root"/>
+  <Constant _name="no popup" outputs="value:since0.value" type="uint32" uid="since0" uid_parent="root" value="0"/>
+  <Node _name="Select" inputs="t:since1.s? t\3Af,s:popin..not. x?,f:since0.value" outputs="s? t\3Af:since.s? t\3Af" uid="since" uid_parent="root"/>
   <Node _name="Type Cast" inputs="x:ub.connection,type:tplo.value" outputs="*(type *) &amp;x:conn.*(type *) &amp;x" uid="conn" uid_parent="root"/>
 
   <Structure _name="Case Structure" selectin="ub.closed" uid="cs" uid_parent="root">
@@ -30,6 +35,9 @@
     <Tunnel _id="In7" inputs="value:ub.tracking" uid="cs_i7" uid_parent="cs"/>
     <Tunnel _id="In8" inputs="value:pan.output cluster" uid="cs_i8" uid_parent="cs"/>
     <Tunnel _id="In9" inputs="value:phw.value" uid="cs_i9" uid_parent="cs"/>
+    <Tunnel _id="In10" inputs="value:ub.mods" uid="cs_i10" uid_parent="cs"/>
+    <Tunnel _id="In11" inputs="value:ub.mods set" uid="cs_i11" uid_parent="cs"/>
+    <Tunnel _id="In12" inputs="value:since.s? t\3Af" uid="cs_i12" uid_parent="cs"/>
     <CaseFrame label="Closed\3A nothing to do" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_cl.value" uid="t_cl" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
@@ -40,6 +48,9 @@
       <Tunnel _id="In7" outputs="value:" uid="t_i7" uid_parent="cst"/>
       <Tunnel _id="In8" outputs="value:" uid="t_i8" uid_parent="cst"/>
       <Tunnel _id="In9" outputs="value:t_pp.value" uid="t_pp" uid_parent="cst"/>
+      <Tunnel _id="In10" outputs="value:" uid="t_i10" uid_parent="cst"/>
+      <Tunnel _id="In11" outputs="value:" uid="t_i11" uid_parent="cst"/>
+      <Tunnel _id="In12" outputs="value:" uid="t_i12" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:t_cl.value" uid="t_o1" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:t_ei.value" uid="t_o2" uid_parent="cst"/>
       <Constant outputs="value:tfl.value" type="bool" uid="tfl" uid_parent="cst" value="false"/>
@@ -56,6 +67,9 @@
       <Tunnel _id="In7" outputs="value:f_trk.value" uid="f_trk" uid_parent="csf"/>
       <Tunnel _id="In8" outputs="value:f_vi.value" uid="f_vi" uid_parent="csf"/>
       <Tunnel _id="In9" outputs="value:f_pp.value" uid="f_pp" uid_parent="csf"/>
+      <Tunnel _id="In10" outputs="value:f_mods.value" uid="f_mods" uid_parent="csf"/>
+      <Tunnel _id="In11" outputs="value:f_mset.value" uid="f_mset" uid_parent="csf"/>
+      <Tunnel _id="In12" outputs="value:f_since.value" uid="f_since" uid_parent="csf"/>
       <Constant outputs="value:rdlen.value" type="int32" uid="rdlen" uid_parent="csf" value="65536"/>
       <Constant outputs="value:rdto.value" type="int32" uid="rdto" uid_parent="csf" value="0"/>
       <Constant outputs="value:imm.value" type="uint16{standard,buffered,CRLF,immediate}" uid="imm" uid_parent="csf" value="3"/>
@@ -71,6 +85,7 @@
         <Tunnel _id="In1" inputs="value:f_conn.value" outputs="value:d_conn.value" uid="d_conn" uid_parent="dl"/>
         <Tunnel _id="In2" inputs="value:f_seq.value" outputs="value:d_seq.value" uid="d_seq" uid_parent="dl"/>
         <Tunnel _id="In3" inputs="value:f_vi.value" outputs="value:d_vi.value" uid="d_vi" uid_parent="dl"/>
+        <Tunnel _id="In4" inputs="value:f_since.value" outputs="value:d_since.value" uid="d_since" uid_parent="dl"/>
         <ShiftReg uid="sr_buf" uid_parent="dl">
           <Left inputs="value:buf0.concatenated string" outputs="value:buf.value" uid="sr_bufl" uid_parent="sr_buf"/>
           <Right inputs="value:nbuf.substring" outputs="value:buf_end.value" uid="sr_bufr" uid_parent="sr_buf"/>
@@ -95,6 +110,14 @@
         <ShiftReg uid="sr_pp" uid_parent="dl">
           <Left inputs="value:f_pp.value" outputs="value:ppv.value" uid="sr_ppl" uid_parent="sr_pp"/>
           <Right inputs="value:ca_o5.value" outputs="value:pp_end.value" uid="sr_ppr" uid_parent="sr_pp"/>
+        </ShiftReg>
+        <ShiftReg uid="sr_mods" uid_parent="dl">
+          <Left inputs="value:f_mods.value" outputs="value:mods.value" uid="sr_modsl" uid_parent="sr_mods"/>
+          <Right inputs="value:ca_o6.value" outputs="value:mods_end.value" uid="sr_modsr" uid_parent="sr_mods"/>
+        </ShiftReg>
+        <ShiftReg uid="sr_mset" uid_parent="dl">
+          <Left inputs="value:f_mset.value" outputs="value:mset.value" uid="sr_msetl" uid_parent="sr_mset"/>
+          <Right inputs="value:ca_o7.value" outputs="value:mset_end.value" uid="sr_msetr" uid_parent="sr_mset"/>
         </ShiftReg>
         <ShiftReg uid="sr_err" uid_parent="dl">
           <Left inputs="value:f_ei.value" outputs="value:err.value" uid="sr_errl" uid_parent="sr_err"/>
@@ -137,6 +160,9 @@
           <Tunnel _id="In5" inputs="value:d_seq.value" uid="ca_i5" uid_parent="ca"/>
           <Tunnel _id="In6" inputs="value:d_vi.value" uid="ca_i6" uid_parent="ca"/>
           <Tunnel _id="In7" inputs="value:ppv.value" uid="ca_i7" uid_parent="ca"/>
+          <Tunnel _id="In8" inputs="value:mods.value" uid="ca_i8" uid_parent="ca"/>
+          <Tunnel _id="In9" inputs="value:mset.value" uid="ca_i9" uid_parent="ca"/>
+          <Tunnel _id="In10" inputs="value:d_since.value" uid="ca_i10" uid_parent="ca"/>
           <CaseFrame label="Text message\3A ack or input" selector="True" selectout="" uid="cat" uid_parent="ca">
             <Tunnel _id="In1" outputs="value:a_pl.value" uid="a_pl" uid_parent="cat"/>
             <Tunnel _id="In2" outputs="value:a_ack.value" uid="a_ack" uid_parent="cat"/>
@@ -145,6 +171,9 @@
             <Tunnel _id="In5" outputs="value:a_seq.value" uid="a_seq" uid_parent="cat"/>
             <Tunnel _id="In6" outputs="value:a_vi.value" uid="a_vi" uid_parent="cat"/>
             <Tunnel _id="In7" outputs="value:a_pp.value" uid="a_pp" uid_parent="cat"/>
+            <Tunnel _id="In8" outputs="value:a_mods.value" uid="a_mods" uid_parent="cat"/>
+            <Tunnel _id="In9" outputs="value:a_mset.value" uid="a_mset" uid_parent="cat"/>
+            <Tunnel _id="In10" outputs="value:a_since.value" uid="a_since" uid_parent="cat"/>
             <Call inputs="text:a_pl.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="cat"/>
             <Node _name="To Long Integer" inputs="number:pi.kind" outputs="32bit integer:kn.32bit integer" uid="kn" uid_parent="cat"/>
             <Constant outputs="value:k3.value" type="int32" uid="k3" uid_parent="cat" value="3"/>
@@ -169,10 +198,13 @@
               <Tunnel _id="In8" inputs="value:pi.wParam" uid="cp_i8" uid_parent="cp"/>
               <Tunnel _id="In9" inputs="value:pi.lParam" uid="cp_i9" uid_parent="cp"/>
               <Tunnel _id="In10" inputs="value:a_pp.value" uid="cp_i10" uid_parent="cp"/>
+              <Tunnel _id="In11" inputs="value:a_mods.value" uid="cp_i11" uid_parent="cp"/>
+              <Tunnel _id="In12" inputs="value:a_mset.value" uid="cp_i12" uid_parent="cp"/>
+              <Tunnel _id="In13" inputs="value:a_since.value" uid="cp_i13" uid_parent="cp"/>
               <CaseFrame label="Mouse or key\3A post it" selector="True" selectout="" uid="cpt" uid_parent="cp">
                 <Tunnel _id="In1" outputs="value:p_vi.value" uid="p_vi" uid_parent="cpt"/>
                 <Tunnel _id="In2" outputs="value:p_err.value" uid="p_err" uid_parent="cpt"/>
-                <Tunnel _id="In3" outputs="value:p_trk.value" uid="p_trk" uid_parent="cpt"/>
+                <Tunnel _id="In3" outputs="value:" uid="p_trk" uid_parent="cpt"/>
                 <Tunnel _id="In4" outputs="value:p_kind.value" uid="p_kind" uid_parent="cpt"/>
                 <Tunnel _id="In5" outputs="value:p_msg.value" uid="p_msg" uid_parent="cpt"/>
                 <Tunnel _id="In6" outputs="value:p_x.value" uid="p_x" uid_parent="cpt"/>
@@ -180,10 +212,41 @@
                 <Tunnel _id="In8" outputs="value:p_wp.value" uid="p_wp" uid_parent="cpt"/>
                 <Tunnel _id="In9" outputs="value:p_lp.value" uid="p_lp" uid_parent="cpt"/>
                 <Tunnel _id="In10" outputs="value:p_pp.value" uid="p_pp" uid_parent="cpt"/>
+                <Tunnel _id="In11" outputs="value:p_mods.value" uid="p_mods" uid_parent="cpt"/>
+                <Tunnel _id="In12" outputs="value:p_mset.value" uid="p_mset" uid_parent="cpt"/>
+                <Tunnel _id="In13" outputs="value:p_since.value" uid="p_since" uid_parent="cpt"/>
                 <Node _name="Unbundle By Name" fields="geo,hWnd,popup" inputs="input cluster:p_vi.value" outputs="geo:up.geo,hWnd:up.hWnd,popup:up.popup" uid="up" uid_parent="cpt"/>
                 <Call inputs="hWnd:up.hWnd,error in:p_err.value" outputs="was minimized?:,error out:rim.error out" target="RemoteVI Restore If Minimized.vi" uid="rim" uid_parent="cpt"/>
-                <Call inputs="kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,wParam:p_wp.value,lParam:p_lp.value,geo:up.geo,popup:up.popup,tracking in:p_trk.value" outputs="posts:ti.posts,tracking out:ti.tracking out,cursor:ti.cursor" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="cpt"/>
-                <Call inputs="hWnd:up.hWnd,posts:ti.posts,cursor:ti.cursor,popups:p_pp.value,error in:rim.error out" outputs="popups out:po.popups out,error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="cpt"/>
+                <Call inputs="kind:p_kind.value,msg:p_msg.value,wParam:p_wp.value,mods in:p_mods.value" outputs="mods out:tm.mods out" target="RemoteVI Track Modifiers.vi" uid="tm" uid_parent="cpt"/>
+                <Call inputs="mods:tm.mods out,mods set:p_mset.value,popup:up.popup,error in:rim.error out" outputs="mods set out:am.mods set out,error out:am.error out" target="RemoteVI Apply Modifiers.vi" uid="am" uid_parent="cpt"/>
+                <Call inputs="hWnd:up.hWnd,error in:am.error out" outputs="captured?:mc.captured?,error out:mc.error out" target="RemoteVI Mouse Captured.vi" uid="mc" uid_parent="cpt"/>
+                <Call inputs="kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,wParam:p_wp.value,lParam:p_lp.value,geo:up.geo,popup:up.popup,tracking in:mc.captured?" outputs="posts:ti.posts,tracking out:ti.tracking out,cursor:ti.cursor" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="cpt"/>
+                <Node _name="Unbundle By Name" fields="move?" inputs="input cluster:ti.cursor" outputs="move?:tcu.move?" uid="tcu" uid_parent="cpt"/>
+                <Node _name="Tick Count (ms)" outputs="millisecond timer value:pnow.millisecond timer value" uid="pnow" uid_parent="cpt"/>
+                <Node _name="Subtract" inputs="x:pnow.millisecond timer value,y:p_since.value" outputs="x-y:page.x-y" uid="page" uid_parent="cpt"/>
+                <Constant _name="popup ready after 350 ms" outputs="value:k350.value" type="uint32" uid="k350" uid_parent="cpt" value="350"/>
+                <Node _name="Less?" inputs="x:page.x-y,y:k350.value" outputs="x &lt; y?:young.x &lt; y?" uid="young" uid_parent="cpt"/>
+                <Node _name="And" inputs="x:tcu.move?,y:young.x &lt; y?" outputs="x .and. y?:pwait.x .and. y?" uid="pwait" uid_parent="cpt"/>
+                <Node _name="Subtract" inputs="x:k350.value,y:page.x-y" outputs="x-y:prem.x-y" uid="prem" uid_parent="cpt"/>
+                <Structure _name="Case Structure" selectin="pwait.x .and. y?" uid="cw" uid_parent="cpt">
+                  <Tunnel _id="In1" inputs="value:mc.error out" uid="cw_i1" uid_parent="cw"/>
+                  <Tunnel _id="In2" inputs="value:prem.x-y" uid="cw_i2" uid_parent="cw"/>
+                  <CaseFrame label="Popup younger than 350 ms\3A LabVIEW ignores a click on it" selector="True" selectout="" uid="cwt" uid_parent="cw">
+                    <Tunnel _id="In1" outputs="value:w_e.value" uid="w_e" uid_parent="cwt"/>
+                    <Tunnel _id="In2" outputs="value:w_ms.value" uid="w_ms" uid_parent="cwt"/>
+                    <Node _name="Wait (ms)" inputs="milliseconds to wait:w_ms.value" outputs="millisecond timer value:" uid="wms" uid_parent="cwt"/>
+                    <Tunnel _id="Out1" inputs="value:w_e.value" uid="w_o1" uid_parent="cwt"/>
+                  </CaseFrame>
+                  <CaseFrame selector="False" selectout="" uid="cwf" uid_parent="cw">
+                    <Tunnel _id="In1" outputs="value:v_e.value" uid="v_e" uid_parent="cwf"/>
+                    <Tunnel _id="In2" outputs="value:" uid="v_ms" uid_parent="cwf"/>
+                    <Tunnel _id="Out1" inputs="value:v_e.value" uid="v_o1" uid_parent="cwf"/>
+                  </CaseFrame>
+                  <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
+                </Structure>
+                <Call inputs="hWnd:up.hWnd,posts:ti.posts,cursor:ti.cursor,popups:p_pp.value,error in:cw_o1.value" outputs="popups out:po.popups out,error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="cpt"/>
+                <Tunnel _id="Out5" inputs="value:tm.mods out" uid="p_o5" uid_parent="cpt"/>
+                <Tunnel _id="Out6" inputs="value:am.mods set out" uid="p_o6" uid_parent="cpt"/>
                 <Tunnel _id="Out1" inputs="value:ti.tracking out" uid="p_o1" uid_parent="cpt"/>
                 <Tunnel _id="Out2" inputs="value:po.error out" uid="p_o2" uid_parent="cpt"/>
                 <Constant _name="WM_MOUSEMOVE" outputs="value:kmv.value" type="uint32" uid="kmv" uid_parent="cpt" value="512"/>
@@ -205,22 +268,31 @@
                 <Tunnel _id="In8" outputs="value:" uid="q_i8" uid_parent="cpf"/>
                 <Tunnel _id="In9" outputs="value:" uid="q_i9" uid_parent="cpf"/>
                 <Tunnel _id="In10" outputs="value:q_pp.value" uid="q_pp" uid_parent="cpf"/>
+                <Tunnel _id="In11" outputs="value:q_mods.value" uid="q_mods" uid_parent="cpf"/>
+                <Tunnel _id="In12" outputs="value:q_mset.value" uid="q_mset" uid_parent="cpf"/>
+                <Tunnel _id="In13" outputs="value:" uid="q_since" uid_parent="cpf"/>
                 <Tunnel _id="Out1" inputs="value:q_trk.value" uid="q_o1" uid_parent="cpf"/>
                 <Tunnel _id="Out2" inputs="value:q_err.value" uid="q_o2" uid_parent="cpf"/>
                 <Constant outputs="value:qf.value" type="bool" uid="qf" uid_parent="cpf" value="false"/>
                 <Tunnel _id="Out3" inputs="value:qf.value" uid="q_o3" uid_parent="cpf"/>
                 <Tunnel _id="Out4" inputs="value:q_pp.value" uid="q_o4" uid_parent="cpf"/>
+                <Tunnel _id="Out5" inputs="value:q_mods.value" uid="q_o5" uid_parent="cpf"/>
+                <Tunnel _id="Out6" inputs="value:q_mset.value" uid="q_o6" uid_parent="cpf"/>
               </CaseFrame>
               <Tunnel _id="Out1" outputs="value:cp_o1.value" uid="cp_o1" uid_parent="cp"/>
               <Tunnel _id="Out2" outputs="value:cp_o2.value" uid="cp_o2" uid_parent="cp"/>
               <Tunnel _id="Out3" outputs="value:cp_o3.value" uid="cp_o3" uid_parent="cp"/>
               <Tunnel _id="Out4" outputs="value:cp_o4.value" uid="cp_o4" uid_parent="cp"/>
+              <Tunnel _id="Out5" outputs="value:cp_o5.value" uid="cp_o5" uid_parent="cp"/>
+              <Tunnel _id="Out6" outputs="value:cp_o6.value" uid="cp_o6" uid_parent="cp"/>
             </Structure>
             <Tunnel _id="Out1" inputs="value:nack.s? t\3Af" uid="a_o1" uid_parent="cat"/>
             <Tunnel _id="Out2" inputs="value:cp_o1.value" uid="a_o2" uid_parent="cat"/>
             <Tunnel _id="Out3" inputs="value:cp_o2.value" uid="a_o3" uid_parent="cat"/>
             <Tunnel _id="Out4" inputs="value:cp_o3.value" uid="a_o4" uid_parent="cat"/>
             <Tunnel _id="Out5" inputs="value:cp_o4.value" uid="a_o5" uid_parent="cat"/>
+            <Tunnel _id="Out6" inputs="value:cp_o5.value" uid="a_o6" uid_parent="cat"/>
+            <Tunnel _id="Out7" inputs="value:cp_o6.value" uid="a_o7" uid_parent="cat"/>
           </CaseFrame>
           <CaseFrame selector="False" selectout="" uid="caf" uid_parent="ca">
             <Tunnel _id="In1" outputs="value:" uid="b_pl" uid_parent="caf"/>
@@ -230,18 +302,25 @@
             <Tunnel _id="In5" outputs="value:" uid="b_seq" uid_parent="caf"/>
             <Tunnel _id="In6" outputs="value:" uid="b_vi" uid_parent="caf"/>
             <Tunnel _id="In7" outputs="value:b_pp.value" uid="b_pp" uid_parent="caf"/>
+            <Tunnel _id="In8" outputs="value:b_mods.value" uid="b_mods" uid_parent="caf"/>
+            <Tunnel _id="In9" outputs="value:b_mset.value" uid="b_mset" uid_parent="caf"/>
+            <Tunnel _id="In10" outputs="value:" uid="b_since" uid_parent="caf"/>
             <Tunnel _id="Out1" inputs="value:b_ack.value" uid="b_o1" uid_parent="caf"/>
             <Tunnel _id="Out2" inputs="value:b_trk.value" uid="b_o2" uid_parent="caf"/>
             <Tunnel _id="Out3" inputs="value:b_err.value" uid="b_o3" uid_parent="caf"/>
             <Constant outputs="value:bfl.value" type="bool" uid="bfl" uid_parent="caf" value="false"/>
             <Tunnel _id="Out4" inputs="value:bfl.value" uid="b_o4" uid_parent="caf"/>
             <Tunnel _id="Out5" inputs="value:b_pp.value" uid="b_o5" uid_parent="caf"/>
+            <Tunnel _id="Out6" inputs="value:b_mods.value" uid="b_o6" uid_parent="caf"/>
+            <Tunnel _id="Out7" inputs="value:b_mset.value" uid="b_o7" uid_parent="caf"/>
           </CaseFrame>
           <Tunnel _id="Out1" outputs="value:ca_o1.value" uid="ca_o1" uid_parent="ca"/>
           <Tunnel _id="Out2" outputs="value:ca_o2.value" uid="ca_o2" uid_parent="ca"/>
           <Tunnel _id="Out3" outputs="value:ca_o3.value" uid="ca_o3" uid_parent="ca"/>
           <Tunnel _id="Out4" outputs="value:ca_o4.value" uid="ca_o4" uid_parent="ca"/>
           <Tunnel _id="Out5" outputs="value:ca_o5.value" uid="ca_o5" uid_parent="ca"/>
+          <Tunnel _id="Out6" outputs="value:ca_o6.value" uid="ca_o6" uid_parent="ca"/>
+          <Tunnel _id="Out7" outputs="value:ca_o7.value" uid="ca_o7" uid_parent="ca"/>
         </Structure>
 
         <Structure _name="Case Structure" selectin="isPing.x .and. y?" uid="cg" uid_parent="dl">
@@ -307,9 +386,13 @@
         <Condition inputs="value:dstop.x .or. y?" uid="dlc" uid_parent="dl" value="stop"/>
       </Structure>
 
-      <Node _name="Bundle By Name" fields="rx buffer,acked,tracking,closed" inputs="rx buffer:buf_end.value,acked:ack_end.value,tracking:trk_end.value,closed:cls_end.value,input cluster:f_cl.value" outputs="output cluster:ncl.output cluster" uid="ncl" uid_parent="csf"/>
+      <Node _name="Unbundle By Name" fields="popup" inputs="input cluster:f_vi.value" outputs="popup:fvu.popup" uid="fvu" uid_parent="csf"/>
+      <Constant _name="none held" outputs="value:m0.value" type="uint8" uid="m0" uid_parent="csf" value="0"/>
+      <Node _name="Select" inputs="t:m0.value,s:cls_end.value,f:mods_end.value" outputs="s? t\3Af:mfin.s? t\3Af" uid="mfin" uid_parent="csf"/>
+      <Call inputs="mods:mfin.s? t\3Af,mods set:mset_end.value,popup:fvu.popup,error in:err_end.value" outputs="mods set out:amc.mods set out,error out:amc.error out" target="RemoteVI Apply Modifiers.vi" uid="amc" uid_parent="csf"/>
+      <Node _name="Bundle By Name" fields="rx buffer,acked,tracking,closed,mods,mods set,popup since" inputs="rx buffer:buf_end.value,acked:ack_end.value,tracking:trk_end.value,closed:cls_end.value,mods:mods_end.value,mods set:amc.mods set out,popup since:f_since.value,input cluster:f_cl.value" outputs="output cluster:ncl.output cluster" uid="ncl" uid_parent="csf"/>
       <Tunnel _id="Out1" inputs="value:ncl.output cluster" uid="f_o1" uid_parent="csf"/>
-      <Tunnel _id="Out2" inputs="value:err_end.value" uid="f_o2" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:amc.error out" uid="f_o2" uid_parent="csf"/>
       <Tunnel _id="Out3" inputs="value:clk_end.value" uid="f_o3" uid_parent="csf"/>
       <Tunnel _id="Out4" inputs="value:pp_end.value" uid="f_o4" uid_parent="csf"/>
     </CaseFrame>
@@ -319,7 +402,7 @@
     <Tunnel _id="Out4" outputs="value:cs_o4.value" uid="cs_o4" uid_parent="cs"/>
   </Structure>
 
-  <Indicator _name="Client out" conIdx="4" connection="recommended" description="The client after servicing: rx buffer\2C acked\2C tracking and closed updated." inputs="value:cs_o1.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="o_cl" uid_parent="root" value="[0,,0,0,[],false,false]"/>
+  <Indicator _name="Client out" conIdx="4" connection="recommended" description="The client after servicing: rx buffer\2C acked\2C tracking\2C closed\2C mods\2C mods set and popup since updated." inputs="value:cs_o1.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}" uid="o_cl" uid_parent="root" value="[0,,0,0,[],false,false,0,0,0]"/>
   <Indicator _name="popups out" conIdx="8" connection="recommended" description="popups with dx\2C dy = the displacement d after this call\3A the one RemoteVI Post Input.vi used for the last click on a popup\2C otherwise unchanged. windows is passed through." inputs="value:cs_o4.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
   <Indicator _name="clicked?" conIdx="6" connection="recommended" description="TRUE when a mouse button\2C double-click or key message was posted in this call - one that may open a LabVIEW popup." inputs="value:cs_o3.value" type="bool" uid="o_clk" uid_parent="root" value="false"/>
   <Indicator _name="error out" conIdx="15" connection="recommended" description="error in merged with errors from restoring the window and posting input." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>

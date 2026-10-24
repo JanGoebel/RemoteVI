@@ -31,7 +31,7 @@
   <Node _name="Concatenate Strings" inputs="string:f1.frame,string:f2.frame" outputs="concatenated string:hello.concatenated string" uid="hello" uid_parent="root"/>
   <Constant outputs="value:k1000.value" type="double" uid="k1000" uid_parent="root" value="1000"/>
   <Node _name="Divide" inputs="x:k1000.value,y:fps.value" outputs="x/y:period.x/y" uid="period" uid_parent="root"/>
-  <Constant outputs="value:noclients.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}}" uid="noclients" uid_parent="root" value="[]"/>
+  <Constant outputs="value:noclients.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="noclients" uid_parent="root" value="[]"/>
   <Constant outputs="value:u0.value" type="uint32" uid="u0" uid_parent="root" value="0"/>
   <Constant _name="no overlay sent" outputs="value:es0.value" type="string" uid="es0" uid_parent="root" value=""/>
   <Constant _name="no popup windows" outputs="value:noh.value" type="array{uint64}" uid="noh" uid_parent="root" value="[]"/>
@@ -170,7 +170,7 @@
             <Constant outputs="value:wto.value" type="int32" uid="wto" uid_parent="cwt" value="2000"/>
             <Node _name="TCP Write" inputs="connection ID:w_conn.value,data in:hov.concatenated string,?parm9:wto.value" outputs="error out:tw.error out" uid="tw" uid_parent="cwt"/>
             <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tw.error out" outputs="status:tws.status" uid="tws" uid_parent="cwt"/>
-            <Constant outputs="value:cl0.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed}" uid="cl0" uid_parent="cwt" value="[0,,0,0,[],false,false]"/>
+            <Constant outputs="value:cl0.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}" uid="cl0" uid_parent="cwt" value="[0,,0,0,[],false,false,0,0,0]"/>
             <Node _name="Bundle By Name" fields="connection,closed" inputs="connection:w_cu.value,closed:tws.status,input cluster:cl0.value" outputs="output cluster:nc.output cluster" uid="nc" uid_parent="cwt"/>
             <Node _name="Build Array" inputs="array:w_cl.value,element:nc.output cluster" outputs="appended array:ba.appended array" uid="ba" uid_parent="cwt"/>
             <Tunnel _id="Out1" inputs="value:ba.appended array" uid="w_o1" uid_parent="cwt"/>

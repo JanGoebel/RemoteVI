@@ -1,0 +1,10 @@
+<VI _name="RemoteVI Is Button Down.vi" description="TRUE when the first message in posts is a mouse button-down or double click (WM_LBUTTONDOWN\2C WM_LBUTTONDBLCLK\2C WM_RBUTTONDOWN\2C WM_RBUTTONDBLCLK\2C WM_MBUTTONDOWN\2C WM_MBUTTONDBLCLK). Pure.">
+  <Control _name="posts" conIdx="0" connection="required" description="Messages to post (RemoteVI Translate Input.vi)." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Constant outputs="value:ki0.value" type="int32" uid="ki0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:ps.value,index:ki0.value" outputs="element:ip0.element" uid="ip0" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="msg" inputs="input cluster:ip0.element" outputs="msg:ipu.msg" uid="ipu" uid_parent="root"/>
+  <Constant _name="button down or double click" outputs="value:kbd.value" type="array{uint32}" uid="kbd" uid_parent="root" value="[513,515,516,518,519,521]"/>
+  <Node _name="Search 1D Array" inputs="1D array:kbd.value,element:ipu.msg" outputs="index of element:ibd.index of element" uid="ibd" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:ibd.index of element" outputs="x &gt;= 0?:isdn.x &gt;= 0?" uid="isdn" uid_parent="root"/>
+  <Indicator _name="button down?" conIdx="4" connection="recommended" description="TRUE for a button-down or double click." inputs="value:isdn.x &gt;= 0?" type="bool" uid="o_dn" uid_parent="root" value="false"/>
+</VI>

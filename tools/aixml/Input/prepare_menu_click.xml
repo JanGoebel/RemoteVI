@@ -56,28 +56,13 @@
       <Tunnel _id="In5" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
       <Tunnel _id="In6" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
       <Tunnel _id="In7" outputs="value:t_root.value" uid="t_root" uid_parent="cst"/>
-      <Constant _name="VK_LEFT" outputs="value:kl.value" type="uint64" uid="kl" uid_parent="cst" value="37"/>
-      <Constant _name="scan 0x4B\2C extended" outputs="value:kll.value" type="int64" uid="kll" uid_parent="cst" value="21692417"/>
-      <Structure _name="For Loop" count="lc.value" label="One VK_LEFT per menu to close" maxin="t_cc.value" maxout="" uid="lc" uid_parent="cst">
-        <Tunnel _id="In1" inputs="value:t_hws.value" outputs="value:l_hws.value" uid="l_hws" uid_parent="lc"/>
-        <Tunnel _id="In2" inputs="value:t_n.value" outputs="value:l_n.value" uid="l_n" uid_parent="lc"/>
-        <Tunnel _id="In3" inputs="value:t_hw.value" outputs="value:l_hw.value" uid="l_hw" uid_parent="lc"/>
-        <Tunnel _id="In4" inputs="value:kl.value" outputs="value:l_vk.value" uid="l_vk" uid_parent="lc"/>
-        <Tunnel _id="In5" inputs="value:kll.value" outputs="value:l_lp.value" uid="l_lp" uid_parent="lc"/>
-        <ShiftReg uid="sre" uid_parent="lc">
-          <Left inputs="value:t_ei.value" outputs="value:le.value" uid="srel" uid_parent="sre"/>
-          <Right inputs="value:pmk.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
-        </ShiftReg>
-        <Node _name="Subtract" inputs="x:l_n.value,y:lc.value" outputs="x-y:rem.x-y" uid="rem" uid_parent="lc"/>
-        <Node _name="Array Subset" inputs="array:l_hws.value,index:lc.value,length:rem.x-y" outputs="subarray:open.subarray" uid="open" uid_parent="lc"/>
-        <Call inputs="hWnd:l_hw.value,vk:l_vk.value,key lParam:l_lp.value,popup hWnds:open.subarray,error in:le.value" outputs="changed?:,error out:pmk.error out" target="RemoteVI Post Menu Key.vi" uid="pmk" uid_parent="lc"/>
-      </Structure>
+      <Call inputs="hWnd:t_hw.value,popup hWnds:t_hws.value,count:t_cc.value,error in:t_ei.value" outputs="error out:csm.error out" target="RemoteVI Close Submenus.vi" uid="csm" uid_parent="cst"/>
       <Node _name="Subtract" inputs="x:t_n.value,y:t_cc.value" outputs="x-y:left.x-y" uid="left" uid_parent="cst"/>
       <Node _name="Array Subset" inputs="array:t_win.value,index:t_cc.value,length:left.x-y" outputs="subarray:stay.subarray" uid="stay" uid_parent="cst"/>
       <Node _name="Not" inputs="x:t_root.value" outputs=".not. x?:reo..not. x?" uid="reo" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:stay.subarray" uid="t_o1" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:reo..not. x?" uid="t_o2" uid_parent="cst"/>
-      <Tunnel _id="Out3" inputs="value:lerr.value" uid="t_o3" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:csm.error out" uid="t_o3" uid_parent="cst"/>
     </CaseFrame>
     <CaseFrame label="Nothing to close" selector="False" selectout="" uid="csf" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:f_win.value" uid="f_win" uid_parent="csf"/>

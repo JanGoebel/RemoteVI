@@ -1,0 +1,17 @@
+<VI _name="RemoteVI Cursor Outside Window.vi" description="TRUE when the host cursor (user32 GetCursorPos) lies outside the window rectangle of hWnd (user32 GetWindowRect\2C right and bottom exclusive). FALSE when either call fails. Used by the server loop to tell a tip strip that can only stem from the remote pointer. No VI Server call.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The window to test\2C e.g. the served front panel." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Call inputs="error in:" outputs="X:hcur.X,Y:hcur.Y,return value:,error out:hcur.error out" target="user32 GetCursorPos.vi" uid="hcur" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,error in:hcur.error out" outputs="RECT:hwr.RECT,return value:,error out:hwr.error out" target="user32 GetWindowRect.vi" uid="hwr" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:hwr.RECT" outputs="left:hwu.left,top:hwu.top,right:hwu.right,bottom:hwu.bottom" uid="hwu" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:hcur.X,y:hwu.left" outputs="x &gt;= y?:hin1.x &gt;= y?" uid="hin1" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:hcur.X,y:hwu.right" outputs="x &lt; y?:hin2.x &lt; y?" uid="hin2" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:hcur.Y,y:hwu.top" outputs="x &gt;= y?:hin3.x &gt;= y?" uid="hin3" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:hcur.Y,y:hwu.bottom" outputs="x &lt; y?:hin4.x &lt; y?" uid="hin4" uid_parent="root"/>
+  <Node _name="And" inputs="x:hin1.x &gt;= y?,y:hin2.x &lt; y?" outputs="x .and. y?:hinx.x .and. y?" uid="hinx" uid_parent="root"/>
+  <Node _name="And" inputs="x:hin3.x &gt;= y?,y:hin4.x &lt; y?" outputs="x .and. y?:hiny.x .and. y?" uid="hiny" uid_parent="root"/>
+  <Node _name="And" inputs="x:hinx.x .and. y?,y:hiny.x .and. y?" outputs="x .and. y?:hin.x .and. y?" uid="hin" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:hwr.error out" outputs="status:hwe.status" uid="hwe" uid_parent="root"/>
+  <Node _name="Or" inputs="x:hin.x .and. y?,y:hwe.status" outputs="x .or. y?:hon.x .or. y?" uid="hon" uid_parent="root"/>
+  <Node _name="Not" inputs="x:hon.x .or. y?" outputs=".not. x?:hoff..not. x?" uid="hoff" uid_parent="root"/>
+  <Indicator _name="outside?" conIdx="4" connection="recommended" description="TRUE when the cursor is outside the window\3B FALSE on an error." inputs="value:hoff..not. x?" type="bool" uid="o_out" uid_parent="root" value="false"/>
+</VI>

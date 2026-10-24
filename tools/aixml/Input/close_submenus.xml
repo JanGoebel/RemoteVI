@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Close Submenus.vi" description="Closes the count top-most menus of an open LabVIEW menu chain\3A posts one VK_LEFT (scan code 0x4B\2C extended) per menu with RemoteVI Post Menu Key.vi\2C each time waiting until the menus still open (popup hWnds from that index on) change. No VI Server call.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served front panel's window\3B the keys are posted to it." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="popup hWnds" conIdx="5" connection="required" description="The open popups\2C topmost first." outputs="value:hws.value" type="array{uint64}" uid="hws" uid_parent="root" value="[]"/>
+  <Control _name="count" conIdx="7" connection="required" description="How many menus to close\2C from the top." outputs="value:cc.value" type="int32" uid="cc" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. With an error nothing is posted." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Array Size" inputs="array:hws.value" outputs="size(s):n.size(s)" uid="n" uid_parent="root"/>
+  <Constant _name="VK_LEFT" outputs="value:kl.value" type="uint64" uid="kl" uid_parent="root" value="37"/>
+  <Constant _name="scan 0x4B\2C extended" outputs="value:kll.value" type="int64" uid="kll" uid_parent="root" value="21692417"/>
+  <Structure _name="For Loop" count="lc.value" label="One VK_LEFT per menu to close" maxin="cc.value" maxout="" uid="lc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hws.value" outputs="value:l_hws.value" uid="l_hws" uid_parent="lc"/>
+    <Tunnel _id="In2" inputs="value:n.size(s)" outputs="value:l_n.value" uid="l_n" uid_parent="lc"/>
+    <Tunnel _id="In3" inputs="value:hw.value" outputs="value:l_hw.value" uid="l_hw" uid_parent="lc"/>
+    <Tunnel _id="In4" inputs="value:kl.value" outputs="value:l_vk.value" uid="l_vk" uid_parent="lc"/>
+    <Tunnel _id="In5" inputs="value:kll.value" outputs="value:l_lp.value" uid="l_lp" uid_parent="lc"/>
+    <ShiftReg uid="sre" uid_parent="lc">
+      <Left inputs="value:ei.value" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:pmk.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Subtract" inputs="x:l_n.value,y:lc.value" outputs="x-y:rem.x-y" uid="rem" uid_parent="lc"/>
+    <Node _name="Array Subset" inputs="array:l_hws.value,index:lc.value,length:rem.x-y" outputs="subarray:open.subarray" uid="open" uid_parent="lc"/>
+    <Call inputs="hWnd:l_hw.value,vk:l_vk.value,key lParam:l_lp.value,popup hWnds:open.subarray,error in:le.value" outputs="changed?:,error out:pmk.error out" target="RemoteVI Post Menu Key.vi" uid="pmk" uid_parent="lc"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or a posting error." inputs="value:lerr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,70 @@
+<VI _name="RemoteVI Refresh Popup List.vi" description="Makes sure the popup list a click is aimed at is current\3A when every window in windows is still visible (user32 IsWindowVisible) the list is returned as it is. Otherwise it is stale - a ring menu closes and reopens itself right after the posted button-down (measured) - and the popups are listed again with RemoteVI Find Popups.vi\2C SysShadow left out\2C at logical = real - (dx\2C dy)\2C for at most 100 ms until one is found. No VI Server call.">
+  <Control _name="windows" conIdx="0" connection="required" description="The popups at their logical positions." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
+  <Control _name="hWnd" conIdx="5" connection="required" description="The served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="dx" conIdx="7" connection="recommended" description="Current displacement d\2C x." outputs="value:dx.value" type="int32" uid="dx" uid_parent="root" value="0"/>
+  <Control _name="dy" conIdx="9" connection="recommended" description="Current displacement d\2C y." outputs="value:dy.value" type="int32" uid="dy" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="Still visible?" maxin="" maxout="" uid="fv" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:win.value" mode="index" outputs="value:v_w.value" uid="v_w" uid_parent="fv"/>
+    <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:v_w.value" outputs="hwnd:vwu.hwnd" uid="vwu" uid_parent="fv"/>
+    <Call inputs="hWnd:vwu.hwnd" outputs="visible?:vis.visible?,error out:" target="user32 IsWindowVisible.vi" uid="vis" uid_parent="fv"/>
+    <Tunnel _id="Out1" inputs="value:vis.visible?" mode="index" outputs="value:visa.value" uid="visa" uid_parent="fv"/>
+  </Structure>
+  <Node _name="And Array Elements" inputs="Boolean array:visa.value" outputs="logical AND:allv.logical AND" uid="allv" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="allv.logical AND" uid="cr" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:win.value" uid="cr_i1" uid_parent="cr"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="cr_i2" uid_parent="cr"/>
+    <Tunnel _id="In3" inputs="value:dx.value" uid="cr_i3" uid_parent="cr"/>
+    <Tunnel _id="In4" inputs="value:dy.value" uid="cr_i4" uid_parent="cr"/>
+    <CaseFrame selector="True" selectout="" uid="crt" uid_parent="cr">
+      <Tunnel _id="In1" outputs="value:r_win.value" uid="r_win" uid_parent="crt"/>
+      <Tunnel _id="In2" outputs="value:" uid="r_hw" uid_parent="crt"/>
+      <Tunnel _id="In3" outputs="value:" uid="r_dx" uid_parent="crt"/>
+      <Tunnel _id="In4" outputs="value:" uid="r_dy" uid_parent="crt"/>
+      <Tunnel _id="Out1" inputs="value:r_win.value" uid="r_o1" uid_parent="crt"/>
+    </CaseFrame>
+    <CaseFrame label="List is stale\3A list the popups again" selector="False" selectout="" uid="crf" uid_parent="cr">
+      <Tunnel _id="In1" outputs="value:" uid="s_win" uid_parent="crf"/>
+      <Tunnel _id="In2" outputs="value:s_hw.value" uid="s_hw" uid_parent="crf"/>
+      <Tunnel _id="In3" outputs="value:s_dx.value" uid="s_dx" uid_parent="crf"/>
+      <Tunnel _id="In4" outputs="value:s_dy.value" uid="s_dy" uid_parent="crf"/>
+      <Node _name="Tick Count (ms)" outputs="millisecond timer value:st0.millisecond timer value" uid="st0" uid_parent="crf"/>
+      <Constant _name="SysShadow" outputs="value:ksh.value" type="string" uid="ksh" uid_parent="crf" value="SysShadow"/>
+      <Constant _name="popup window" outputs="value:kw0c.value" type="cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}" uid="kw0c" uid_parent="crf" value="[0,0,0,0,0]"/>
+      <Constant _name="give up after 100 ms" outputs="value:k100.value" type="uint32" uid="k100" uid_parent="crf" value="100"/>
+      <Structure _name="While Loop" count="" label="Until a popup is found" uid="sw" uid_parent="crf">
+        <Tunnel _id="In1" inputs="value:s_hw.value" outputs="value:sw_hw.value" uid="sw_hw" uid_parent="sw"/>
+        <Tunnel _id="In2" inputs="value:s_dx.value" outputs="value:sw_dx.value" uid="sw_dx" uid_parent="sw"/>
+        <Tunnel _id="In3" inputs="value:s_dy.value" outputs="value:sw_dy.value" uid="sw_dy" uid_parent="sw"/>
+        <Tunnel _id="In4" inputs="value:ksh.value" outputs="value:sw_sh.value" uid="sw_sh" uid_parent="sw"/>
+        <Tunnel _id="In5" inputs="value:kw0c.value" outputs="value:sw_w0.value" uid="sw_w0" uid_parent="sw"/>
+        <Tunnel _id="In6" inputs="value:st0.millisecond timer value" outputs="value:sw_t0.value" uid="sw_t0" uid_parent="sw"/>
+        <Tunnel _id="In7" inputs="value:k100.value" outputs="value:sw_max.value" uid="sw_max" uid_parent="sw"/>
+        <Call inputs="panel hWnd:sw_hw.value" outputs="popups:sfp.popups,error out:" target="RemoteVI Find Popups.vi" uid="sfp" uid_parent="sw"/>
+        <Structure _name="For Loop" count="" label="Logical = real - d\2C no shadows" maxin="" maxout="" uid="sl2" uid_parent="sw">
+          <Tunnel _id="In1" inputs="value:sfp.popups" mode="index" outputs="value:l_p.value" uid="l_p" uid_parent="sl2"/>
+          <Tunnel _id="In2" inputs="value:sw_dx.value" outputs="value:l_dx.value" uid="l_dx" uid_parent="sl2"/>
+          <Tunnel _id="In3" inputs="value:sw_dy.value" outputs="value:l_dy.value" uid="l_dy" uid_parent="sl2"/>
+          <Tunnel _id="In4" inputs="value:sw_sh.value" outputs="value:l_sh.value" uid="l_sh" uid_parent="sl2"/>
+          <Tunnel _id="In5" inputs="value:sw_w0.value" outputs="value:l_w0.value" uid="l_w0" uid_parent="sl2"/>
+          <Node _name="Unbundle By Name" fields="hwnd,x,y,w,h,class" inputs="input cluster:l_p.value" outputs="hwnd:lpu.hwnd,x:lpu.x,y:lpu.y,w:lpu.w,h:lpu.h,class:lpu.class" uid="lpu" uid_parent="sl2"/>
+          <Node _name="Subtract" inputs="x:lpu.x,y:l_dx.value" outputs="x-y:lsx.x-y" uid="lsx" uid_parent="sl2"/>
+          <Node _name="Subtract" inputs="x:lpu.y,y:l_dy.value" outputs="x-y:lsy.x-y" uid="lsy" uid_parent="sl2"/>
+          <Node _name="Bundle By Name" fields="hwnd,x,y,w,h" inputs="hwnd:lpu.hwnd,x:lsx.x-y,y:lsy.x-y,w:lpu.w,h:lpu.h,input cluster:l_w0.value" outputs="output cluster:lb.output cluster" uid="lb" uid_parent="sl2"/>
+          <Node _name="Not Equal?" inputs="x:lpu.class,y:l_sh.value" outputs="x != y?:lns.x != y?" uid="lns" uid_parent="sl2"/>
+          <Tunnel _id="Out1" inputs="value:lb.output cluster" mode="index" cond="lns.x != y?" outputs="value:lwin.value" uid="lwin" uid_parent="sl2"/>
+        </Structure>
+        <Node _name="Empty Array?" inputs="array:lwin.value" outputs="empty?:lem.empty?" uid="lem" uid_parent="sw"/>
+        <Node _name="Not" inputs="x:lem.empty?" outputs=".not. x?:lgot..not. x?" uid="lgot" uid_parent="sw"/>
+        <Node _name="Tick Count (ms)" outputs="millisecond timer value:st1.millisecond timer value" uid="st1" uid_parent="sw"/>
+        <Node _name="Subtract" inputs="x:st1.millisecond timer value,y:sw_t0.value" outputs="x-y:sel.x-y" uid="sel" uid_parent="sw"/>
+        <Node _name="Greater Or Equal?" inputs="x:sel.x-y,y:sw_max.value" outputs="x &gt;= y?:sto.x &gt;= y?" uid="sto" uid_parent="sw"/>
+        <Node _name="Or" inputs="x:lgot..not. x?,y:sto.x &gt;= y?" outputs="x .or. y?:sdone.x .or. y?" uid="sdone" uid_parent="sw"/>
+        <Tunnel _id="Out1" inputs="value:lwin.value" outputs="value:sw_o1.value" uid="sw_o1" uid_parent="sw"/>
+        <Condition inputs="value:sdone.x .or. y?" uid="swc" uid_parent="sw" value="stop"/>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:sw_o1.value" uid="s_o1" uid_parent="crf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cr_o1.value" uid="cr_o1" uid_parent="cr"/>
+  </Structure>
+  <Indicator _name="windows out" conIdx="4" connection="recommended" description="windows\2C or the popups listed again when windows was stale." inputs="value:cr_o1.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="o_win" uid_parent="root" value="[]"/>
+</VI>

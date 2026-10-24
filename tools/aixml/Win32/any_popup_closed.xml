@@ -1,0 +1,17 @@
+<VI _name="RemoteVI Any Popup Closed.vi" description="TRUE when any window in popup hWnds is no longer visible (user32 IsWindowVisible). Errors are chained through the calls. Win32 only.">
+  <Control _name="popup hWnds" conIdx="0" connection="required" description="Window handles of the popups." outputs="value:ph.value" type="array{uint64}" uid="ph" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Structure _name="For Loop" count="" label="Is each popup still visible?" maxin="" maxout="" uid="fv" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ph.value" mode="index" outputs="value:v_h.value" uid="v_h" uid_parent="fv"/>
+    <ShiftReg uid="srv" uid_parent="fv">
+      <Left inputs="value:ei.value" outputs="value:v_e.value" uid="srvl" uid_parent="srv"/>
+      <Right inputs="value:vis.error out" outputs="value:v_e_end.value" uid="srvr" uid_parent="srv"/>
+    </ShiftReg>
+    <Call inputs="hWnd:v_h.value,error in:v_e.value" outputs="visible?:vis.visible?,error out:vis.error out" target="user32 IsWindowVisible.vi" uid="vis" uid_parent="fv"/>
+    <Node _name="Not" inputs="x:vis.visible?" outputs=".not. x?:gone..not. x?" uid="gone" uid_parent="fv"/>
+    <Tunnel _id="Out1" inputs="value:gone..not. x?" mode="index" outputs="value:gonea.value" uid="gonea" uid_parent="fv"/>
+  </Structure>
+  <Node _name="Or Array Elements" inputs="Boolean array:gonea.value" outputs="logical OR:anygone.logical OR" uid="anygone" uid_parent="root"/>
+  <Indicator _name="closed?" conIdx="4" connection="recommended" description="TRUE when a popup is no longer visible." inputs="value:anygone.logical OR" type="bool" uid="o_cl" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:v_e_end.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

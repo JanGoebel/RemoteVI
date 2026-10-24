@@ -65,12 +65,7 @@
   <Node _name="Or" inputs="x:pop.value,y:scr.s? t\3Af" outputs="x .or. y?:scr2.x .or. y?" uid="scr2" uid_parent="root"/>
   <Node _name="Select" inputs="t:sx.x+y,s:scr2.x .or. y?,f:cx.x+y" outputs="s? t\3Af:px.s? t\3Af" uid="px" uid_parent="root"/>
   <Node _name="Select" inputs="t:sy.x+y,s:scr2.x .or. y?,f:cy.x+y" outputs="s? t\3Af:py.s? t\3Af" uid="py" uid_parent="root"/>
-  <Constant _name="0xFFFF" outputs="value:kMask.value" type="int32" uid="kMask" uid_parent="root" value="65535"/>
-  <Constant _name="65536" outputs="value:k16.value" type="int64" uid="k16" uid_parent="root" value="65536"/>
-  <Node _name="And" inputs="x:px.s? t\3Af,y:kMask.value" outputs="x .and. y?:ux.x .and. y?" uid="ux" uid_parent="root"/>
-  <Node _name="And" inputs="x:py.s? t\3Af,y:kMask.value" outputs="x .and. y?:uy.x .and. y?" uid="uy" uid_parent="root"/>
-  <Node _name="Multiply" inputs="x:uy.x .and. y?,y:k16.value" outputs="x*y:hi.x*y" uid="hi" uid_parent="root"/>
-  <Node _name="Add" inputs="x:hi.x*y,y:ux.x .and. y?" outputs="x+y:mlp.x+y" uid="mlp" uid_parent="root"/>
+  <Call inputs="x:px.s? t\3Af,y:py.s? t\3Af" outputs="lParam:ppl.lParam" target="RemoteVI Pack Point lParam.vi" uid="ppl" uid_parent="root"/>
 
   <Constant _name="post" outputs="value:ct.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="ct" uid_parent="root" value="[0,0,0]"/>
   <Constant _name="WM_CHAR post" outputs="value:cch.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="cch" uid_parent="root" value="[258,0,1]"/>
@@ -78,7 +73,7 @@
   <Constant _name="KEYUP 0xE8" outputs="value:cu.value" type="cluster{uint32.msg,uint64.wParam,int64.lParam}" uid="cu" uid_parent="root" value="[257,232,3221225473]"/>
   <Constant _name="no posts" outputs="value:emp.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="emp" uid_parent="root" value="[]"/>
 
-  <Node _name="Bundle By Name" fields="msg,wParam,lParam" inputs="msg:mmsg.s? t\3Af,wParam:wp.value,lParam:mlp.x+y,input cluster:ct.value" outputs="output cluster:bm.output cluster" uid="bm" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="msg,wParam,lParam" inputs="msg:mmsg.s? t\3Af,wParam:wp.value,lParam:ppl.lParam,input cluster:ct.value" outputs="output cluster:bm.output cluster" uid="bm" uid_parent="root"/>
   <Node _name="Build Array" inputs="element:bm.output cluster" outputs="appended array:am.appended array" uid="am" uid_parent="root"/>
   <Node _name="Bundle By Name" fields="msg,wParam,lParam" inputs="msg:msg.value,wParam:wp.value,lParam:klp.s? t\3Af,input cluster:ct.value" outputs="output cluster:bk.output cluster" uid="bk" uid_parent="root"/>
   <Node _name="Build Array" inputs="element:bk.output cluster" outputs="appended array:ak.appended array" uid="ak" uid_parent="root"/>

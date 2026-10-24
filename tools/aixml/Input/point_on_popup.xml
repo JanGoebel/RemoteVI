@@ -1,0 +1,23 @@
+<VI _name="RemoteVI Point On Popup.vi" description="TRUE when the screen point (x\2C y) lies inside any of windows (logical rectangles\2C right and bottom exclusive). Pure.">
+  <Control _name="windows" conIdx="0" connection="required" description="The popups at their logical positions." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
+  <Control _name="x" conIdx="5" connection="required" description="Screen x of the point." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="7" connection="required" description="Screen y of the point." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="Is the point on this popup?" maxin="" maxout="" uid="fin" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:win.value" mode="index" outputs="value:n_w.value" uid="n_w" uid_parent="fin"/>
+    <Tunnel _id="In2" inputs="value:x.value" outputs="value:n_tx.value" uid="n_tx" uid_parent="fin"/>
+    <Tunnel _id="In3" inputs="value:y.value" outputs="value:n_ty.value" uid="n_ty" uid_parent="fin"/>
+    <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:n_w.value" outputs="x:nwu.x,y:nwu.y,w:nwu.w,h:nwu.h" uid="nwu" uid_parent="fin"/>
+    <Node _name="Add" inputs="x:nwu.x,y:nwu.w" outputs="x+y:nr.x+y" uid="nr" uid_parent="fin"/>
+    <Node _name="Add" inputs="x:nwu.y,y:nwu.h" outputs="x+y:nb.x+y" uid="nb" uid_parent="fin"/>
+    <Node _name="Greater Or Equal?" inputs="x:n_tx.value,y:nwu.x" outputs="x &gt;= y?:c1.x &gt;= y?" uid="c1" uid_parent="fin"/>
+    <Node _name="Less?" inputs="x:n_tx.value,y:nr.x+y" outputs="x &lt; y?:c2.x &lt; y?" uid="c2" uid_parent="fin"/>
+    <Node _name="Greater Or Equal?" inputs="x:n_ty.value,y:nwu.y" outputs="x &gt;= y?:c3.x &gt;= y?" uid="c3" uid_parent="fin"/>
+    <Node _name="Less?" inputs="x:n_ty.value,y:nb.x+y" outputs="x &lt; y?:c4.x &lt; y?" uid="c4" uid_parent="fin"/>
+    <Node _name="And" inputs="x:c1.x &gt;= y?,y:c2.x &lt; y?" outputs="x .and. y?:a1.x .and. y?" uid="a1" uid_parent="fin"/>
+    <Node _name="And" inputs="x:c3.x &gt;= y?,y:c4.x &lt; y?" outputs="x .and. y?:a2.x .and. y?" uid="a2" uid_parent="fin"/>
+    <Node _name="And" inputs="x:a1.x .and. y?,y:a2.x .and. y?" outputs="x .and. y?:a3.x .and. y?" uid="a3" uid_parent="fin"/>
+    <Tunnel _id="Out1" inputs="value:a3.x .and. y?" mode="index" outputs="value:ina.value" uid="ina" uid_parent="fin"/>
+  </Structure>
+  <Node _name="Or Array Elements" inputs="Boolean array:ina.value" outputs="logical OR:onp.logical OR" uid="onp" uid_parent="root"/>
+  <Indicator _name="on popup?" conIdx="4" connection="recommended" description="TRUE when the point is on a popup." inputs="value:onp.logical OR" type="bool" uid="o_on" uid_parent="root" value="false"/>
+</VI>

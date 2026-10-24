@@ -1,0 +1,68 @@
+<VI _name="RemoteVI Aim Popup Click.vi" description="The popup branch of RemoteVI Post Input.vi\3A makes the popup list current (RemoteVI Refresh Popup List.vi)\2C then - when the clicked logical point (x\2C y) lies on a popup (RemoteVI Point On Popup.vi) - moves the popups so that it lies under the host cursor (RemoteVI Move Popups Under Cursor.vi\3B on popup? TRUE\2C the messages are then posted with lParam)\2C else closes every popup on a button-down (RemoteVI Cancel Popups.vi\3B on popup? FALSE\2C nothing is posted). dx out\2C dy out is the displacement d now in effect. No VI Server call.">
+  <Control _name="x" conIdx="0" connection="required" description="Clicked logical screen x." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="5" connection="required" description="Clicked logical screen y." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Control _name="hWnd" conIdx="7" connection="required" description="The served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="windows" conIdx="9" connection="required" description="The popups at their logical positions." outputs="value:win.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="win" uid_parent="root" value="[]"/>
+  <Control _name="dx" conIdx="1" connection="recommended" description="Current displacement d\2C x." outputs="value:dx.value" type="int32" uid="dx" uid_parent="root" value="0"/>
+  <Control _name="dy" conIdx="2" connection="recommended" description="Current displacement d\2C y." outputs="value:dy.value" type="int32" uid="dy" uid_parent="root" value="0"/>
+  <Control _name="posts" conIdx="3" connection="required" description="The messages of the click." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="windows:win.value,hWnd:hw.value,dx:dx.value,dy:dy.value" outputs="windows out:rpl.windows out" target="RemoteVI Refresh Popup List.vi" uid="rpl" uid_parent="root"/>
+  <Call inputs="windows:rpl.windows out,x:x.value,y:y.value" outputs="on popup?:pop.on popup?" target="RemoteVI Point On Popup.vi" uid="pop" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="pop.on popup?" uid="ci" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:x.value" uid="ci_i1" uid_parent="ci"/>
+    <Tunnel _id="In2" inputs="value:y.value" uid="ci_i2" uid_parent="ci"/>
+    <Tunnel _id="In3" inputs="value:ei.value" uid="ci_i3" uid_parent="ci"/>
+    <Tunnel _id="In4" inputs="value:hw.value" uid="ci_i4" uid_parent="ci"/>
+    <Tunnel _id="In5" inputs="value:dx.value" uid="ci_i5" uid_parent="ci"/>
+    <Tunnel _id="In6" inputs="value:dy.value" uid="ci_i6" uid_parent="ci"/>
+    <Tunnel _id="In7" inputs="value:rpl.windows out" uid="ci_i7" uid_parent="ci"/>
+    <Tunnel _id="In8" inputs="value:ps.value" uid="ci_i8" uid_parent="ci"/>
+    <CaseFrame label="On a popup\3A move it under the cursor" selector="True" selectout="" uid="cit" uid_parent="ci">
+      <Tunnel _id="In1" outputs="value:i_x.value" uid="i_x" uid_parent="cit"/>
+      <Tunnel _id="In2" outputs="value:i_y.value" uid="i_y" uid_parent="cit"/>
+      <Tunnel _id="In3" outputs="value:i_ei.value" uid="i_ei" uid_parent="cit"/>
+      <Tunnel _id="In4" outputs="value:i_hw.value" uid="i_hw" uid_parent="cit"/>
+      <Tunnel _id="In5" outputs="value:i_dx.value" uid="i_dx" uid_parent="cit"/>
+      <Tunnel _id="In6" outputs="value:i_dy.value" uid="i_dy" uid_parent="cit"/>
+      <Tunnel _id="In7" outputs="value:i_win.value" uid="i_win" uid_parent="cit"/>
+      <Tunnel _id="In8" outputs="value:i_ps.value" uid="i_ps" uid_parent="cit"/>
+      <Call inputs="x:i_x.value,y:i_y.value,hWnd:i_hw.value,windows:i_win.value,dx:i_dx.value,dy:i_dy.value,posts:i_ps.value,error in:i_ei.value" outputs="lParam:mv.lParam,dx out:mv.dx out,dy out:mv.dy out,menu?:mv.menu?,error out:mv.error out" target="RemoteVI Move Popups Under Cursor.vi" uid="mv" uid_parent="cit"/>
+      <Tunnel _id="Out1" inputs="value:mv.error out" uid="i_o1" uid_parent="cit"/>
+      <Tunnel _id="Out2" inputs="value:mv.lParam" uid="i_o2" uid_parent="cit"/>
+      <Tunnel _id="Out3" inputs="value:mv.dx out" uid="i_o3" uid_parent="cit"/>
+      <Tunnel _id="Out4" inputs="value:mv.dy out" uid="i_o4" uid_parent="cit"/>
+      <Tunnel _id="Out5" inputs="value:mv.menu?" uid="i_o5" uid_parent="cit"/>
+    </CaseFrame>
+    <CaseFrame label="Outside every popup\3A close them (WM_CANCELMODE)" selector="False" selectout="" uid="cif" uid_parent="ci">
+      <Tunnel _id="In1" outputs="value:" uid="o_x" uid_parent="cif"/>
+      <Tunnel _id="In2" outputs="value:" uid="o_y" uid_parent="cif"/>
+      <Tunnel _id="In3" outputs="value:o_ei.value" uid="o_ei" uid_parent="cif"/>
+      <Tunnel _id="In4" outputs="value:o_hw.value" uid="o_hw" uid_parent="cif"/>
+      <Tunnel _id="In5" outputs="value:o_dx.value" uid="o_dx" uid_parent="cif"/>
+      <Tunnel _id="In6" outputs="value:o_dy.value" uid="o_dy" uid_parent="cif"/>
+      <Tunnel _id="In7" outputs="value:" uid="o_win" uid_parent="cif"/>
+      <Tunnel _id="In8" outputs="value:o_ps.value" uid="o_ps" uid_parent="cif"/>
+      <Call inputs="hWnd:o_hw.value,posts:o_ps.value,error in:o_ei.value" outputs="error out:cp.error out" target="RemoteVI Cancel Popups.vi" uid="cp" uid_parent="cif"/>
+      <Constant _name="nothing posted" outputs="value:olp0.value" type="int64" uid="olp0" uid_parent="cif" value="0"/>
+      <Constant _name="no menu" outputs="value:onm.value" type="bool" uid="onm" uid_parent="cif" value="false"/>
+      <Tunnel _id="Out1" inputs="value:cp.error out" uid="o_o1" uid_parent="cif"/>
+      <Tunnel _id="Out2" inputs="value:olp0.value" uid="o_o2" uid_parent="cif"/>
+      <Tunnel _id="Out3" inputs="value:o_dx.value" uid="o_o3" uid_parent="cif"/>
+      <Tunnel _id="Out4" inputs="value:o_dy.value" uid="o_o4" uid_parent="cif"/>
+      <Tunnel _id="Out5" inputs="value:onm.value" uid="o_o5" uid_parent="cif"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ci_o1.value" uid="ci_o1" uid_parent="ci"/>
+    <Tunnel _id="Out2" outputs="value:ci_o2.value" uid="ci_o2" uid_parent="ci"/>
+    <Tunnel _id="Out3" outputs="value:ci_o3.value" uid="ci_o3" uid_parent="ci"/>
+    <Tunnel _id="Out4" outputs="value:ci_o4.value" uid="ci_o4" uid_parent="ci"/>
+    <Tunnel _id="Out5" outputs="value:ci_o5.value" uid="ci_o5" uid_parent="ci"/>
+  </Structure>
+  <Indicator _name="lParam" conIdx="4" connection="recommended" description="lParam for the posts (the real cursor position)\3B 0 when nothing is posted." inputs="value:ci_o2.value" type="int64" uid="o_lp" uid_parent="root" value="0"/>
+  <Indicator _name="dx out" conIdx="6" connection="recommended" description="The displacement d in effect\2C x." inputs="value:ci_o3.value" type="int32" uid="o_dx" uid_parent="root" value="0"/>
+  <Indicator _name="dy out" conIdx="8" connection="recommended" description="The displacement d in effect\2C y." inputs="value:ci_o4.value" type="int32" uid="o_dy" uid_parent="root" value="0"/>
+  <Indicator _name="windows out" conIdx="10" connection="recommended" description="The current popup list." inputs="value:rpl.windows out" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="o_win" uid_parent="root" value="[]"/>
+  <Indicator _name="on popup?" conIdx="13" connection="recommended" description="TRUE when the click is on a popup and its messages are to be posted." inputs="value:pop.on popup?" type="bool" uid="o_on" uid_parent="root" value="false"/>
+  <Indicator _name="menu?" conIdx="14" connection="recommended" description="TRUE when the click is on a LabVIEW menu." inputs="value:ci_o5.value" type="bool" uid="o_menu" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:ci_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

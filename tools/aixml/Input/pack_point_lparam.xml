@@ -1,0 +1,11 @@
+<VI _name="RemoteVI Pack Point lParam.vi" description="Packs a point into a mouse message lParam as Windows does (MAKELPARAM)\3A (y AND 0xFFFF) * 65536 + (x AND 0xFFFF). Negative coordinates keep their low 16 bits. Pure.">
+  <Control _name="x" conIdx="0" connection="required" description="x coordinate." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="5" connection="required" description="y coordinate." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Constant _name="0xFFFF" outputs="value:kMask.value" type="int32" uid="kMask" uid_parent="root" value="65535"/>
+  <Constant _name="65536" outputs="value:k16.value" type="int64" uid="k16" uid_parent="root" value="65536"/>
+  <Node _name="And" inputs="x:x.value,y:kMask.value" outputs="x .and. y?:ux.x .and. y?" uid="ux" uid_parent="root"/>
+  <Node _name="And" inputs="x:y.value,y:kMask.value" outputs="x .and. y?:uy.x .and. y?" uid="uy" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:uy.x .and. y?,y:k16.value" outputs="x*y:hi.x*y" uid="hi" uid_parent="root"/>
+  <Node _name="Add" inputs="x:hi.x*y,y:ux.x .and. y?" outputs="x+y:lp.x+y" uid="lp" uid_parent="root"/>
+  <Indicator _name="lParam" conIdx="4" connection="recommended" description="The packed point." inputs="value:lp.x+y" type="int64" uid="o_lp" uid_parent="root" value="0"/>
+</VI>

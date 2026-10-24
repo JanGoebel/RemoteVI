@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Cancel Popups.vi" description="For a click OUTSIDE every popup\3A a button-down sends WM_CANCELMODE to hWnd with user32 SendMessageTimeoutW\2C which closes every open LabVIEW popup (a sent WM_CANCELMODE closes the whole menu\2C submenus included\2C measured)\3B any other message (the matching button-up) does nothing. Nothing is posted. No VI Server call.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="posts" conIdx="5" connection="required" description="The messages of the click." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="posts:ps.value" outputs="button down?:bd.button down?" target="RemoteVI Is Button Down.vi" uid="bd" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="bd.button down?" uid="cc2" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ei.value" uid="cc2_i1" uid_parent="cc2"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="cc2_i2" uid_parent="cc2"/>
+    <CaseFrame label="Button down\3A send WM_CANCELMODE" selector="True" selectout="" uid="cc2t" uid_parent="cc2">
+      <Tunnel _id="In1" outputs="value:x_ei.value" uid="x_ei" uid_parent="cc2t"/>
+      <Tunnel _id="In2" outputs="value:x_hw.value" uid="x_hw" uid_parent="cc2t"/>
+      <Constant _name="WM_CANCELMODE" outputs="value:kcm.value" type="uint32" uid="kcm" uid_parent="cc2t" value="31"/>
+      <Call inputs="hWnd:x_hw.value,Msg:kcm.value,error in:x_ei.value" outputs="return value:,result:,error out:smt.error out" target="user32 SendMessageTimeoutW.vi" uid="smt" uid_parent="cc2t"/>
+      <Tunnel _id="Out1" inputs="value:smt.error out" uid="x_o1" uid_parent="cc2t"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cc2f" uid_parent="cc2">
+      <Tunnel _id="In1" outputs="value:y_ei.value" uid="y_ei" uid_parent="cc2f"/>
+      <Tunnel _id="In2" outputs="value:" uid="y_hw" uid_parent="cc2f"/>
+      <Tunnel _id="Out1" inputs="value:y_ei.value" uid="y_o1" uid_parent="cc2f"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cc2_o1.value" uid="cc2_o1" uid_parent="cc2"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the error of sending." inputs="value:cc2_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

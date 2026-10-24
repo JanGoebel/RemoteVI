@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Test Bytes To Hex.vi" description="Test support: renders bytes as lowercase hex, two digits per byte, the notation of tests/vectors. Pure.">
+  <Control _name="bytes" conIdx="0" connection="required" description="Any bytes." outputs="value:bytes.v" type="string" uid="bytes" uid_parent="root" value=""/>
+  <Node _name="String To Byte Array" inputs="string:bytes.v" outputs="unsigned byte array:sba.v" uid="sba" uid_parent="root"/>
+  <Constant outputs="value:k16.v" type="uint8" uid="k16" uid_parent="root" value="16"/>
+  <Constant outputs="value:k9.v" type="uint8" uid="k9" uid_parent="root" value="9"/>
+  <Constant outputs="value:k48.v" type="uint8" uid="k48" uid_parent="root" value="48"/>
+  <Constant outputs="value:k39.v" type="uint8" uid="k39" uid_parent="root" value="39"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:sba.v,y:k16.v" outputs="x-y*floor(x/y):qr.lo,floor(x/y):qr.hi" uid="qr" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:qr.hi,y:k9.v" outputs="x > y?:ghi.v" uid="ghi" uid_parent="root"/>
+  <Node _name="Boolean To (0\2C1)" inputs="Boolean:ghi.v" outputs="0\2C 1:bhi.v" uid="bhi" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:bhi.v,y:k39.v" outputs="x*y:mhi.v" uid="mhi" uid_parent="root"/>
+  <Node _name="Add" inputs="x:qr.hi,y:k48.v" outputs="x+y:ahi.v" uid="ahi" uid_parent="root"/>
+  <Node _name="Add" inputs="x:ahi.v,y:mhi.v" outputs="x+y:chi.v" uid="chi" uid_parent="root"/>
+  <Node _name="To Unsigned Byte Integer" inputs="number:chi.v" outputs="unsigned 8bit integer:uhi.v" uid="uhi" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:qr.lo,y:k9.v" outputs="x > y?:glo.v" uid="glo" uid_parent="root"/>
+  <Node _name="Boolean To (0\2C1)" inputs="Boolean:glo.v" outputs="0\2C 1:blo.v" uid="blo" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:blo.v,y:k39.v" outputs="x*y:mlo.v" uid="mlo" uid_parent="root"/>
+  <Node _name="Add" inputs="x:qr.lo,y:k48.v" outputs="x+y:alo.v" uid="alo" uid_parent="root"/>
+  <Node _name="Add" inputs="x:alo.v,y:mlo.v" outputs="x+y:clo.v" uid="clo" uid_parent="root"/>
+  <Node _name="To Unsigned Byte Integer" inputs="number:clo.v" outputs="unsigned 8bit integer:ulo.v" uid="ulo" uid_parent="root"/>
+  <Node _name="Interleave 1D Arrays" inputs="array:uhi.v,array:ulo.v" outputs="interleaved array:il.v" uid="il" uid_parent="root"/>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:il.v" outputs="string:bas.v" uid="bas" uid_parent="root"/>
+  <Indicator _name="hex" conIdx="4" connection="recommended" description="Lowercase hex, two digits per byte." inputs="value:bas.v" type="string" uid="hex" uid_parent="root" value=""/>
+</VI>

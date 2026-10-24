@@ -1,0 +1,28 @@
+<VI _name="RemoteVI Test Hex To Bytes.vi" description="Test support: decodes a lowercase hex string (as written in tests/vectors) into the bytes it stands for. Two hex digits per byte; digits 0-9 and a-f. Pure.">
+  <Control _name="hex" conIdx="0" connection="required" description="Lowercase hex, two digits per byte." outputs="value:hex.v" type="string" uid="hex" uid_parent="root" value=""/>
+  <Node _name="String To Byte Array" inputs="string:hex.v" outputs="unsigned byte array:sba.v" uid="sba" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:sba.v" outputs="32bit integer:tl.v" uid="tl" uid_parent="root"/>
+  <Constant outputs="value:k48.v" type="int32" uid="k48" uid_parent="root" value="48"/>
+  <Constant outputs="value:k39.v" type="int32" uid="k39" uid_parent="root" value="39"/>
+  <Constant outputs="value:k16.v" type="int32" uid="k16" uid_parent="root" value="16"/>
+  <Node _name="Subtract" inputs="x:tl.v,y:k48.v" outputs="x-y:sub.v" uid="sub" uid_parent="root"/>
+  <FreeLabel comment="(c - 48) mod 39: 0-9 and a-f to 0..15" uid="lb" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:sub.v,y:k39.v" outputs="x-y*floor(x/y):nib.v,floor(x/y):" uid="nib" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:nib.v" outputs="size(s):asz.v" uid="asz" uid_parent="root"/>
+  <Constant outputs="value:k2.v" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:asz.v,y:k2.v" outputs="x-y*floor(x/y):,floor(x/y):half.v" uid="half" uid_parent="root"/>
+  <Node _name="Reshape Array" inputs="array:nib.v,dimension size:half.v,dimension size:k2.v" outputs="output array:rs.v" uid="rs" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One byte per digit pair" maxin="" maxout="" uid="H" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rs.v" mode="index" outputs="value:tn.v" uid="tn" uid_parent="H"/>
+    <Tunnel _id="In2" inputs="value:k16.v" outputs="value:t16.v" uid="t16" uid_parent="H"/>
+    <Constant outputs="value:k0.v" type="int32" uid="k0" uid_parent="H" value="0"/>
+    <Constant outputs="value:k1.v" type="int32" uid="k1" uid_parent="H" value="1"/>
+    <Node _name="Index Array" inputs="array:tn.v,index:k0.v,index:k1.v" outputs="element:ix.hi,element:ix.lo" uid="ix" uid_parent="H"/>
+    <Node _name="Multiply" inputs="x:ix.hi,y:t16.v" outputs="x*y:m16.v" uid="m16" uid_parent="H"/>
+    <Node _name="Add" inputs="x:m16.v,y:ix.lo" outputs="x+y:add.v" uid="add" uid_parent="H"/>
+    <Node _name="To Unsigned Byte Integer" inputs="number:add.v" outputs="unsigned 8bit integer:u8.v" uid="u8" uid_parent="H"/>
+    <Tunnel _id="Out1" inputs="value:u8.v" mode="index" outputs="value:ub.v" uid="ub" uid_parent="H"/>
+  </Structure>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:ub.v" outputs="string:bas.v" uid="bas" uid_parent="root"/>
+  <Indicator _name="bytes" conIdx="4" connection="recommended" description="The decoded bytes." inputs="value:bas.v" type="string" uid="bytes" uid_parent="root" value=""/>
+</VI>

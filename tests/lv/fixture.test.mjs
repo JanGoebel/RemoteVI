@@ -32,7 +32,7 @@ const at = (label) => {
 };
 
 test('fixture reports the layout of every control', opts, () => {
-  for (const label of ['Switch', 'Button', 'Number', 'Text', 'Mode', 'Tab', 'Graph', 'Stop']) at(label);
+  for (const label of ['Switch', 'Button', 'Number', 'Text', 'Mode', 'Tab', 'Graph', 'List', 'Stop']) at(label);
 });
 
 test('click toggles a switch: Mouse Down/Up and Value Change fire like a local click', opts, async () => {
@@ -141,4 +141,62 @@ test('clicking a tab switches the page', opts, async () => {
   const r = at('Tab');
   await click(c, r.x + (target === 'One' ? 40 : 120), r.y + 10);
   await waitLog(([k, l, v]) => k === 'value' && l === 'Tab' && v === target, { since: s });
+});
+
+// --- round 2: wheel, double click, arrows with modifiers, tip strips, submenus -------------
+
+test('the mouse wheel over a control fires Mouse Wheel with the right direction', opts, async () => {
+  const s = mark();
+  const r = at('Number');
+  move(c, r.cx, r.cy);
+  c.ws.send(`m 522 ${r.cx} ${r.cy} ${(120 * 0x10000) >>> 0}`); // one notch away from the user
+  const ev = await waitLog(([k, l]) => k === 'wheel' && l === 'Number', { since: s });
+  assert.ok(Number(ev[2]) > 0, `positive wheel delta, got ${ev[2]}`);
+});
+
+test('a double click reaches LabVIEW as a double click', opts, async () => {
+  const s = mark();
+  const r = at('List');
+  const y = r.y + 8; // first row
+  move(c, r.x + 20, y);
+  c.ws.send(`m 513 ${r.x + 20} ${y} 1`);
+  c.ws.send(`m 514 ${r.x + 20} ${y} 0`);
+  await sleep(60);
+  c.ws.send(`m 515 ${r.x + 20} ${y} 1`); // WM_LBUTTONDBLCLK, as the browser sends the 2nd press
+  c.ws.send(`m 514 ${r.x + 20} ${y} 0`);
+  await waitLog(([k, l]) => k === 'dblclick' && l === 'List', { since: s });
+});
+
+test('Shift+Right arrow arrives with the Shift modifier', opts, async () => {
+  const s = mark();
+  const r = at('Text');
+  await click(c, r.cx, r.cy);
+  keyDown(c, VK.SHIFT);
+  keyDown(c, VK.RIGHT, true); keyUp(c, VK.RIGHT, true);
+  keyUp(c, VK.SHIFT);
+  await waitLog(([k, l, key, mods]) => k === 'keydown' && l === 'Text' && /right/i.test(key) && /S/.test(mods ?? ''), { since: s });
+});
+
+test('hovering shows the tip strip in the browser and leaving hides it', opts, async () => {
+  const r = at('Button');
+  move(c, r.x - 30, r.cy); await sleep(300);
+  move(c, r.cx, r.cy);
+  await waitOverlay(c, (o) => o.length > 0, 4000);
+  move(c, r.x - 30, r.cy);
+  await waitOverlay(c, (o) => o.length === 0, 4000);
+});
+
+test('an item in a submenu of a run-time shortcut menu can be chosen', opts, async () => {
+  const s = mark();
+  const r = at('Text');
+  await click(c, r.cx, r.cy, { button: 'right', settle: 100 });
+  const [menu] = await waitOverlay(c);
+  // The fixture's menu is: "Top" (first row), "More" (second row, opens a submenu with "Deep").
+  const rowH = Math.round(menu.h / 2);
+  await click(c, menu.x + 20, menu.y + Math.round(rowH * 1.5), { settle: 100 });
+  const popups = await waitOverlay(c, (o) => o.length >= 2, 3000);
+  const sub = popups.at(-1);
+  await click(c, sub.x + 20, sub.y + Math.round(sub.h / 2), { settle: 100 });
+  await waitOverlay(c, (o) => o.length === 0);
+  await waitLog(([k, l, tag]) => k === 'menu' && l === 'Text' && tag === 'Deep', { since: s });
 });

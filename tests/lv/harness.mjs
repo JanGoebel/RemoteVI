@@ -11,6 +11,9 @@
 //   mousedown|mouseup <label>  <x> <y> <button> <mods>
 //   enter|leave       <label>
 //   keydown  <label>  <char or VKey name>  <mods>
+//   wheel    <label>  <delta>                  Mouse Wheel (positive = away from the user)
+//   dblclick <label>  <row>                    Double Click (listbox)
+//   menu     <label>  <item tag>               Shortcut Menu Selection (User)
 // <mods> is a combination of S (shift), C (ctrl), A (alt), or "-" for none.
 // Values: booleans TRUE/FALSE, numerics with %g, strings as typed (newlines as \n),
 // rings and enums by item text, tab controls by page label.

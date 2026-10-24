@@ -1,0 +1,33 @@
+<VI _name="RemoteVI Wait Highlight Change.vi" description="After a key was posted to an open LabVIEW menu\2C waits until the menu shows the result\3A captures the menu window (RemoteVI Menu Highlight.vi) every 5 ms until its highlight differs from the one before the key (found before\2C top before) or timeout ms have passed. LabVIEW has handled the key when the WM_NULL round trip returns\2C but its repaint of the menu can come later\3A captured right away from the server loop\2C the old highlight was seen for over 100 ms (measured)\2C so reading it once made the navigation stop one item short. Returns at once when the highlight already changed. changed? is FALSE after a timeout - the key moved nothing (an end of the menu\2C or a window that takes no keys). Win32 only\2C no VI Server call.">
+  <Control _name="menu" conIdx="0" connection="required" description="The menu window." outputs="value:mn.value" type="uint64" uid="mn" uid_parent="root" value="0"/>
+  <Control _name="found before" conIdx="5" connection="required" description="Was an item highlighted before the key." outputs="value:fb.value" type="bool" uid="fb" uid_parent="root" value="false"/>
+  <Control _name="top before" conIdx="7" connection="required" description="Top row of that highlight." outputs="value:tb.value" type="int32" uid="tb" uid_parent="root" value="-1"/>
+  <Control _name="timeout ms" conIdx="9" connection="recommended" description="How long to wait at most." outputs="value:tmo.value" type="uint32" uid="tmo" uid_parent="root" value="120"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Passed through." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:t0.millisecond timer value" uid="t0" uid_parent="root"/>
+  <Constant _name="poll 5 ms" outputs="value:k5.value" type="uint32" uid="k5" uid_parent="root" value="5"/>
+  <Structure _name="While Loop" count="" label="Capture until the highlight moved" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:mn.value" outputs="value:l_mn.value" uid="l_mn" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:fb.value" outputs="value:l_fb.value" uid="l_fb" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:tb.value" outputs="value:l_tb.value" uid="l_tb" uid_parent="wl"/>
+    <Tunnel _id="In4" inputs="value:tmo.value" outputs="value:l_tmo.value" uid="l_tmo" uid_parent="wl"/>
+    <Tunnel _id="In5" inputs="value:t0.millisecond timer value" outputs="value:l_t0.value" uid="l_t0" uid_parent="wl"/>
+    <Tunnel _id="In6" inputs="value:k5.value" outputs="value:l_k5.value" uid="l_k5" uid_parent="wl"/>
+    <Call inputs="hwnd:l_mn.value" outputs="found?:mh.found?,top:mh.top,bottom:,height:" target="RemoteVI Menu Highlight.vi" uid="mh" uid_parent="wl"/>
+    <Node _name="Not Equal?" inputs="x:mh.found?,y:l_fb.value" outputs="x != y?:df.x != y?" uid="df" uid_parent="wl"/>
+    <Node _name="Not Equal?" inputs="x:mh.top,y:l_tb.value" outputs="x != y?:dt.x != y?" uid="dt" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:df.x != y?,y:dt.x != y?" outputs="x .or. y?:chg.x .or. y?" uid="chg" uid_parent="wl"/>
+    <Node _name="Tick Count (ms)" outputs="millisecond timer value:tn.millisecond timer value" uid="tn" uid_parent="wl"/>
+    <Node _name="Subtract" inputs="x:tn.millisecond timer value,y:l_t0.value" outputs="x-y:el.x-y" uid="el" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:el.x-y,y:l_tmo.value" outputs="x &gt;= y?:tout.x &gt;= y?" uid="tout" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:chg.x .or. y?,y:tout.x &gt;= y?" outputs="x .or. y?:stop.x .or. y?" uid="stop" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:stop.x .or. y?" outputs=".not. x?:more..not. x?" uid="more" uid_parent="wl"/>
+    <Constant outputs="value:kz.value" type="uint32" uid="kz" uid_parent="wl" value="0"/>
+    <Node _name="Select" inputs="t:l_k5.value,s:more..not. x?,f:kz.value" outputs="s? t\3Af:ws.s? t\3Af" uid="ws" uid_parent="wl"/>
+    <Node _name="Wait (ms)" inputs="milliseconds to wait:ws.s? t\3Af" outputs="millisecond timer value:" uid="w" uid_parent="wl"/>
+    <Condition inputs="value:stop.x .or. y?" uid="wlc" uid_parent="wl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:chg.x .or. y?" outputs="value:ochg.value" uid="ochg" uid_parent="wl"/>
+  </Structure>
+  <Indicator _name="changed?" conIdx="4" connection="recommended" description="TRUE when the highlight moved before the timeout." inputs="value:ochg.value" type="bool" uid="o_c" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in." inputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

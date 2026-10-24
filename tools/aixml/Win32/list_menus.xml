@@ -1,0 +1,33 @@
+<VI _name="RemoteVI List Menus.vi" description="Lists the visible LabVIEW menu windows (class LVMenuWnd - ring and enum menus\2C shortcut menus\2C their submenus\2C and custom popups such as the colour picker and the line width popup of a plot legend) top-most first\2C each with its screen rectangle. A submenu is shown above its parent\2C so menus[0] is the deepest open menu and the menu a key goes to. Walks the top-level LVMenuWnd windows with user32 FindWindowExW(0\2C previous\2C &quot;LVMenuWnd&quot;\2C NULL) in z-order\2C keeps the visible ones (user32 IsWindowVisible) and reads their rectangle (user32 GetWindowRect). Cheap\2C no full window walk (RemoteVI Find Popups.vi takes about 30 ms). LabVIEW's menus are never moved by the server any more\2C so these real rectangles are also the logical ones. Errors of the calls end the walk and are dropped\3B a window that closes meanwhile is simply missing. Win32 only\2C no VI Server call\2C so it runs while an open menu holds LabVIEW's UI thread.">
+  <Constant _name="LVMenuWnd as UTF-16 with terminating 0" outputs="value:kcls.value" type="array{uint16}" uid="kcls" uid_parent="root" value="[76,86,77,101,110,117,87,110,100,0]"/>
+  <Constant _name="NULL title" outputs="value:knul.value" type="array{uint16}" uid="knul" uid_parent="root" value="[]"/>
+  <Constant _name="desktop" outputs="value:kd.value" type="uint64" uid="kd" uid_parent="root" value="0"/>
+  <Constant _name="window" outputs="value:kw.value" type="cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}" uid="kw" uid_parent="root" value="[0,0,0,0,0]"/>
+  <Constant _name="no error" outputs="value:ke.value" type="cluster{bool.status,int32.code,string.source}" uid="ke" uid_parent="root" value="[false,0,]"/>
+  <Structure _name="While Loop" count="" label="Every LVMenuWnd in z-order" uid="mw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:kcls.value" outputs="value:m_cls.value" uid="m_cls" uid_parent="mw"/>
+    <Tunnel _id="In2" inputs="value:knul.value" outputs="value:m_nul.value" uid="m_nul" uid_parent="mw"/>
+    <Tunnel _id="In3" inputs="value:kd.value" outputs="value:m_d.value" uid="m_d" uid_parent="mw"/>
+    <Tunnel _id="In4" inputs="value:kw.value" outputs="value:m_w.value" uid="m_w" uid_parent="mw"/>
+    <Tunnel _id="In5" inputs="value:ke.value" outputs="value:m_e.value" uid="m_e" uid_parent="mw"/>
+    <ShiftReg uid="srh" uid_parent="mw">
+      <Left inputs="value:kd.value" outputs="value:m_prev.value" uid="srhl" uid_parent="srh"/>
+      <Right inputs="value:fw.hWnd" outputs="value:" uid="srhr" uid_parent="srh"/>
+    </ShiftReg>
+    <Call inputs="hWndParent:m_d.value,hWndChildAfter:m_prev.value,lpszClass:m_cls.value,lpszWindow:m_nul.value,error in:m_e.value" outputs="hWnd:fw.hWnd,error out:fw.error out" target="user32 FindWindowExW.vi" uid="fw" uid_parent="mw"/>
+    <Call inputs="hWnd:fw.hWnd,error in:fw.error out" outputs="visible?:mv.visible?,error out:mv.error out" target="user32 IsWindowVisible.vi" uid="mv" uid_parent="mw"/>
+    <Call inputs="hWnd:fw.hWnd,error in:mv.error out" outputs="RECT:gr.RECT,return value:,error out:gr.error out" target="user32 GetWindowRect.vi" uid="gr" uid_parent="mw"/>
+    <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:gr.RECT" outputs="left:ru.left,top:ru.top,right:ru.right,bottom:ru.bottom" uid="ru" uid_parent="mw"/>
+    <Node _name="Subtract" inputs="x:ru.right,y:ru.left" outputs="x-y:rw.x-y" uid="rw" uid_parent="mw"/>
+    <Node _name="Subtract" inputs="x:ru.bottom,y:ru.top" outputs="x-y:rh.x-y" uid="rh" uid_parent="mw"/>
+    <Node _name="Bundle By Name" fields="hwnd,x,y,w,h" inputs="hwnd:fw.hWnd,x:ru.left,y:ru.top,w:rw.x-y,h:rh.x-y,input cluster:m_w.value" outputs="output cluster:bw.output cluster" uid="bw" uid_parent="mw"/>
+    <Node _name="Equal To 0?" inputs="x:fw.hWnd" outputs="x = 0?:mend.x = 0?" uid="mend" uid_parent="mw"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:gr.error out" outputs="status:mes.status" uid="mes" uid_parent="mw"/>
+    <Node _name="Or" inputs="x:mend.x = 0?,y:mes.status" outputs="x .or. y?:mstop.x .or. y?" uid="mstop" uid_parent="mw"/>
+    <Node _name="Not" inputs="x:mstop.x .or. y?" outputs=".not. x?:mok..not. x?" uid="mok" uid_parent="mw"/>
+    <Node _name="And" inputs="x:mok..not. x?,y:mv.visible?" outputs="x .and. y?:mkeep.x .and. y?" uid="mkeep" uid_parent="mw"/>
+    <Condition inputs="value:mstop.x .or. y?" uid="mwc" uid_parent="mw" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:bw.output cluster" mode="index" cond="mkeep.x .and. y?" outputs="value:menus.value" uid="menus" uid_parent="mw"/>
+  </Structure>
+  <Indicator _name="menus" conIdx="4" connection="recommended" description="The visible LabVIEW menu windows\2C top-most (deepest submenu) first\2C each with its screen position and size." inputs="value:menus.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}" uid="o_m" uid_parent="root" value="[]"/>
+</VI>

@@ -1,0 +1,15 @@
+<VI _name="RemoteVI System Color.vi" description="A Windows display colour (user32 GetSysColor nIndex - 13 COLOR_HIGHLIGHT\2C 4 COLOR_MENU) as a LabVIEW pixmap value 0x00RRGGBB\2C the order RemoteVI Capture Window.vi returns pixels in (GetSysColor answers a COLORREF 0x00BBGGRR). Win32 only.">
+  <Control _name="nIndex" conIdx="0" connection="required" description="The display element\2C e.g. 13 COLOR_HIGHLIGHT\2C 4 COLOR_MENU." outputs="value:ni.value" type="int32" uid="ni" uid_parent="root" value="13"/>
+  <Constant _name="no error" outputs="value:ke.value" type="cluster{bool.status,int32.code,string.source}" uid="ke" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="nIndex:ni.value,error in:ke.value" outputs="color:sc.color,error out:" target="user32 GetSysColor.vi" uid="sc" uid_parent="root"/>
+  <Constant _name="256" outputs="value:k256.value" type="uint32" uid="k256" uid_parent="root" value="256"/>
+  <Constant _name="65536" outputs="value:k64k.value" type="uint32" uid="k64k" uid_parent="root" value="65536"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:sc.color,y:k256.value" outputs="x-y*floor(x/y):qr.x-y*floor(x/y),floor(x/y):qr.floor(x/y)" uid="qr" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:qr.floor(x/y),y:k256.value" outputs="x-y*floor(x/y):qg.x-y*floor(x/y),floor(x/y):qg.floor(x/y)" uid="qg" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:qg.floor(x/y),y:k256.value" outputs="x-y*floor(x/y):qb.x-y*floor(x/y),floor(x/y):" uid="qb" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:qr.x-y*floor(x/y),y:k64k.value" outputs="x*y:mr.x*y" uid="mr" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:qg.x-y*floor(x/y),y:k256.value" outputs="x*y:mg.x*y" uid="mg" uid_parent="root"/>
+  <Node _name="Add" inputs="x:mr.x*y,y:mg.x*y" outputs="x+y:rg.x+y" uid="rg" uid_parent="root"/>
+  <Node _name="Add" inputs="x:rg.x+y,y:qb.x-y*floor(x/y)" outputs="x+y:rgb.x+y" uid="rgb" uid_parent="root"/>
+  <Indicator _name="rgb" conIdx="4" connection="recommended" description="The colour as 0x00RRGGBB." inputs="value:rgb.x+y" type="uint32" uid="o_rgb" uid_parent="root" value="0"/>
+</VI>

@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Post Client Input.vi" description="Posts one mouse or key message of a client to LabVIEW (docs\5Cprotocol.md sections 5-6)\3A a minimized panel is restored first (RemoteVI Restore If Minimized.vi)\3B mods are updated (RemoteVI Track Modifiers.vi) and\2C when they changed and no popup is open\2C written into the key state of LabVIEW's UI thread (RemoteVI Apply Modifiers.vi)\3B the message is translated (RemoteVI Translate Input.vi with the panel geometry\2C popup and tracking in = LabVIEW holds the mouse capture\2C RemoteVI Mouse Captured.vi) and posted to hWnd (RemoteVI Post Input.vi\2C which moves the invisible popups under the host cursor for a click on a popup). A click on a popup is posted no sooner than 350 ms after the popup was first seen open (popup since)\3A LabVIEW ignores a click on a ring menu that arrives within about 250 ms of opening it (measured). clicked? is TRUE for anything but WM_MOUSEMOVE and WM_MOUSEWHEEL - a message that may open a popup. No VI Server call.">
+<VI _name="RemoteVI Post Client Input.vi" description="Posts one mouse or key message of a client to LabVIEW (docs\5Cprotocol.md sections 4-6)\3A a minimized panel is restored first (RemoteVI Restore If Minimized.vi)\3B mods are updated (RemoteVI Track Modifiers.vi) and\2C when they changed and no popup is open\2C written into the key state of LabVIEW's UI thread (RemoteVI Apply Modifiers.vi)\3B a WM_MOUSEMOVE while a popup is open is remembered for the menu hover (RemoteVI Note Popup Pointer.vi - RemoteVI Menu Hover.vi applies it once per server loop iteration)\3B the message is translated (RemoteVI Translate Input.vi with the panel geometry\2C popup and tracking in = LabVIEW holds the mouse capture\2C RemoteVI Mouse Captured.vi) and posted to hWnd (RemoteVI Post Input.vi\2C which turns a click on a LabVIEW menu into keys and clicks other popups with the mouse path - popup since lets a mouse-path click wait until the popup is 350 ms old). Nothing here waits for the popup any more\2C so a click on a menu does not hold the server loop. clicked? is TRUE for anything but WM_MOUSEMOVE and WM_MOUSEWHEEL - a message that may open a popup. No VI Server call.">
   <Control _name="panel" conIdx="0" connection="required" description="hWnd of the served panel\2C popup (a popup is open) and the cached panel geometry." outputs="value:pan.value" type="cluster{uint64.hWnd,bool.popup,cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}.geo}" uid="pan" uid_parent="root" value="[0,false,[0,0,0,0]]"/>
   <Control _name="kind" conIdx="1" connection="required" description="From RemoteVI Parse Input.vi\3A mouse or key." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack}" uid="kind" uid_parent="root" value="0"/>
   <Control _name="msg" conIdx="2" connection="required" description="The Win32 message." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
@@ -16,32 +16,10 @@
   <Call inputs="hWnd:up.hWnd,error in:ei.value" outputs="was minimized?:,error out:rim.error out" target="RemoteVI Restore If Minimized.vi" uid="rim" uid_parent="root"/>
   <Call inputs="kind:kind.value,msg:msg.value,wParam:wp.value,mods in:mods.value" outputs="mods out:tm.mods out" target="RemoteVI Track Modifiers.vi" uid="tm" uid_parent="root"/>
   <Call inputs="mods:tm.mods out,mods set:mset.value,popup:up.popup,error in:rim.error out" outputs="mods set out:am.mods set out,error out:am.error out" target="RemoteVI Apply Modifiers.vi" uid="am" uid_parent="root"/>
+  <Call inputs="popup?:up.popup,msg:msg.value,x:x.value,y:y.value,geo:up.geo" outputs="" target="RemoteVI Note Popup Pointer.vi" uid="npp" uid_parent="root"/>
   <Call inputs="hWnd:up.hWnd,error in:am.error out" outputs="captured?:mc.captured?,error out:mc.error out" target="RemoteVI Mouse Captured.vi" uid="mc" uid_parent="root"/>
   <Call inputs="kind:kind.value,msg:msg.value,x:x.value,y:y.value,wParam:wp.value,lParam:lp.value,geo:up.geo,popup:up.popup,tracking in:mc.captured?" outputs="posts:ti.posts,tracking out:ti.tracking out,cursor:ti.cursor" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="root"/>
-  <Node _name="Unbundle By Name" fields="move?" inputs="input cluster:ti.cursor" outputs="move?:tcu.move?" uid="tcu" uid_parent="root"/>
-  <Node _name="Tick Count (ms)" outputs="millisecond timer value:pnow.millisecond timer value" uid="pnow" uid_parent="root"/>
-  <Node _name="Subtract" inputs="x:pnow.millisecond timer value,y:since.value" outputs="x-y:page.x-y" uid="page" uid_parent="root"/>
-  <Constant _name="popup ready after 350 ms" outputs="value:k350.value" type="uint32" uid="k350" uid_parent="root" value="350"/>
-  <Node _name="Less?" inputs="x:page.x-y,y:k350.value" outputs="x &lt; y?:young.x &lt; y?" uid="young" uid_parent="root"/>
-  <Node _name="And" inputs="x:tcu.move?,y:young.x &lt; y?" outputs="x .and. y?:pwait.x .and. y?" uid="pwait" uid_parent="root"/>
-  <Node _name="Subtract" inputs="x:k350.value,y:page.x-y" outputs="x-y:prem.x-y" uid="prem" uid_parent="root"/>
-  <Structure _name="Case Structure" selectin="pwait.x .and. y?" uid="cw" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:mc.error out" uid="cw_i1" uid_parent="cw"/>
-    <Tunnel _id="In2" inputs="value:prem.x-y" uid="cw_i2" uid_parent="cw"/>
-    <CaseFrame label="Popup younger than 350 ms\3A wait" selector="True" selectout="" uid="cwt" uid_parent="cw">
-      <Tunnel _id="In1" outputs="value:w_e.value" uid="w_e" uid_parent="cwt"/>
-      <Tunnel _id="In2" outputs="value:w_ms.value" uid="w_ms" uid_parent="cwt"/>
-      <Node _name="Wait (ms)" inputs="milliseconds to wait:w_ms.value" outputs="millisecond timer value:" uid="wms" uid_parent="cwt"/>
-      <Tunnel _id="Out1" inputs="value:w_e.value" uid="w_o1" uid_parent="cwt"/>
-    </CaseFrame>
-    <CaseFrame selector="False" selectout="" uid="cwf" uid_parent="cw">
-      <Tunnel _id="In1" outputs="value:v_e.value" uid="v_e" uid_parent="cwf"/>
-      <Tunnel _id="In2" outputs="value:" uid="v_ms" uid_parent="cwf"/>
-      <Tunnel _id="Out1" inputs="value:v_e.value" uid="v_o1" uid_parent="cwf"/>
-    </CaseFrame>
-    <Tunnel _id="Out1" outputs="value:cw_o1.value" uid="cw_o1" uid_parent="cw"/>
-  </Structure>
-  <Call inputs="hWnd:up.hWnd,posts:ti.posts,cursor:ti.cursor,popups:pp.value,error in:cw_o1.value" outputs="popups out:po.popups out,error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="root"/>
+  <Call inputs="hWnd:up.hWnd,posts:ti.posts,cursor:ti.cursor,popups:pp.value,popup since:since.value,error in:mc.error out" outputs="popups out:po.popups out,error out:po.error out" target="RemoteVI Post Input.vi" uid="po" uid_parent="root"/>
   <Constant _name="WM_MOUSEMOVE" outputs="value:kmv.value" type="uint32" uid="kmv" uid_parent="root" value="512"/>
   <Constant _name="WM_MOUSEWHEEL" outputs="value:kwh.value" type="uint32" uid="kwh" uid_parent="root" value="522"/>
   <Node _name="Not Equal?" inputs="x:msg.value,y:kmv.value" outputs="x != y?:nmv.x != y?" uid="nmv" uid_parent="root"/>
@@ -50,7 +28,7 @@
 
   <Indicator _name="tracking out" conIdx="14" connection="recommended" description="From RemoteVI Translate Input.vi." inputs="value:ti.tracking out" type="bool" uid="o_trk" uid_parent="root" value="false"/>
   <Indicator _name="clicked?" conIdx="15" connection="recommended" description="TRUE for a message that may open a popup." inputs="value:clk.x .and. y?" type="bool" uid="o_clk" uid_parent="root" value="false"/>
-  <Indicator _name="popups out" conIdx="16" connection="recommended" description="popups with the displacement d RemoteVI Post Input.vi used." inputs="value:po.popups out" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
+  <Indicator _name="popups out" conIdx="16" connection="recommended" description="popups\2C passed through RemoteVI Post Input.vi." inputs="value:po.popups out" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
   <Indicator _name="mods out" conIdx="17" connection="recommended" description="mods after this message." inputs="value:tm.mods out" type="uint8" uid="o_m" uid_parent="root" value="0"/>
   <Indicator _name="mods set out" conIdx="18" connection="recommended" description="mods set after this message." inputs="value:am.mods set out" type="uint8" uid="o_ms" uid_parent="root" value="0"/>
   <Indicator _name="error out" conIdx="19" connection="recommended" description="Errors restoring the window\2C writing the modifiers and posting." inputs="value:po.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>

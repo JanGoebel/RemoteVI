@@ -1,0 +1,43 @@
+<VI _name="RemoteVI Menu Hover.vi" description="The hover part of one server loop iteration (docs\5Carchitecture.md\2C Popups)\3A makes the remote pointer act on open LabVIEW menus as a local pointer does\2C without moving the host cursor or any window. The pointer position comes from RemoteVI Menu Pointer.vi (RemoteVI Note Popup Pointer.vi stores each WM_MOUSEMOVE a client sends while a popup is open\2C so a burst of moves is coalesced to the latest one). While a popup is open and a position waits\2C RemoteVI Hover Menus.vi does one step with keys\3A over the DEEPEST menu the highlight is moved onto the item under the pointer (VK_DOWN / VK_UP)\2C and when it has stayed on one item for 400 ms VK_RIGHT is posted once - it opens that item's submenu next to its parent as a local hover does\2C and does nothing on an item without one (measured)\3B over a PARENT of open submenus nothing happens on the item that opened the submenu\2C elsewhere after 300 ms of rest the submenus are closed with VK_LEFT and the parent's highlight follows. A popup that takes no keys (colour picker\2C line width popup) gets no hover. In an iteration in which a client clicked (clicked?) no step is made - the click has just set the state. When no popup is open the state is reset\2C except swallow up (the button-up of a click that chose a menu item). Win32 only\2C no VI Server call\3B errors are dropped.">
+  <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window (the keys are posted to it)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="popup open?" conIdx="5" connection="required" description="A modal LabVIEW popup is open (RemoteVI Track Popups.vi)." outputs="value:po.value" type="bool" uid="po" uid_parent="root" value="false"/>
+  <Control _name="clicked?" conIdx="7" connection="recommended" description="A client posted a click in this loop iteration (RemoteVI Service Clients.vi)\3B also orders this VI after the clients were serviced." outputs="value:clk.value" type="bool" uid="clk" uid_parent="root" value="false"/>
+  <Node _name="Tick Count (ms)" outputs="millisecond timer value:now.millisecond timer value" uid="now" uid_parent="root"/>
+  <Call inputs="" outputs="state:rd.state" target="RemoteVI Menu Pointer.vi" uid="rd" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="active" inputs="input cluster:rd.state" outputs="active:ra.active" uid="ra" uid_parent="root"/>
+  <Node _name="Not" inputs="x:clk.value" outputs=".not. x?:nclk..not. x?" uid="nclk" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:po.value,element:ra.active,element:nclk..not. x?" outputs="appended array:ga.appended array" uid="ga" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:ga.appended array" outputs="logical AND:go.logical AND" uid="go" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="po.value" uid="cz" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rd.state" uid="cz_i1" uid_parent="cz"/>
+    <CaseFrame label="Popup open" selector="True" selectout="" uid="czt" uid_parent="cz">
+      <Tunnel _id="In1" outputs="value:" uid="z_st" uid_parent="czt"/>
+    </CaseFrame>
+    <CaseFrame label="No popup\3A forget the pointer" selector="False" selectout="" uid="czf" uid_parent="cz">
+      <Tunnel _id="In1" outputs="value:y_st.value" uid="y_st" uid_parent="czf"/>
+      <Constant outputs="value:yf.value" type="bool" uid="yf" uid_parent="czf" value="false"/>
+      <Constant outputs="value:yt.value" type="bool" uid="yt" uid_parent="czf" value="true"/>
+      <Constant outputs="value:y0.value" type="uint64" uid="y0" uid_parent="czf" value="0"/>
+      <Node _name="Bundle By Name" fields="active,navigated,menu,hit,dwelled,plain" inputs="active:yf.value,navigated:yf.value,menu:y0.value,hit:yf.value,dwelled:yf.value,plain:y0.value,input cluster:y_st.value" outputs="output cluster:yb.output cluster" uid="yb" uid_parent="czf"/>
+      <Call inputs="write?:yt.value,state in:yb.output cluster" outputs="state:" target="RemoteVI Menu Pointer.vi" uid="yw" uid_parent="czf"/>
+    </CaseFrame>
+  </Structure>
+  <Structure _name="Case Structure" selectin="go.logical AND" uid="cg" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rd.state" uid="cg_i1" uid_parent="cg"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="cg_i2" uid_parent="cg"/>
+    <Tunnel _id="In3" inputs="value:now.millisecond timer value" uid="cg_i3" uid_parent="cg"/>
+    <CaseFrame label="Apply the pointer to the menus" selector="True" selectout="" uid="cgt" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:g_st.value" uid="g_st" uid_parent="cgt"/>
+      <Tunnel _id="In2" outputs="value:g_hw.value" uid="g_hw" uid_parent="cgt"/>
+      <Tunnel _id="In3" outputs="value:g_now.value" uid="g_now" uid_parent="cgt"/>
+      <Call inputs="hWnd:g_hw.value,state:g_st.value,now:g_now.value" outputs="state out:hm.state out" target="RemoteVI Hover Menus.vi" uid="hm" uid_parent="cgt"/>
+      <Constant outputs="value:wt.value" type="bool" uid="wt" uid_parent="cgt" value="true"/>
+      <Call inputs="write?:wt.value,state in:hm.state out" outputs="state:" target="RemoteVI Menu Pointer.vi" uid="wr" uid_parent="cgt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cgf" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:" uid="x_st" uid_parent="cgf"/>
+      <Tunnel _id="In2" outputs="value:" uid="x_hw" uid_parent="cgf"/>
+      <Tunnel _id="In3" outputs="value:" uid="x_n" uid_parent="cgf"/>
+    </CaseFrame>
+  </Structure>
+</VI>

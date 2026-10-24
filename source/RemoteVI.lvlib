@@ -18,23 +18,30 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Encode Rect PNG.vi" Type="VI" URL="../Capture/RemoteVI Encode Rect PNG.vi"/>
 	</Item>
 	<Item Name="Input" Type="Folder">
-		<Item Name="RemoteVI Aim Popup Click.vi" Type="VI" URL="../Input/RemoteVI Aim Popup Click.vi"/>
 		<Item Name="RemoteVI Apply Modifiers.vi" Type="VI" URL="../Input/RemoteVI Apply Modifiers.vi"/>
 		<Item Name="RemoteVI Cancel Popups.vi" Type="VI" URL="../Input/RemoteVI Cancel Popups.vi"/>
 		<Item Name="RemoteVI Close Submenus.vi" Type="VI" URL="../Input/RemoteVI Close Submenus.vi"/>
 		<Item Name="RemoteVI Get Panel Geometry.vi" Type="VI" URL="../Input/RemoteVI Get Panel Geometry.vi"/>
+		<Item Name="RemoteVI Highlight Menu Row.vi" Type="VI" URL="../Input/RemoteVI Highlight Menu Row.vi"/>
+		<Item Name="RemoteVI Hover Decision.vi" Type="VI" URL="../Input/RemoteVI Hover Decision.vi"/>
+		<Item Name="RemoteVI Hover Menus.vi" Type="VI" URL="../Input/RemoteVI Hover Menus.vi"/>
+		<Item Name="RemoteVI Hover Navigate.vi" Type="VI" URL="../Input/RemoteVI Hover Navigate.vi"/>
+		<Item Name="RemoteVI Hover Parent Menu.vi" Type="VI" URL="../Input/RemoteVI Hover Parent Menu.vi"/>
 		<Item Name="RemoteVI Is Button Down.vi" Type="VI" URL="../Input/RemoteVI Is Button Down.vi"/>
-		<Item Name="RemoteVI Move Popups Under Cursor.vi" Type="VI" URL="../Input/RemoteVI Move Popups Under Cursor.vi"/>
+		<Item Name="RemoteVI Menu Click.vi" Type="VI" URL="../Input/RemoteVI Menu Click.vi"/>
+		<Item Name="RemoteVI Menu Pointer.vi" Type="VI" URL="../Input/RemoteVI Menu Pointer.vi"/>
+		<Item Name="RemoteVI Note Popup Pointer.vi" Type="VI" URL="../Input/RemoteVI Note Popup Pointer.vi"/>
 		<Item Name="RemoteVI Pack Point lParam.vi" Type="VI" URL="../Input/RemoteVI Pack Point lParam.vi"/>
+		<Item Name="RemoteVI Plain Popup Click.vi" Type="VI" URL="../Input/RemoteVI Plain Popup Click.vi"/>
 		<Item Name="RemoteVI Point On Popup.vi" Type="VI" URL="../Input/RemoteVI Point On Popup.vi"/>
+		<Item Name="RemoteVI Popup Click.vi" Type="VI" URL="../Input/RemoteVI Popup Click.vi"/>
+		<Item Name="RemoteVI Post At Cursor.vi" Type="VI" URL="../Input/RemoteVI Post At Cursor.vi"/>
 		<Item Name="RemoteVI Post Input.vi" Type="VI" URL="../Input/RemoteVI Post Input.vi"/>
 		<Item Name="RemoteVI Post Menu Key.vi" Type="VI" URL="../Input/RemoteVI Post Menu Key.vi"/>
-		<Item Name="RemoteVI Prepare Menu Click.vi" Type="VI" URL="../Input/RemoteVI Prepare Menu Click.vi"/>
-		<Item Name="RemoteVI Refresh Popup List.vi" Type="VI" URL="../Input/RemoteVI Refresh Popup List.vi"/>
-		<Item Name="RemoteVI Reopen Submenu.vi" Type="VI" URL="../Input/RemoteVI Reopen Submenu.vi"/>
+		<Item Name="RemoteVI Swallow Button Up.vi" Type="VI" URL="../Input/RemoteVI Swallow Button Up.vi"/>
 		<Item Name="RemoteVI Track Modifiers.vi" Type="VI" URL="../Input/RemoteVI Track Modifiers.vi"/>
 		<Item Name="RemoteVI Translate Input.vi" Type="VI" URL="../Input/RemoteVI Translate Input.vi"/>
-		<Item Name="RemoteVI Wait Popup Click Handled.vi" Type="VI" URL="../Input/RemoteVI Wait Popup Click Handled.vi"/>
+		<Item Name="RemoteVI Wait Popup Age.vi" Type="VI" URL="../Input/RemoteVI Wait Popup Age.vi"/>
 	</Item>
 	<Item Name="Protocol" Type="Folder">
 		<Item Name="RemoteVI Frame Encode.vi" Type="VI" URL="../Protocol/RemoteVI Frame Encode.vi"/>
@@ -66,6 +73,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI List Popups.vi" Type="VI" URL="../Server/RemoteVI List Popups.vi"/>
 		<Item Name="RemoteVI Logical Popups.vi" Type="VI" URL="../Server/RemoteVI Logical Popups.vi"/>
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
+		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
@@ -94,17 +102,18 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="gdi32 GetDIBits.vi" Type="VI" URL="../Win32/gdi32 GetDIBits.vi"/>
 		<Item Name="gdi32 SelectObject.vi" Type="VI" URL="../Win32/gdi32 SelectObject.vi"/>
 		<Item Name="kernel32 GetCurrentProcessId.vi" Type="VI" URL="../Win32/kernel32 GetCurrentProcessId.vi"/>
-		<Item Name="RemoteVI Any Popup Closed.vi" Type="VI" URL="../Win32/RemoteVI Any Popup Closed.vi"/>
 		<Item Name="RemoteVI Capture Window.vi" Type="VI" URL="../Win32/RemoteVI Capture Window.vi"/>
 		<Item Name="RemoteVI Cursor Outside Window.vi" Type="VI" URL="../Win32/RemoteVI Cursor Outside Window.vi"/>
 		<Item Name="RemoteVI Find Popups.vi" Type="VI" URL="../Win32/RemoteVI Find Popups.vi"/>
 		<Item Name="RemoteVI Hide Window.vi" Type="VI" URL="../Win32/RemoteVI Hide Window.vi"/>
+		<Item Name="RemoteVI List Menus.vi" Type="VI" URL="../Win32/RemoteVI List Menus.vi"/>
+		<Item Name="RemoteVI Menu Highlight.vi" Type="VI" URL="../Win32/RemoteVI Menu Highlight.vi"/>
 		<Item Name="RemoteVI Mouse Captured.vi" Type="VI" URL="../Win32/RemoteVI Mouse Captured.vi"/>
-		<Item Name="RemoteVI New Menu Window.vi" Type="VI" URL="../Win32/RemoteVI New Menu Window.vi"/>
 		<Item Name="RemoteVI Restore If Minimized.vi" Type="VI" URL="../Win32/RemoteVI Restore If Minimized.vi"/>
 		<Item Name="RemoteVI Set Modifier Keys.vi" Type="VI" URL="../Win32/RemoteVI Set Modifier Keys.vi"/>
+		<Item Name="RemoteVI System Color.vi" Type="VI" URL="../Win32/RemoteVI System Color.vi"/>
+		<Item Name="RemoteVI Wait Highlight Change.vi" Type="VI" URL="../Win32/RemoteVI Wait Highlight Change.vi"/>
 		<Item Name="RemoteVI Wait Input Handled.vi" Type="VI" URL="../Win32/RemoteVI Wait Input Handled.vi"/>
-		<Item Name="RemoteVI Wait Popups Change.vi" Type="VI" URL="../Win32/RemoteVI Wait Popups Change.vi"/>
 		<Item Name="RemoteVI Window Popup Info.vi" Type="VI" URL="../Win32/RemoteVI Window Popup Info.vi"/>
 		<Item Name="user32 FindWindowExW.vi" Type="VI" URL="../Win32/user32 FindWindowExW.vi"/>
 		<Item Name="user32 GetClassNameW.vi" Type="VI" URL="../Win32/user32 GetClassNameW.vi"/>
@@ -112,6 +121,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="user32 GetDC.vi" Type="VI" URL="../Win32/user32 GetDC.vi"/>
 		<Item Name="user32 GetGUIThreadInfo.vi" Type="VI" URL="../Win32/user32 GetGUIThreadInfo.vi"/>
 		<Item Name="user32 GetKeyboardState.vi" Type="VI" URL="../Win32/user32 GetKeyboardState.vi"/>
+		<Item Name="user32 GetSysColor.vi" Type="VI" URL="../Win32/user32 GetSysColor.vi"/>
 		<Item Name="user32 GetWindowLongPtrW.vi" Type="VI" URL="../Win32/user32 GetWindowLongPtrW.vi"/>
 		<Item Name="user32 GetWindowRect.vi" Type="VI" URL="../Win32/user32 GetWindowRect.vi"/>
 		<Item Name="user32 GetWindowThreadProcessId.vi" Type="VI" URL="../Win32/user32 GetWindowThreadProcessId.vi"/>

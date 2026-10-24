@@ -35,16 +35,17 @@
   <Node _name="Byte Array To String" inputs="unsigned byte array:z14.value" outputs="string:zs.string" uid="zs" uid_parent="root"/>
   <Node _name="Concatenate Strings" inputs="string:hs.substring,string:zs.string" outputs="concatenated string:hdr.concatenated string" uid="hdr" uid_parent="root"/>
   <Node _name="String To Byte Array" inputs="string:hdr.concatenated string" outputs="unsigned byte array:by.unsigned byte array" uid="by" uid_parent="root"/>
-  <Node _name="Index Array" inputs="array:by.unsigned byte array,index:i0.value,index:i1.value" outputs="element:ix.e0,element:ix.e1" uid="ix" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:by.unsigned byte array,index:i0.value" outputs="element:ix0.e0" uid="ix0" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:by.unsigned byte array,index:i1.value" outputs="element:ix1.e1" uid="ix1" uid_parent="root"/>
 
-  <Node _name="And" inputs="x:ix.e0,y:k80.value" outputs="x .and. y?:a80.x .and. y?" uid="a80" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix0.e0,y:k80.value" outputs="x .and. y?:a80.x .and. y?" uid="a80" uid_parent="root"/>
   <Node _name="Not Equal To 0?" inputs="x:a80.x .and. y?" outputs="x != 0?:fin.x != 0?" uid="fin" uid_parent="root"/>
-  <Node _name="And" inputs="x:ix.e0,y:k70.value" outputs="x .and. y?:a70.x .and. y?" uid="a70" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix0.e0,y:k70.value" outputs="x .and. y?:a70.x .and. y?" uid="a70" uid_parent="root"/>
   <Node _name="Not Equal To 0?" inputs="x:a70.x .and. y?" outputs="x != 0?:rsv.x != 0?" uid="rsv" uid_parent="root"/>
-  <Node _name="And" inputs="x:ix.e0,y:k0F.value" outputs="x .and. y?:opc.x .and. y?" uid="opc" uid_parent="root"/>
-  <Node _name="And" inputs="x:ix.e1,y:k80.value" outputs="x .and. y?:am.x .and. y?" uid="am" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix0.e0,y:k0F.value" outputs="x .and. y?:opc.x .and. y?" uid="opc" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix1.e1,y:k80.value" outputs="x .and. y?:am.x .and. y?" uid="am" uid_parent="root"/>
   <Node _name="Equal To 0?" inputs="x:am.x .and. y?" outputs="x = 0?:unm.x = 0?" uid="unm" uid_parent="root"/>
-  <Node _name="And" inputs="x:ix.e1,y:k7F.value" outputs="x .and. y?:l7.x .and. y?" uid="l7" uid_parent="root"/>
+  <Node _name="And" inputs="x:ix1.e1,y:k7F.value" outputs="x .and. y?:l7.x .and. y?" uid="l7" uid_parent="root"/>
 
   <Node _name="Less Or Equal?" inputs="x:opc.x .and. y?,y:k2.value" outputs="x &lt;= y?:le2.x &lt;= y?" uid="le2" uid_parent="root"/>
   <Node _name="Greater Or Equal?" inputs="x:opc.x .and. y?,y:k8.value" outputs="x &gt;= y?:ctl.x &gt;= y?" uid="ctl" uid_parent="root"/>

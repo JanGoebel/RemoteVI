@@ -44,7 +44,10 @@
     <Tunnel _id="Out2" inputs="value:rg.ok" mode="index" outputs="value:oks.value" uid="oks" uid_parent="loop"/>
   </Structure>
   <Node _name="And Array Elements" inputs="Boolean array:oks.value" outputs="logical AND:allin.logical AND" uid="allin" uid_parent="root"/>
-  <Node _name="Index Array" inputs="array:nums.value,index:i0.value,index:i1.value,index:i2.value,index:i3.value" outputs="element:n1.v,element:n2.v,element:n3.v,element:n4.v" uid="nix" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:nums.value,index:i0.value" outputs="element:n1.v" uid="n1" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:nums.value,index:i1.value" outputs="element:n2.v" uid="n2" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:nums.value,index:i2.value" outputs="element:n3.v" uid="n3" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:nums.value,index:i3.value" outputs="element:n4.v" uid="n4" uid_parent="root"/>
   <Node _name="And" inputs="x:sm.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isM.result" uid="isM" uid_parent="root"/>
   <Node _name="And" inputs="x:sk.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isK.result" uid="isK" uid_parent="root"/>
   <Node _name="And" inputs="x:sa.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isA.x .and. y?" uid="isA" uid_parent="root"/>

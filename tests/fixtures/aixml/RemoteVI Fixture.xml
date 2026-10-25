@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number\2C double click on List with the row\2C mouse wheel on Number with the delta\2C and the selection in the run-time shortcut menu of Text by item tag (the menu is rebuilt in Shortcut Menu Activation? as Top and More with the submenu item Deep) - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
+<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number\2C double click on List with the row\2C mouse wheel on Number with the delta\2C the selection in the run-time shortcut menu of Text by item tag (the menu is rebuilt in Shortcut Menu Activation? as Top and More with the submenu item Deep) and the selection in the VI's run-time menu bar by item tag (built at start\3A one menu Fixture with Say Hello (tag Hello) and the submenu More with Deep Bar (tag DeepBar)) - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms and logs scroll x y whenever the panel was scrolled (Front Panel Window\3AOrigin changed)\3B 1.5 s after the last scroll it scrolls the panel back to 0\2C0\2C so a later test run finds the controls where the layout lines say. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
   <FreeLabel comment="One log line per handled event" uid="lbl" uid_parent="root"/>
   <Control _name="Log Path" description="Where the event log is written. Empty: RemoteVI Fixture.log in the system temp directory. The file is truncated at start." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
   <Call target="RemoteVI Fixture Log Path.vi" inputs="Log Path:lp.value,error in:" outputs="path:lpath.path,error out:" uid="lpath" uid_parent="root"/>
@@ -12,7 +12,19 @@
   <Call target="RemoteVI Fixture Find Control.vi" inputs="Panel:vp.fp,label:tbl.value,error in:lay.error out" outputs="Control Ref:fc.Control Ref,error out:fc.error out" uid="fc" uid_parent="root"/>
   <Node _name="Register For Events" inputs="event registration refnum:,error in (no error):fc.error out,event source:fc.Control Ref" outputs="event registration refnum:reg.event registration refnum,error out:reg.error out" uid="reg" uid_parent="root"/>
   <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8089"/>
-  <Call target="../../source/API/RemoteVI Start.vi" inputs="port:port.value,error in:of.error out" outputs="URL:,error out:st.error out" uid="st" uid_parent="root"/>
+  <Node _name="Current VI's Menubar" outputs="menu reference:cmb.menu reference" uid="cmb" uid_parent="root"/>
+  <Constant _name="before the first item" outputs="value:first.value" type="int32" uid="first" uid_parent="root" value="-1"/>
+  <Constant _name="menu bar" outputs="value:mbt.value" type="array{string}" uid="mbt" uid_parent="root" value="[Fixture]"/>
+  <Node _name="Insert Menu Items" inputs="menu reference:cmb.menu reference,item names:mbt.value,item tags:mbt.value,error in (no error):of.error out,menu tag:,?parm4:first.value" outputs="menu reference out:imb.menu reference out,item tags out:,error out:imb.error out" uid="imb" uid_parent="root"/>
+  <Constant _name="Fixture menu names" outputs="value:fmn.value" type="array{string}" uid="fmn" uid_parent="root" value="[Say Hello,More]"/>
+  <Constant _name="Fixture menu tags" outputs="value:fmg.value" type="array{string}" uid="fmg" uid_parent="root" value="[Hello,More]"/>
+  <Constant _name="Fixture tag" outputs="value:fxt.value" type="string" uid="fxt" uid_parent="root" value="Fixture"/>
+  <Node _name="Insert Menu Items" inputs="menu reference:imb.menu reference out,item names:fmn.value,item tags:fmg.value,error in (no error):imb.error out,menu tag:fxt.value,after item:" outputs="menu reference out:imf.menu reference out,item tags out:,error out:imf.error out" uid="imf" uid_parent="root"/>
+  <Constant _name="More names" outputs="value:mrn.value" type="array{string}" uid="mrn" uid_parent="root" value="[Deep Bar]"/>
+  <Constant _name="More tags" outputs="value:mrg.value" type="array{string}" uid="mrg" uid_parent="root" value="[DeepBar]"/>
+  <Constant _name="More tag" outputs="value:mrt.value" type="string" uid="mrt" uid_parent="root" value="More"/>
+  <Node _name="Insert Menu Items" inputs="menu reference:imf.menu reference out,item names:mrn.value,item tags:mrg.value,error in (no error):imf.error out,menu tag:mrt.value,after item:" outputs="menu reference out:,item tags out:,error out:imm.error out" uid="imm" uid_parent="root"/>
+  <Call target="../../source/API/RemoteVI Start.vi" inputs="port:port.value,error in:imm.error out" outputs="URL:,error out:st.error out" uid="st" uid_parent="root"/>
   <Constant _name="ready line" outputs="value:rl.value" type="string" uid="rl" uid_parent="root" value="ready\0A"/>
   <Node _name="Concatenate Strings" inputs="string:lay.layout,string:rl.value" outputs="concatenated string:lr.concatenated string" uid="lr" uid_parent="root"/>
   <Node _name="Write to Text File" inputs="file (use dialog):of.refnum out,text:lr.concatenated string,error in:st.error out" outputs="refnum out:w2.refnum out,error out:w2.error out" uid="w2" uid_parent="root"/>
@@ -196,6 +208,17 @@
         <Tunnel _id="Out2" inputs="value:css.concatenated string" uid="fssO2" uid_parent="fss"/>
       </CaseFrame>
 
+      <CaseFrame selector=" Menu Selection (User) " uid="fmb" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fmbI1" uid_parent="fmb"/>
+        <Tunnel _id="In2" outputs="value:" uid="fmbI2" uid_parent="fmb"/>
+        <Node _name="Event Data Node" fields="ItemTag" outputs="ItemTag:edmb.ItemTag" uid="edmb" uid_parent="fmb"/>
+        <Constant _name="menubar kind" outputs="value:kmb.value" type="string" uid="kmb" uid_parent="fmb" value="menubar\09"/>
+        <Constant _name="line feed" outputs="value:lfmb.value" type="string" uid="lfmb" uid_parent="fmb" value="\0A"/>
+        <Node _name="Concatenate Strings" inputs="string:kmb.value,string:edmb.ItemTag,string:lfmb.value" outputs="concatenated string:cmbl.concatenated string" uid="cmbl" uid_parent="fmb"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fmbO1" uid_parent="fmb"/>
+        <Tunnel _id="Out2" inputs="value:cmbl.concatenated string" uid="fmbO2" uid_parent="fmb"/>
+      </CaseFrame>
+
       <CaseFrame selector=" &quot;Stop&quot;\3A Value Change " uid="fst" uid_parent="ev">
         <Tunnel _id="In1" outputs="value:stN.value" uid="stN" uid_parent="fst"/>
         <Tunnel _id="In2" outputs="value:" uid="fstI2" uid_parent="fst"/>
@@ -214,8 +237,64 @@
 
   <Constant _name="phase step" outputs="value:k.value" type="double" uid="k" uid_parent="root" value="0.2"/>
   <Constant _name="period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
-  <Structure _name="While Loop" count="gl.value" label="Graph loop - moving sine every 50 ms" uid="gl" uid_parent="root">
+  <Constant _name="origin 0,0" outputs="value:o00.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="o00" uid_parent="root" value="[0,0]"/>
+  <Constant _name="no scroll yet" outputs="value:t00.value" type="uint32" uid="t00" uid_parent="root" value="0"/>
+  <Structure _name="While Loop" count="gl.value" label="Graph loop - moving sine every 50 ms\2C logs scrolling" uid="gl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:obt.notifier out" outputs="value:glN.value" uid="glN" uid_parent="gl"/>
+    <Tunnel _id="In4" inputs="value:w2.refnum out" outputs="value:glF.value" uid="glF" uid_parent="gl"/>
+    <Tunnel _id="In5" inputs="value:o00.value" outputs="value:glZ.value" uid="glZ" uid_parent="gl"/>
+    <ShiftReg uid="srO" uid_parent="gl">
+      <Left inputs="value:o00.value" outputs="value:glPO.value" uid="glPOl" uid_parent="srO"/>
+      <Right inputs="value:org.Front Panel Window\3AOrigin" outputs="value:" uid="glPOr" uid_parent="srO"/>
+    </ShiftReg>
+    <ShiftReg uid="srT" uid_parent="gl">
+      <Left inputs="value:t00.value" outputs="value:glPT.value" uid="glPTl" uid_parent="srT"/>
+      <Right inputs="value:ntm.s? t\3Af" outputs="value:" uid="glPTr" uid_parent="srT"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Front Panel Window\3AOrigin" inputs="reference:,error in (no error):" outputs="Front Panel Window\3AOrigin:org.Front Panel Window\3AOrigin,reference out:,error out:" type="{LV.VI}" uid="org" uid_parent="gl"/>
+    <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:org.Front Panel Window\3AOrigin" outputs="Horizontal:oxy.Horizontal,Vertical:oxy.Vertical" uid="oxy" uid_parent="gl"/>
+    <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:glPO.value" outputs="Horizontal:pxy.Horizontal,Vertical:pxy.Vertical" uid="pxy" uid_parent="gl"/>
+    <Node _name="Not Equal?" inputs="x:oxy.Horizontal,y:pxy.Horizontal" outputs="x != y?:chx.x != y?" uid="chx" uid_parent="gl"/>
+    <Node _name="Not Equal?" inputs="x:oxy.Vertical,y:pxy.Vertical" outputs="x != y?:chy.x != y?" uid="chy" uid_parent="gl"/>
+    <Node _name="Or" inputs="x:chx.x != y?,y:chy.x != y?" outputs="x .or. y?:chg.x .or. y?" uid="chg" uid_parent="gl"/>
+    <Node _name="Tick Count (ms)" outputs="millisecond timer value:tnow.millisecond timer value" uid="tnow" uid_parent="gl"/>
+    <Node _name="Select" inputs="t:tnow.millisecond timer value,s:chg.x .or. y?,f:glPT.value" outputs="s? t\3Af:ntm.s? t\3Af" uid="ntm" uid_parent="gl"/>
+    <Structure _name="Case Structure" selectin="chg.x .or. y?" uid="csc" uid_parent="gl">
+      <Tunnel _id="In1" inputs="value:glF.value" uid="csc_i1" uid_parent="csc"/>
+      <Tunnel _id="In2" inputs="value:oxy.Horizontal" uid="csc_i2" uid_parent="csc"/>
+      <Tunnel _id="In3" inputs="value:oxy.Vertical" uid="csc_i3" uid_parent="csc"/>
+      <CaseFrame label="Scrolled\3A log it" selector="True" selectout="" uid="csct" uid_parent="csc">
+        <Tunnel _id="In1" outputs="value:sF.value" uid="sF" uid_parent="csct"/>
+        <Tunnel _id="In2" outputs="value:sX.value" uid="sX" uid_parent="csct"/>
+        <Tunnel _id="In3" outputs="value:sY.value" uid="sY" uid_parent="csct"/>
+        <Constant _name="scroll line" outputs="value:fsc.value" type="string" uid="fsc" uid_parent="csct" value="scroll\09%d %d\0A"/>
+        <Node _name="Format Into String" inputs="format string:fsc.value,input 1:sX.value,input 2:sY.value" outputs="resulting string:ssc.resulting string,error out:" uid="ssc" uid_parent="csct"/>
+        <Node _name="Write to Text File" inputs="file (use dialog):sF.value,text:ssc.resulting string,error in:" outputs="refnum out:,error out:" uid="wsc" uid_parent="csct"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="cscf" uid_parent="csc">
+        <Tunnel _id="In1" outputs="value:" uid="nF" uid_parent="cscf"/>
+        <Tunnel _id="In2" outputs="value:" uid="nX" uid_parent="cscf"/>
+        <Tunnel _id="In3" outputs="value:" uid="nY" uid_parent="cscf"/>
+      </CaseFrame>
+    </Structure>
+    <Constant _name="zero" outputs="value:z0.value" type="int32" uid="z0" uid_parent="gl" value="0"/>
+    <Node _name="Not Equal?" inputs="x:oxy.Horizontal,y:z0.value" outputs="x != y?:nzx.x != y?" uid="nzx" uid_parent="gl"/>
+    <Node _name="Not Equal?" inputs="x:oxy.Vertical,y:z0.value" outputs="x != y?:nzy.x != y?" uid="nzy" uid_parent="gl"/>
+    <Node _name="Or" inputs="x:nzx.x != y?,y:nzy.x != y?" outputs="x .or. y?:scr.x .or. y?" uid="scr" uid_parent="gl"/>
+    <Node _name="Subtract" inputs="x:tnow.millisecond timer value,y:ntm.s? t\3Af" outputs="x-y:age.x-y" uid="age" uid_parent="gl"/>
+    <Constant _name="scroll back after 1.5 s" outputs="value:k15.value" type="uint32" uid="k15" uid_parent="gl" value="1500"/>
+    <Node _name="Greater Or Equal?" inputs="x:age.x-y,y:k15.value" outputs="x &gt;= y?:old.x &gt;= y?" uid="old" uid_parent="gl"/>
+    <Node _name="And" inputs="x:scr.x .or. y?,y:old.x &gt;= y?" outputs="x .and. y?:rst.x .and. y?" uid="rst" uid_parent="gl"/>
+    <Structure _name="Case Structure" selectin="rst.x .and. y?" uid="crs" uid_parent="gl">
+      <Tunnel _id="In1" inputs="value:glZ.value" uid="crs_i1" uid_parent="crs"/>
+      <CaseFrame label="Scroll back to 0\2C0" selector="True" selectout="" uid="crst" uid_parent="crs">
+        <Tunnel _id="In1" outputs="value:rZ.value" uid="rZ" uid_parent="crst"/>
+        <Node _name="Property Node" fields="write+Front Panel Window\3AOrigin" inputs="reference:,error in (no error):,Front Panel Window\3AOrigin:rZ.value" outputs="reference out:,error out:" type="{LV.VI}" uid="wor" uid_parent="crst"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="crsf" uid_parent="crs">
+        <Tunnel _id="In1" outputs="value:" uid="rN" uid_parent="crsf"/>
+      </CaseFrame>
+    </Structure>
     <Tunnel _id="In2" inputs="value:k.value" outputs="value:glK.value" uid="glK" uid_parent="gl"/>
     <Tunnel _id="In3" inputs="value:ms.value" outputs="value:glMs.value" uid="glMs" uid_parent="gl"/>
     <ShiftReg uid="srG" uid_parent="gl">
@@ -239,7 +318,8 @@
 
   <Call target="../../source/API/RemoteVI Stop.vi" inputs="port:port.value,error in:evErr.value" outputs="error out:sp.error out" uid="sp" uid_parent="root"/>
   <Node _name="Unregister For Events" inputs="event registration refnum:evRo.value,error in:reg.error out" outputs="error out:ur.error out" uid="ur" uid_parent="root"/>
-  <Node _name="Close File" inputs="refnum:w2.refnum out,error in:sp.error out" outputs="path:,error out:cf.error out" uid="cf" uid_parent="root"/>
+  <Node _name="Merge Errors" inputs="error in:sp.error out,error in:glErr.value" outputs="error out:mcf.error out" uid="mcf" uid_parent="root"/>
+  <Node _name="Close File" inputs="refnum:w2.refnum out,error in:mcf.error out" outputs="path:,error out:cf.error out" uid="cf" uid_parent="root"/>
   <Node _name="Release Notifier" inputs="notifier:obt.notifier out,force destroy? (F):,error in (no error):glErr.value" outputs="notifier name:,last notification:,error out:rel.error out" uid="rel" uid_parent="root"/>
   <Node _name="Merge Errors" inputs="error in:cf.error out,error in:rel.error out,error in:ur.error out" outputs="error out:me.error out" uid="me" uid_parent="root"/>
   <Indicator _name="error out" description="Errors of the log file\2C the layout read\2C RemoteVI Start.vi and RemoteVI Stop.vi\2C the event loop and the graph loop\2C merged." inputs="value:me.error out" type="cluster{bool.status,int32.code,string.source}" uid="eout" uid_parent="root" value="[false,0,]"/>

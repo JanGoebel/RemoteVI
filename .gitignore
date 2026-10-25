@@ -16,3 +16,4 @@ node_modules/
 Thumbs.db
 .vscode/
 *.swp
+tests/caraya/RemoteVI Caraya Report.xml

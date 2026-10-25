@@ -81,6 +81,7 @@ One command word, a space, and an argument. Clients ignore commands they don't k
 |---|---|
 | `title <name>` | name of the published VI, for display |
 | `viewonly 0` / `viewonly 1` | whether the server ignores this client's input |
+| `windows <json>` | the application's other windows (dialogs, native file dialogs, subVI panels): see §7 |
 | `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect and whenever it changes. |
 
 ## 4. Client → server (text messages)
@@ -92,6 +93,7 @@ ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not f
 | `a <seq>` | frame `seq` has been painted |
 | `m <msg> <x> <y> <wParam>` | mouse message `msg` at panel pixel (x, y) |
 | `k <msg> <wParam> <lParam>` | keyboard message `msg` |
+| `x <id>` | close window `id` (§7), like its title bar's close button |
 
 `msg`, `wParam` and `lParam` are **Win32 window-message values**. The server posts them to the panel's native window as they are. Only the server translates coordinates.
 
@@ -165,3 +167,45 @@ A client acks each frame **after painting it**. The server sends a new frame to 
 | Unmasked client frame, RSV bits, unknown opcode, fragmented or oversized control frame | – | close `1002` |
 | Binary or fragmented client data message | – | close `1008` |
 | Concurrent clients | 8 | `503` on upgrade |
+
+## 7. Other windows: dialogs, file dialogs, subVI panels
+
+A VI is more than its front panel. It opens LabVIEW dialogs (One/Two/Three Button Dialog, Prompt User, error dialogs), native Windows dialogs (file and folder selection, message boxes) and front panels of subVIs that open in their own window. A remote user must see and operate them, or the application gets stuck waiting for an answer nobody can give.
+
+**Which windows.** Visible top-level windows of the LabVIEW process that belong to the published application, other than the published panel itself and popups (§3.2): windows owned by the published panel or by another listed window, every window that appears while the published panel is disabled (that is, a modal dialog is up), and native dialogs (`#32770`) of the process. IDE windows (Project Explorer, block diagrams, other VIs being edited) are not listed.
+
+**`windows <json>`** (text message) lists them, front-most first, whenever the set, a title, a position, a size or the state changes. `windows []` means none.
+
+```json
+[{"id": 5113012, "title": "Proceed?", "x": 211, "y": 140, "w": 320, "h": 132,
+  "modal": true, "active": true, "closable": true}]
+```
+
+| Field | Meaning |
+|---|---|
+| `id` | stable for the window's lifetime (the server uses the HWND) |
+| `title` | the window's caption |
+| `x`, `y` | top-left of the window's **client area** (including its own menu bar), in main-frame coordinates; may be negative or beyond the main frame |
+| `w`, `h` | client area size; the same as its WINDOW FRAME size |
+| `modal` | the published panel is disabled while this window is up |
+| `active` | it has the keyboard; the client draws it as the front window |
+| `closable` | the window has a close box; `x <id>` is allowed |
+
+**WINDOW FRAME** (binary message, type 3) carries a window's picture, with the same dirty-rectangle encoding as FRAME:
+
+| Offset | Type | Field |
+|---|---|---|
+| 0 | u8 | magic `0x52` |
+| 1 | u8 | message type `3` = WINDOW FRAME |
+| 2 | u32 | window `id` |
+| 6 | u32 | `seq`, shared with FRAME: the client acks it with `a <seq>` the same way |
+| 10 | u16 | width |
+| 12 | u16 | height |
+| 14 | u16 | rect count *n* |
+| 16 | *n* × rect | as in §3.1 |
+
+The first WINDOW FRAME of a window, and any after a size change, covers it completely.
+
+**Input.** Mouse messages stay in main-frame coordinates; a listed window occupies its `x, y, w, h` there. The server routes a mouse message to the front-most window under the point (popups first, then windows in list order, then the panel) and converts it into that window's client coordinates. A client that lets the user drag a window to another place on screen converts pointer positions back, so the server always receives host-layout coordinates. Keyboard messages go to the window that received the last button-down, else to the `active` one, else to the panel. `x <id>` posts `WM_CLOSE` to a listed, closable window; it is never sent to the published panel.
+
+**Client presentation** (`web/index.html`): each window is a floating box above the panel with an HTML title bar (caption, close button when `closable`) and its frame below, scaled like the panel. While a `modal` window is listed, the panel is dimmed and takes no input, as it does on the host. Title bars can be dragged to move a window out of the way on the client only; a window list in the top bar brings a window to the front. On narrow screens windows open centered and fitted to the width.

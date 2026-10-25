@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { dirtyRects } from './lib/rects.mjs';
-import { encodeFrame, encodeOverlay, parseInput, mouseLParam } from './lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
@@ -143,7 +143,7 @@ function frameVectors() {
   const png2 = Buffer.from('0102030405', 'hex');
   const rects = [{ x: 0, y: 0, png: png1 }, { x: 640, y: 64, png: png2 }];
   return {
-    description: 'Protocol/Frame Encode.vi and Overlay Encode.vi: complete FRAME and OVERLAY messages (docs/protocol.md). png/message are hex.',
+    description: 'Protocol/Frame Encode.vi, Overlay Encode.vi, Window Frame Encode.vi: complete FRAME, OVERLAY and WINDOW FRAME messages (docs/protocol.md). png/message are hex.',
     cases: [
       { name: 'two rects', seq: 7, width: 800, height: 600,
         rects: rects.map((r) => ({ x: r.x, y: r.y, png: hex(r.png) })), message: hex(encodeFrame(7, 800, 600, rects)) },
@@ -154,6 +154,12 @@ function frameVectors() {
         message: hex(encodeOverlay([{ x: 30, y: 140, png: png1 }, { x: 790, y: -12, png: png2 }])) },
       { name: 'clear', popups: [], message: hex(encodeOverlay([])) },
     ],
+    windowFrames: [
+      { name: 'dialog, one rect', id: 5113012, seq: 9, width: 320, height: 132, rects: [{ x: 0, y: 0, png: hex(png1) }],
+        message: hex(encodeWindowFrame(5113012, 9, 320, 132, [{ x: 0, y: 0, png: png1 }])) },
+      { name: 'large id, no rects', id: 4294967295, seq: 1, width: 1, height: 1, rects: [],
+        message: hex(encodeWindowFrame(4294967295, 1, 1, 1, [])) },
+    ],
   };
 }
 
@@ -161,7 +167,7 @@ function inputVectors() {
   const texts = [
     'm 513 120 45 1', 'm 512 0 0 0', 'm 522 10 20 4287102976', 'k 256 37 16777217', 'k 257 37 3238002689',
     'k 258 65 1', 'a 12', 'a', 'm 513 1 2', 'x 1 2 3', 'm 513 a b c', '', 'm 513 1.5 2 0',
-    'a ', 'a  12', 'a 12 ', 'a 4294967295', 'a 4294967296', 'k 256 -2147483648 0', 'k 256 -2147483649 0', 'a 1x', 'a -', 'a 1e3',
+    'x 5113012', 'x', 'x -1', 'x 1 2', 'a ', 'a  12', 'a 12 ', 'a 4294967295', 'a 4294967296', 'k 256 -2147483648 0', 'k 256 -2147483649 0', 'a 1x', 'a -', 'a 1e3',
   ];
   return {
     description: 'Protocol/Parse Input.vi. result null means: ignore the message. '

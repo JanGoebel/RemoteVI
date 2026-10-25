@@ -1,5 +1,5 @@
 {
- "description": "Protocol/Frame Encode.vi and Overlay Encode.vi: complete FRAME and OVERLAY messages (docs/protocol.md). png/message are hex.",
+ "description": "Protocol/Frame Encode.vi, Overlay Encode.vi, Window Frame Encode.vi: complete FRAME, OVERLAY and WINDOW FRAME messages (docs/protocol.md). png/message are hex.",
  "cases": [
   {
    "name": "two rects",
@@ -50,6 +50,32 @@
    "name": "clear",
    "popups": [],
    "message": "52020000"
+  }
+ ],
+ "windowFrames": [
+  {
+   "name": "dialog, one rect",
+   "id": 5113012,
+   "seq": 9,
+   "width": 320,
+   "height": 132,
+   "rects": [
+    {
+     "x": 0,
+     "y": 0,
+     "png": "89504e470d0a1a0a"
+    }
+   ],
+   "message": "5203004e04b400000009014000840001000000000000000889504e470d0a1a0a"
+  },
+  {
+   "name": "large id, no rects",
+   "id": 4294967295,
+   "seq": 1,
+   "width": 1,
+   "height": 1,
+   "rects": [],
+   "message": "5203ffffffff00000001000100010000"
   }
  ]
 }

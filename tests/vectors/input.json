@@ -90,6 +90,25 @@
    "result": null
   },
   {
+   "text": "x 5113012",
+   "result": {
+    "kind": "close",
+    "id": 5113012
+   }
+  },
+  {
+   "text": "x",
+   "result": null
+  },
+  {
+   "text": "x -1",
+   "result": null
+  },
+  {
+   "text": "x 1 2",
+   "result": null
+  },
+  {
    "text": "a ",
    "result": null
   },

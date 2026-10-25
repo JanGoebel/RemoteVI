@@ -5,7 +5,9 @@
 export const FRAME_MAGIC = 0x52;
 export const MSG_FRAME = 1;
 export const MSG_OVERLAY = 2;
+export const MSG_WINDOW_FRAME = 3;
 export const OVERLAY_HEADER = 4;
+export const WINDOW_FRAME_HEADER = 16;
 export const FRAME_HEADER = 12;
 export const RECT_HEADER = 8;
 export const FRAMES_IN_FLIGHT = 2;
@@ -37,6 +39,37 @@ export function encodeFrame(seq, width, height, rects) {
 }
 
 /**
+ * WINDOW FRAME (docs/protocol.md 7): a frame of another window (dialog, file
+ * dialog, subVI panel), same rect encoding as FRAME, seq shared with FRAME.
+ */
+export function encodeWindowFrame(id, seq, width, height, rects) {
+  const size = WINDOW_FRAME_HEADER + rects.reduce((n, r) => n + RECT_HEADER + r.png.length, 0);
+  const out = Buffer.alloc(size);
+  out[0] = FRAME_MAGIC;
+  out[1] = MSG_WINDOW_FRAME;
+  out.writeUInt32BE(id >>> 0, 2);
+  out.writeUInt32BE(seq >>> 0, 6);
+  out.writeUInt16BE(width, 10);
+  out.writeUInt16BE(height, 12);
+  out.writeUInt16BE(rects.length, 14);
+  let o = WINDOW_FRAME_HEADER;
+  for (const r of rects) {
+    out.writeInt16BE(r.x, o);
+    out.writeInt16BE(r.y, o + 2);
+    out.writeUInt32BE(r.png.length, o + 4);
+    r.png.copy(out, o + RECT_HEADER);
+    o += RECT_HEADER + r.png.length;
+  }
+  return out;
+}
+
+/** The `windows <json>` text message (docs/protocol.md 7). */
+export function windowsMessage(windows) {
+  return `windows ${JSON.stringify(windows.map(({ id, title, x, y, w, h, modal, active, closable }) =>
+    ({ id, title, x, y, w, h, modal: !!modal, active: !!active, closable: !!closable })))}`;
+}
+
+/**
  * OVERLAY: the popups currently open over the panel (menus, dropdowns, palette
  * popups). Replaces the previous overlay entirely; an empty list clears it.
  * Positions are relative to the panel origin and may lie outside the panel.
@@ -64,6 +97,7 @@ export function encodeOverlay(popups) {
  *   "m <msg> <x> <y> <wParam>"   mouse message at panel coordinates
  *   "k <msg> <wParam> <lParam>"  keyboard message
  *   "a <seq>"                    frame acknowledged
+ *   "x <id>"                     close window id (docs/protocol.md 7)
  * Returns null for anything malformed; the server ignores those.
  */
 export function parseInput(text) {
@@ -79,6 +113,8 @@ export function parseInput(text) {
       return nums.length === 3 ? { kind: 'key', msg: nums[0], wParam: nums[1], lParam: nums[2] } : null;
     case 'a':
       return nums.length === 1 ? { kind: 'ack', seq: nums[0] } : null;
+    case 'x':
+      return nums.length === 1 && nums[0] >= 0 ? { kind: 'close', id: nums[0] } : null;
     default:
       return null;
   }

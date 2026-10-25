@@ -21,7 +21,7 @@ import {
   acceptKey, decodeClientFrame, encodeServerFrame, closePayload, WsError,
   OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG, CLOSE_NORMAL, CLOSE_POLICY, CLOSE_PROTOCOL_ERROR,
 } from '../lib/websocket.mjs';
-import { encodeFrame, encodeOverlay, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, encodeWindowFrame, windowsMessage, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
 import { translateInput } from '../lib/input.mjs';
 import { dirtyRects, crop } from '../lib/rects.mjs';
 import { encodePng } from '../lib/png-encode.mjs';
@@ -114,6 +114,8 @@ export function startServer(opts = {}) {
       this.write(OP_TEXT, `viewonly ${cfg.viewOnly ? 1 : 0}`);
       this.write(OP_TEXT, 'origin 0 0'); // the simulated panel has no window frame
       if (overlay.message) this.write(OP_BINARY, overlay.message);
+      this.write(OP_TEXT, windows.message);
+      this.windowSent = null;
       cfg.log(`client connected (${clients.size})`);
       if (initial.length) this.onData(initial);
     }
@@ -140,6 +142,10 @@ export function startServer(opts = {}) {
       if (!fin || opcode !== OP_TEXT) return this.close(CLOSE_POLICY, 'only unfragmented text messages accepted');
       const msg = parseInput(payload.toString('latin1'));
       if (!msg) return; // malformed input is ignored, not fatal
+      if (msg.kind === 'close') {
+        if (!cfg.viewOnly) panel.closeDialog(msg.id);
+        return;
+      }
       if (msg.kind === 'ack') {
         if (msg.seq <= this.seq) this.acked = Math.max(this.acked, msg.seq);
         return;
@@ -147,6 +153,13 @@ export function startServer(opts = {}) {
       if (cfg.viewOnly) return;
       // Same translation the LabVIEW server does; the simulated window sits at the
       // screen origin with no toolbar, so client = panel coordinates.
+      // Front-most window under the pointer gets mouse input, in its own client coordinates.
+      const d = panel.dialog;
+      if (d && msg.kind === 'mouse' && msg.x >= d.x && msg.x < d.x + d.w && msg.y >= d.y && msg.y < d.y + d.h) {
+        posted.push({ msg: msg.msg, wParam: msg.wParam, window: d.id });
+        panel.postDialog(msg.msg, msg.x - d.x, msg.y - d.y);
+        return;
+      }
       const t = translateInput(msg, { panelX: 0, panelY: 0, clientX: 0, clientY: 0 }, this.tracking);
       this.tracking = t.tracking;
       for (const p of t.posts) {
@@ -192,6 +205,18 @@ export function startServer(opts = {}) {
   // Popups go out as OVERLAY messages whenever they change, outside flow control
   // (they are small and rare). The LabVIEW server captures them with PrintWindow.
   const overlay = { key: '', message: null };
+
+  // Other windows (docs/protocol.md 7): the list as text, each window's picture as
+  // WINDOW FRAME. The simulated dialog is static, so one full frame per client is enough.
+  const windows = { key: '', message: 'windows []' };
+  function pushWindows() {
+    const d = panel.dialog;
+    const key = d ? `${d.id},${d.x},${d.y}` : '';
+    if (key === windows.key) return;
+    windows.key = key;
+    windows.message = windowsMessage(d ? [{ ...d, modal: true, active: true, closable: true }] : []);
+    for (const c of clients) { c.write(OP_TEXT, windows.message); c.windowSent = null; }
+  }
   function pushOverlay() {
     const p = panel.renderPopup();
     const key = p ? `${p.x},${p.y},${panel.state.mode}` : '';
@@ -207,6 +232,17 @@ export function startServer(opts = {}) {
   const timer = setInterval(() => {
     if (!clients.size) return;
     pushOverlay();
+    pushWindows();
+    const dlg = panel.renderDialog();
+    if (dlg) {
+      const png = encodePng(dlg.pixels, dlg.w, dlg.h);
+      for (const c of clients) {
+        if (c.windowSent === windows.key) continue;
+        c.seq++;
+        c.write(OP_BINARY, encodeWindowFrame(panel.dialog.id, c.seq, dlg.w, dlg.h, [{ x: 0, y: 0, png }]));
+        c.windowSent = windows.key;
+      }
+    }
     const pixels = panel.render();
     const pngCache = new Map();
     for (const c of clients) c.push(pixels, pngCache);

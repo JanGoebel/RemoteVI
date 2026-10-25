@@ -13,6 +13,9 @@ const LED_OFF = 0x1f4d24;
 const CHART_BG = 0x101418;
 const CHART_FG = 0xf0c419;
 const POPUP_W = 110;
+const DIALOG_W = 220;
+const DIALOG_H = 90;
+const DIALOG_BUTTONS = [{ label: 'YES', x: 24, y: 50, w: 70, h: 26 }, { label: 'NO', x: 126, y: 50, w: 70, h: 26 }];
 const POPUP_ITEM_H = 16;
 
 export class SimulatedPanel {
@@ -25,6 +28,9 @@ export class SimulatedPanel {
     this.focus = null;
     /** Simulated popup menu {x, y, items} in panel coordinates, or null. */
     this.popup = null;
+    /** Simulated modal dialog (docs/protocol.md 7), or null. */
+    this.dialog = null;
+    this.answer = '';
     this.state = { pump: false, setpoint: 2.5, gain: 4, mode: 1, operator: 'JANE', history: [] };
     this.controls = [
       { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30] },
@@ -47,6 +53,11 @@ export class SimulatedPanel {
    * LabVIEW itself decides what a click does on a real panel.
    */
   post(msg, x, y, wParam) {
+    if (this.dialog) return; // the panel is disabled while the modal dialog is up
+    if (msg === 0x0201 && this.hit(x, y)?.id === 'c7') {
+      this.dialog = { id: 7001, title: 'Proceed?', x: 150, y: 90, w: DIALOG_W, h: DIALOG_H };
+      return;
+    }
     if (this.popup) {
       // A real LabVIEW popup grabs all clicks: inside selects, outside closes.
       if (msg === 0x0201 || msg === 0x0204) {
@@ -88,6 +99,43 @@ export class SimulatedPanel {
         break;
       }
     }
+  }
+
+  /** Mouse message inside the dialog, in dialog client coordinates. */
+  postDialog(msg, x, y) {
+    if (!this.dialog || msg !== 0x0202) return; // buttons act on release, like LabVIEW's
+    for (const b of DIALOG_BUTTONS) {
+      if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) {
+        this.answer = b.label;
+        this.dialog = null;
+      }
+    }
+  }
+
+  closeDialog(id) {
+    if (this.dialog?.id === id) {
+      this.answer = 'CLOSED';
+      this.dialog = null;
+    }
+  }
+
+  /** The dialog's client area as an image {w, h, pixels}, or null. */
+  renderDialog() {
+    if (!this.dialog) return null;
+    const { w, h } = this.dialog;
+    const saved = { pixels: this.pixels, width: this.width, height: this.height };
+    this.pixels = new Uint32Array(w * h);
+    this.width = w;
+    this.height = h;
+    this.pixels.fill(PANEL_BG);
+    drawText(this.pixels, w, 16, 18, 'PROCEED WITH THE RUN?', TEXT);
+    for (const b of DIALOG_BUTTONS) {
+      this.box([b.x, b.y, b.w, b.h], 0xd4d4d4);
+      drawText(this.pixels, w, b.x + 16, b.y + 9, b.label, TEXT);
+    }
+    const img = { w, h, pixels: this.pixels };
+    Object.assign(this, saved);
+    return img;
   }
 
   /** The open popup as an image {x, y, w, h, pixels}, or null. */
@@ -171,7 +219,7 @@ export class SimulatedPanel {
     this.chart(ch.bounds);
 
     this.box(stat.bounds, 0xf4f4f4);
-    const status = s.pump ? `${en.items[s.mode]} T ${t.toFixed(1)}` : 'STOPPED';
+    const status = this.answer ? `ANSWER ${this.answer}` : s.pump ? `${en.items[s.mode]} T ${t.toFixed(1)}` : 'STOPPED';
     drawText(px, this.width, stat.bounds[0] + 6, stat.bounds[1] + 8, status, TEXT);
     return px;
   }

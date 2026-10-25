@@ -7,7 +7,7 @@ import net from 'node:net';
 import { inflateSync } from 'node:zlib';
 
 import { startServer } from '../../tools/mock-server/server.mjs';
-import { FRAME_MAGIC, MSG_FRAME, MSG_OVERLAY, FRAMES_IN_FLIGHT } from '../../tools/lib/protocol.mjs';
+import { FRAME_MAGIC, MSG_FRAME, MSG_OVERLAY, MSG_WINDOW_FRAME, FRAMES_IN_FLIGHT } from '../../tools/lib/protocol.mjs';
 
 let srv;
 before(async () => {
@@ -36,8 +36,13 @@ function connect() {
     if (i >= 0) waiters.splice(i, 1)[0].resolve(item);
     else queue.push(item);
   };
-  ws.onmessage = (ev) => push(typeof ev.data === 'string' ? { text: ev.data }
-    : new Uint8Array(ev.data)[1] === MSG_OVERLAY ? { overlay: decodeOverlay(ev.data) } : { frame: decodeFrame(ev.data) });
+  ws.onmessage = (ev) => {
+    if (typeof ev.data === 'string') return push({ text: ev.data });
+    const type = new Uint8Array(ev.data)[1];
+    if (type === MSG_OVERLAY) return push({ overlay: decodeOverlay(ev.data) });
+    if (type === MSG_WINDOW_FRAME) return push({ windowFrame: decodeWindowFrame(ev.data) });
+    return push({ frame: decodeFrame(ev.data) });
+  };
   ws.onclose = (ev) => push({ closed: ev.code });
   return {
     ws,
@@ -83,6 +88,19 @@ function decodeOverlay(buf) {
   }
   assert.equal(o, b.length, 'no trailing bytes');
   return popups;
+}
+
+function decodeWindowFrame(buf) {
+  const b = Buffer.from(buf);
+  const f = { id: b.readUInt32BE(2), seq: b.readUInt32BE(6), width: b.readUInt16BE(10), height: b.readUInt16BE(12), rects: [] };
+  let o = 16;
+  for (let i = 0, n = b.readUInt16BE(14); i < n; i++) {
+    const len = b.readUInt32BE(o + 4);
+    f.rects.push({ x: b.readInt16BE(o), y: b.readInt16BE(o + 2), ...decodePng(b.subarray(o + 8, o + 8 + len)) });
+    o += 8 + len;
+  }
+  assert.equal(o, b.length, 'no trailing bytes');
+  return f;
 }
 
 /** Decoder for the truecolour, filter-0 PNGs the reference encoder writes. */
@@ -215,5 +233,43 @@ test('popups travel as OVERLAY messages, may overflow the panel, and close on a 
   const cleared = await c.next((m) => m.overlay);
   assert.deepEqual(cleared.overlay, []);
   assert.equal(srv.panel.state.mode, target);
+  c.ws.close();
+});
+
+test('a modal dialog arrives as a window with its own frames; it is operated and closed remotely', async () => {
+  const c = connect();
+  await c.opened;
+  const { frame } = await c.next((m) => m.frame);
+  c.ws.send(`a ${frame.seq}`);
+  assert.equal((await c.next((m) => m.text?.startsWith('windows '))).text, 'windows []');
+
+  c.ws.send('m 513 300 225 1'); // click the Status indicator: opens "Proceed?"
+  c.ws.send('m 514 300 225 0');
+  const list = JSON.parse((await c.next((m) => m.text?.startsWith('windows [{'))).text.slice(8));
+  assert.equal(list.length, 1);
+  const [w] = list;
+  assert.deepEqual([w.title, w.modal, w.active, w.closable], ['Proceed?', true, true, true]);
+  const { windowFrame } = await c.next((m) => m.windowFrame);
+  assert.deepEqual([windowFrame.id, windowFrame.width, windowFrame.height], [w.id, w.w, w.h]);
+  assert.equal(windowFrame.rects[0].w * windowFrame.rects[0].h, w.w * w.h, 'first window frame is complete');
+  c.ws.send(`a ${windowFrame.seq}`);
+
+  // The panel behind a modal dialog takes no input; the dialog does.
+  c.ws.send('m 513 30 50 1');
+  c.ws.send('m 514 30 50 0');
+  c.ws.send(`m 513 ${w.x + 40} ${w.y + 60} 1`); // "YES"
+  c.ws.send(`m 514 ${w.x + 40} ${w.y + 60} 0`);
+  assert.equal((await c.next((m) => m.text?.startsWith('windows '))).text, 'windows []');
+  assert.equal(srv.panel.answer, 'YES');
+  assert.equal(srv.panel.state.pump, false, 'the click on the disabled panel did nothing');
+
+  // x <id> closes a window like its close box.
+  c.ws.send('m 513 300 225 1');
+  c.ws.send('m 514 300 225 0');
+  const [again] = JSON.parse((await c.next((m) => m.text?.startsWith('windows [{'))).text.slice(8));
+  c.ws.send(`x ${again.id}`);
+  assert.equal((await c.next((m) => m.text?.startsWith('windows '))).text, 'windows []');
+  assert.equal(srv.panel.answer, 'CLOSED');
+  srv.panel.answer = '';
   c.ws.close();
 });

@@ -2,23 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RemoteVI</title>
 <!--
   RemoteVI browser client, protocol v2 (docs/protocol.md).
   Self-contained on purpose: the LabVIEW toolkit embeds this one file as a string
   constant and serves it for GET /, so a built EXE needs no support files.
   Keep it pure ASCII (use \u escapes and HTML entities) so the G string constant
-  holds exactly these bytes.
+  holds exactly these bytes. After editing, regenerate the embedded copy:
+  node scripts/gen-index-html-vi.mjs --compose
 -->
 <style>
 :root {
   --bg: #e9ebee; --bar-bg: #fff; --bar-fg: #1d2330; --muted: #667085;
   --accent: #1f6feb; --ok: #1a7f37; --warn: #bf8700; --err: #cf222e; --border: #d0d7de;
+  --btn-hover: rgb(0 0 0 / 0.06);
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #15181e; --bar-bg: #1e232b; --bar-fg: #e6edf3; --muted: #8d96a0; --border: #30363d; }
+  :root { --bg: #15181e; --bar-bg: #1e232b; --bar-fg: #e6edf3; --muted: #8d96a0; --border: #30363d; --btn-hover: rgb(255 255 255 / 0.08); }
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -27,49 +29,85 @@ body {
   font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 .bar {
-  display: flex; align-items: center; gap: 10px; padding: 6px 12px;
-  background: var(--bar-bg); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
+  background: var(--bar-bg); border-bottom: 1px solid var(--border); flex-wrap: nowrap; min-height: 40px;
 }
-.bar .spacer { flex: 1; }
-.stats { color: var(--muted); font-variant-numeric: tabular-nums; }
+.title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.title strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status { color: var(--muted); white-space: nowrap; }
+.spacer { flex: 1; }
+.stats { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.group button + button { border-left: 1px solid var(--border); }
 .bar button {
-  font: inherit; padding: 3px 10px; border: 1px solid var(--border); border-radius: 6px;
-  background: transparent; color: inherit; cursor: pointer;
+  font: inherit; min-width: 32px; height: 28px; padding: 0 9px; border: 0; background: transparent;
+  color: inherit; cursor: pointer; white-space: nowrap;
 }
-.bar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--warn); }
+.bar > button { border: 1px solid var(--border); border-radius: 6px; }
+.bar button:hover { background: var(--btn-hover); }
+.bar button[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+#zoom-label { min-width: 48px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--warn); }
 body[data-state="online"] .dot { background: var(--ok); }
 body[data-state="offline"] .dot { background: var(--err); }
-.stage { flex: 1; overflow: auto; padding: 16px; }
-.panel-wrap { position: relative; width: max-content; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25); touch-action: none; }
+#kbd-btn { display: none; }
+body[data-touch="true"] #kbd-btn { display: inline-block; }
+
+/* The stage scrolls; the wrapper is sized to the scaled frame so scrollbars match. */
+.stage { flex: 1; overflow: auto; padding: 16px; overscroll-behavior: contain; }
+.panel-wrap {
+  position: relative; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+  touch-action: none; transform-origin: 0 0;
+}
+#panel { display: block; outline: none; cursor: default; touch-action: none; }
+#panel.pixelated { image-rendering: pixelated; }
+body[data-view-only="true"] #panel { cursor: not-allowed; }
 /* LabVIEW popups (menus, dropdowns, palette popups); may extend past the panel. */
 #overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
-#overlay img { position: absolute; display: block; pointer-events: auto; image-rendering: pixelated; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
-.stage { padding-bottom: 240px; padding-right: 240px; }
-#panel { display: block; outline: none; image-rendering: pixelated; cursor: default; touch-action: none; }
-body[data-view-only="true"] #panel { cursor: not-allowed; }
-.stage.fit { display: flex; align-items: center; justify-content: center; overflow: hidden; }
-.stage.fit #panel {
-  max-width: calc(100vw - 32px); max-height: calc(100vh - 80px);
-  width: auto; height: auto; image-rendering: auto;
+#overlay img { position: absolute; display: block; pointer-events: auto; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
+#overlay.pixelated img { image-rendering: pixelated; }
+/* Hidden input that brings up the on-screen keyboard on touch devices. */
+#kbd { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 6px 12px; border-radius: 6px;
+  background: rgb(0 0 0 / 0.75); color: #fff; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+@media (max-width: 720px) {
+  .stats, #status, #zoom-label { display: none; }
+  .bar { gap: 6px; padding-top: 4px; padding-bottom: 4px; }
+  .stage { padding: 8px; }
 }
 </style>
 </head>
-<body data-state="connecting">
+<body data-state="connecting" data-touch="false">
 <header class="bar">
-  <span class="dot" aria-hidden="true"></span>
-  <strong id="vi-name">RemoteVI</strong>
+  <span class="title"><span class="dot" aria-hidden="true"></span><strong id="vi-name">RemoteVI</strong></span>
   <span id="status" role="status">Connecting&hellip;</span>
   <span class="spacer"></span>
   <span id="stats" class="stats"></span>
-  <button id="fit-btn" type="button" aria-pressed="false" title="Scale the panel to the window">Fit</button>
+  <span class="group" role="group" aria-label="Scaling">
+    <button type="button" data-mode="actual" title="Actual size: one LabVIEW pixel per screen pixel (1)">1:1</button>
+    <button type="button" data-mode="fit" title="Fit the whole window into the view (F)">Fit</button>
+    <button type="button" data-mode="width" title="Fit the width, scroll vertically (W)">Width</button>
+  </span>
+  <span class="group" role="group" aria-label="Zoom">
+    <button type="button" id="zoom-out" title="Zoom out (-)">&minus;</button>
+    <button type="button" id="zoom-label" title="Back to actual size">100%</button>
+    <button type="button" id="zoom-in" title="Zoom in (+)">+</button>
+  </span>
+  <button type="button" id="kbd-btn" title="Show the on-screen keyboard">&#x2328;</button>
+  <button type="button" id="fs-btn" title="Fullscreen">&#x26F6;</button>
 </header>
 <main id="stage" class="stage">
-  <div class="panel-wrap">
+  <div class="panel-wrap" id="wrap">
     <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
     <div id="overlay"></div>
   </div>
 </main>
+<input id="kbd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
+<div id="toast" class="toast" role="status"></div>
 <script>
 'use strict';
 
@@ -114,6 +152,12 @@ const VK = {
   F1: [0x70, 0], F2: [0x71, 0], F3: [0x72, 0], F4: [0x73, 0], F5: [0x74, 0], F6: [0x75, 0],
   F7: [0x76, 0], F8: [0x77, 0], F9: [0x78, 0], F10: [0x79, 0], F11: [0x7A, 0], F12: [0x7B, 0],
 };
+
+const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.25, 1.5, 2, 2.5, 3, 4];
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
+const LONG_PRESS_MS = 550;      // touch: hold this long without moving = right click
+const TAP_SLOP_PX = 8;          // touch: moving further than this starts a drag
 
 function mouseFlags(e) {
   let w = 0;
@@ -163,32 +207,52 @@ function decodeFrame(buf) {
   };
 }
 
+// Per-viewer preference; storage can be unavailable (private mode, blocked site data).
+const prefs = {
+  get(key, fallback) {
+    try { return localStorage.getItem(`remotevi.${key}`) ?? fallback; } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(`remotevi.${key}`, value); } catch { /* not persisted */ }
+  },
+};
+
 // --- client -------------------------------------------------------------------
 
 class RemoteViClient {
   constructor() {
     this.canvas = document.getElementById('panel');
-    this.wrap = this.canvas.parentElement;
+    this.wrap = document.getElementById('wrap');
     this.overlay = document.getElementById('overlay');
     this.ctx = this.canvas.getContext('2d', { alpha: false });
     this.stage = document.getElementById('stage');
     this.statusEl = document.getElementById('status');
     this.statsEl = document.getElementById('stats');
+    this.kbd = document.getElementById('kbd');
     this.ws = null;
     this.backoff = 250;
     this.queue = Promise.resolve();   // frames are painted strictly in order
     this.pendingMove = null;
     this.stats = { frames: 0, bytes: 0, since: performance.now() };
+    this.origin = { x: 0, y: 0 };     // where the panel starts inside the frame
+    this.touches = new Map();         // pointerId -> {x, y} for touch gestures
+    this.touch = null;                // single-finger state (tap / long press / drag)
+    this.pinch = null;                // two-finger state
 
-    document.getElementById('fit-btn').addEventListener('click', (e) => {
-      const fit = this.stage.classList.toggle('fit');
-      e.currentTarget.setAttribute('aria-pressed', String(fit));
-      this.scaleOverlay();
-    });
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    document.body.dataset.touch = String(coarse);
+    this.mode = prefs.get('mode', coarse ? 'width' : 'actual');
+    this.zoom = Number(prefs.get('zoom', '1')) || 1;
+
+    this.bindView();
     this.bindInput();
+    this.bindKeyboard();
     setInterval(() => this.showStats(), 1000);
+    this.applyView();
     this.connect();
   }
+
+  // --- connection ----------------------------------------------------------------
 
   connect() {
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -214,7 +278,7 @@ class RemoteViClient {
   }
 
   onText(text) {
-    // Server text messages: "title <VI name>", "viewonly 0|1". Unknown ones are ignored.
+    // Server text messages (docs/protocol.md 3.3). Unknown ones are ignored.
     const sp = text.indexOf(' ');
     const cmd = sp < 0 ? text : text.slice(0, sp);
     const arg = sp < 0 ? '' : text.slice(sp + 1);
@@ -223,6 +287,9 @@ class RemoteViClient {
       document.title = `${arg} - RemoteVI`;
     } else if (cmd === 'viewonly') {
       document.body.dataset.viewOnly = String(arg === '1');
+    } else if (cmd === 'origin') {
+      const [x, y] = arg.split(' ').map(Number);
+      if (Number.isFinite(x) && Number.isFinite(y)) this.origin = { x, y };
     }
   }
 
@@ -250,7 +317,7 @@ class RemoteViClient {
     if (frame.width !== this.canvas.width || frame.height !== this.canvas.height) {
       this.canvas.width = frame.width;
       this.canvas.height = frame.height;
-      this.scaleOverlay();
+      this.applyView();
     }
     frame.rects.forEach((r, i) => {
       this.ctx.drawImage(bitmaps[i], r.x, r.y);
@@ -271,42 +338,137 @@ class RemoteViClient {
       img.draggable = false;
       return img;
     }));
-    this.scaleOverlay();
   }
 
-  // The overlay is laid out in panel pixels and scaled like the canvas (Fit mode).
-  scaleOverlay() {
-    const s = this.canvas.getBoundingClientRect().width / this.canvas.width;
-    this.overlay.style.transform = `scale(${s})`;
+  // --- view: scaling modes, zoom, fullscreen -------------------------------------
+
+  bindView() {
+    for (const b of document.querySelectorAll('[data-mode]')) {
+      b.addEventListener('click', () => this.setMode(b.dataset.mode));
+    }
+    document.getElementById('zoom-in').addEventListener('click', () => this.stepZoom(1));
+    document.getElementById('zoom-out').addEventListener('click', () => this.stepZoom(-1));
+    document.getElementById('zoom-label').addEventListener('click', () => this.setMode('actual'));
+    const fs = document.getElementById('fs-btn');
+    if (!document.documentElement.requestFullscreen) fs.hidden = true;
+    fs.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => this.toast('Fullscreen not available'));
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fs.setAttribute('aria-pressed', String(!!document.fullscreenElement));
+      this.applyView();
+    });
+    new ResizeObserver(() => this.applyView()).observe(this.stage);
+    // View shortcuts work when the panel does NOT have the keyboard focus.
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement === this.canvas || document.activeElement === this.kbd) return;
+      if (e.key === '1') this.setMode('actual');
+      else if (e.key === 'f' || e.key === 'F') this.setMode('fit');
+      else if (e.key === 'w' || e.key === 'W') this.setMode('width');
+      else if (e.key === '+' || e.key === '=') this.stepZoom(1);
+      else if (e.key === '-') this.stepZoom(-1);
+    });
   }
 
-  // --- input -------------------------------------------------------------------
+  setMode(mode) {
+    this.mode = mode;
+    if (mode === 'actual') this.zoom = 1;
+    prefs.set('mode', mode);
+    this.applyView();
+  }
 
-  // Panel pixel under the pointer. Not clamped: popups may extend past the panel.
-  panelPoint(e) {
+  stepZoom(dir) {
+    const z = this.zoom;
+    const next = dir > 0 ? ZOOM_STEPS.find((s) => s > z + 0.001) ?? ZOOM_MAX
+      : [...ZOOM_STEPS].reverse().find((s) => s < z - 0.001) ?? ZOOM_STEPS[0];
+    this.setZoom(next);
+  }
+
+  setZoom(z, anchor) {
+    const old = this.zoom;
+    this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    this.mode = this.zoom === 1 ? 'actual' : 'custom';
+    prefs.set('mode', this.mode);
+    prefs.set('zoom', String(this.zoom));
+    // Keep the point under the anchor (pinch midpoint) where it is.
+    let keep = null;
+    if (anchor) {
+      const r = this.wrap.getBoundingClientRect();
+      keep = { px: (anchor.x - r.left) / old, py: (anchor.y - r.top) / old, ax: anchor.x, ay: anchor.y };
+    }
+    this.applyView();
+    if (keep) {
+      const r = this.wrap.getBoundingClientRect();
+      this.stage.scrollLeft += r.left + keep.px * this.zoom - keep.ax;
+      this.stage.scrollTop += r.top + keep.py * this.zoom - keep.ay;
+    }
+  }
+
+  /** The zoom a mode implies for the current stage size. */
+  modeZoom() {
+    const w = this.canvas.width, h = this.canvas.height;
+    if (w <= 1 || h <= 1) return this.zoom;
+    const cs = getComputedStyle(this.stage);
+    const availW = this.stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = this.stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    if (this.mode === 'fit') return Math.max(ZOOM_MIN, Math.min(availW / w, availH / h));
+    if (this.mode === 'width') return Math.max(ZOOM_MIN, availW / w);
+    if (this.mode === 'actual') return 1;
+    return this.zoom;
+  }
+
+  applyView() {
+    if (this.mode !== 'custom') this.zoom = this.modeZoom();
+    const z = this.zoom;
+    const w = this.canvas.width, h = this.canvas.height;
+    this.canvas.style.width = `${w * z}px`;
+    this.canvas.style.height = `${h * z}px`;
+    // Pixel-exact at integer zoom; smooth when scaled down or by odd factors.
+    const crisp = Math.abs(z - Math.round(z)) < 0.001 && z >= 1;
+    this.canvas.classList.toggle('pixelated', crisp);
+    this.overlay.classList.toggle('pixelated', crisp);
+    this.overlay.style.transform = `scale(${z})`;
+    // Centre the frame when it is smaller than the stage (Fit), scroll when it is larger.
+    this.wrap.style.width = `${w * z}px`;
+    this.wrap.style.height = `${h * z}px`;
+    document.getElementById('zoom-label').textContent = `${Math.round(z * 100)}%`;
+    for (const b of document.querySelectorAll('[data-mode]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === this.mode));
+    }
+  }
+
+  // --- input -----------------------------------------------------------------------
+
+  // Frame pixel under a client point. Not clamped: popups may extend past the frame.
+  framePoint(clientX, clientY) {
     const r = this.canvas.getBoundingClientRect();
     return {
-      x: Math.floor((e.clientX - r.left) * (this.canvas.width / r.width)),
-      y: Math.floor((e.clientY - r.top) * (this.canvas.height / r.height)),
+      x: Math.floor((clientX - r.left) * (this.canvas.width / r.width)),
+      y: Math.floor((clientY - r.top) * (this.canvas.height / r.height)),
     };
   }
 
+  mouseAt(msg, clientX, clientY, wParam) {
+    const { x, y } = this.framePoint(clientX, clientY);
+    this.send(`m ${msg} ${x} ${y} ${wParam >>> 0}`);
+  }
+
   mouse(msg, e, wParam = mouseFlags(e)) {
-    const { x, y } = this.panelPoint(e);
-    this.send(`m ${msg} ${x} ${y} ${wParam}`);
+    this.mouseAt(msg, e.clientX, e.clientY, wParam);
   }
 
   bindInput() {
     const c = this.canvas;
     const w = this.wrap;
     w.addEventListener('contextmenu', (e) => e.preventDefault());
-    addEventListener('resize', () => this.scaleOverlay());
 
     w.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') { this.touchDown(e); return; }
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
       e.preventDefault();
-      c.focus();
+      c.focus({ preventScroll: true });
       w.setPointerCapture(e.pointerId);
       this.flushMove();
       // Windows reports the second press of a double click as *BUTTONDBLCLK.
@@ -314,6 +476,7 @@ class RemoteViClient {
     });
 
     const up = (e) => {
+      if (e.pointerType === 'touch') { this.touchUp(e); return; }
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
       this.flushMove();
@@ -324,6 +487,7 @@ class RemoteViClient {
 
     // Moves are coalesced to one per animation frame: only the latest position matters.
     w.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') { this.touchMove(e); return; }
       const first = this.pendingMove === null;
       this.pendingMove = e;
       if (first) requestAnimationFrame(() => this.flushMove());
@@ -331,36 +495,20 @@ class RemoteViClient {
 
     w.addEventListener('wheel', (e) => {
       e.preventDefault();
+      if (e.ctrlKey) {
+        // Ctrl+wheel and trackpad pinch zoom the view, as in any browser page.
+        this.setZoom(this.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), { x: e.clientX, y: e.clientY });
+        return;
+      }
       const notches = e.deltaMode === 0 ? -e.deltaY / 100 : -e.deltaY / 3;
       const delta = Math.round(Math.max(-3, Math.min(3, notches || -Math.sign(e.deltaY))) * WHEEL_DELTA);
       if (!delta) return;
       // The wheel delta is the signed high word of wParam.
-      this.mouse(WM.MOUSEWHEEL, e, ((delta & 0xFFFF) * 0x10000 + mouseFlags(e)) >>> 0);
+      this.mouse(WM.MOUSEWHEEL, e, (delta & 0xFFFF) * 0x10000 + mouseFlags(e));
     }, { passive: false });
 
-    c.addEventListener('keydown', (e) => {
-      const vk = VK[e.code];
-      if (vk) {
-        e.preventDefault();
-        this.send(`k ${WM.KEYDOWN} ${vk[0]} ${keyLParam(vk[1], false)}`);
-      } else if (e.key.length === 1 && !e.altKey && !e.metaKey) {
-        e.preventDefault();
-        if (e.ctrlKey) {
-          // Ctrl+letter shortcuts: control characters 1..26 are what Windows sends as WM_CHAR.
-          const code = e.key.toUpperCase().charCodeAt(0);
-          if (code >= 65 && code <= 90) this.send(`k ${WM.CHAR} ${code - 64} 1`);
-        } else {
-          this.send(`k ${WM.CHAR} ${e.key.charCodeAt(0)} 1`);
-        }
-      }
-    });
-    c.addEventListener('keyup', (e) => {
-      const vk = VK[e.code];
-      if (vk) {
-        e.preventDefault();
-        this.send(`k ${WM.KEYUP} ${vk[0]} ${keyLParam(vk[1], true)}`);
-      }
-    });
+    c.addEventListener('keydown', (e) => this.keyDown(e));
+    c.addEventListener('keyup', (e) => this.keyUp(e));
   }
 
   flushMove() {
@@ -369,11 +517,155 @@ class RemoteViClient {
     if (e) this.mouse(WM.MOUSEMOVE, e);
   }
 
-  // --- status ------------------------------------------------------------------
+  // Touch: one finger is the mouse (tap = click, hold = right click, slide = drag);
+  // two fingers zoom and pan the view.
+  touchDown(e) {
+    e.preventDefault();
+    try { this.wrap.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.touches.size === 2) {
+      this.cancelTouch();
+      const [a, b] = [...this.touches.values()];
+      this.pinch = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: this.zoom,
+        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      };
+      return;
+    }
+    if (this.touches.size > 2) return;
+    const t = { id: e.pointerId, x: e.clientX, y: e.clientY, dragging: false, done: false };
+    t.timer = setTimeout(() => {
+      // Long press: right click at the start point.
+      t.done = true;
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.RBUTTONDOWN, t.x, t.y, MK.RBUTTON);
+      this.mouseAt(WM.RBUTTONUP, t.x, t.y, 0);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, LONG_PRESS_MS);
+    this.touch = t;
+  }
+
+  touchMove(e) {
+    if (!this.touches.has(e.pointerId)) return;
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinch && this.touches.size === 2) {
+      const [a, b] = [...this.touches.values()];
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      this.stage.scrollLeft -= mid.x - this.pinch.mid.x;
+      this.stage.scrollTop -= mid.y - this.pinch.mid.y;
+      this.pinch.mid = mid;
+      this.setZoom(this.pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / this.pinch.dist, mid);
+      return;
+    }
+    const t = this.touch;
+    if (!t || t.id !== e.pointerId || t.done) return;
+    if (!t.dragging && Math.hypot(e.clientX - t.x, e.clientY - t.y) > TAP_SLOP_PX) {
+      clearTimeout(t.timer);
+      t.dragging = true;
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.LBUTTONDOWN, t.x, t.y, MK.LBUTTON);
+    }
+    if (t.dragging) this.mouseAt(WM.MOUSEMOVE, e.clientX, e.clientY, MK.LBUTTON);
+  }
+
+  touchUp(e) {
+    this.touches.delete(e.pointerId);
+    if (this.pinch) {
+      if (this.touches.size < 2) this.pinch = null;
+      return;
+    }
+    const t = this.touch;
+    if (!t || t.id !== e.pointerId) return;
+    clearTimeout(t.timer);
+    this.touch = null;
+    if (t.done) return;
+    if (!t.dragging) {
+      // Tap: a complete click at the touch point.
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.LBUTTONDOWN, t.x, t.y, MK.LBUTTON);
+    }
+    this.mouseAt(WM.LBUTTONUP, e.clientX, e.clientY, 0);
+    this.canvas.focus({ preventScroll: true });
+  }
+
+  cancelTouch() {
+    const t = this.touch;
+    if (!t) return;
+    clearTimeout(t.timer);
+    // A drag that turns into a pinch is released where it is.
+    if (t.dragging) this.mouseAt(WM.LBUTTONUP, t.x, t.y, 0);
+    this.touch = null;
+  }
+
+  // --- keyboard ----------------------------------------------------------------------
+
+  keyDown(e) {
+    const vk = VK[e.code];
+    if (vk) {
+      e.preventDefault();
+      this.send(`k ${WM.KEYDOWN} ${vk[0]} ${keyLParam(vk[1], false)}`);
+    } else if (e.key.length === 1 && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      if (e.ctrlKey) {
+        // Ctrl+letter shortcuts: control characters 1..26 are what Windows sends as WM_CHAR.
+        const code = e.key.toUpperCase().charCodeAt(0);
+        if (code >= 65 && code <= 90) this.send(`k ${WM.CHAR} ${code - 64} 1`);
+      } else {
+        this.send(`k ${WM.CHAR} ${e.key.charCodeAt(0)} 1`);
+      }
+    }
+  }
+
+  keyUp(e) {
+    const vk = VK[e.code];
+    if (vk) {
+      e.preventDefault();
+      this.send(`k ${WM.KEYUP} ${vk[0]} ${keyLParam(vk[1], true)}`);
+    }
+  }
+
+  // On-screen keyboard (touch devices): a hidden input collects what is typed.
+  // Soft keyboards often report key 'Unidentified' (keyCode 229), so text comes
+  // from input events and only named keys from keydown.
+  bindKeyboard() {
+    const k = this.kbd;
+    document.getElementById('kbd-btn').addEventListener('click', () => {
+      k.value = '';
+      k.focus();
+    });
+    k.addEventListener('keydown', (e) => {
+      if (VK[e.code]) this.keyDown(e);
+    });
+    k.addEventListener('keyup', (e) => {
+      if (VK[e.code]) this.keyUp(e);
+    });
+    k.addEventListener('beforeinput', (e) => {
+      e.preventDefault();
+      if (e.inputType === 'deleteContentBackward') {
+        this.send(`k ${WM.KEYDOWN} 8 ${keyLParam(0, false)}`);
+        this.send(`k ${WM.KEYUP} 8 ${keyLParam(0, true)}`);
+      } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+        this.send(`k ${WM.KEYDOWN} 13 ${keyLParam(0, false)}`);
+        this.send(`k ${WM.KEYUP} 13 ${keyLParam(0, true)}`);
+      } else if (typeof e.data === 'string') {
+        for (const ch of e.data) this.send(`k ${WM.CHAR} ${ch.codePointAt(0)} 1`);
+      }
+    });
+  }
+
+  // --- status ------------------------------------------------------------------------
 
   setStatus(state, text) {
     document.body.dataset.state = state;
     this.statusEl.textContent = text;
+  }
+
+  toast(text) {
+    const el = document.getElementById('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
   }
 
   showStats() {

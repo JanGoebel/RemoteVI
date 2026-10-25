@@ -35,7 +35,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
 | Tests | ✅ `npm test` (18), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (16) |
-| Caraya runner | ⏳ needs Caraya installed for LabVIEW 2025 (`tests/caraya/build.py`, `scripts/run-caraya.ps1`) |
+| Caraya unit tests | ✅ 96 assertions over 8 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
 | Splitter dragging | ❓ untested on a panel with an unlocked splitter |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
 | Access token, bind address, palette, VI package | planned |

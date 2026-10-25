@@ -1,0 +1,30 @@
+<VI _name="RemoteVI Send Origin.vi" description="Tells every client where the panel area now starts inside the frame\2C when that changed\3A if origin differs from origin sent (the origin the clients were last told - new clients get the current one with their greeting)\2C the text message origin x y (RemoteVI Origin Message.vi) is written to every client that is not closed (RemoteVI Write To Clients.vi\2C 500 ms per client\3B a failed write marks the client closed) and origin sent out becomes origin. Otherwise nothing is written.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="origin" conIdx="5" connection="required" description="Where the panel area starts inside the frame now (RemoteVI Get Panel Geometry.vi)." outputs="value:org.value" type="cluster{int32.x,int32.y}" uid="org" uid_parent="root" value="[0,0]"/>
+  <Control _name="origin sent" conIdx="7" connection="required" description="The origin the clients were last told." outputs="value:os.value" type="cluster{int32.x,int32.y}" uid="os" uid_parent="root" value="[0,0]"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:org.value" outputs="x:a.x,y:a.y" uid="a" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:os.value" outputs="x:b.x,y:b.y" uid="b" uid_parent="root"/>
+  <Node _name="Not Equal?" inputs="x:a.x,y:b.x" outputs="x != y?:dx.x != y?" uid="dx" uid_parent="root"/>
+  <Node _name="Not Equal?" inputs="x:a.y,y:b.y" outputs="x != y?:dy.x != y?" uid="dy" uid_parent="root"/>
+  <Node _name="Or" inputs="x:dx.x != y?,y:dy.x != y?" outputs="x .or. y?:chg.x .or. y?" uid="chg" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="chg.x .or. y?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:org.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="Changed\3A tell every client" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_cl.value" uid="t_cl" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_org.value" uid="t_org" uid_parent="cst"/>
+      <Call inputs="origin:t_org.value" outputs="frame:om.frame" target="RemoteVI Origin Message.vi" uid="om" uid_parent="cst"/>
+      <Constant _name="500 ms per client" outputs="value:to.value" type="int32" uid="to" uid_parent="cst" value="500"/>
+      <Call inputs="clients:t_cl.value,data:om.frame,timeout ms:to.value" outputs="clients out:wc.clients out" target="RemoteVI Write To Clients.vi" uid="wc" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:wc.clients out" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_cl.value" uid="f_cl" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_org" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_cl.value" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="clients\3B closed is set where the write failed." inputs="value:cs_o1.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+  <Indicator _name="origin sent out" conIdx="6" connection="recommended" description="origin - the clients know it now." inputs="value:org.value" type="cluster{int32.x,int32.y}" uid="o_os" uid_parent="root" value="[0,0]"/>
+</VI>

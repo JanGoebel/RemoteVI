@@ -1,0 +1,9 @@
+<VI _name="RemoteVI Origin Message.vi" description="The text message origin x y (docs\5Cprotocol.md 3.3) as a WebSocket text frame (RemoteVI WS Encode Server Frame.vi)\3A where the panel area starts inside the frame - below the menu bar and the toolbar. Every client gets it with the greeting\2C and all clients again whenever it changes (RemoteVI Send Origin.vi). Pure.">
+  <Control _name="origin" conIdx="0" connection="required" description="Where the panel area starts inside the frame\2C in frame pixels (RemoteVI Get Panel Geometry.vi)." outputs="value:org.value" type="cluster{int32.x,int32.y}" uid="org" uid_parent="root" value="[0,0]"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:org.value" outputs="x:ou.x,y:ou.y" uid="ou" uid_parent="root"/>
+  <Constant _name="format" outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="origin %d %d"/>
+  <Node _name="Format Into String" inputs="format string:fmt.value,input 1:ou.x,input 2:ou.y" outputs="resulting string:fs.resulting string" uid="fs" uid_parent="root"/>
+  <Constant _name="text" outputs="value:op1.value" type="uint8" uid="op1" uid_parent="root" value="1"/>
+  <Call inputs="opcode:op1.value,payload:fs.resulting string" outputs="frame:wf.frame" target="RemoteVI WS Encode Server Frame.vi" uid="wf" uid_parent="root"/>
+  <Indicator _name="frame" conIdx="4" connection="recommended" description="The WebSocket text frame carrying origin x y." inputs="value:wf.frame" type="string" uid="o_f" uid_parent="root" value=""/>
+</VI>

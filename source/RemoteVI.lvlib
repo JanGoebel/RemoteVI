@@ -75,12 +75,14 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
 		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
+		<Item Name="RemoteVI Origin Message.vi" Type="VI" URL="../Server/RemoteVI Origin Message.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
 		<Item Name="RemoteVI Send Frame.vi" Type="VI" URL="../Server/RemoteVI Send Frame.vi"/>
+		<Item Name="RemoteVI Send Origin.vi" Type="VI" URL="../Server/RemoteVI Send Origin.vi"/>
 		<Item Name="RemoteVI Send Overlay.vi" Type="VI" URL="../Server/RemoteVI Send Overlay.vi"/>
 		<Item Name="RemoteVI Send Static Response.vi" Type="VI" URL="../Server/RemoteVI Send Static Response.vi"/>
 		<Item Name="RemoteVI Serve Pending Connection.vi" Type="VI" URL="../Server/RemoteVI Serve Pending Connection.vi"/>
@@ -105,6 +107,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Capture Window.vi" Type="VI" URL="../Win32/RemoteVI Capture Window.vi"/>
 		<Item Name="RemoteVI Cursor Outside Window.vi" Type="VI" URL="../Win32/RemoteVI Cursor Outside Window.vi"/>
 		<Item Name="RemoteVI Find Popups.vi" Type="VI" URL="../Win32/RemoteVI Find Popups.vi"/>
+		<Item Name="RemoteVI Frame Rect.vi" Type="VI" URL="../Win32/RemoteVI Frame Rect.vi"/>
 		<Item Name="RemoteVI Hide Window.vi" Type="VI" URL="../Win32/RemoteVI Hide Window.vi"/>
 		<Item Name="RemoteVI List Menus.vi" Type="VI" URL="../Win32/RemoteVI List Menus.vi"/>
 		<Item Name="RemoteVI Menu Highlight.vi" Type="VI" URL="../Win32/RemoteVI Menu Highlight.vi"/>
@@ -117,6 +120,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Window Popup Info.vi" Type="VI" URL="../Win32/RemoteVI Window Popup Info.vi"/>
 		<Item Name="user32 FindWindowExW.vi" Type="VI" URL="../Win32/user32 FindWindowExW.vi"/>
 		<Item Name="user32 GetClassNameW.vi" Type="VI" URL="../Win32/user32 GetClassNameW.vi"/>
+		<Item Name="user32 GetClientRect.vi" Type="VI" URL="../Win32/user32 GetClientRect.vi"/>
 		<Item Name="user32 GetCursorPos.vi" Type="VI" URL="../Win32/user32 GetCursorPos.vi"/>
 		<Item Name="user32 GetDC.vi" Type="VI" URL="../Win32/user32 GetDC.vi"/>
 		<Item Name="user32 GetGUIThreadInfo.vi" Type="VI" URL="../Win32/user32 GetGUIThreadInfo.vi"/>

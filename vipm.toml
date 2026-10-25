@@ -1,0 +1,17 @@
+# VIPM project file: what a development / CI machine needs installed.
+#   vipm install                 installs all of it for LabVIEW 2025 (64-bit)
+#   vipm build build\RemoteVI.vipb --version-number X.Y.Z   builds the VI package
+[project]
+name = "remotevi"
+version = "0.1.0"
+labview-version = "2025"
+
+[dependencies]
+illuminatedg_lib_ig_http_utils = "1.1.0.54"
+illuminatedg_lib_ig_websocket_stream = "1.1.0.16"
+illuminatedg_lib_ig_stream_base = "1.2.0.46"
+
+[dev-dependencies]
+jki_lib_caraya = "1.4.4.148"
+wiresmith_technology_lib_g_cli = "3.0.1.98"
+lvos_lib_caraya_cli_extension = "2.0.0.7"

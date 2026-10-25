@@ -1,10 +1,11 @@
-<VI _name="RemoteVI Hover Menus.vi" description="One hover step of RemoteVI Menu Hover.vi\3A lists the open LabVIEW menus (RemoteVI List Menus.vi)\2C decides what the remote pointer asks of them (RemoteVI Hover Decision.vi) and does it with keys - over the deepest menu the highlight follows the pointer (RemoteVI Hover Navigate.vi)\3B after 400 ms on one item VK_RIGHT opens its submenu (RemoteVI Post Menu Key.vi\3B dwelled is set\2C so it is posted once)\3B over a parent of open submenus RemoteVI Hover Parent Menu.vi. state out is the updated menu pointer state\3B the caller stores it. Errors are dropped. No VI Server call.">
+<VI _name="RemoteVI Hover Menus.vi" description="One hover step of RemoteVI Menu Hover.vi\3A lists the open LabVIEW menus (RemoteVI List Menus.vi)\2C decides what the remote pointer asks of them (RemoteVI Hover Decision.vi) and does it with keys - over the deepest menu the highlight follows the pointer (RemoteVI Hover Navigate.vi)\3B after 400 ms on one item VK_RIGHT opens its submenu (RemoteVI Post Menu Key.vi\3B dwelled is set\2C so it is decided once) - but only when that item shows a submenu arrow (RemoteVI Menu Highlight.vi submenu?)\2C because in a menu of the panel's menu bar VK_RIGHT on an item without a submenu opens the next menu bar menu (measured)\3B over a parent of open submenus RemoteVI Hover Parent Menu.vi. state out is the updated menu pointer state\3B the caller stores it. Errors are dropped. No VI Server call.">
   <Control _name="hWnd" conIdx="0" connection="required" description="The served panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="state" conIdx="5" connection="required" description="The menu pointer state." outputs="value:st.value" type="cluster{bool.active,int32.x,int32.y,uint32.moved,bool.navigated,uint64.menu,int32.top,bool.hit,uint32.row since,bool.dwelled,uint64.plain,bool.swallow up}" uid="st" uid_parent="root" value="[false,0,0,0,false,0,0,false,0,false,0,false]"/>
   <Control _name="now" conIdx="7" connection="required" description="Tick count (ms)." outputs="value:nw.value" type="uint32" uid="nw" uid_parent="root" value="0"/>
   <Call inputs="" outputs="menus:lm.menus" target="RemoteVI List Menus.vi" uid="lm" uid_parent="root"/>
   <Call inputs="menus:lm.menus,state:st.value,now:nw.value" outputs="navigate?:hd.navigate?,dwell?:hd.dwell?,parent?:hd.parent?,k:hd.k" target="RemoteVI Hover Decision.vi" uid="hd" uid_parent="root"/>
   <Node _name="Index Array" inputs="array:lm.menus,index:hd.k" outputs="element:mk.element" uid="mk" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hwnd" inputs="input cluster:mk.element" outputs="hwnd:mku.hwnd" uid="mku" uid_parent="root"/>
   <Structure _name="Case Structure" selectin="hd.navigate?" uid="c1" uid_parent="root">
     <Tunnel _id="In1" inputs="value:st.value" uid="c1_i1" uid_parent="c1"/>
     <Tunnel _id="In2" inputs="value:hw.value" uid="c1_i2" uid_parent="c1"/>
@@ -30,12 +31,24 @@
   <Structure _name="Case Structure" selectin="hd.dwell?" uid="c2" uid_parent="root">
     <Tunnel _id="In1" inputs="value:c1_o1.value" uid="c2_i1" uid_parent="c2"/>
     <Tunnel _id="In2" inputs="value:hw.value" uid="c2_i2" uid_parent="c2"/>
-    <CaseFrame label="Dwelled 400 ms\3A VK_RIGHT" selector="True" selectout="" uid="c2t" uid_parent="c2">
+    <Tunnel _id="In3" inputs="value:mku.hwnd" uid="c2_i3" uid_parent="c2"/>
+    <CaseFrame label="Dwelled 400 ms\3A VK_RIGHT if a submenu" selector="True" selectout="" uid="c2t" uid_parent="c2">
       <Tunnel _id="In1" outputs="value:d_st.value" uid="d_st" uid_parent="c2t"/>
       <Tunnel _id="In2" outputs="value:d_hw.value" uid="d_hw" uid_parent="c2t"/>
-      <Constant _name="VK_RIGHT" outputs="value:kvr.value" type="uint64" uid="kvr" uid_parent="c2t" value="39"/>
-      <Constant _name="scan 0x4D extended" outputs="value:klr.value" type="int64" uid="klr" uid_parent="c2t" value="21823489"/>
-      <Call inputs="hWnd:d_hw.value,vk:kvr.value,key lParam:klr.value" outputs="error out:" target="RemoteVI Post Menu Key.vi" uid="pr" uid_parent="c2t"/>
+      <Tunnel _id="In3" outputs="value:d_mn.value" uid="d_mn" uid_parent="c2t"/>
+      <Call inputs="hwnd:d_mn.value" outputs="found?:,top:,bottom:,height:,submenu?:dmh.submenu?,menu colours?:,error out:" target="RemoteVI Menu Highlight.vi" uid="dmh" uid_parent="c2t"/>
+      <Structure _name="Case Structure" selectin="dmh.submenu?" uid="c4" uid_parent="c2t">
+        <Tunnel _id="In1" inputs="value:d_hw.value" uid="c4_i1" uid_parent="c4"/>
+        <CaseFrame label="Submenu arrow\3A open it" selector="True" selectout="" uid="c4t" uid_parent="c4">
+          <Tunnel _id="In1" outputs="value:r_hw.value" uid="r_hw" uid_parent="c4t"/>
+          <Constant _name="VK_RIGHT" outputs="value:kvr.value" type="uint64" uid="kvr" uid_parent="c4t" value="39"/>
+          <Constant _name="scan 0x4D extended" outputs="value:klr.value" type="int64" uid="klr" uid_parent="c4t" value="21823489"/>
+          <Call inputs="hWnd:r_hw.value,vk:kvr.value,key lParam:klr.value" outputs="error out:" target="RemoteVI Post Menu Key.vi" uid="pr" uid_parent="c4t"/>
+        </CaseFrame>
+        <CaseFrame selector="False" selectout="" uid="c4f" uid_parent="c4">
+          <Tunnel _id="In1" outputs="value:" uid="s_hw" uid_parent="c4f"/>
+        </CaseFrame>
+      </Structure>
       <Constant outputs="value:dt.value" type="bool" uid="dt" uid_parent="c2t" value="true"/>
       <Node _name="Bundle By Name" fields="dwelled" inputs="dwelled:dt.value,input cluster:d_st.value" outputs="output cluster:db.output cluster" uid="db" uid_parent="c2t"/>
       <Tunnel _id="Out1" inputs="value:db.output cluster" uid="d_o1" uid_parent="c2t"/>
@@ -43,6 +56,7 @@
     <CaseFrame selector="False" selectout="" uid="c2f" uid_parent="c2">
       <Tunnel _id="In1" outputs="value:e_st.value" uid="e_st" uid_parent="c2f"/>
       <Tunnel _id="In2" outputs="value:" uid="e_hw" uid_parent="c2f"/>
+      <Tunnel _id="In3" outputs="value:" uid="e_mn" uid_parent="c2f"/>
       <Tunnel _id="Out1" inputs="value:e_st.value" uid="e_o1" uid_parent="c2f"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:c2_o1.value" uid="c2_o1" uid_parent="c2"/>

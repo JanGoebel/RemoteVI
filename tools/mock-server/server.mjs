@@ -112,6 +112,7 @@ export function startServer(opts = {}) {
       socket.on('close', () => this.onClose());
       this.write(OP_TEXT, 'title Simulated Panel.vi');
       this.write(OP_TEXT, `viewonly ${cfg.viewOnly ? 1 : 0}`);
+      this.write(OP_TEXT, 'origin 0 0'); // the simulated panel has no window frame
       if (overlay.message) this.write(OP_BINARY, overlay.message);
       cfg.log(`client connected (${clients.size})`);
       if (initial.length) this.onData(initial);

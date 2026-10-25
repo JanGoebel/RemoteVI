@@ -20,7 +20,7 @@ before(async () => {
   if (!enabled) return;
   await waitLog(([k]) => k === 'ready', { ms: 10000 });
   c = await connect();
-  L = layout();
+  L = layout(c);
 });
 after(() => c?.ws.close());
 
@@ -237,4 +237,39 @@ test('a submenu opens beside its parent, not on top of it', opts, async () => {
   assert.ok(overlapX <= 6, `submenu x ${sub.x}..${sub.x + sub.w} must not cover parent x ${parent.x}..${parent.x + parent.w}`);
   await click(c, 5, 5, { settle: 100 });
   await waitOverlay(c, (o) => o.length === 0);
+});
+
+// --- round 4: the whole window - menu bar, toolbar, scrollbars ----------------------------
+
+test('the stream shows the whole window: menu bar and toolbar above the panel', opts, async () => {
+  assert.ok(c.originSeen, 'server sends `origin x y`');
+  assert.ok(c.origin.y >= 20, `panel starts below menu bar and toolbar (origin y = ${c.origin.y})`);
+  const stop = at('Stop');
+  assert.ok(c.height > stop.y + stop.h && c.width > 0, 'frame covers the panel');
+});
+
+test('an item of the run-time menu bar can be chosen, also from a submenu', opts, async () => {
+  for (const [path, tag] of [[['Say Hello'], 'Hello'], [['More', 'Deep Bar'], 'DeepBar']]) {
+    const s = mark();
+    await click(c, 15, 8, { settle: 100 }); // first menu bar item, "Fixture"
+    let popups = await waitOverlay(c);
+    for (const [i, item] of path.entries()) {
+      const menu = popups.at(-1);
+      // "Fixture" menu: row 0 "Say Hello", row 1 "More"; "More" submenu: row 0 "Deep Bar".
+      const row = item === 'More' ? 1 : 0;
+      const rows = item === 'More' || item === 'Say Hello' ? 2 : 1;
+      await click(c, menu.x + 20, menu.y + Math.round(menu.h * (2 * row + 1) / (2 * rows)), { settle: 100 });
+      if (i < path.length - 1) popups = await waitOverlay(c, (o) => o.length > popups.length, 3000);
+    }
+    await waitOverlay(c, (o) => o.length === 0);
+    await waitLog(([k, t]) => k === 'menubar' && t === tag, { since: s });
+  }
+});
+
+test('the panel scrollbar is visible in the stream and can be operated', opts, async () => {
+  const s = mark();
+  // Vertical scrollbar along the right edge of the frame; its down arrow sits just above the
+  // horizontal scrollbar at the bottom.
+  for (let i = 0; i < 3; i++) await click(c, c.width - 8, c.height - 26, { settle: 150 });
+  await waitLog(([k]) => k === 'scroll', { since: s });
 });

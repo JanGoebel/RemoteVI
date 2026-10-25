@@ -81,6 +81,7 @@ One command word, a space, and an argument. Clients ignore commands they don't k
 |---|---|
 | `title <name>` | name of the published VI, for display |
 | `viewonly 0` / `viewonly 1` | whether the server ignores this client's input |
+| `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect and whenever it changes. |
 
 ## 4. Client → server (text messages)
 

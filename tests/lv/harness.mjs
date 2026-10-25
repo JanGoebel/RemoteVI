@@ -14,6 +14,13 @@
 //   wheel    <label>  <delta>                  Mouse Wheel (positive = away from the user)
 //   dblclick <label>  <row>                    Double Click (listbox)
 //   menu     <label>  <item tag>               Shortcut Menu Selection (User)
+//   menubar  <item tag>                        Menu Selection (User) of the VI's run-time menu bar
+//   scroll   <x> <y>                           Front Panel Window:Origin changed (panel scrolled)
+//
+// Coordinates: `layout` rectangles are panel coordinates. The stream shows the whole window
+// below its title bar (menu bar, toolbar, panel, scrollbars); the server tells the client where
+// the panel starts inside that frame with the text message `origin <x> <y>`, and layout(c)
+// shifts the rectangles into frame coordinates.
 // <mods> is a combination of S (shift), C (ctrl), A (alt), or "-" for none.
 // Values: booleans TRUE/FALSE, numerics with %g, strings as typed (newlines as \n),
 // rings and enums by item text, tab controls by page label.
@@ -35,11 +42,13 @@ export function readLog() {
 }
 
 /** Control body rectangles from the fixture's layout lines. */
-export function layout() {
+export function layout(c) {
+  const ox = c?.origin.x ?? 0, oy = c?.origin.y ?? 0;
   const map = new Map();
   for (const [kind, label, rect] of readLog()) {
     if (kind === 'layout') {
-      const [x, y, w, h] = rect.split(' ').map(Number);
+      let [x, y, w, h] = rect.split(' ').map(Number);
+      x += ox; y += oy;
       map.set(label, { x, y, w, h, cx: Math.round(x + w / 2), cy: Math.round(y + h / 2) });
     }
   }
@@ -61,9 +70,13 @@ export async function waitLog(pred, { since = 0, ms = 3000 } = {}) {
 export async function connect() {
   const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
   ws.binaryType = 'arraybuffer';
-  const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0 };
+  const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false };
   ws.onmessage = (ev) => {
-    if (typeof ev.data === 'string') return;
+    if (typeof ev.data === 'string') {
+      const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
+      if (m) { c.origin = { x: Number(m[1]), y: Number(m[2]) }; c.originSeen = true; }
+      return;
+    }
     const v = new DataView(ev.data);
     if (v.getUint8(1) === 2) {
       const popups = [];

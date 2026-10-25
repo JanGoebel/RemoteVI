@@ -69,7 +69,7 @@ Details: [docs/testing.md](docs/testing.md).
 ## Development
 
 ```bash
-npm run mock                               # reference server with a simulated panel, for client work without LabVIEW
+npm run mock                               # reference server with a simulated panel on http://127.0.0.1:8090/ (no LabVIEW needed)
 ```
 
 The G code was generated with labview-mcp on LabVIEW 2025. The AIXML sources are in `tools/aixml/`. `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.

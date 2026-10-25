@@ -8,7 +8,7 @@
 // Use it to develop the web client without LabVIEW and as the behavioural
 // reference for the G code.
 //
-//   node tools/mock-server/server.mjs [--port 8088] [--host 127.0.0.1] [--fps 30] [--view-only]
+//   node tools/mock-server/server.mjs [--port 8090] [--host 127.0.0.1] [--fps 30] [--view-only]
 
 import net from 'node:net';
 import fs from 'node:fs';
@@ -32,7 +32,7 @@ const MAX_CLIENTS = 8;
 
 export function startServer(opts = {}) {
   const cfg = {
-    port: 8088, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log,
+    port: 8090, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log,
     indexPath: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/index.html'),
     ...opts,
   };
@@ -267,7 +267,7 @@ export function startServer(opts = {}) {
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const { values } = parseArgs({
     options: {
-      port: { type: 'string', default: '8088' }, host: { type: 'string', default: '127.0.0.1' },
+      port: { type: 'string', default: '8090' }, host: { type: 'string', default: '127.0.0.1' },
       fps: { type: 'string', default: '30' }, 'view-only': { type: 'boolean', default: false },
     },
   });

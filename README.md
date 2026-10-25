@@ -16,6 +16,12 @@ Then browse to `http://<machine>:<port>/`. The server also stops by itself when 
 
 > The default port is 8088, not 8080: on many NI machines port 8080 is taken by NI's Application Web Server.
 
+## In the browser
+
+* **Scaling:** `1:1` (actual pixels), `Fit` (whole window in view), `Width` (fit the width, scroll vertically), zoom `−` / `+` or Ctrl+wheel. The choice is remembered per browser. Keys when the panel doesn't have focus: `1`, `F`, `W`, `+`, `−`.
+* **Fullscreen** button.
+* **Touch:** one finger is the mouse (tap = click, slide = drag), a long press is a right-click, two fingers pinch-zoom and pan. The keyboard button opens the on-screen keyboard. Phones start in `Width` mode.
+
 ## How it works
 
 * **Out:** `FP.Get Image` → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.

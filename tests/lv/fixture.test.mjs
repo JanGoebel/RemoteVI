@@ -9,7 +9,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  enabled, connect, layout, readLog, waitLog, click, move, keyDown, keyUp, typeText, waitOverlay, sleep, VK, highlightedRows,
+  enabled, connect, layout, readLog, waitLog, click, move, keyDown, keyUp, typeText, waitOverlay, sleep, VK, highlightedRows, waitWindows,
 } from './harness.mjs';
 
 const opts = { skip: !enabled && 'set RVI_LV=1 and run tests/fixtures/RemoteVI Fixture.vi' };
@@ -32,7 +32,7 @@ const at = (label) => {
 };
 
 test('fixture reports the layout of every control', opts, () => {
-  for (const label of ['Switch', 'Button', 'Number', 'Text', 'Mode', 'Tab', 'Graph', 'List', 'Stop']) at(label);
+  for (const label of ['Switch', 'Button', 'Number', 'Text', 'Mode', 'Tab', 'Graph', 'List', 'Ask', 'Open', 'Stop']) at(label);
 });
 
 test('click toggles a switch: Mouse Down/Up and Value Change fire like a local click', opts, async () => {
@@ -272,4 +272,44 @@ test('the panel scrollbar is visible in the stream and can be operated', opts, a
   // horizontal scrollbar at the bottom.
   for (let i = 0; i < 3; i++) await click(c, c.width - 8, c.height - 26, { settle: 150 });
   await waitLog(([k]) => k === 'scroll', { since: s });
+});
+
+// --- round 5: dialogs and other windows ---------------------------------------------------
+
+test('a LabVIEW dialog appears as a modal window with its own picture; Enter answers it', opts, async () => {
+  const s = mark();
+  const r = at('Ask');
+  await click(c, r.cx, r.cy, { settle: 100 });
+  const [dlg] = await waitWindows(c, (w) => w.some((x) => x.modal));
+  assert.ok(dlg.w > 50 && dlg.h > 30, `dialog has a size: ${dlg.w}x${dlg.h}`);
+  assert.ok(dlg.title.length > 0, 'dialog has a title');
+  const end = Date.now() + 3000;
+  while (!(c.windowFrames.get(dlg.id) > 0) && Date.now() < end) await sleep(50);
+  assert.ok(c.windowFrames.get(dlg.id) > 0, 'a WINDOW FRAME of the dialog arrived');
+  keyDown(c, VK.ENTER); keyUp(c, VK.ENTER); // default button
+  await waitWindows(c, (w) => w.length === 0);
+  await waitLog(([k, v]) => k === 'dialog' && v === 'TRUE', { since: s });
+});
+
+test('the panel behind a modal dialog takes no input, like on the host', opts, async () => {
+  const s = mark();
+  await click(c, at('Ask').cx, at('Ask').cy, { settle: 100 });
+  const [dlg] = await waitWindows(c, (w) => w.some((x) => x.modal));
+  const sw = at('Switch');
+  await click(c, sw.cx, sw.cy, { settle: 300 });
+  assert.equal(readLog().slice(s).filter(([k, l]) => k === 'value' && l === 'Switch').length, 0, 'Switch must not change');
+  // The dialog's right-hand button is "No": click it with the mouse, in the dialog's own area.
+  await click(c, dlg.x + Math.round(dlg.w * 0.72), dlg.y + dlg.h - 22, { settle: 100 });
+  await waitWindows(c, (w) => w.length === 0);
+  await waitLog(([k, v]) => k === 'dialog' && v === 'FALSE', { since: s });
+});
+
+test('the native file dialog appears as a window and Escape cancels it', opts, async () => {
+  const s = mark();
+  const r = at('Open');
+  await click(c, r.cx, r.cy, { settle: 100 });
+  await waitWindows(c, (w) => w.length > 0, 8000);
+  keyDown(c, VK.ESCAPE); keyUp(c, VK.ESCAPE);
+  await waitWindows(c, (w) => w.length === 0, 8000);
+  await waitLog(([k, v]) => k === 'file' && v === 'CANCELLED', { since: s });
 });

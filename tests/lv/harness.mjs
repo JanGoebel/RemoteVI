@@ -16,6 +16,8 @@
 //   menu     <label>  <item tag>               Shortcut Menu Selection (User)
 //   menubar  <item tag>                        Menu Selection (User) of the VI's run-time menu bar
 //   scroll   <x> <y>                           Front Panel Window:Origin changed (panel scrolled)
+//   dialog   <TRUE|FALSE>                      answer of the Two Button Dialog opened by `Ask`
+//   file     <path|CANCELLED>                  result of the native File Dialog opened by `Open`
 //
 // Coordinates: `layout` rectangles are panel coordinates. The stream shows the whole window
 // below its title bar (menu bar, toolbar, panel, scrollbars); the server tells the client where
@@ -70,11 +72,22 @@ export async function waitLog(pred, { since = 0, ms = 3000 } = {}) {
 export async function connect() {
   const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
   ws.binaryType = 'arraybuffer';
-  const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false };
+  const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false,
+    windows: [], windowFrames: new Map() };
   ws.onmessage = (ev) => {
     if (typeof ev.data === 'string') {
       const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
       if (m) { c.origin = { x: Number(m[1]), y: Number(m[2]) }; c.originSeen = true; }
+      if (ev.data.startsWith('windows ')) {
+        try { c.windows = JSON.parse(ev.data.slice(8)); } catch { /* ignore */ }
+      }
+      return;
+    }
+    if (new DataView(ev.data).getUint8(1) === 3) {
+      const v = new DataView(ev.data);
+      const id = v.getUint32(2);
+      c.windowFrames.set(id, (c.windowFrames.get(id) ?? 0) + 1);
+      ws.send(`a ${v.getUint32(6)}`);
       return;
     }
     const v = new DataView(ev.data);
@@ -187,4 +200,14 @@ export function highlightedRows(popup) {
     if (b > 150 && r < 80 && g > 60 && g < 200) rows.push(y);
   }
   return rows;
+}
+
+/** Wait until the server's window list satisfies pred; returns the list. */
+export async function waitWindows(c, pred, ms = 5000) {
+  const end = Date.now() + ms;
+  while (!pred(c.windows)) {
+    if (Date.now() > end) throw new Error(`window list condition not met within ${ms} ms: ${JSON.stringify(c.windows)}`);
+    await sleep(50);
+  }
+  return c.windows;
 }

@@ -92,7 +92,8 @@ export function keyLParamWithScan(vk, lParam) {
 /**
  * @param {{kind:string,msg:number,x?:number,y?:number,wParam:number,lParam?:number}} input from parseInput()
  * @param {{panelX:number,panelY:number,clientX:number,clientY:number}} geo
- *        panel origin and client-area origin, both in screen coordinates
+ *        frame origin (panelX/panelY: the top-left of the streamed frame, i.e. of the window's
+ *        client area below the title bar) and client-area origin, both in screen coordinates
  * @param {boolean} tracking LabVIEW tracks a press, i.e. holds the mouse capture (the server asks Windows)
  * @param {boolean} [popup] a LabVIEW popup window is open
  * @returns {{posts:{msg:number,wParam:number,lParam:number}[], tracking:boolean, cursor:{x:number,y:number}|null}}

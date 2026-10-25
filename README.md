@@ -24,8 +24,8 @@ Then browse to `http://<machine>:<port>/`. The server also stops by itself when 
 
 ## How it works
 
-* **Out:** `FP.Get Image` → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.
-* **In:** the browser sends Win32 messages (`WM_LBUTTONDOWN`, `WM_MOUSEMOVE`, `WM_CHAR`, …) with panel coordinates. The server maps them to the panel's window and calls `PostMessageW`.
+* **Out:** the whole front panel window below its title bar - menu bar (also a custom run-time menu), toolbar, panel, scrollbars - drawn with `PrintWindow` → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.
+* **In:** the browser sends Win32 messages (`WM_LBUTTONDOWN`, `WM_MOUSEMOVE`, `WM_CHAR`, …) with coordinates in that window picture. The server maps them to the panel's window and calls `PostMessageW`; menu bar, toolbar and scrollbars are operated like the panel.
 * **HTTP:** IG HTTP Utils / IG WebSocket Stream handle the request and the upgrade. The client is one embedded HTML file.
 
 Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/protocol.md), [docs/security.md](docs/security.md).
@@ -37,10 +37,11 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Capture, diff, PNG (`source/Capture`) | ✅ vectors and benchmarks |
 | Protocol, WebSocket framing (`source/Protocol`) | ✅ all vectors pass |
 | Input (`source/Input`, `source/Win32`) | ✅ clicks, drags, double clicks, wheel, typing, Shift/Ctrl/Alt, hover enter/leave; host cursor and keyboard never touched |
+| Whole window: menu bar (also custom run-time menus with submenus), toolbar, scrollbars | ✅ streamed as the window shows them; menu bar menus driven like the other menus, scrollbar arrows and thumbs scroll the panel; the client learns where the panel starts (`origin`) |
 | Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay at their real place (may extend past the panel), hover highlight, submenus beside their parent, invisible on the host when opened remotely, panel keeps updating underneath |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Tests | ✅ `npm test` (18), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (16) |
+| Tests | ✅ `npm test` (19), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (20 of 24 pass: the 3 round-5 dialog tests and the Ask/Open layout lines of test 1 wait for the dialog work) |
 | Caraya unit tests | ✅ 96 assertions over 8 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
 | Splitter dragging | ❓ untested on a panel with an unlocked splitter |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
@@ -49,7 +50,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 ## Known limits
 
 * **Menus are driven with keys.** The highlight follows the remote pointer and a submenu opens after 400 ms on its entry, but through arrow keys posted to LabVIEW, so a menu that takes no keys (colour picker, line width popup) shows no hover highlight remotely; it is clicked by moving just that window under the host cursor for the click. While such a popup is open its parent menus react to clicks only by closing.
-* **Remote tip strips can flash on the host.** One triggered remotely shows on the host for 20–90 ms before it is hidden, or stays visible if the host cursor is over the panel.
+* **Remote tip strips can flash on the host.** One triggered remotely shows on the host for 20–90 ms before it is hidden, or stays visible if the host cursor is over the panel. LabVIEW shows tip strips only while it is the active application, remotely as locally.
 * **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
 * **One server per LabVIEW instance.** The Server Loop isn't reentrant. A second `RemoteVI Start.vi` returns error 5001, and a port in use returns the listener's error (60).
 * **Modifiers are shared.** Several clients holding Shift/Ctrl at the same time share LabVIEW's single key state.

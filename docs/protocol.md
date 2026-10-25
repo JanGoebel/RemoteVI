@@ -23,7 +23,8 @@ client                                   server
   │  WebSocket upgrade  ────────────────►  │
   │  ◄──────────────── "title <VI name>"   │  text
   │  ◄──────────────── "viewonly 0|1"      │  text
-  │  ◄──────────────── FRAME seq 1         │  whole panel
+  │  ◄──────────────── "origin <x> <y>"    │  text, where the panel starts in the frame
+  │  ◄──────────────── FRAME seq 1         │  whole frame
   │  "a 1" ────────────────────────────►   │  ack after painting
   │  "m 513 120 45 1" ─────────────────►   │  input, any time
   │  ◄──────────────── FRAME seq 2 …       │  only what changed
@@ -42,8 +43,8 @@ All integers are big-endian.
 | 0 | u8 | magic `0x52` (`R`) |
 | 1 | u8 | message type `1` = FRAME |
 | 2 | u32 | `seq`, 1 for the first frame of a session, then +1 per frame |
-| 6 | u16 | panel width in pixels |
-| 8 | u16 | panel height in pixels |
+| 6 | u16 | frame width in pixels |
+| 8 | u16 | frame height in pixels |
 | 10 | u16 | rect count *n* |
 | 12 | *n* × rect | |
 
@@ -51,14 +52,16 @@ Each rect:
 
 | Offset | Type | Field |
 |---|---|---|
-| 0 | i16 | x of the top-left corner on the panel |
+| 0 | i16 | x of the top-left corner in the frame |
 | 2 | i16 | y |
 | 4 | u32 | length *L* of the PNG |
 | 8 | *L* bytes | a PNG image; its own header carries width and height |
 
-The client resizes its canvas to the panel size when it changes, then draws each PNG at (x, y). The first frame of a session, and any frame after a size change, covers the whole panel.
+The client resizes its canvas to the frame size when it changes, then draws each PNG at (x, y). The first frame of a session, and any frame after a size change, covers the whole frame.
 
-**Which rects:** the server splits the panel into a grid of 64 × 64 tiles (edge tiles clipped), compares the capture with the one this client was last sent, and merges the dirty tiles of each tile row into one rect, spanning the first to the last dirty tile of that row. See `dirtyRects()` and `tests/vectors/rects.json`. A client must not depend on this; any set of rects is valid.
+**The frame** is the published front panel window below its title bar: its client area, which in LabVIEW holds the menu bar (LabVIEW draws it itself, also a custom run-time menu bar; measured: `GetMenu` is NULL, `GetMenuBarInfo` fails), the toolbar, the panel and the panel's scrollbars, exactly as the window shows them. The panel area starts at `origin` (§3.3) inside it. A minimized window keeps its last frame until it is restored.
+
+**Which rects:** the server splits the frame into a grid of 64 × 64 tiles (edge tiles clipped), compares the capture with the one this client was last sent, and merges the dirty tiles of each tile row into one rect, spanning the first to the last dirty tile of that row. See `dirtyRects()` and `tests/vectors/rects.json`. A client must not depend on this; any set of rects is valid.
 
 ### 3.2 OVERLAY (binary message)
 
@@ -71,7 +74,7 @@ The LabVIEW popups that are open over the panel: ring/enum menus, right-click me
 | 2 | u16 | popup count *n* |
 | 4 | *n* × rect | same layout as FRAME rects (§3.1): x, y, length, PNG |
 
-x and y are relative to the panel origin and **may lie outside the panel**, for example a context menu that overflows the right or bottom edge. The client draws the popups over the canvas, unclipped, and sends input on them with the same panel coordinates, which may be negative or beyond the panel size. Popups are listed bottom-most first, so later entries are drawn on top. `encodeOverlay()`, `tests/vectors/frame.json` → `overlays`.
+x and y are relative to the frame origin and **may lie outside the frame**, for example a context menu that overflows the right or bottom edge. The client draws the popups over the canvas, unclipped, and sends input on them with the same frame coordinates, which may be negative or beyond the frame size. Popups are listed bottom-most first, so later entries are drawn on top. `encodeOverlay()`, `tests/vectors/frame.json` → `overlays`.
 
 ### 3.3 Text messages
 
@@ -82,7 +85,7 @@ One command word, a space, and an argument. Clients ignore commands they don't k
 | `title <name>` | name of the published VI, for display |
 | `viewonly 0` / `viewonly 1` | whether the server ignores this client's input |
 | `windows <json>` | the application's other windows (dialogs, native file dialogs, subVI panels): see §7 |
-| `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect and whenever it changes. |
+| `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect (with the greeting, before the first FRAME) and whenever it changes (the server reads it every 500 ms with the window geometry: `Front Panel Window:Panel Bounds` minus the frame origin). It is information only: all coordinates of the protocol are frame coordinates. |
 
 ## 4. Client → server (text messages)
 
@@ -91,7 +94,7 @@ ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not f
 | Message | Meaning |
 |---|---|
 | `a <seq>` | frame `seq` has been painted |
-| `m <msg> <x> <y> <wParam>` | mouse message `msg` at panel pixel (x, y) |
+| `m <msg> <x> <y> <wParam>` | mouse message `msg` at frame pixel (x, y) |
 | `k <msg> <wParam> <lParam>` | keyboard message `msg` |
 | `x <id>` | close window `id` (§7), like its title bar's close button |
 
@@ -110,7 +113,7 @@ ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not f
 
 `wParam` carries the `MK_*` flags: `MK_LBUTTON 1`, `MK_RBUTTON 2`, `MK_SHIFT 4`, `MK_CONTROL 8`, `MK_MBUTTON 16`.
 
-Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/translate.json`): screen point = (panel origin on screen) + (x, y), where the panel origin is the top-left of `Front Panel Window:Panel Bounds`. The client-area origin comes from `ScreenToClient(hWnd)`; in the IDE the toolbar is inside the client area. `lParam = (y << 16) | (x & 0xFFFF)` of either:
+Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/translate.json`): screen point = (frame origin on screen) + (x, y), where the frame origin is the top-left of the window's client area (`ScreenToClient(hWnd)` of the screen point 0,0; `geo.panelX/panelY`, the name is historical). Menu bar, toolbar and scrollbars are inside the client area, so a click on any of them is an ordinary client-area click: a click on a menu bar title opens its menu (an `LVMenuWnd` popup, driven like every other menu, see below), a click on a scrollbar arrow or a drag of its thumb scrolls the panel (measured). `lParam = (y << 16) | (x & 0xFFFF)` of either:
 
 * **client** coordinates: hover moves and button-downs;
 * **screen** coordinates: moves and the button-up while LabVIEW *tracks* a press. LabVIEW tracks, and then holds the mouse capture, for latched buttons, sliders, text selection, graph drags and the like, and reads posted moves and the button-up as screen coordinates while it does (measured with the input-injection spike, see git history). A switch-when-pressed boolean does not track: its button-up must be in client coordinates, or LabVIEW loses it and behaves as if the button were still held (measured). So the server does not guess from the button state; before translating it asks Windows whether LabVIEW's UI thread holds the mouse capture (`GetGUIThreadInfo` → `hwndCapture`, `RemoteVI Mouse Captured.vi`), which it can, because the previous message has been handled by then (§4.4);
@@ -120,12 +123,12 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 
 **While a popup is open**, LabVIEW hit-tests clicks with the real cursor position against the popup window's real position and ignores posted coordinates. The server never moves the host cursor, and it no longer moves LabVIEW's menus either: a menu is operated with keys posted to the panel window, which holds the mouse capture while a menu is open (`VK_DOWN`/`VK_UP` move the highlight, `VK_RETURN` chooses the highlighted item or opens its submenu, `VK_RIGHT` opens a submenu, `VK_LEFT` closes one; measured). The server finds the menu under the client's point, moves the highlight onto the row under it - capturing the menu after each key and looking for the Windows highlight colour (`GetSysColor(COLOR_HIGHLIGHT)`) down its middle column - and then acts:
 
-* `WM_MOUSEMOVE` (no longer dropped): the highlight follows the pointer, like local hover; moves are coalesced to the latest position and applied once per server loop iteration. After 400 ms on one item the server presses `VK_RIGHT`, which opens that item's submenu, as a local hover does. On a parent menu while a submenu is open, nothing happens on the item that opened it; on another item the submenu is closed with `VK_LEFT` once the pointer has rested there 300 ms, and the parent's highlight follows.
+* `WM_MOUSEMOVE` (no longer dropped): the highlight follows the pointer, like local hover; moves are coalesced to the latest position and applied once per server loop iteration. After 400 ms on one item the server presses `VK_RIGHT`, which opens that item's submenu, as a local hover does - but only when the item shows a submenu arrow (the strip at the right end of the highlighted band holds a pixel that is not the highlight colour): in a menu of the panel's menu bar `VK_RIGHT` on an item without a submenu opens the next menu bar menu (measured). On a parent menu while a submenu is open, nothing happens on the item that opened it; on another item the submenu is closed with `VK_LEFT` once the pointer has rested there 300 ms, and the parent's highlight follows.
 * Button-down: submenus above the clicked menu are closed with `VK_LEFT`, the highlight is moved onto the row and `VK_RETURN` is pressed (nothing is chosen on a separator or a disabled item). The matching button-up is not posted. A button-up on a menu is never posted, so the release of the click that opened a menu chooses nothing.
 * A popup that shows no highlight and takes no keys - the plot legend's colour picker and line width popup (both `LVMenuWnd`), graph palette popups - is clicked with the mouse: only that window is moved by the offset that puts the clicked point under the real cursor, the button message is posted with the real cursor position in `lParam`, and the window is moved back right after; a button-down and its button-up are each handled that way. No probe key is posted into a window without the menu background colour (`COLOR_MENU`): a key spoils the colour picker's next click (measured).
 * A click outside every popup is not posted: the server closes all popups (`WM_CANCELMODE`, sent).
 
-Every popup therefore stays where LabVIEW put it, a submenu opens beside its parent exactly as on the host, and OVERLAY positions are the popups' real positions relative to the panel. The wheel is still dropped while a popup is open. Frames keep coming while a popup is open (the panel is drawn with `PrintWindow`).
+Every popup therefore stays where LabVIEW put it, a submenu opens beside its parent exactly as on the host, and OVERLAY positions are the popups' real positions relative to the frame. The wheel is still dropped while a popup is open. Frames keep coming while a popup is open (the window is drawn with `PrintWindow`).
 
 **Tip strips** (window class `LVTipStrip`) are part of the OVERLAY but are not a popup in the sense above: input stays in normal mode while one is shown, so the remote pointer's next move hides it as on the host (measured: a posted move off the control closes it). LabVIEW shows a tip strip for posted hover moves; no real cursor dwell is needed (measured).
 

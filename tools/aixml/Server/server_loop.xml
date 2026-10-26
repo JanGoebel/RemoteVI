@@ -132,7 +132,7 @@
 
     <Call inputs="clients:sc.clients out,origin:rg.origin out,origin sent:osent.value" outputs="clients out:sor.clients out,origin sent out:sor.origin sent out" target="RemoteVI Send Origin.vi" uid="sor" uid_parent="sl"/>
     <Call inputs="clients:sor.clients out,cache:cache.value,period:l_per.value,hWnd:rg.hWnd out" outputs="clients out:cs.clients out,cache out:cs.cache out,captured?:cs.captured?" target="RemoteVI Capture And Send.vi" uid="cs" uid_parent="sl"/>
-    <Constant _name="not in a frame iteration" outputs="value:knever.value" type="double" uid="knever" uid_parent="sl" value="1000000000"/>
+    <Constant _name="overlay period in a frame iteration (ms)" outputs="value:knever.value" type="double" uid="knever" uid_parent="sl" value="150"/>
     <Node _name="Select" inputs="t:knever.value,s:cs.captured?,f:l_per.value" outputs="s? t\3Af:ovper.s? t\3Af" uid="ovper" uid_parent="sl"/>
     <Call inputs="clients:cs.clients out,windows:tw.windows,message:tw.message,capture?:cs.captured?" outputs="clients out:sw.clients out" target="RemoteVI Send Windows.vi" uid="sw" uid_parent="sl"/>
     <Call inputs="clients:sw.clients out,overlay popups:tp.overlay popups,geo:rg.geo out,d:cks.d,state:ovst.value,period:ovper.s? t\3Af" outputs="clients out:so.clients out,state out:so.state out" target="RemoteVI Send Overlay.vi" uid="so" uid_parent="sl"/>

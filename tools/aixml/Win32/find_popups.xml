@@ -1,19 +1,22 @@
-<VI _name="RemoteVI Find Popups.vi" description="Lists LabVIEW's own visible popup windows - ring and enum menus (class LVMenuWnd)\2C and other captionless WS_POPUP windows such as shortcut menus and combo box drop-downs - which FP.Get Image does not include. It walks every top-level window with FindWindowExW(0\2C previous\2C NULL\2C NULL)\2C keeps those whose process is LabVIEW's (GetWindowThreadProcessId = GetCurrentProcessId) and that are not panel hWnd\2C and asks RemoteVI Window Popup Info.vi about each. Win32 calls only\2C no VI Server\2C so it runs while an open menu holds LabVIEW's UI thread in its modal loop. Meant to run on every server loop iteration.">
+<VI _name="RemoteVI Find Popups.vi" description="Lists LabVIEW's own visible popup windows - ring and enum menus (class LVMenuWnd)\2C and other captionless WS_POPUP windows such as shortcut menus and combo box drop-downs - which FP.Get Image does not include. It walks the top-level windows in Z order with FindWindowExW(0\2C previous\2C NULL\2C NULL) from the top down to the panel's owner (user32 GetWindow.vi GW_OWNER - LabVIEW's hidden frame window LVFrame\2C which owns the panels and the popups\3B an owned window is always above its owner and a topmost popup above every non-topmost window\2C so no popup lies below it) or to the end when the panel has no owner - the whole walk took 61 ms with 860 top-level windows on the desktop\2C the walk down to LVFrame a few ms (measured)\2C keeps those whose process is LabVIEW's (GetWindowThreadProcessId = GetCurrentProcessId) and that are not panel hWnd\2C and asks RemoteVI Window Popup Info.vi about each. Win32 calls only\2C no VI Server\2C so it runs while an open menu holds LabVIEW's UI thread in its modal loop. Meant to run on every server loop iteration.">
   <Control _name="panel hWnd" type="uint64" uid="panel" uid_parent="root" value="0" conIdx="0" connection="required" description="The served front panel's window (Front Panel Window\3AOS Window)\2C which is never reported as a popup." outputs="value:panel.value" />
   <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is searched and popups is empty." outputs="value:errin.value" />
   <Indicator _name="popups" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="opop" uid_parent="root" value="[]" conIdx="4" connection="recommended" description="One element per popup in Z order (topmost first)\3A its window handle\2C its screen rectangle and its class name." inputs="value:lpop.value" />
   <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or the first Call Library Function Node error." inputs="value:srER.value" />
   <Call uid="pid" uid_parent="root" target="kernel32 GetCurrentProcessId.vi" inputs="error in:errin.value" outputs="process ID:pid.process ID,error out:pid.error out" />
   <Constant _name="first" type="uint64" uid="k0" uid_parent="root" value="0" outputs="value:k0.value" />
+  <Constant _name="GW_OWNER" type="uint32" uid="kow" uid_parent="root" value="4" outputs="value:kow.value" />
+  <Call uid="own" uid_parent="root" target="user32 GetWindow.vi" inputs="hWnd:panel.value,uCmd:kow.value,error in:pid.error out" outputs="window:own.window,error out:own.error out" />
   <Structure _name="While Loop" uid="loop" uid_parent="root" count="" label="One top-level window per iteration">
     <Tunnel _id="In1" uid="lpid" uid_parent="loop" inputs="value:pid.process ID" outputs="value:lpid.value" />
     <Tunnel _id="In2" uid="lpanel" uid_parent="loop" inputs="value:panel.value" outputs="value:lpanel.value" />
+    <Tunnel _id="In3" uid="lstop" uid_parent="loop" inputs="value:own.window" outputs="value:lstop.value" />
     <ShiftReg uid="srh" uid_parent="loop">
       <Left uid="srhL" uid_parent="srh" inputs="value:k0.value" outputs="value:srhL.value" />
       <Right uid="srhR" uid_parent="srh" inputs="value:next.hWnd" outputs="value:srhR.value" />
     </ShiftReg>
     <ShiftReg uid="sre" uid_parent="loop">
-      <Left uid="srEL" uid_parent="sre" inputs="value:pid.error out" outputs="value:srEL.value" />
+      <Left uid="srEL" uid_parent="sre" inputs="value:own.error out" outputs="value:srEL.value" />
       <Right uid="srER" uid_parent="sre" inputs="value:cerr.value" outputs="value:srER.value" />
     </ShiftReg>
     <Call uid="next" uid_parent="loop" target="user32 FindWindowExW.vi" inputs="hWndChildAfter:srhL.value,error in:srEL.value" outputs="hWnd:next.hWnd,error out:next.error out" />
@@ -45,7 +48,11 @@
     </Structure>
     <Node _name="Equal To 0?" uid="last" uid_parent="loop" inputs="x:next.hWnd" outputs="x = 0?:last.x = 0?" />
     <Node _name="Unbundle By Name" uid="est" uid_parent="loop" fields="status" inputs="input cluster:cerr.value" outputs="status:est.status" />
-    <Node _name="Or" uid="stop" uid_parent="loop" inputs="x:last.x = 0?,y:est.status" outputs="x .or. y?:stop.x .or. y?" />
+    <Node _name="Equal?" uid="atown" uid_parent="loop" inputs="x:next.hWnd,y:lstop.value" outputs="x = y?:atown.x = y?" />
+    <Node _name="Not Equal To 0?" uid="hasown" uid_parent="loop" inputs="x:lstop.value" outputs="x != 0?:hasown.x != 0?" />
+    <Node _name="And" uid="below" uid_parent="loop" inputs="x:atown.x = y?,y:hasown.x != 0?" outputs="x .and. y?:below.x .and. y?" />
+    <Node _name="Or" uid="stop0" uid_parent="loop" inputs="x:last.x = 0?,y:est.status" outputs="x .or. y?:stop0.x .or. y?" />
+    <Node _name="Or" uid="stop" uid_parent="loop" inputs="x:stop0.x .or. y?,y:below.x .and. y?" outputs="x .or. y?:stop.x .or. y?" />
     <Condition uid="cond" uid_parent="loop" value="stop" inputs="value:stop.x .or. y?" />
     <Tunnel _id="Out1" uid="lpop" uid_parent="loop" mode="index" cond="cpop.value" inputs="value:cwin.value" outputs="value:lpop.value" />
   </Structure>

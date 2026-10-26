@@ -1,4 +1,4 @@
-<VI _name="RemoteVI List Windows.vi" description="Lists the application's other windows (docs\5Cprotocol.md section 7)\2C front-most first. Walks LabVIEW's visible top-level windows with FindWindowExW (Z order\2C no callback)\3B a CANDIDATE is a window of LabVIEW's process that is not panel hWnd\2C not a popup (RemoteVI Window Popup Info.vi - menus\2C tip strips\2C shadows and every captionless WS_POPUP window are popups and go to the OVERLAY instead) and has a size (LabVIEW's hidden frame window LVFrame is 0 x 0). A candidate is LISTED when it is a native dialog (class #32770)\2C when it was listed before\2C when it appeared while the published panel is disabled (user32 IsWindowEnabled.vi FALSE - a modal dialog is up\3B LabVIEW disables all its windows then and owns its own dialogs by the hidden frame window\2C not by the panel\2C measured on LabVIEW 2025)\2C or when its owner chain (user32 GetWindow.vi GW_OWNER\2C up to 8 steps) reaches the panel or another such window. IDE windows that were there before (Project Explorer\2C block diagrams\2C other VIs) are not listed. APPEARED means not in the baseline\3A while the panel is enabled the baseline is the candidate set of the previous call\2C so a dialog that shows up one iteration before LabVIEW disables the panel still counts\3B while it is disabled the baseline is kept. The first call only takes the baseline. Each listed window is described by RemoteVI Window Info.vi (caption as JSON literal\2C client area in main-frame coordinates\2C modal\2C active\2C closable). Win32 calls only\2C no VI Server\2C so it works while a dialog or a popup holds LabVIEW's UI thread.">
+<VI _name="RemoteVI List Windows.vi" description="Lists the application's other windows (docs\5Cprotocol.md section 7)\2C front-most first. Walks the top-level windows with FindWindowExW (Z order\2C no callback) from the top down to the panel's owner (user32 GetWindow.vi GW_OWNER\2C LabVIEW's hidden frame window LVFrame\2C which owns the panels\2C LabVIEW's dialogs and the native file dialogs - an owned window is always above its owner\2C so the walk stops there\3B the whole desktop took 126 ms per call with 860 top-level windows\2C measured) or to the end when the panel has no owner\3B a CANDIDATE is a window of LabVIEW's process that is not panel hWnd\2C not a popup (RemoteVI Window Popup Info.vi - menus\2C tip strips\2C shadows and every captionless WS_POPUP window are popups and go to the OVERLAY instead) and has a size (LabVIEW's hidden frame window LVFrame is 0 x 0). A candidate is LISTED when it is a native dialog (class #32770)\2C when it was listed before\2C when it appeared while the published panel is disabled (user32 IsWindowEnabled.vi FALSE while the panel is visible - a modal dialog is up\3B a closed panel's stale handle is neither enabled nor visible and must not count as modal\2C or the server loop would never again make a VI Server call and miss the VI stopping\3B LabVIEW disables all its windows then and owns its own dialogs by the hidden frame window\2C not by the panel\2C measured on LabVIEW 2025)\2C or when its owner chain (user32 GetWindow.vi GW_OWNER\2C up to 8 steps) reaches the panel or another such window. IDE windows that were there before (Project Explorer\2C block diagrams\2C other VIs) are not listed. APPEARED means not in the baseline\3A while the panel is enabled the baseline is the candidate set of the previous call\2C so a dialog that shows up one iteration before LabVIEW disables the panel still counts\3B while it is disabled the baseline is kept. The first call only takes the baseline. Each listed window is described by RemoteVI Window Info.vi (caption as JSON literal\2C client area in main-frame coordinates\2C modal\2C active\2C closable). Win32 calls only\2C no VI Server\2C so it works while a dialog or a popup holds LabVIEW's UI thread.">
   <FreeLabel comment="Top-level windows of LabVIEW's process" uid="lbl" uid_parent="root"/>
   <Control _name="panel hWnd" conIdx="0" connection="required" description="The published front panel window." outputs="value:panel.value" type="uint64" uid="panel" uid_parent="root" value="0"/>
   <Control _name="state" conIdx="5" connection="recommended" description="From the previous call (state out)\3A initialised\2C baseline\2C previous candidates\2C listed." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
@@ -6,15 +6,18 @@
 
   <Call inputs="error in:ei.value" outputs="process ID:pid.process ID,error out:pid.error out" target="kernel32 GetCurrentProcessId.vi" uid="pid" uid_parent="root"/>
   <Constant _name="first" outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
+  <Constant _name="GW_OWNER" outputs="value:kow0.value" type="uint32" uid="kow0" uid_parent="root" value="4"/>
+  <Call inputs="hWnd:panel.value,uCmd:kow0.value,error in:pid.error out" outputs="window:own.window,error out:own.error out" target="user32 GetWindow.vi" uid="own" uid_parent="root"/>
   <Structure _name="While Loop" count="" label="One top-level window per iteration" uid="loop" uid_parent="root">
     <Tunnel _id="In1" inputs="value:pid.process ID" outputs="value:lpid.value" uid="lpid" uid_parent="loop"/>
     <Tunnel _id="In2" inputs="value:panel.value" outputs="value:lpanel.value" uid="lpanel" uid_parent="loop"/>
+    <Tunnel _id="In3" inputs="value:own.window" outputs="value:lstop.value" uid="lstop" uid_parent="loop"/>
     <ShiftReg uid="srh" uid_parent="loop">
       <Left inputs="value:k0.value" outputs="value:srhL.value" uid="srhL" uid_parent="srh"/>
       <Right inputs="value:next.hWnd" outputs="value:srhR.value" uid="srhR" uid_parent="srh"/>
     </ShiftReg>
     <ShiftReg uid="sre" uid_parent="loop">
-      <Left inputs="value:pid.error out" outputs="value:srEL.value" uid="srEL" uid_parent="sre"/>
+      <Left inputs="value:own.error out" outputs="value:srEL.value" uid="srEL" uid_parent="sre"/>
       <Right inputs="value:cerr.value" outputs="value:srER.value" uid="srER" uid_parent="sre"/>
     </ShiftReg>
     <Call inputs="hWndChildAfter:srhL.value,error in:srEL.value" outputs="hWnd:next.hWnd,error out:next.error out" target="user32 FindWindowExW.vi" uid="next" uid_parent="loop"/>
@@ -63,7 +66,11 @@
     </Structure>
     <Node _name="Equal To 0?" inputs="x:next.hWnd" outputs="x = 0?:last.v" uid="last" uid_parent="loop"/>
     <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cerr.value" outputs="status:est.status" uid="est" uid_parent="loop"/>
-    <Node _name="Or" inputs="x:last.v,y:est.status" outputs="x .or. y?:stop.v" uid="stop" uid_parent="loop"/>
+    <Node _name="Equal?" inputs="x:next.hWnd,y:lstop.value" outputs="x = y?:atown.v" uid="atown" uid_parent="loop"/>
+    <Node _name="Not Equal To 0?" inputs="x:lstop.value" outputs="x != 0?:hasown.v" uid="hasown" uid_parent="loop"/>
+    <Node _name="And" inputs="x:atown.v,y:hasown.v" outputs="x .and. y?:below.v" uid="below" uid_parent="loop"/>
+    <Node _name="Or" inputs="x:last.v,y:est.status" outputs="x .or. y?:stop0.v" uid="stop0" uid_parent="loop"/>
+    <Node _name="Or" inputs="x:stop0.v,y:below.v" outputs="x .or. y?:stop.v" uid="stop" uid_parent="loop"/>
     <Condition inputs="value:stop.v" uid="cond" uid_parent="loop" value="stop"/>
     <Tunnel _id="Out1" cond="ccand.value" inputs="value:next.hWnd" mode="index" outputs="value:cands.value" uid="cands" uid_parent="loop"/>
     <Tunnel _id="Out2" cond="ccand.value" inputs="value:cclass.value" mode="index" outputs="value:classes.value" uid="classes" uid_parent="loop"/>
@@ -71,7 +78,9 @@
   </Structure>
 
   <Call inputs="hWnd:panel.value,error in:srER.value" outputs="enabled?:en.enabled?,error out:en.error out" target="user32 IsWindowEnabled.vi" uid="en" uid_parent="root"/>
-  <Node _name="Not" inputs="x:en.enabled?" outputs=".not. x?:dis.v" uid="dis" uid_parent="root"/>
+  <Node _name="Not" inputs="x:en.enabled?" outputs=".not. x?:dis0.v" uid="dis0" uid_parent="root"/>
+  <Call inputs="hWnd:panel.value,error in:en.error out" outputs="visible?:pvis.visible?,error out:" target="user32 IsWindowVisible.vi" uid="pvis" uid_parent="root"/>
+  <Node _name="And" inputs="x:dis0.v,y:pvis.visible?" outputs="x .and. y?:dis.v" uid="dis" uid_parent="root"/>
   <Node _name="Unbundle By Name" fields="initialised,baseline,previous,listed" inputs="input cluster:st.value" outputs="initialised:su.initialised,baseline:su.baseline,previous:su.previous,listed:su.listed" uid="su" uid_parent="root"/>
   <Node _name="Select" inputs="t:su.previous,s:en.enabled?,f:su.baseline" outputs="s? t\3Af:bl1.v" uid="bl1" uid_parent="root"/>
   <Node _name="Select" inputs="t:bl1.v,s:su.initialised,f:cands.value" outputs="s? t\3Af:bl.v" uid="bl" uid_parent="root"/>

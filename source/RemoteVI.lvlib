@@ -86,6 +86,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
+		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
 		<Item Name="RemoteVI Send Client Windows.vi" Type="VI" URL="../Server/RemoteVI Send Client Windows.vi"/>
 		<Item Name="RemoteVI Send Frame.vi" Type="VI" URL="../Server/RemoteVI Send Frame.vi"/>
@@ -109,6 +110,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 	<Item Name="Win32" Type="Folder">
 		<Item Name="gdi32 CreateCompatibleBitmap.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleBitmap.vi"/>
 		<Item Name="gdi32 CreateCompatibleDC.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleDC.vi"/>
+		<Item Name="gdi32 CreateRectRgn.vi" Type="VI" URL="../Win32/gdi32 CreateRectRgn.vi"/>
 		<Item Name="gdi32 DeleteDC.vi" Type="VI" URL="../Win32/gdi32 DeleteDC.vi"/>
 		<Item Name="gdi32 DeleteObject.vi" Type="VI" URL="../Win32/gdi32 DeleteObject.vi"/>
 		<Item Name="gdi32 GetDIBits.vi" Type="VI" URL="../Win32/gdi32 GetDIBits.vi"/>
@@ -158,6 +160,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="user32 SetLayeredWindowAttributes.vi" Type="VI" URL="../Win32/user32 SetLayeredWindowAttributes.vi"/>
 		<Item Name="user32 SetWindowLongPtrW.vi" Type="VI" URL="../Win32/user32 SetWindowLongPtrW.vi"/>
 		<Item Name="user32 SetWindowPos.vi" Type="VI" URL="../Win32/user32 SetWindowPos.vi"/>
+		<Item Name="user32 SetWindowRgn.vi" Type="VI" URL="../Win32/user32 SetWindowRgn.vi"/>
 		<Item Name="user32 ShowWindow.vi" Type="VI" URL="../Win32/user32 ShowWindow.vi"/>
 	</Item>
 </Library>

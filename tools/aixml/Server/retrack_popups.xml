@@ -1,0 +1,76 @@
+<VI _name="RemoteVI Retrack Popups.vi" description="Lists the popups a second time in the same server loop iteration\2C right after the clients' input was posted (docs\5Carchitecture.md\2C Popups). When again? is TRUE - a client posted a message that may open a popup (clicked?) or a popup is open (the menu hover may have opened a submenu) - RemoteVI Track Popups.vi runs once more with the outputs of the first listing as previous popup hWnds and previously hidden\2C so a popup the input just opened is hidden on the host at once instead of one iteration later\2C and its OVERLAY can go out in this iteration (changed?). The WM_NULL round trip after each posted message (RemoteVI Wait Input Handled.vi) has already waited until LabVIEW handled it\2C so the popup exists by now. Otherwise the first listing is passed through. Win32 only\2C no VI Server call.">
+  <Control _name="again?" conIdx="0" connection="required" description="TRUE lists the popups again." outputs="value:ag.value" type="bool" uid="ag" uid_parent="root" value="false"/>
+  <Control _name="panel hWnd" conIdx="5" connection="required" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="d" conIdx="7" connection="recommended" description="The displacement by which the popups are moved\2C from the previous iteration." outputs="value:d.value" type="cluster{int32.dx,int32.dy}" uid="d" uid_parent="root" value="[0,0]"/>
+  <Control _name="remote click?" conIdx="9" connection="recommended" description="TRUE within 1 s after a client posted a button or key message\2C or in the iteration that posted one." outputs="value:rc.value" type="bool" uid="rc" uid_parent="root" value="false"/>
+  <Control _name="popups" conIdx="1" connection="recommended" description="popups of the first listing (RemoteVI Track Popups.vi)." outputs="value:pp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="pp" uid_parent="root" value="[[],0,0]"/>
+  <Control _name="overlay popups" conIdx="2" connection="recommended" description="overlay popups of the first listing." outputs="value:ov.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="ov" uid_parent="root" value="[]"/>
+  <Control _name="popup open?" conIdx="3" connection="recommended" description="popup open? of the first listing." outputs="value:po.value" type="bool" uid="po" uid_parent="root" value="false"/>
+  <Control _name="popup hWnds" conIdx="10" connection="recommended" description="popup hWnds of the first listing." outputs="value:ph.value" type="array{uint64}" uid="ph" uid_parent="root" value="[]"/>
+  <Control _name="hidden hWnds" conIdx="11" connection="recommended" description="hidden hWnds of the first listing." outputs="value:hh.value" type="array{uint64}" uid="hh" uid_parent="root" value="[]"/>
+
+  <Structure _name="Case Structure" selectin="ag.value" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hw.value" uid="ci1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:d.value" uid="ci2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:rc.value" uid="ci3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:pp.value" uid="ci4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:ov.value" uid="ci5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:po.value" uid="ci6" uid_parent="cs"/>
+    <Tunnel _id="In7" inputs="value:ph.value" uid="ci7" uid_parent="cs"/>
+    <Tunnel _id="In8" inputs="value:hh.value" uid="ci8" uid_parent="cs"/>
+    <CaseFrame label="List again\3A hide what the input opened" selector="True" selectout="" uid="ct" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_hw.value" uid="t_hw" uid_parent="ct"/>
+      <Tunnel _id="In2" outputs="value:t_d.value" uid="t_d" uid_parent="ct"/>
+      <Tunnel _id="In3" outputs="value:t_rc.value" uid="t_rc" uid_parent="ct"/>
+      <Tunnel _id="In4" outputs="value:" uid="t_pp" uid_parent="ct"/>
+      <Tunnel _id="In5" outputs="value:" uid="t_ov" uid_parent="ct"/>
+      <Tunnel _id="In6" outputs="value:" uid="t_po" uid_parent="ct"/>
+      <Tunnel _id="In7" outputs="value:t_ph.value" uid="t_ph" uid_parent="ct"/>
+      <Tunnel _id="In8" outputs="value:t_hh.value" uid="t_hh" uid_parent="ct"/>
+      <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="ct" value="true"/>
+      <Call inputs="look?:kt.value,panel hWnd:t_hw.value,d:t_d.value,previous popup hWnds:t_ph.value,previously hidden:t_hh.value,remote click?:t_rc.value" outputs="popups:tp.popups,overlay popups:tp.overlay popups,popup open?:tp.popup open?,popup hWnds:tp.popup hWnds,hidden hWnds:tp.hidden hWnds" target="RemoteVI Track Popups.vi" uid="tp" uid_parent="ct"/>
+      <Node _name="Not Equal?" inputs="x:tp.popup hWnds,y:t_ph.value" outputs="x != y?:ne.x != y?" uid="ne" uid_parent="ct"/>
+      <Node _name="Or Array Elements" inputs="Boolean array:ne.x != y?" outputs="logical OR:neany.logical OR" uid="neany" uid_parent="ct"/>
+      <Node _name="Array Size" inputs="array:tp.popup hWnds" outputs="size(s):sz1.size(s)" uid="sz1" uid_parent="ct"/>
+      <Node _name="Array Size" inputs="array:t_ph.value" outputs="size(s):sz0.size(s)" uid="sz0" uid_parent="ct"/>
+      <Node _name="Not Equal?" inputs="x:sz1.size(s),y:sz0.size(s)" outputs="x != y?:szne.x != y?" uid="szne" uid_parent="ct"/>
+      <Node _name="Or" inputs="x:neany.logical OR,y:szne.x != y?" outputs="x .or. y?:chg.x .or. y?" uid="chg" uid_parent="ct"/>
+      <Tunnel _id="Out1" inputs="value:tp.popups" uid="to1" uid_parent="ct"/>
+      <Tunnel _id="Out2" inputs="value:tp.overlay popups" uid="to2" uid_parent="ct"/>
+      <Tunnel _id="Out3" inputs="value:tp.popup open?" uid="to3" uid_parent="ct"/>
+      <Tunnel _id="Out4" inputs="value:tp.popup hWnds" uid="to4" uid_parent="ct"/>
+      <Tunnel _id="Out5" inputs="value:tp.hidden hWnds" uid="to5" uid_parent="ct"/>
+      <Tunnel _id="Out6" inputs="value:chg.x .or. y?" uid="to6" uid_parent="ct"/>
+    </CaseFrame>
+    <CaseFrame label="No input\3A keep the first listing" selector="False" selectout="" uid="cf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_hw" uid_parent="cf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_d" uid_parent="cf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_rc" uid_parent="cf"/>
+      <Tunnel _id="In4" outputs="value:f_pp.value" uid="f_pp" uid_parent="cf"/>
+      <Tunnel _id="In5" outputs="value:f_ov.value" uid="f_ov" uid_parent="cf"/>
+      <Tunnel _id="In6" outputs="value:f_po.value" uid="f_po" uid_parent="cf"/>
+      <Tunnel _id="In7" outputs="value:f_ph.value" uid="f_ph" uid_parent="cf"/>
+      <Tunnel _id="In8" outputs="value:f_hh.value" uid="f_hh" uid_parent="cf"/>
+      <Constant outputs="value:kf.value" type="bool" uid="kf" uid_parent="cf" value="false"/>
+      <Tunnel _id="Out1" inputs="value:f_pp.value" uid="fo1" uid_parent="cf"/>
+      <Tunnel _id="Out2" inputs="value:f_ov.value" uid="fo2" uid_parent="cf"/>
+      <Tunnel _id="Out3" inputs="value:f_po.value" uid="fo3" uid_parent="cf"/>
+      <Tunnel _id="Out4" inputs="value:f_ph.value" uid="fo4" uid_parent="cf"/>
+      <Tunnel _id="Out5" inputs="value:f_hh.value" uid="fo5" uid_parent="cf"/>
+      <Tunnel _id="Out6" inputs="value:kf.value" uid="fo6" uid_parent="cf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:o1.value" uid="o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:o2.value" uid="o2" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:o3.value" uid="o3" uid_parent="cs"/>
+    <Tunnel _id="Out4" outputs="value:o4.value" uid="o4" uid_parent="cs"/>
+    <Tunnel _id="Out5" outputs="value:o5.value" uid="o5" uid_parent="cs"/>
+    <Tunnel _id="Out6" outputs="value:o6.value" uid="o6" uid_parent="cs"/>
+  </Structure>
+
+  <Indicator _name="popups out" conIdx="4" connection="recommended" description="The modal popups at their logical positions\2C after this iteration's input." inputs="value:o1.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="op" uid_parent="root" value="[[],0,0]"/>
+  <Indicator _name="overlay popups out" conIdx="6" connection="recommended" description="Every popup but SysShadow\2C for the OVERLAY." inputs="value:o2.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="oo" uid_parent="root" value="[]"/>
+  <Indicator _name="popup open? out" conIdx="8" connection="recommended" description="TRUE when a modal popup is open." inputs="value:o3.value" type="bool" uid="oq" uid_parent="root" value="false"/>
+  <Indicator _name="popup hWnds out" conIdx="12" connection="recommended" description="All popup window handles\2C for the next iteration." inputs="value:o4.value" type="array{uint64}" uid="oh" uid_parent="root" value="[]"/>
+  <Indicator _name="hidden hWnds out" conIdx="13" connection="recommended" description="The popups hidden\2C for the next iteration." inputs="value:o5.value" type="array{uint64}" uid="ohh" uid_parent="root" value="[]"/>
+  <Indicator _name="changed?" conIdx="15" connection="recommended" description="TRUE when the second listing found other popups than the first\3A the OVERLAY is due at once." inputs="value:o6.value" type="bool" uid="oc" uid_parent="root" value="false"/>
+</VI>

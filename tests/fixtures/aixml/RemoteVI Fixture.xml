@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number\2C double click on List with the row\2C mouse wheel on Number with the delta\2C the selection in the run-time shortcut menu of Text by item tag (the menu is rebuilt in Shortcut Menu Activation? as Top and More with the submenu item Deep) and the selection in the VI's run-time menu bar by item tag (built at start\3A one menu Fixture with Say Hello (tag Hello) and the submenu More with Deep Bar (tag DeepBar)) - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms and logs scroll x y whenever the panel was scrolled (Front Panel Window\3AOrigin changed)\3B 1.5 s after the last scroll it scrolls the panel back to 0\2C0\2C so a later test run finds the controls where the layout lines say. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
+<VI _name="RemoteVI Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests (tests\5Clv). At start it truncates or creates the log file (Log Path\2C or RemoteVI Fixture.log in the system temp directory when Log Path is empty)\2C writes one layout line per logged control with its body rectangle in panel-image coordinates\2C publishes its own front panel with RemoteVI Start.vi on port 8089 and writes ready. An event loop then appends one tab-separated line per handled event - value changes of Switch\2C Button\2C Number\2C Text\2C Mode and Tab (Tab registered dynamically\2C because the tab control is pasted in after generation)\2C mouse down and up on Switch\2C Button\2C Number and Text\2C mouse enter and leave on Button\2C key down on Text and Number\2C double click on List with the row\2C mouse wheel on Number with the delta\2C the selection in the run-time shortcut menu of Text by item tag (the menu is rebuilt in Shortcut Menu Activation? as Top and More with the submenu item Deep)\2C the selection in the VI's run-time menu bar by item tag (built at start\3A one menu Fixture with Say Hello (tag Hello) and the submenu More with Deep Bar (tag DeepBar))\2C the answer of the Two Button Dialog Proceed? (Yes / No) that the latched button Ask opens (dialog TRUE or FALSE) and the result of the native File Dialog that the latched button Open opens (file and the path\2C or CANCELLED) - in the format documented in tests\5Clv\5Charness.mjs\2C while a parallel loop redraws a moving sine on Graph every 50 ms and logs scroll x y whenever the panel was scrolled (Front Panel Window\3AOrigin changed)\3B 1.5 s after the last scroll it scrolls the panel back to 0\2C0\2C so a later test run finds the controls where the layout lines say. Stop ends both loops\2C the log is closed and RemoteVI Stop.vi releases the port. error out merges every error path.">
   <FreeLabel comment="One log line per handled event" uid="lbl" uid_parent="root"/>
   <Control _name="Log Path" description="Where the event log is written. Empty: RemoteVI Fixture.log in the system temp directory. The file is truncated at start." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
   <Call target="RemoteVI Fixture Log Path.vi" inputs="Log Path:lp.value,error in:" outputs="path:lpath.path,error out:" uid="lpath" uid_parent="root"/>
@@ -217,6 +217,40 @@
         <Node _name="Concatenate Strings" inputs="string:kmb.value,string:edmb.ItemTag,string:lfmb.value" outputs="concatenated string:cmbl.concatenated string" uid="cmbl" uid_parent="fmb"/>
         <Tunnel _id="Out1" inputs="value:" uid="fmbO1" uid_parent="fmb"/>
         <Tunnel _id="Out2" inputs="value:cmbl.concatenated string" uid="fmbO2" uid_parent="fmb"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Ask&quot;\3A Value Change " uid="fak" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fakI1" uid_parent="fak"/>
+        <Tunnel _id="In2" outputs="value:" uid="fakI2" uid_parent="fak"/>
+        <Control _name="Ask" description="Latched button\3B opens the Two Button Dialog Proceed? with Yes (default) and No and logs the answer as dialog TRUE or FALSE." outputs="value:ak.value" style="latched" type="bool" uid="ak" uid_parent="fak" value="false"/>
+        <Constant _name="message" outputs="value:akm.value" type="string" uid="akm" uid_parent="fak" value="Proceed?"/>
+        <Constant _name="yes" outputs="value:aky.value" type="string" uid="aky" uid_parent="fak" value="Yes"/>
+        <Constant _name="no" outputs="value:akn.value" type="string" uid="akn" uid_parent="fak" value="No"/>
+        <Node _name="Two Button Dialog" inputs="message:akm.value,T button name (&quot;OK&quot;):aky.value,F button name (&quot;Cancel&quot;):akn.value" outputs="T button?:akd.T button?" uid="akd" uid_parent="fak"/>
+        <Node _name="And" inputs="x:ak.value,y:akd.T button?" outputs="x .and. y?:aka.x .and. y?" uid="aka" uid_parent="fak"/>
+        <Constant _name="TRUE line" outputs="value:akt.value" type="string" uid="akt" uid_parent="fak" value="dialog\09TRUE\0A"/>
+        <Constant _name="FALSE line" outputs="value:akf.value" type="string" uid="akf" uid_parent="fak" value="dialog\09FALSE\0A"/>
+        <Node _name="Select" inputs="t:akt.value,s:aka.x .and. y?,f:akf.value" outputs="s? t\3Af:aks.s? t\3Af" uid="aks" uid_parent="fak"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fakO1" uid_parent="fak"/>
+        <Tunnel _id="Out2" inputs="value:aks.s? t\3Af" uid="fakO2" uid_parent="fak"/>
+      </CaseFrame>
+
+      <CaseFrame selector=" &quot;Open&quot;\3A Value Change " uid="fop" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fopI1" uid_parent="fop"/>
+        <Tunnel _id="In2" outputs="value:" uid="fopI2" uid_parent="fop"/>
+        <Control _name="Open" description="Latched button\3B opens the native File Dialog and logs file and the chosen path\2C or file CANCELLED." outputs="value:opn.value" style="latched" type="bool" uid="opn" uid_parent="fop" value="false"/>
+        <Node _name="File Dialog" inputs="" outputs="selected path:opd.selected path,error out:" uid="opd" uid_parent="fop"/>
+        <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:opd.selected path" outputs="NaN/Path/Refnum?:opc.NaN/Path/Refnum?" uid="opc" uid_parent="fop"/>
+        <Node _name="Not" inputs="x:opc.NaN/Path/Refnum?" outputs=".not. x?:opk..not. x?" uid="opk" uid_parent="fop"/>
+        <Node _name="And" inputs="x:opn.value,y:opk..not. x?" outputs="x .and. y?:opa.x .and. y?" uid="opa" uid_parent="fop"/>
+        <Node _name="Path To String" inputs="path:opd.selected path" outputs="string:ops.string" uid="ops" uid_parent="fop"/>
+        <Constant _name="cancelled" outputs="value:opx.value" type="string" uid="opx" uid_parent="fop" value="CANCELLED"/>
+        <Node _name="Select" inputs="t:ops.string,s:opa.x .and. y?,f:opx.value" outputs="s? t\3Af:opv.s? t\3Af" uid="opv" uid_parent="fop"/>
+        <Constant _name="file kind" outputs="value:opf.value" type="string" uid="opf" uid_parent="fop" value="file\09"/>
+        <Constant _name="line feed" outputs="value:opl.value" type="string" uid="opl" uid_parent="fop" value="\0A"/>
+        <Node _name="Concatenate Strings" inputs="string:opf.value,string:opv.s? t\3Af,string:opl.value" outputs="concatenated string:opline.concatenated string" uid="opline" uid_parent="fop"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fopO1" uid_parent="fop"/>
+        <Tunnel _id="Out2" inputs="value:opline.concatenated string" uid="fopO2" uid_parent="fop"/>
       </CaseFrame>
 
       <CaseFrame selector=" &quot;Stop&quot;\3A Value Change " uid="fst" uid_parent="ev">

@@ -289,16 +289,21 @@ def check_frame_like(subject, vecfile, key, input_name):
     vec = json.load(open(os.path.join(VEC, vecfile)))
     cases = []
     for c in vec[key]:
-        items = c["rects"] if key == "cases" else c["popups"]
+        items = c["popups"] if key == "overlays" else c["rects"]
         rects = [(r["x"], r["y"], r["png"]) for r in items]
         if key == "cases":
             cases.append((c["name"], c["seq"], c["width"], c["height"], rects, c["message"]))
+        elif key == "windowFrames":
+            cases.append((c["name"], c["id"], c["seq"], c["width"], c["height"], rects, c["message"]))
         else:
             cases.append((c["name"], rects, c["message"]))
     rtype = "array{cluster{int16.x,int16.y,string.png}}.%s" % input_name
     if key == "cases":
         ctype = "string.name,uint32.seq,uint16.width,uint16.height,%s,string.message" % rtype
         fields = ["name", "seq", "width", "height", input_name, "message"]
+    elif key == "windowFrames":
+        ctype = "string.name,uint32.id,uint32.seq,uint16.width,uint16.height,%s,string.message" % rtype
+        fields = ["name", "id", "seq", "width", "height", input_name, "message"]
     else:
         ctype = "string.name,%s,string.message" % rtype
         fields = ["name", input_name, "message"]
@@ -316,6 +321,10 @@ def check_frame_like(subject, vecfile, key, input_name):
         d.call("sut", "RemoteVI %s.vi" % subject,
                [("seq", f["seq"]), ("width", f["width"]), ("height", f["height"]), ("rects", rr)],
                [("message", "sut.v")], "L")
+    elif key == "windowFrames":
+        d.call("sut", "RemoteVI %s.vi" % subject,
+               [("id", f["id"]), ("seq", f["seq"]), ("width", f["width"]), ("height", f["height"]), ("rects", rr)],
+               [("message", "sut.v")], "L")
     else:
         d.call("sut", "RemoteVI %s.vi" % subject, [("popups", rr)], [("message", "sut.v")], "L")
     act = d.hex("hx", "sut.v", "L")
@@ -328,7 +337,7 @@ def check_parse():
     cases = [("Parse '%s'" % c["text"], c["text"], render_parse(c["result"])) for c in vec["cases"]]
     d = check_doc("Parse Input", "input.json", "a null result is kind invalid; the other outputs are "
                   "compared only where the vector's result names them (mouse: msg x y wParam, key: msg "
-                  "wParam lParam, ack: seq).")
+                  "wParam lParam, ack: seq, close: id).")
     f = cases_loop(d, "string.name,string.text,string.expect", cases, ["name", "text", "expect"], "One vector")
     o = render_parse_g(d, f["text"], "L")
     finish_check(d, *close_cases(d, f["name"], f["expect"], o))
@@ -344,25 +353,28 @@ def render_parse(r):
         return "key msg=%d wParam=%d lParam=%d" % (r["msg"], r["wParam"] % 2**64, r["lParam"])
     if r["kind"] == "ack":
         return "ack seq=%d" % r["seq"]
+    if r["kind"] == "close":
+        return "close id=%d" % r["id"]
     raise ValueError(r)
 
 
 def parse_call(d, text_net, parent):
     d.call("pi", "RemoteVI Parse Input.vi", [("text", text_net)],
            [("kind", "pi.kind"), ("msg", "pi.msg"), ("x", "pi.x"), ("y", "pi.y"),
-            ("wParam", "pi.wParam"), ("lParam", "pi.lParam"), ("seq", "pi.seq")], parent)
+            ("wParam", "pi.wParam"), ("lParam", "pi.lParam"), ("seq", "pi.seq"), ("id", "pi.id")], parent)
 
 
 def render_parse_g(d, text_net, parent):
     parse_call(d, text_net, parent)
-    n = {k: d.dec("d" + k, "pi." + k, parent) for k in ("msg", "x", "y", "wParam", "lParam", "seq")}
+    n = {k: d.dec("d" + k, "pi." + k, parent) for k in ("msg", "x", "y", "wParam", "lParam", "seq", "id")}
     mouse = d.concat("cm", [d.s("sm1", "mouse msg=", parent), n["msg"], d.s("sm2", " x=", parent), n["x"],
                             d.s("sm3", " y=", parent), n["y"], d.s("sm4", " wParam=", parent), n["wParam"]], parent)
     key = d.concat("ck", [d.s("sk1", "key msg=", parent), n["msg"], d.s("sk2", " wParam=", parent), n["wParam"],
                           d.s("sk3", " lParam=", parent), n["lParam"]], parent)
     ack = d.concat("ca", [d.s("sa1", "ack seq=", parent), n["seq"]], parent)
+    close = d.concat("cx", [d.s("sx1", "close id=", parent), n["id"]], parent)
     inv = d.s("si", "invalid", parent)
-    d.node("ba", "Build Array", [("element", inv), ("element", mouse), ("element", key), ("element", ack)],
+    d.node("ba", "Build Array", [("element", inv), ("element", mouse), ("element", key), ("element", ack), ("element", close)],
            [("appended array", "ba.v")], parent)
     d.node("ki", "To Long Integer", [("number", "pi.kind")], [("32bit integer", "ki.v")], parent)
     d.node("ix", "Index Array", [("array", "ba.v"), ("index", "ki.v")], [("element", "ix.v")], parent)
@@ -543,6 +555,7 @@ def check_track_modifiers():
 SUBJECTS = [  # (subject, area, vector source for the description)
     ("Frame Encode", "Protocol", "frame.json cases"),
     ("Overlay Encode", "Protocol", "frame.json overlays"),
+    ("Window Frame Encode", "Protocol", "frame.json windowFrames"),
     ("Parse Input", "Protocol", "input.json"),
     ("WS Encode Server Frame", "Protocol", "websocket.json serverFrames"),
     ("WS Decode Client Frame", "Protocol", "websocket.json clientFrames and incompleteClientFrames"),
@@ -618,6 +631,7 @@ def all_docs():
     checks = {
         "Frame Encode": lambda: check_frame_like("Frame Encode", "frame.json", "cases", "rects"),
         "Overlay Encode": lambda: check_frame_like("Overlay Encode", "frame.json", "overlays", "popups"),
+        "Window Frame Encode": lambda: check_frame_like("Window Frame Encode", "frame.json", "windowFrames", "rects"),
         "Parse Input": check_parse,
         "WS Encode Server Frame": check_ws_encode,
         "WS Decode Client Frame": check_ws_decode,

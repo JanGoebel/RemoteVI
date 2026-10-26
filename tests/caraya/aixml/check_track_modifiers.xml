@@ -3,7 +3,7 @@
   <Structure _name="For Loop" count="" label="One vector" maxin="" maxout="" uid="L" uid_parent="root">
     <Tunnel _id="In1" inputs="value:cases.v" mode="index" outputs="value:tc.v" uid="tc" uid_parent="L"/>
     <Node _name="Unbundle By Name" inputs="input cluster:tc.v" outputs="name:ub.name,input:ub.input,modsBefore:ub.modsBefore,expect:ub.expect" uid="ub" uid_parent="L" fields="name,input,modsBefore,expect"/>
-    <Call target="RemoteVI Parse Input.vi" inputs="text:ub.input" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq" uid="pi" uid_parent="L"/>
+    <Call target="RemoteVI Parse Input.vi" inputs="text:ub.input" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq,id:pi.id" uid="pi" uid_parent="L"/>
     <Call target="RemoteVI Track Modifiers.vi" inputs="kind:pi.kind,msg:pi.msg,wParam:pi.wParam,mods in:ub.modsBefore" outputs="mods out:sut.v" uid="sut" uid_parent="L"/>
     <Node _name="Number To Decimal String" inputs="number:sut.v" outputs="decimal integer string:dm.v" uid="dm" uid_parent="L"/>
     <Tunnel _id="Out1" inputs="value:ub.name" mode="index" outputs="value:lab.v" uid="lab" uid_parent="L"/>

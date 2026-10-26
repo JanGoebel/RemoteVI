@@ -5,7 +5,7 @@
     <Tunnel _id="In1" inputs="value:cases.v" mode="index" outputs="value:tc.v" uid="tc" uid_parent="L"/>
     <Node _name="Unbundle By Name" inputs="input cluster:tc.v" outputs="name:ub.name,input:ub.input,popup:ub.popup,trackingBefore:ub.trackingBefore,expect:ub.expect" uid="ub" uid_parent="L" fields="name,input,popup,trackingBefore,expect"/>
     <Tunnel _id="In2" inputs="value:geo.v" outputs="value:tg.v" uid="tg" uid_parent="L"/>
-    <Call target="RemoteVI Parse Input.vi" inputs="text:ub.input" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq" uid="pi" uid_parent="L"/>
+    <Call target="RemoteVI Parse Input.vi" inputs="text:ub.input" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq,id:pi.id" uid="pi" uid_parent="L"/>
     <Call target="RemoteVI Translate Input.vi" inputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,geo:tg.v,popup:ub.popup,tracking in:ub.trackingBefore" outputs="posts:sut.posts,tracking out:sut.tr,cursor:sut.cur" uid="sut" uid_parent="L"/>
     <Structure _name="For Loop" count="" label="One post" maxin="" maxout="" uid="R" uid_parent="L">
       <Tunnel _id="In1" inputs="value:sut.posts" mode="index" outputs="value:tp.v" uid="tp" uid_parent="R"/>

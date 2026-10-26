@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Hide Remote Popups.vi" description="Hides the popups a REMOTE user opened (docs\5Carchitecture.md\2C Popups)\3A a popup in all popups that was not in previous popup hWnds is new\3B a new popup is hidden (RemoteVI Hide Window.vi\2C layered with alpha 0 - it stays open and clickable) when remote click? is TRUE (a client posted a button or key message within the last second)\2C when a popup hidden before is still open (a submenu the remote hover opened with VK_RIGHT belongs to the remote user's menu\2C even long after the last click)\2C and a new tip strip (class LVTipStrip) also when the host cursor is outside the panel window (RemoteVI Cursor Outside Window.vi) - it can only stem from the remote pointer. A newly hidden popup that is not a tip strip also gets an empty window region (RemoteVI Hide Window.vi empty region?)\3A a menu's fade-in animation sets its alpha from 0 back to 255 over about 170 ms (measured)\2C the region keeps it invisible all the same. A popup in previously hidden is hidden again (alpha 0) on every call while it is open. A popup opened at the host stays visible. Win32 only.">
+<VI _name="RemoteVI Hide Remote Popups.vi" description="Hides the popups a REMOTE user opened (docs\5Carchitecture.md\2C Popups)\3A a popup in all popups that was not in previous popup hWnds is new\3B a new popup is hidden (RemoteVI Hide Window.vi\2C layered with alpha 0 - it stays open and clickable) when remote click? is TRUE (a client posted a button or key message within the last second)\2C when a popup hidden before is still open (a submenu the remote hover opened with VK_RIGHT belongs to the remote user's menu\2C even long after the last click)\2C and a new tip strip (class LVTipStrip) also when the host cursor is outside the panel window (RemoteVI Cursor Outside Window.vi) - it can only stem from the remote pointer. A popup in previously hidden is hidden again on every call while it is open\2C because a menu's fade-in animation sets its alpha back to 255 (measured). A popup opened at the host stays visible. Win32 only.">
   <Control _name="panel hWnd" conIdx="0" connection="required" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="all popups" conIdx="5" connection="required" description="Every popup open now (RemoteVI List Popups.vi)." outputs="value:ap.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="ap" uid_parent="root" value="[]"/>
   <Control _name="previous popup hWnds" conIdx="7" connection="recommended" description="popup hWnds of the previous call." outputs="value:prev.value" type="array{uint64}" uid="prev" uid_parent="root" value="[]"/>
@@ -33,19 +33,14 @@
     <Node _name="Search 1D Array" inputs="1D array:h_hid.value,element:hu.hwnd" outputs="index of element:hh.index of element" uid="hh" uid_parent="fh"/>
     <Node _name="Greater Or Equal To 0?" inputs="x:hh.index of element" outputs="x &gt;= 0?:hwas.x &gt;= 0?" uid="hwas" uid_parent="fh"/>
     <Node _name="Or" inputs="x:hnew.x .and. y?,y:hwas.x &gt;= 0?" outputs="x .or. y?:hdo.x .or. y?" uid="hdo" uid_parent="fh"/>
-    <Node _name="Not" inputs="x:htip.x = y?" outputs=".not. x?:hnotip..not. x?" uid="hnotip" uid_parent="fh"/>
-    <Node _name="And" inputs="x:hnew.x .and. y?,y:hnotip..not. x?" outputs="x .and. y?:hrgn.x .and. y?" uid="hrgn" uid_parent="fh"/>
     <Structure _name="Case Structure" selectin="hdo.x .or. y?" uid="hcs" uid_parent="fh">
       <Tunnel _id="In1" inputs="value:hu.hwnd" uid="hc_i1" uid_parent="hcs"/>
-      <Tunnel _id="In2" inputs="value:hrgn.x .and. y?" uid="hc_i2" uid_parent="hcs"/>
       <CaseFrame label="Opened remotely\3A keep it hidden" selector="True" selectout="" uid="hct" uid_parent="hcs">
         <Tunnel _id="In1" outputs="value:hc_w.value" uid="hc_w" uid_parent="hct"/>
-        <Tunnel _id="In2" outputs="value:hc_r.value" uid="hc_r" uid_parent="hct"/>
-        <Call inputs="hwnd:hc_w.value,empty region?:hc_r.value" outputs="hidden?:,error out:" target="RemoteVI Hide Window.vi" uid="hide" uid_parent="hct"/>
+        <Call inputs="hwnd:hc_w.value" outputs="hidden?:,error out:" target="RemoteVI Hide Window.vi" uid="hide" uid_parent="hct"/>
       </CaseFrame>
       <CaseFrame selector="False" selectout="" uid="hcf" uid_parent="hcs">
         <Tunnel _id="In1" outputs="value:" uid="hc_x" uid_parent="hcf"/>
-        <Tunnel _id="In2" outputs="value:" uid="hc_y" uid_parent="hcf"/>
       </CaseFrame>
     </Structure>
     <Tunnel _id="Out1" inputs="value:hu.hwnd" mode="index" outputs="value:allhw.value" uid="allhw" uid_parent="fh"/>

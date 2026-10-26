@@ -1,9 +1,8 @@
-<VI _name="RemoteVI Hide Window.vi" description="Makes the top-level window hwnd invisible on the host screen while it stays open and functional\3A adds the extended style WS_EX_LAYERED (0x80000) with SetWindowLongPtrW(GWL_EXSTYLE -20) unless it is already set\2C then sets the opacity to 0 with SetLayeredWindowAttributes(alpha 0\2C LWA_ALPHA 2)\3B with empty region? TRUE it also gives the window an empty window region (gdi32 CreateRectRgn.vi 0\2C 0\2C 0\2C 0 and user32 SetWindowRgn.vi). The region is what keeps a LabVIEW menu invisible while it opens\3A LabVIEW fades a new menu in by setting its alpha from 0 to 255 over about 170 ms (measured)\2C which undoes the alpha 0 until the next call\2C but it does not touch the region\3B PrintWindow still captures the window whole (measured). Used for LabVIEW popups (menus\2C drop-downs\2C graph palette popups and their SysShadow) that a REMOTE user opened\2C so they do not float over the host's desktop\3B RemoteVI Capture Window.vi still captures them and posted clicks still reach them (measured). Idempotent. Win32 only\2C no VI Server call.">
+<VI _name="RemoteVI Hide Window.vi" description="Makes the top-level window hwnd invisible on the host screen while it stays open and functional\3A adds the extended style WS_EX_LAYERED (0x80000) with SetWindowLongPtrW(GWL_EXSTYLE -20) unless it is already set\2C then sets the opacity to 0 with SetLayeredWindowAttributes(alpha 0\2C LWA_ALPHA 2). Used for LabVIEW popups (menus\2C drop-downs\2C graph palette popups and their SysShadow) that a REMOTE user opened\2C so they do not float over the host's desktop\3B RemoteVI Capture Window.vi still captures them and posted clicks still reach them (measured). Idempotent. Win32 only\2C no VI Server call.">
   <Control _name="hwnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The window to hide (HWND)." outputs="value:hw.value" />
-  <Control _name="empty region?" type="bool" uid="rgn" uid_parent="root" value="false" conIdx="5" connection="recommended" description="TRUE also sets an empty window region (once per window is enough\3B the system owns the region afterwards)." outputs="value:rgn.value" />
   <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is changed." outputs="value:errin.value" />
   <Indicator _name="hidden?" type="bool" uid="ohid" uid_parent="root" value="false" conIdx="4" connection="recommended" description="TRUE when SetLayeredWindowAttributes succeeded (the window is now transparent)." inputs="value:ok.x != 0?" />
-  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:rso.value" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in or a Call Library Function Node error." inputs="value:la.error out" />
   <Constant _name="GWL_EXSTYLE" type="int32" uid="gwl" uid_parent="root" value="-20" outputs="value:gwl.value" />
   <Call uid="get" uid_parent="root" target="user32 GetWindowLongPtrW.vi" inputs="hWnd:hw.value,nIndex:gwl.value,error in:errin.value" outputs="return value:get.return value,error out:get.error out" />
   <Constant _name="WS_EX_LAYERED" type="int64" uid="klay" uid_parent="root" value="524288" outputs="value:klay.value" />
@@ -36,23 +35,5 @@
   <Constant _name="LWA_ALPHA" type="uint32" uid="kf" uid_parent="root" value="2" outputs="value:kf.value" />
   <Call uid="la" uid_parent="root" target="user32 SetLayeredWindowAttributes.vi" inputs="hwnd:hw.value,crKey:kck.value,bAlpha:ka.value,dwFlags:kf.value,error in:cse.value" outputs="return value:la.return value,error out:la.error out" />
   <Node _name="Not Equal To 0?" uid="ok" uid_parent="root" inputs="x:la.return value" outputs="x != 0?:ok.x != 0?" />
-  <Structure _name="Case Structure" uid="rs" uid_parent="root" selectin="rgn.value">
-    <Tunnel _id="In1" uid="ri1" uid_parent="rs" inputs="value:hw.value" />
-    <Tunnel _id="In2" uid="ri2" uid_parent="rs" inputs="value:la.error out" />
-    <CaseFrame selector="True" uid="rt" uid_parent="rs" selectout="" label="Empty window region">
-      <Tunnel _id="In1" uid="rt1" uid_parent="rt" outputs="value:rt1.value" />
-      <Tunnel _id="In2" uid="rt2" uid_parent="rt" outputs="value:rt2.value" />
-      <Call uid="cr" uid_parent="rt" target="gdi32 CreateRectRgn.vi" inputs="error in:rt2.value" outputs="HRGN:cr.HRGN,error out:cr.error out" />
-      <Constant _name="redraw" type="int32" uid="krd" uid_parent="rt" value="1" outputs="value:krd.value" />
-      <Call uid="sr" uid_parent="rt" target="user32 SetWindowRgn.vi" inputs="hWnd:rt1.value,hRgn:cr.HRGN,bRedraw:krd.value,error in:cr.error out" outputs="return value:,error out:sr.error out" />
-      <Tunnel _id="Out1" uid="rto1" uid_parent="rt" inputs="value:sr.error out" />
-    </CaseFrame>
-    <CaseFrame selector="False" uid="rf" uid_parent="rs" selectout="" label="Alpha only">
-      <Tunnel _id="In1" uid="rf1" uid_parent="rf" outputs="value:" />
-      <Tunnel _id="In2" uid="rf2" uid_parent="rf" outputs="value:rf2.value" />
-      <Tunnel _id="Out1" uid="rfo1" uid_parent="rf" inputs="value:rf2.value" />
-    </CaseFrame>
-    <Tunnel _id="Out1" uid="rso" uid_parent="rs" outputs="value:rso.value" />
-  </Structure>
   <FreeLabel comment="Layered with alpha 0 - open but invisible" uid="cmt" uid_parent="root" />
 </VI>

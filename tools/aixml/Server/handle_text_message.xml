@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Handle Text Message.vi" description="Handles one text message of a client (docs\5Cprotocol.md section 5) after RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq of the ack) when that seq is not ahead of the client's seq\3B a mouse or key message is posted to LabVIEW (RemoteVI Post Client Input.vi)\3B anything else (invalid) is ignored. No VI Server call.">
+<VI _name="RemoteVI Handle Text Message.vi" description="Handles one text message of a client (docs\5Cprotocol.md section 5) after RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq of the ack) when that seq is not ahead of the client's seq\3B a mouse or key message goes to the window RemoteVI Route Input.vi picks (the front-most listed window under the pointer\2C for keys the front-most modal window\2C else the window last clicked\2C else the panel\3B docs\5Cprotocol.md section 7) and is posted to LabVIEW (RemoteVI Post Client Input.vi)\3B x id presses the close box of a listed closable window - WM_SYSCOMMAND SC_CLOSE (RemoteVI Close Window.vi)\3B anything else (invalid) is ignored. No VI Server call.">
   <Control _name="text" conIdx="0" connection="required" description="The message payload." outputs="value:pl.value" type="string" uid="pl" uid_parent="root" value=""/>
   <Control _name="acked" conIdx="1" connection="required" description="Highest frame seq the client acknowledged." outputs="value:ack.value" type="uint32" uid="ack" uid_parent="root" value="0"/>
   <Control _name="tracking" conIdx="2" connection="recommended" description="Mouse tracking state (RemoteVI Translate Input.vi)." outputs="value:trk.value" type="bool" uid="trk" uid_parent="root" value="false"/>
@@ -8,9 +8,12 @@
   <Control _name="popups" conIdx="6" connection="recommended" description="The popups open now at their logical positions\2C with d." outputs="value:pp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="pp" uid_parent="root" value="[[],0,0]"/>
   <Control _name="mods" conIdx="8" connection="recommended" description="Modifier keys the remote user holds." outputs="value:mods.value" type="uint8" uid="mods" uid_parent="root" value="0"/>
   <Control _name="mods set" conIdx="10" connection="recommended" description="Modifier keys last written into LabVIEW's key state for this client." outputs="value:mset.value" type="uint8" uid="mset" uid_parent="root" value="0"/>
+  <Control _name="windows" conIdx="7" connection="recommended" description="The application's other windows\2C front-most first (RemoteVI Track Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Control _name="key window" conIdx="9" connection="recommended" description="The window this client last pressed a button in\2C 0 = the panel." outputs="value:kw.value" type="uint64" uid="kw" uid_parent="root" value="0"/>
   <Control _name="popup since" conIdx="12" connection="recommended" description="Tick count (ms) at which the current popups were first seen open." outputs="value:since.value" type="uint32" uid="since" uid_parent="root" value="0"/>
 
-  <Call inputs="text:pl.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="root"/>
+  <Call inputs="text:pl.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq,id:pi.id" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="root"/>
+  <Call inputs="kind:pi.kind,id:pi.id,windows:wl.value" outputs="closed?:,error out:" target="RemoteVI Close Window.vi" uid="xw" uid_parent="root"/>
   <Node _name="To Long Integer" inputs="number:pi.kind" outputs="32bit integer:kn.32bit integer" uid="kn" uid_parent="root"/>
   <Constant _name="ack" outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
   <Constant _name="mouse" outputs="value:k1c.value" type="int32" uid="k1c" uid_parent="root" value="1"/>
@@ -37,6 +40,8 @@
     <Tunnel _id="In11" inputs="value:mods.value" uid="cp_i11" uid_parent="cp"/>
     <Tunnel _id="In12" inputs="value:mset.value" uid="cp_i12" uid_parent="cp"/>
     <Tunnel _id="In13" inputs="value:since.value" uid="cp_i13" uid_parent="cp"/>
+    <Tunnel _id="In14" inputs="value:wl.value" uid="cp_i14" uid_parent="cp"/>
+    <Tunnel _id="In15" inputs="value:kw.value" uid="cp_i15" uid_parent="cp"/>
     <CaseFrame label="Mouse or key\3A post it" selector="True" selectout="" uid="cpt" uid_parent="cp">
       <Tunnel _id="In1" outputs="value:p_vi.value" uid="p_vi" uid_parent="cpt"/>
       <Tunnel _id="In2" outputs="value:p_err.value" uid="p_err" uid_parent="cpt"/>
@@ -51,13 +56,17 @@
       <Tunnel _id="In11" outputs="value:p_mods.value" uid="p_mods" uid_parent="cpt"/>
       <Tunnel _id="In12" outputs="value:p_mset.value" uid="p_mset" uid_parent="cpt"/>
       <Tunnel _id="In13" outputs="value:p_since.value" uid="p_since" uid_parent="cpt"/>
-      <Call inputs="panel:p_vi.value,kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,error in:p_err.value,wParam:p_wp.value,lParam:p_lp.value,popups:p_pp.value,mods:p_mods.value,mods set:p_mset.value,popup since:p_since.value" outputs="tracking out:pci.tracking out,clicked?:pci.clicked?,popups out:pci.popups out,mods out:pci.mods out,mods set out:pci.mods set out,error out:pci.error out" target="RemoteVI Post Client Input.vi" uid="pci" uid_parent="cpt"/>
+      <Tunnel _id="In14" outputs="value:p_wl.value" uid="p_wl" uid_parent="cpt"/>
+      <Tunnel _id="In15" outputs="value:p_kw.value" uid="p_kw" uid_parent="cpt"/>
+      <Call inputs="kind:p_kind.value,msg:p_msg.value,x:p_x.value,y:p_y.value,panel:p_vi.value,windows:p_wl.value,key window:p_kw.value" outputs="panel out:ri.panel out,msg out:ri.msg out,key window out:ri.key window out,error out:" target="RemoteVI Route Input.vi" uid="ri" uid_parent="cpt"/>
+      <Call inputs="panel:ri.panel out,kind:p_kind.value,msg:ri.msg out,x:p_x.value,y:p_y.value,error in:p_err.value,wParam:p_wp.value,lParam:p_lp.value,popups:p_pp.value,mods:p_mods.value,mods set:p_mset.value,popup since:p_since.value" outputs="tracking out:pci.tracking out,clicked?:pci.clicked?,popups out:pci.popups out,mods out:pci.mods out,mods set out:pci.mods set out,error out:pci.error out" target="RemoteVI Post Client Input.vi" uid="pci" uid_parent="cpt"/>
       <Tunnel _id="Out1" inputs="value:pci.tracking out" uid="p_o1" uid_parent="cpt"/>
       <Tunnel _id="Out2" inputs="value:pci.error out" uid="p_o2" uid_parent="cpt"/>
       <Tunnel _id="Out3" inputs="value:pci.clicked?" uid="p_o3" uid_parent="cpt"/>
       <Tunnel _id="Out4" inputs="value:pci.popups out" uid="p_o4" uid_parent="cpt"/>
       <Tunnel _id="Out5" inputs="value:pci.mods out" uid="p_o5" uid_parent="cpt"/>
       <Tunnel _id="Out6" inputs="value:pci.mods set out" uid="p_o6" uid_parent="cpt"/>
+      <Tunnel _id="Out7" inputs="value:ri.key window out" uid="p_o7" uid_parent="cpt"/>
     </CaseFrame>
     <CaseFrame selector="False" selectout="" uid="cpf" uid_parent="cp">
       <Tunnel _id="In1" outputs="value:" uid="q_vi" uid_parent="cpf"/>
@@ -73,6 +82,8 @@
       <Tunnel _id="In11" outputs="value:q_mods.value" uid="q_mods" uid_parent="cpf"/>
       <Tunnel _id="In12" outputs="value:q_mset.value" uid="q_mset" uid_parent="cpf"/>
       <Tunnel _id="In13" outputs="value:" uid="q_since" uid_parent="cpf"/>
+      <Tunnel _id="In14" outputs="value:" uid="q_wl" uid_parent="cpf"/>
+      <Tunnel _id="In15" outputs="value:q_kw.value" uid="q_kw" uid_parent="cpf"/>
       <Tunnel _id="Out1" inputs="value:q_trk.value" uid="q_o1" uid_parent="cpf"/>
       <Tunnel _id="Out2" inputs="value:q_err.value" uid="q_o2" uid_parent="cpf"/>
       <Constant outputs="value:qf.value" type="bool" uid="qf" uid_parent="cpf" value="false"/>
@@ -80,6 +91,7 @@
       <Tunnel _id="Out4" inputs="value:q_pp.value" uid="q_o4" uid_parent="cpf"/>
       <Tunnel _id="Out5" inputs="value:q_mods.value" uid="q_o5" uid_parent="cpf"/>
       <Tunnel _id="Out6" inputs="value:q_mset.value" uid="q_o6" uid_parent="cpf"/>
+      <Tunnel _id="Out7" inputs="value:q_kw.value" uid="q_o7" uid_parent="cpf"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:cp_o1.value" uid="cp_o1" uid_parent="cp"/>
     <Tunnel _id="Out2" outputs="value:cp_o2.value" uid="cp_o2" uid_parent="cp"/>
@@ -87,6 +99,7 @@
     <Tunnel _id="Out4" outputs="value:cp_o4.value" uid="cp_o4" uid_parent="cp"/>
     <Tunnel _id="Out5" outputs="value:cp_o5.value" uid="cp_o5" uid_parent="cp"/>
     <Tunnel _id="Out6" outputs="value:cp_o6.value" uid="cp_o6" uid_parent="cp"/>
+    <Tunnel _id="Out7" outputs="value:cp_o7.value" uid="cp_o7" uid_parent="cp"/>
   </Structure>
   <Indicator _name="acked out" conIdx="14" connection="recommended" description="acked after an ack." inputs="value:nack.s? t\3Af" type="uint32" uid="o_ack" uid_parent="root" value="0"/>
   <Indicator _name="tracking out" conIdx="15" connection="recommended" description="tracking after a posted message." inputs="value:cp_o1.value" type="bool" uid="o_trk" uid_parent="root" value="false"/>
@@ -94,5 +107,6 @@
   <Indicator _name="popups out" conIdx="17" connection="recommended" description="popups with the displacement d used for a popup click." inputs="value:cp_o4.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
   <Indicator _name="mods out" conIdx="18" connection="recommended" description="mods after this message." inputs="value:cp_o5.value" type="uint8" uid="o_m" uid_parent="root" value="0"/>
   <Indicator _name="mods set out" conIdx="11" connection="recommended" description="mods set after this message." inputs="value:cp_o6.value" type="uint8" uid="o_ms" uid_parent="root" value="0"/>
+  <Indicator _name="key window out" conIdx="13" connection="recommended" description="key window after this message (RemoteVI Route Input.vi)." inputs="value:cp_o7.value" type="uint64" uid="o_kw" uid_parent="root" value="0"/>
   <Indicator _name="error out" conIdx="19" connection="recommended" description="error in and errors of posting." inputs="value:cp_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

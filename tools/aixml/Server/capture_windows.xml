@@ -1,0 +1,17 @@
+<VI _name="RemoteVI Capture Windows.vi" description="Captures every listed window (docs\5Cprotocol.md section 7) the way the main frame is captured\3A RemoteVI Capture Frame.vi on its HWND - PrintWindow\2C cut to the client area\2C no VI Server call\2C so it works while a dialog's modal loop holds LabVIEW's UI thread (measured on LabVIEW 2025 for a Two Button Dialog and a native file dialog). A window that could not be drawn gives an empty pixmap with width and height 0\3B RemoteVI Send Window Frame.vi sends nothing for it. Order follows windows.">
+  <FreeLabel comment="PrintWindow each window\2C cut to its client area" uid="lbl" uid_parent="root"/>
+  <Control _name="windows" conIdx="0" connection="required" description="The listed windows (RemoteVI List Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Constant _name="no cache" outputs="value:nc.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="nc" uid_parent="root" value="[[],0,0,0]"/>
+  <Constant outputs="value:cap0.value" type="cluster{uint64.id,array.2{uint32}.pixels,int32.width,int32.height}" uid="cap0" uid_parent="root" value="[0,[],0,0]"/>
+  <Structure _name="For Loop" count="" label="One capture per window" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wl.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:nc.value" outputs="value:lnc.value" uid="lnc" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:cap0.value" outputs="value:lc0.value" uid="lc0" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="id" inputs="input cluster:w.value" outputs="id:wu.id" uid="wu" uid_parent="fl"/>
+    <Call inputs="cache:lnc.value,hWnd:wu.id" outputs="frame:cf.frame,cache out:cf.cache out" target="RemoteVI Capture Frame.vi" uid="cf" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="width,height" inputs="input cluster:cf.cache out" outputs="width:cu.width,height:cu.height" uid="cu" uid_parent="fl"/>
+    <Node _name="Bundle By Name" fields="id,pixels,width,height" inputs="id:wu.id,pixels:cf.frame,width:cu.width,height:cu.height,input cluster:lc0.value" outputs="output cluster:cb.v" uid="cb" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:cb.v" mode="index" outputs="value:caps.value" uid="caps" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="captures" conIdx="4" connection="recommended" description="Per window\3A id\2C pixels [row\2C column] 0x00RRGGBB\2C width\2C height (0 when it could not be drawn)." inputs="value:caps.value" type="array{cluster{uint64.id,array.2{uint32}.pixels,int32.width,int32.height}}" uid="o_c" uid_parent="root" value="[]"/>
+</VI>

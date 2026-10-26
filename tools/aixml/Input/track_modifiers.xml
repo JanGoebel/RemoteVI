@@ -1,13 +1,13 @@
 <VI _name="RemoteVI Track Modifiers.vi" description="Keeps the modifier keys the remote user holds\2C per client (docs\5Cprotocol.md section 4.4). mods is a bit set\3A 1 Shift\2C 2 Ctrl\2C 4 Alt. A key message WM_KEYDOWN (256) of VK_SHIFT 0x10\2C VK_LSHIFT 0xA0 or VK_RSHIFT 0xA1 sets bit 1 and its WM_KEYUP (257) clears it - likewise 0x11/0xA2/0xA3 for Ctrl (bit 2) and 0x12/0xA4/0xA5 for Alt (bit 4). An allowed mouse message (512-522) carries the whole Shift and Ctrl state in wParam\3A bit 1 = MK_SHIFT (4)\2C bit 2 = MK_CONTROL (8)\3B Alt is kept. Anything else leaves mods unchanged. The server writes the result into the key state of LabVIEW's UI thread (RemoteVI Set Modifier Keys.vi) before posting\2C because LabVIEW reads the modifiers with GetKeyState and posted messages do not change that state (measured). Pure\3B reference trackModifiers() in tools\5Clib\5Cinput.mjs\2C vectors tests\5Cvectors\5Ctranslate.json (modifiers).">
   <FreeLabel comment="Key down/up of a modifier\2C or mouse MK_ bits" uid="lbl" uid_parent="root"/>
-  <Control _name="kind" conIdx="0" connection="required" description="Message kind from RemoteVI Parse Input.vi." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack}" uid="kind" uid_parent="root" value="0"/>
+  <Control _name="kind" conIdx="0" connection="required" description="Message kind from RemoteVI Parse Input.vi." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack,close}" uid="kind" uid_parent="root" value="0"/>
   <Control _name="msg" conIdx="5" connection="required" description="Win32 message number." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
   <Control _name="wParam" conIdx="7" connection="required" description="wParam\3A the virtual-key code of a key message\2C the MK_* flags of a mouse message." outputs="value:wp.value" type="uint64" uid="wp" uid_parent="root" value="0"/>
   <Control _name="mods in" conIdx="9" connection="required" description="Modifiers held before this message\3A 1 Shift\2C 2 Ctrl\2C 4 Alt." outputs="value:min.value" type="uint8" uid="min" uid_parent="root" value="0"/>
   <Indicator _name="mods out" conIdx="4" connection="recommended" description="Modifiers held after this message." inputs="value:res.s? t\3Af" type="uint8" uid="mout" uid_parent="root" value="0"/>
 
-  <Constant outputs="value:kM.value" type="uint16{invalid,mouse,key,ack}" uid="kM" uid_parent="root" value="1"/>
-  <Constant outputs="value:kK.value" type="uint16{invalid,mouse,key,ack}" uid="kK" uid_parent="root" value="2"/>
+  <Constant outputs="value:kM.value" type="uint16{invalid,mouse,key,ack,close}" uid="kM" uid_parent="root" value="1"/>
+  <Constant outputs="value:kK.value" type="uint16{invalid,mouse,key,ack,close}" uid="kK" uid_parent="root" value="2"/>
   <Constant _name="WM_KEYDOWN" outputs="value:kKD.value" type="uint32" uid="kKD" uid_parent="root" value="256"/>
   <Constant _name="WM_KEYUP" outputs="value:kKU.value" type="uint32" uid="kKU" uid_parent="root" value="257"/>
   <Constant _name="mouse messages" outputs="value:aMs.value" type="array{uint32}" uid="aMs" uid_parent="root" value="[512,513,514,515,516,517,518,519,520,521,522]"/>

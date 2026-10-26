@@ -1,0 +1,35 @@
+<VI _name="RemoteVI Window Info.vi" description="Everything the windows message and the input routing need about one listed window (docs\5Cprotocol.md section 7)\3A id = hWnd\3B title = its caption as a JSON string literal (user32 GetWindowTextW.vi + RemoteVI JSON String.vi) - a window without a caption gets its OWNER's caption (a LabVIEW Two Button Dialog has none and is owned by LabVIEW's hidden frame window\2C caption LabVIEW\3B measured on LabVIEW 2025)\2C and LabVIEW when that is empty too\3B x\2C y\2C w\2C h = its client area (RemoteVI Frame Rect.vi) relative to the main frame's origin on screen\3B modal = the published panel is disabled\3B active = it is the active window of its thread\3B closable = its style has WS_SYSMENU (0x80000\2C the title bar's close box)\3B sx\2C sy = its client-area origin on screen\3B class = its window class (#32770 is a native Windows dialog). Win32 calls only\2C no VI Server\2C so it works while a dialog's modal loop holds LabVIEW's UI thread.">
+  <FreeLabel comment="Caption\2C client rect\2C state" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="The listed window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="frame origin" conIdx="5" connection="required" description="Screen position of the main frame's top-left corner (the published panel's client-area origin\2C RemoteVI Frame Rect.vi)." outputs="value:fo.value" type="cluster{int32.x,int32.y}" uid="fo" uid_parent="root" value="[0,0]"/>
+  <Control _name="panel enabled?" conIdx="7" connection="required" description="Whether the published panel takes input (user32 IsWindowEnabled.vi)\3B FALSE makes the window modal." outputs="value:pe.value" type="bool" uid="pe" uid_parent="root" value="true"/>
+  <Control _name="active" conIdx="9" connection="recommended" description="The active window of LabVIEW's UI thread (RemoteVI Thread Windows.vi)." outputs="value:act.value" type="uint64" uid="act" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is read when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="hWnd:hw.value,error in:ei.value" outputs="rect:fr.rect,error out:fr.error out" target="RemoteVI Frame Rect.vi" uid="fr" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,error in:fr.error out" outputs="text:gt.text,return value:,error out:gt.error out" target="user32 GetWindowTextW.vi" uid="gt" uid_parent="root"/>
+  <Constant _name="GW_OWNER" outputs="value:kow.value" type="uint32" uid="kow" uid_parent="root" value="4"/>
+  <Call inputs="hWnd:hw.value,uCmd:kow.value,error in:gt.error out" outputs="window:own.window,error out:own.error out" target="user32 GetWindow.vi" uid="own" uid_parent="root"/>
+  <Call inputs="hWnd:own.window,error in:own.error out" outputs="text:got.text,return value:,error out:got.error out" target="user32 GetWindowTextW.vi" uid="got" uid_parent="root"/>
+  <Constant _name="LabVIEW" outputs="value:klv.value" type="array{uint16}" uid="klv" uid_parent="root" value="[76,97,98,86,73,69,87]"/>
+  <Node _name="Empty Array?" inputs="array:got.text" outputs="empty?:oe.v" uid="oe" uid_parent="root"/>
+  <Node _name="Select" inputs="t:klv.value,s:oe.v,f:got.text" outputs="s? t\3Af:ot.v" uid="ot" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:gt.text" outputs="empty?:te.v" uid="te" uid_parent="root"/>
+  <Node _name="Select" inputs="t:ot.v,s:te.v,f:gt.text" outputs="s? t\3Af:ttl.v" uid="ttl" uid_parent="root"/>
+  <Call inputs="text:ttl.v" outputs="json:js.json" target="RemoteVI JSON String.vi" uid="js" uid_parent="root"/>
+  <Constant _name="GWL_STYLE" outputs="value:kgs.value" type="int32" uid="kgs" uid_parent="root" value="-16"/>
+  <Call inputs="hWnd:hw.value,nIndex:kgs.value,error in:got.error out" outputs="return value:sty.return value,error out:sty.error out" target="user32 GetWindowLongPtrW.vi" uid="sty" uid_parent="root"/>
+  <Constant _name="WS_SYSMENU" outputs="value:ksm.value" type="int64" uid="ksm" uid_parent="root" value="524288"/>
+  <Node _name="And" inputs="x:sty.return value,y:ksm.value" outputs="x .and. y?:sm.v" uid="sm" uid_parent="root"/>
+  <Node _name="Not Equal To 0?" inputs="x:sm.v" outputs="x != 0?:clo.v" uid="clo" uid_parent="root"/>
+  <Call inputs="hWnd:hw.value,error in:sty.error out" outputs="class name:cls.class name,return value:,error out:cls.error out" target="user32 GetClassNameW.vi" uid="cls" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:fr.rect" outputs="x:r.x,y:r.y,w:r.w,h:r.h" uid="r" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:fo.value" outputs="x:o.x,y:o.y" uid="o" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:r.x,y:o.x" outputs="x-y:rx.v" uid="rx" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:r.y,y:o.y" outputs="x-y:ry.v" uid="ry" uid_parent="root"/>
+  <Node _name="Not" inputs="x:pe.value" outputs=".not. x?:mod.v" uid="mod" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:hw.value,y:act.value" outputs="x = y?:isact.v" uid="isact" uid_parent="root"/>
+  <Constant _name="window0" outputs="value:w0.value" type="cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}" uid="w0" uid_parent="root" value="[0,,0,0,0,0,false,false,false,0,0,]"/>
+  <Node _name="Bundle By Name" fields="id,title,x,y,w,h,modal,active,closable,sx,sy,class" inputs="id:hw.value,title:js.json,x:rx.v,y:ry.v,w:r.w,h:r.h,modal:mod.v,active:isact.v,closable:clo.v,sx:r.x,sy:r.y,class:cls.class name,input cluster:w0.value" outputs="output cluster:wb.v" uid="wb" uid_parent="root"/>
+  <Indicator _name="window" conIdx="4" connection="recommended" description="id\2C title (JSON string literal)\2C x\2C y\2C w\2C h (client area in main-frame coordinates)\2C modal\2C active\2C closable\2C sx\2C sy (client-area origin on screen)\2C class." inputs="value:wb.v" type="cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}" uid="o_w" uid_parent="root" value="[0,,0,0,0,0,false,false,false,0,0,]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the first DLL call error." inputs="value:cls.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,82 @@
+<VI _name="RemoteVI Send Client Windows.vi" description="The windows part (docs\5Cprotocol.md section 7) for one client. First the list\3A when message (windows [...]) differs from windows sent - the list this client was last told\2C empty for a new client\2C so a client gets the list on connect - frame (message as a WebSocket text frame) is written with TCP Write (500 ms) and windows sent becomes message\3B a failed write sets closed. Then\2C when captures were made in this iteration (capture?)\2C each window's picture goes out with RemoteVI Send Window Frame.vi against the picture of that window this client was last sent (window frames\2C looked up by id) - flow control and the shared seq decide\2C as for FRAME. window frames is rebuilt in the order of captures\2C so the pictures of windows that are gone are dropped\3B without captures it is kept. A closed client is passed through (Send Window Frame skips it too).">
+  <FreeLabel comment="List when it changed\2C then each window's picture" uid="lbl" uid_parent="root"/>
+  <Control _name="Client" conIdx="0" connection="required" description="Per-client state (same cluster as in RemoteVI Server Loop.vi)." outputs="value:cl.value" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}" uid="cl" uid_parent="root" value="[0,,0,0,[],false,false,0,0,0,,[],0]"/>
+  <Control _name="message" conIdx="5" connection="required" description="The current windows message (RemoteVI Windows Message.vi)." outputs="value:msg.value" type="string" uid="msg" uid_parent="root" value=""/>
+  <Control _name="frame" conIdx="7" connection="required" description="message as a WebSocket text frame." outputs="value:fr.value" type="string" uid="fr" uid_parent="root" value=""/>
+  <Control _name="captures" conIdx="9" connection="recommended" description="The windows' pictures of this iteration (RemoteVI Capture Windows.vi)." outputs="value:caps.value" type="array{cluster{uint64.id,array.2{uint32}.pixels,int32.width,int32.height}}" uid="caps" uid_parent="root" value="[]"/>
+  <Control _name="capture?" conIdx="1" connection="recommended" description="TRUE when captures were made in this iteration." outputs="value:cap.value" type="bool" uid="cap" uid_parent="root" value="false"/>
+
+  <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
+    <Constant outputs="value:tp0.value" type="uint16" uid="tp0" uid_parent="tpl" value="0"/>
+    <Node _name="TCP Open Connection" inputs="remote port or service name:tp0.value" outputs="connection ID:toc.connection ID" uid="toc" uid_parent="tpl"/>
+    <Tunnel _id="Out1" inputs="value:toc.connection ID" outputs="value:tplo.value" uid="tplo" uid_parent="tpl"/>
+  </Structure>
+  <Constant outputs="value:tn0.value" type="int32" uid="tn0" uid_parent="root" value="0"/>
+  <Node _name="Unbundle By Name" fields="connection,closed,windows sent,window frames" inputs="input cluster:cl.value" outputs="connection:ub.connection,closed:ub.closed,windows sent:ub.windows sent,window frames:ub.window frames" uid="ub" uid_parent="root"/>
+  <Node _name="Not Equal?" inputs="x:ub.windows sent,y:msg.value" outputs="x != y?:chg.v" uid="chg" uid_parent="root"/>
+  <Node _name="Not" inputs="x:ub.closed" outputs=".not. x?:open.v" uid="open" uid_parent="root"/>
+  <Node _name="And" inputs="x:chg.v,y:open.v" outputs="x .and. y?:tell.v" uid="tell" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="tell.v" uid="ct" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ub.connection" uid="ct_i1" uid_parent="ct"/>
+    <Tunnel _id="In2" inputs="value:fr.value" uid="ct_i2" uid_parent="ct"/>
+    <Tunnel _id="In3" inputs="value:tplo.value" uid="ct_i3" uid_parent="ct"/>
+    <Tunnel _id="In4" inputs="value:msg.value" uid="ct_i4" uid_parent="ct"/>
+    <Tunnel _id="In5" inputs="value:ub.closed" uid="ct_i5" uid_parent="ct"/>
+    <Tunnel _id="In6" inputs="value:ub.windows sent" uid="ct_i6" uid_parent="ct"/>
+    <CaseFrame label="Tell the client the new list" selector="True" selectout="" uid="ctt" uid_parent="ct">
+      <Tunnel _id="In1" outputs="value:t_c.value" uid="t_c" uid_parent="ctt"/>
+      <Tunnel _id="In2" outputs="value:t_f.value" uid="t_f" uid_parent="ctt"/>
+      <Tunnel _id="In3" outputs="value:t_t.value" uid="t_t" uid_parent="ctt"/>
+      <Tunnel _id="In4" outputs="value:t_m.value" uid="t_m" uid_parent="ctt"/>
+      <Tunnel _id="In5" outputs="value:" uid="t_i5" uid_parent="ctt"/>
+      <Tunnel _id="In6" outputs="value:" uid="t_i6" uid_parent="ctt"/>
+      <Node _name="Type Cast" inputs="x:t_c.value,type:t_t.value" outputs="*(type *) &amp;x:rc.*(type *) &amp;x" uid="rc" uid_parent="ctt"/>
+      <Constant outputs="value:to.value" type="int32" uid="to" uid_parent="ctt" value="500"/>
+      <Node _name="TCP Write" inputs="connection ID:rc.*(type *) &amp;x,data in:t_f.value,?parm9:to.value" outputs="error out:tw.error out" uid="tw" uid_parent="ctt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tw.error out" outputs="status:ts.status" uid="ts" uid_parent="ctt"/>
+      <Tunnel _id="Out1" inputs="value:ts.status" uid="t_o1" uid_parent="ctt"/>
+      <Tunnel _id="Out2" inputs="value:t_m.value" uid="t_o2" uid_parent="ctt"/>
+    </CaseFrame>
+    <CaseFrame label="Unchanged or closed" selector="False" selectout="" uid="ctf" uid_parent="ct">
+      <Tunnel _id="In1" outputs="value:" uid="f_c" uid_parent="ctf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_f" uid_parent="ctf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_t" uid_parent="ctf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_m" uid_parent="ctf"/>
+      <Tunnel _id="In5" outputs="value:f_cls.value" uid="f_cls" uid_parent="ctf"/>
+      <Tunnel _id="In6" outputs="value:f_ws.value" uid="f_ws" uid_parent="ctf"/>
+      <Tunnel _id="Out1" inputs="value:f_cls.value" uid="f_o1" uid_parent="ctf"/>
+      <Tunnel _id="Out2" inputs="value:f_ws.value" uid="f_o2" uid_parent="ctf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:ct_o1.value" uid="ct_o1" uid_parent="ct"/>
+    <Tunnel _id="Out2" outputs="value:ct_o2.value" uid="ct_o2" uid_parent="ct"/>
+  </Structure>
+  <Node _name="Bundle By Name" fields="closed,windows sent" inputs="closed:ct_o1.value,windows sent:ct_o2.value,input cluster:cl.value" outputs="output cluster:cl1.v" uid="cl1" uid_parent="root"/>
+
+  <Structure _name="For Loop" count="" label="ids of the pictures sent" maxin="" maxout="" uid="fi" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ub.window frames" mode="index" outputs="value:wf.value" uid="wf" uid_parent="fi"/>
+    <Node _name="Unbundle By Name" fields="id" inputs="input cluster:wf.value" outputs="id:wfu.id" uid="wfu" uid_parent="fi"/>
+    <Tunnel _id="Out1" inputs="value:wfu.id" mode="index" outputs="value:sids.value" uid="sids" uid_parent="fi"/>
+  </Structure>
+  <Constant outputs="value:wf0.value" type="cluster{uint64.id,array.2{uint32}.pixels}" uid="wf0" uid_parent="root" value="[0,[]]"/>
+  <Structure _name="For Loop" count="" label="One WINDOW FRAME per window" maxin="" maxout="" uid="fw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:caps.value" mode="index" outputs="value:c.value" uid="c" uid_parent="fw"/>
+    <Tunnel _id="In2" inputs="value:sids.value" outputs="value:lids.value" uid="lids" uid_parent="fw"/>
+    <Tunnel _id="In3" inputs="value:ub.window frames" outputs="value:lwf.value" uid="lwf" uid_parent="fw"/>
+    <Tunnel _id="In4" inputs="value:wf0.value" outputs="value:lwf0.value" uid="lwf0" uid_parent="fw"/>
+    <ShiftReg uid="src" uid_parent="fw">
+      <Left inputs="value:cl1.v" outputs="value:wcl.value" uid="srcL" uid_parent="src"/>
+      <Right inputs="value:swf.Client out" outputs="value:clend.value" uid="srcR" uid_parent="src"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="id,pixels,width,height" inputs="input cluster:c.value" outputs="id:cu.id,pixels:cu.pixels,width:cu.width,height:cu.height" uid="cu" uid_parent="fw"/>
+    <Node _name="Search 1D Array" inputs="1D array:lids.value,element:cu.id" outputs="index of element:ix.v" uid="ix" uid_parent="fw"/>
+    <Node _name="Index Array" inputs="array:lwf.value,index:ix.v" outputs="element:prev.v" uid="prev" uid_parent="fw"/>
+    <Node _name="Unbundle By Name" fields="pixels" inputs="input cluster:prev.v" outputs="pixels:pu.pixels" uid="pu" uid_parent="fw"/>
+    <Call inputs="Client:wcl.value,id:cu.id,pixmap:cu.pixels,width:cu.width,height:cu.height,last sent:pu.pixels" outputs="Client out:swf.Client out,last sent out:swf.last sent out,sent?:,error out:" target="RemoteVI Send Window Frame.vi" uid="swf" uid_parent="fw"/>
+    <Node _name="Bundle By Name" fields="id,pixels" inputs="id:cu.id,pixels:swf.last sent out,input cluster:lwf0.value" outputs="output cluster:nwf.v" uid="nwf" uid_parent="fw"/>
+    <Tunnel _id="Out1" inputs="value:nwf.v" mode="index" outputs="value:nwfs.value" uid="nwfs" uid_parent="fw"/>
+  </Structure>
+  <Node _name="Select" inputs="t:nwfs.value,s:cap.value,f:ub.window frames" outputs="s? t\3Af:frames.v" uid="frames" uid_parent="root"/>
+  <Node _name="Select" inputs="t:clend.value,s:cap.value,f:cl1.v" outputs="s? t\3Af:cl2.v" uid="cl2" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="window frames" inputs="window frames:frames.v,input cluster:cl2.v" outputs="output cluster:cl3.v" uid="cl3" uid_parent="root"/>
+  <Indicator _name="Client out" conIdx="4" connection="recommended" description="The client after sending\3A closed\2C windows sent\2C seq and window frames updated." inputs="value:cl3.v" type="cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}" uid="o_cl" uid_parent="root" value="[0,,0,0,[],false,false,0,0,0,,[],0]"/>
+</VI>

@@ -31,13 +31,18 @@ The first version (protocol v1, see git history) modelled each control through V
  │   │                                       → GET /ws → IG upgrade → client │
  │   │    no complete head within 5 s, or peer gone → close                │
  │   ├ per client: TCP Read (immediate) → WS Decode Client Frame           │
- │   │    → Parse Input → ack | Post Input (ScreenToClient + PostMessageW) │
+ │   │    → Parse Input → ack | close (SC_CLOSE to a listed window)        │
+ │   │      | Route Input (panel or other window) → Post Input             │
+ │   │        (ScreenToClient + PostMessageW)                              │
+ │   ├ Track Windows: dialogs, file dialogs, subVI panels (Win32 only)     │
  │   ├ Send Origin: `origin x y` to every client when it changed           │
  │   └ every 1/fps, if any client:                                         │
  │        Capture Frame (PrintWindow, cut to the client area)              │
  │        per client with < 2 frames in flight:                            │
  │          Dirty Rects(prev, cur) → Encode Rect PNG × n                   │
  │          → Frame Encode → WS Encode Server Frame → TCP Write            │
+ │        Send Windows: `windows [...]` when it changed, then one          │
+ │          WINDOW FRAME per window (same diff, flow control, seq)         │
  └─────────────────────────────────────────────────────────────────────────┘
                  ws://host:port/ws  (PNG frames ↓, input text ↑)
                          ┌──────────────────────────┐
@@ -87,6 +92,16 @@ Ring and enum menus, right-click menus, combo-box lists and graph-palette popups
 * **No stall when a popup opens:** nothing in the popup path waits for a popup any more (the old path waited until the popup was 350 ms old, then up to 300 ms for the popups to change, then pressed `VK_RIGHT` and waited again - about 1 s without a frame for a click whose button-up landed on the new menu, measured). The overlay is captured and encoded in the iteration after a frame, not in the same one. Measured on the demo with a client acking every frame (20 fps, median gap 57 ms): opening the plot legend menu, the Mode ring and a shortcut menu gave frame gaps of 1013-1026 ms before, 100-180 ms after (12 of 15 openings at or under 150 ms); the machine's gaps without any popup reach 160 ms.
 * **Minimized panel:** LabVIEW ignores input to it. The server restores it with `ShowWindow(SW_SHOWNOACTIVATE)`, without taking focus.
 
+### Other windows: dialogs, native file dialogs, subVI panels
+
+The application's other windows (docs/protocol.md section 7) are tracked with Win32 calls only, like the popups: while a dialog is up LabVIEW's UI thread runs the dialog's modal loop, and every VI Server UI call blocks until it closes (measured on LabVIEW 2025: an ActiveX call into LabVIEW does not return while a Two Button Dialog is open).
+
+* **Listing** (`RemoteVI List Windows.vi`, called by `RemoteVI Track Windows.vi` at most every 200 ms while a client is connected - walking every top-level window of the desktop costs about 12 ms in the IDE, and doing it every iteration made every iteration a frame iteration, which starved the OVERLAY): LabVIEW's visible top-level windows other than the panel, not popups (`RemoteVI Window Popup Info.vi`), with a size (LabVIEW's hidden frame window `LVFrame` is 0 x 0). Of those it lists native dialogs (`#32770`), windows owned by the panel or by another listed window (`GetWindow` `GW_OWNER`, up to 8 steps), windows listed before, and windows that appeared while the panel is disabled (`IsWindowEnabled` FALSE). Measured on LabVIEW 2025: a Two Button Dialog is an `LVDChild` without a caption, owned by `LVFrame`, not by the panel, and LabVIEW disables all its windows while it is up; the File Dialog function shows a native `#32770` window, also owned by `LVFrame`. "Appeared" compares with a baseline: while the panel is enabled the baseline is the candidate set of the previous listing, so a dialog that becomes visible just before LabVIEW disables the panel still counts; while the panel is disabled the baseline is kept. IDE windows that were there before (Project Explorer, block diagrams, other VIs) are therefore not listed.
+* **Description** (`RemoteVI Window Info.vi`): id = HWND, caption with `GetWindowTextW` as UTF-16 and written as an ASCII-only JSON string literal (`RemoteVI JSON String.vi`, `\uXXXX` escapes) so the text message is valid UTF-8 whatever the host's code page; a window without a caption gets its owner's (`LabVIEW` for LabVIEW's own dialogs). Client rect (`RemoteVI Frame Rect.vi`) relative to the main frame's origin, `modal` = panel disabled, `active` = `hwndActive` of the UI thread (`RemoteVI Thread Windows.vi`, `GetGUIThreadInfo`), `closable` = `WS_SYSMENU`.
+* **Sending** (`RemoteVI Send Windows.vi`): each client gets `windows [...]` (`RemoteVI Windows Message.vi`, the JSON written field by field) whenever it differs from what that client was told - on connect too, as its last list starts empty. In an iteration that made a frame each listed window is drawn with `PrintWindow` and cut to its client area (`RemoteVI Capture Windows.vi`, the same `RemoteVI Capture Frame.vi` as the panel - measured pixel-exact for the Two Button Dialog against an independent `PrintWindow` of its client area, and complete for the native file dialog with flags 0) and goes out as a WINDOW FRAME (`RemoteVI Window Frame Encode.vi`) with the dirty-rect path of FRAME, diffed against the picture of that window this client was last sent (`window frames` in the client cluster; a new window is sent whole) and under the same flow control, `seq` shared with FRAME (`RemoteVI Send Window Frame.vi`).
+* **No VI Server while modal:** while a listed window is modal the server loop makes no VI Server call (geometry refresh, VI-stopped check), exactly as while a popup is open.
+* **Input** (`RemoteVI Route Input.vi`, per message, before `RemoteVI Post Client Input.vi`): a mouse message goes to the front-most listed window whose client area holds the point, else to the panel; while a popup is open, to the window the client last pressed a button in (`key window` in the client cluster), whose popup it is. The geometry handed on keeps the frame origin (main-frame coordinates are screen offsets) and takes the window's client origin, so Translate Input/Post Input work unchanged - LabVIEW dialogs track presses like a panel (screen coordinates while captured). A native dialog consists of child windows: the point is followed down with `ChildWindowFromPointEx` to the deepest visible child, and the geometry is chosen so that every posted `lParam` is that child's client coordinates (a Windows button wants its button-up in client coordinates even while it holds the capture; measured: Cancel of the file dialog clicked remotely). Keys go to the front-most modal window, else to `key window` while it is listed, else to the panel - inside the window to its focus child (`hwndFocus` whose `GetAncestor(GA_ROOT)` is the window: the file name box of the file dialog, where a posted Escape cancels, measured). While a modal window is listed a mouse message for the panel is dropped: LabVIEW would handle a message posted to its disabled panel. `x <id>` posts `WM_SYSCOMMAND` `SC_CLOSE` - what the title bar's close button sends - to a listed window with a close box only (`RemoteVI Close Window.vi`); a bare `WM_CLOSE` destroyed a Two Button Dialog's window while the dialog function kept waiting, which hung the calling VI and LabVIEW's VI Server (measured).
+
 ### Start and Stop
 
 `RemoteVI Start.vi` reports a server that cannot serve. One Server Loop per LabVIEW application instance (it is not reentrant): when it is already running, Start launches nothing and returns error 5001. Otherwise it launches the loop and waits until the loop has created its TCP listener - the loop sends the listener's error cluster on the notifier `RemoteVI:<port>:started` - and returns that error (60 when the port is in use; the loop has then already ended), or 5002 when nothing arrives within 2 s. Before this, both cases returned without an error and nothing listened (measured with the previous Start.vi: port held by another process, error out clean).
@@ -108,13 +123,16 @@ source/
 │               Index HTML.vi
 ├── Capture/    RemoteVI Dirty Rects.vi, RemoteVI Encode Rect PNG.vi, RemoteVI Capture Panel.vi
 │               (FP.Get Image, benchmarks only; the server captures with Server/Capture Frame.vi)
-├── Protocol/   RemoteVI Frame Encode.vi, RemoteVI Overlay Encode.vi, RemoteVI Parse Input.vi,
+├── Protocol/   RemoteVI Frame Encode.vi, RemoteVI Overlay Encode.vi, RemoteVI Window Frame Encode.vi,
+│               RemoteVI Windows Message.vi, RemoteVI JSON String.vi, RemoteVI Parse Input.vi,
 │               RemoteVI WS Encode Server Frame.vi, RemoteVI WS Decode Client Frame.vi
 ├── Input/      Translate Input.vi, Post Input.vi (allow list, coordinate mapping, popup clicks),
 │               Popup Click.vi, Menu Click.vi, Highlight Menu Row.vi, Post Menu Key.vi (menus driven
 │               with keys), Plain Popup Click.vi (mouse path), Menu Pointer.vi + Hover*.vi (hover),
-│               Track Modifiers.vi, Apply Modifiers.vi (remote modifier keys -> LabVIEW's key state)
-└── Win32/      Find Popups.vi, List Menus.vi, Menu Highlight.vi, Capture Window.vi, Frame Rect.vi, Hide Window.vi, ...
+│               Track Modifiers.vi, Apply Modifiers.vi (remote modifier keys -> LabVIEW's key state),
+│               Route Input.vi, Close Window.vi (other windows)
+└── Win32/      Find Popups.vi, List Menus.vi, Menu Highlight.vi, Capture Window.vi, Frame Rect.vi, Hide Window.vi,
+                List Windows.vi, Window Info.vi, Thread Windows.vi, ...
                 Mouse Captured.vi, Set Modifier Keys.vi, Wait Input Handled.vi
                 user32/gdi32/kernel32 *.vi wrappers   (generated, do not edit by hand;
                 GetKeyboardState/SetKeyboardState run in the UI thread, the rest in any thread)

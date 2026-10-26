@@ -39,10 +39,11 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Input (`source/Input`, `source/Win32`) | ✅ clicks, drags, double clicks, wheel, typing, Shift/Ctrl/Alt, hover enter/leave; host cursor and keyboard never touched |
 | Whole window: menu bar (also custom run-time menus with submenus), toolbar, scrollbars | ✅ streamed as the window shows them; menu bar menus driven like the other menus, scrollbar arrows and thumbs scroll the panel; the client learns where the panel starts (`origin`) |
 | Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay at their real place (may extend past the panel), hover highlight, submenus beside their parent, invisible on the host when opened remotely, panel keeps updating underneath |
+| Other windows: LabVIEW dialogs, native file dialogs, subVI panels opened by the application | ✅ listed (`windows` message: caption, place, modal, active, closable) and streamed as WINDOW FRAMEs, shown as floating windows in the browser; clicks go to the window under the pointer, keys to the modal window, Enter/Escape answer dialogs as locally, the panel behind a modal dialog takes no input, close box closes; tracked with Win32 calls only, so nothing blocks while a dialog holds LabVIEW's UI thread |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Tests | ✅ `npm test` (19), unit-test check VIs (96 vectors), LabVIEW integration suite `tests/lv` (20 of 24 pass: the 3 round-5 dialog tests and the Ask/Open layout lines of test 1 wait for the dialog work) |
-| Caraya unit tests | ✅ 96 assertions over 8 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
+| Tests | ✅ `npm test` (19), unit-test check VIs (102 vectors), LabVIEW integration suite `tests/lv` (24 of 24, with LabVIEW the active application for the tip strip test) |
+| Caraya unit tests | ✅ 102 assertions over 9 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
 | Splitter dragging | ❓ untested on a panel with an unlocked splitter |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
 | Access token, bind address, palette, VI package | planned |
@@ -54,6 +55,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 * **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
 * **One server per LabVIEW instance.** The Server Loop isn't reentrant. A second `RemoteVI Start.vi` returns error 5001, and a port in use returns the listener's error (60).
 * **Modifiers are shared.** Several clients holding Shift/Ctrl at the same time share LabVIEW's single key state.
+* **Other windows are found by ownership and timing.** Listed are native dialogs, windows owned by the panel or a listed window, and every window that appears while the panel is disabled (a modal dialog is up). A subVI panel that the application opens while the panel stays enabled, and that LabVIEW does not make an owned window, is not listed. A window without a caption (LabVIEW's Two Button Dialog) shows its owner's caption, `LabVIEW`. Mouse input to a native dialog goes to the child control under the pointer in its client coordinates; the mouse wheel there is not exact.
 * **Windows only** (input injection is Win32).
 
 ## Testing

@@ -1,0 +1,152 @@
+<VI _name="RemoteVI Route Input.vi" description="Decides which window one mouse or key message of a client goes to (docs\5Cprotocol.md section 7) and gives the panel cluster RemoteVI Post Client Input.vi then posts with. MOUSE\3A to the front-most listed window whose client area (x\2C y\2C w\2C h in main-frame coordinates) holds the point - windows is front-most first - else to the panel\3B while a popup is open\2C to the window the client last pressed a button in (key window)\2C whose popup it is\2C else the panel. KEYS\3A to the front-most modal window\2C else to key window when it is still listed\2C else to the panel\3B inside that window to the child that has the keyboard focus when it belongs to it (RemoteVI Thread Windows.vi + user32 GetAncestor.vi GA_ROOT - the file name box of a native file dialog\2C where Escape and Enter work like on the host\3B measured on LabVIEW 2025). For a window the geometry becomes clientX\2C clientY = its client-area origin on screen (sx\2C sy)\3B the frame origin stays\2C because main-frame coordinates are screen offsets. A NATIVE dialog (class #32770) is made of child windows\3A the point is followed down with user32 ChildWindowFromPointEx.vi to the deepest visible child under it\2C and the geometry is set so that the posted lParam is that child's CLIENT coordinates in every case (LabVIEW reads screen coordinates while it tracks a press\2C a Windows control does not). A button-down sets key window out (0 = the panel). While a modal window is listed and no popup is open a mouse message for the panel is dropped (msg out = 0\2C which RemoteVI Translate Input.vi does not post)\3A LabVIEW would still handle a message posted to its disabled panel\2C and on the host the panel takes no input then. Win32 calls only\2C no VI Server.">
+  <FreeLabel comment="Front-most window under the point\2C or keys" uid="lbl" uid_parent="root"/>
+  <Control _name="kind" conIdx="0" connection="required" description="From RemoteVI Parse Input.vi\3A mouse or key." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack,close}" uid="kind" uid_parent="root" value="0"/>
+  <Control _name="msg" conIdx="5" connection="required" description="The Win32 message." outputs="value:msg.value" type="uint32" uid="msg" uid_parent="root" value="0"/>
+  <Control _name="x" conIdx="7" connection="recommended" description="Frame x of a mouse message." outputs="value:x.value" type="int32" uid="x" uid_parent="root" value="0"/>
+  <Control _name="y" conIdx="9" connection="recommended" description="Frame y of a mouse message." outputs="value:y.value" type="int32" uid="y" uid_parent="root" value="0"/>
+  <Control _name="panel" conIdx="1" connection="required" description="hWnd of the served panel\2C popup (a popup is open) and the cached panel geometry." outputs="value:pan.value" type="cluster{uint64.hWnd,bool.popup,cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}.geo}" uid="pan" uid_parent="root" value="[0,false,[0,0,0,0]]"/>
+  <Control _name="windows" conIdx="2" connection="recommended" description="The listed windows\2C front-most first (RemoteVI List Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Control _name="key window" conIdx="3" connection="recommended" description="The window this client last pressed a button in\2C 0 = the panel." outputs="value:kw.value" type="uint64" uid="kw" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+  <Structure _name="For Loop" count="" label="Point inside\2C modal\2C id" maxin="" maxout="" uid="fw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wl.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fw"/>
+    <Tunnel _id="In2" inputs="value:x.value" outputs="value:fx.value" uid="fx" uid_parent="fw"/>
+    <Tunnel _id="In3" inputs="value:y.value" outputs="value:fy.value" uid="fy" uid_parent="fw"/>
+    <Node _name="Unbundle By Name" fields="id,x,y,w,h,modal" inputs="input cluster:w.value" outputs="id:wu.id,x:wu.x,y:wu.y,w:wu.w,h:wu.h,modal:wu.modal" uid="wu" uid_parent="fw"/>
+    <Node _name="Subtract" inputs="x:fx.value,y:wu.x" outputs="x-y:dx.v" uid="dx" uid_parent="fw"/>
+    <Node _name="Subtract" inputs="x:fy.value,y:wu.y" outputs="x-y:dy.v" uid="dy" uid_parent="fw"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:dx.v" outputs="x &gt;= 0?:x0.v" uid="x0" uid_parent="fw"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:dy.v" outputs="x &gt;= 0?:y0.v" uid="y0" uid_parent="fw"/>
+    <Node _name="Less?" inputs="x:dx.v,y:wu.w" outputs="x &lt; y?:x1.v" uid="x1" uid_parent="fw"/>
+    <Node _name="Less?" inputs="x:dy.v,y:wu.h" outputs="x &lt; y?:y1.v" uid="y1" uid_parent="fw"/>
+    <Node _name="Build Array" inputs="element:x0.v,element:y0.v,element:x1.v,element:y1.v" outputs="appended array:in4.v" uid="in4" uid_parent="fw"/>
+    <Node _name="And Array Elements" inputs="Boolean array:in4.v" outputs="logical AND:inside.v" uid="inside" uid_parent="fw"/>
+    <Tunnel _id="Out1" inputs="value:inside.v" mode="index" outputs="value:insides.value" uid="insides" uid_parent="fw"/>
+    <Tunnel _id="Out2" inputs="value:wu.modal" mode="index" outputs="value:modals.value" uid="modals" uid_parent="fw"/>
+    <Tunnel _id="Out3" inputs="value:wu.id" mode="index" outputs="value:ids.value" uid="ids" uid_parent="fw"/>
+  </Structure>
+  <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Node _name="Search 1D Array" inputs="1D array:insides.value,element:kt.value" outputs="index of element:hit.v" uid="hit" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:modals.value,element:kt.value" outputs="index of element:mod.v" uid="mod" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:ids.value,element:kw.value" outputs="index of element:kix.v" uid="kix" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:mod.v" outputs="x &gt;= 0?:modal.v" uid="modal" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hWnd,popup,geo" inputs="input cluster:pan.value" outputs="hWnd:pu.hWnd,popup:pu.popup,geo:pu.geo" uid="pu" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:kind.value" outputs="32bit integer:kn.v" uid="kn" uid_parent="root"/>
+  <Constant _name="mouse" outputs="value:k1.value" type="int32" uid="k1" uid_parent="root" value="1"/>
+  <Constant _name="key" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Equal?" inputs="x:kn.v,y:k1.value" outputs="x = y?:ism.v" uid="ism" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:kn.v,y:k2.value" outputs="x = y?:isk.v" uid="isk" uid_parent="root"/>
+  <Node _name="Select" inputs="t:kix.v,s:pu.popup,f:hit.v" outputs="s? t\3Af:mt.v" uid="mt" uid_parent="root"/>
+  <Node _name="Select" inputs="t:mod.v,s:modal.v,f:kix.v" outputs="s? t\3Af:kt2.v" uid="kt2" uid_parent="root"/>
+  <Node _name="Select" inputs="t:mt.v,s:ism.v,f:kt2.v" outputs="s? t\3Af:tgt.v" uid="tgt" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:tgt.v" outputs="x &gt;= 0?:towin.v" uid="towin" uid_parent="root"/>
+  <Constant _name="button downs" outputs="value:kdn.value" type="array{uint32}" uid="kdn" uid_parent="root" value="[513,515,516,518,519,521]"/>
+  <Node _name="Search 1D Array" inputs="1D array:kdn.value,element:msg.value" outputs="index of element:dn.v" uid="dn" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:dn.v" outputs="x &gt;= 0?:isdn.v" uid="isdn" uid_parent="root"/>
+  <Node _name="Not" inputs="x:pu.popup" outputs=".not. x?:nopop.v" uid="nopop" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:ism.v,element:isdn.v,element:nopop.v" outputs="appended array:pk3.v" uid="pk3" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:pk3.v" outputs="logical AND:press.v" uid="press" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:ids.value,index:tgt.v" outputs="element:tid.v" uid="tid" uid_parent="root"/>
+  <Constant _name="the panel" outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Select" inputs="t:tid.v,s:towin.v,f:k0.value" outputs="s? t\3Af:pkw.v" uid="pkw" uid_parent="root"/>
+  <Node _name="Select" inputs="t:pkw.v,s:press.v,f:kw.value" outputs="s? t\3Af:nkw.v" uid="nkw" uid_parent="root"/>
+  <Node _name="Not" inputs="x:towin.v" outputs=".not. x?:topan.v" uid="topan" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:ism.v,element:nopop.v,element:modal.v,element:topan.v" outputs="appended array:dr4.v" uid="dr4" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:dr4.v" outputs="logical AND:drop.v" uid="drop" uid_parent="root"/>
+  <Constant _name="nothing" outputs="value:m0.value" type="uint32" uid="m0" uid_parent="root" value="0"/>
+  <Node _name="Select" inputs="t:m0.value,s:drop.v,f:msg.value" outputs="s? t\3Af:mout.v" uid="mout" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:wl.value,index:tgt.v" outputs="element:tw.v" uid="tw" uid_parent="root"/>
+
+  <Structure _name="Case Structure" selectin="towin.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pan.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:tw.v" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:pu.geo" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:x.value" uid="cs_i4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:y.value" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:isk.v" uid="cs_i6" uid_parent="cs"/>
+    <Tunnel _id="In7" inputs="value:ei.value" uid="cs_i7" uid_parent="cs"/>
+    <CaseFrame label="A listed window" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_pan.value" uid="t_pan" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_w.value" uid="t_w" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_geo.value" uid="t_geo" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_x.value" uid="t_x" uid_parent="cst"/>
+      <Tunnel _id="In5" outputs="value:t_y.value" uid="t_y" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:t_key.value" uid="t_key" uid_parent="cst"/>
+      <Tunnel _id="In7" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="id,sx,sy,class" inputs="input cluster:t_w.value" outputs="id:tu.id,sx:tu.sx,sy:tu.sy,class:tu.class" uid="tu" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="panelX,panelY" inputs="input cluster:t_geo.value" outputs="panelX:gu.panelX,panelY:gu.panelY" uid="gu" uid_parent="cst"/>
+      <Node _name="Bundle By Name" fields="clientX,clientY" inputs="clientX:tu.sx,clientY:tu.sy,input cluster:t_geo.value" outputs="output cluster:lvgeo.v" uid="lvgeo" uid_parent="cst"/>
+      <Call inputs="hWnd:tu.id,error in:t_ei.value" outputs="active:,focus:twn.focus,capture:,error out:twn.error out" target="RemoteVI Thread Windows.vi" uid="twn" uid_parent="cst"/>
+      <Constant _name="GA_ROOT" outputs="value:kga.value" type="uint32" uid="kga" uid_parent="cst" value="2"/>
+      <Call inputs="hwnd:twn.focus,gaFlags:kga.value,error in:twn.error out" outputs="ancestor:anc.ancestor,error out:anc.error out" target="user32 GetAncestor.vi" uid="anc" uid_parent="cst"/>
+      <Node _name="Equal?" inputs="x:anc.ancestor,y:tu.id" outputs="x = y?:mine.v" uid="mine" uid_parent="cst"/>
+      <Node _name="Not Equal To 0?" inputs="x:twn.focus" outputs="x != 0?:hasf.v" uid="hasf" uid_parent="cst"/>
+      <Node _name="And" inputs="x:mine.v,y:hasf.v" outputs="x .and. y?:usef.v" uid="usef" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:twn.focus,s:usef.v,f:tu.id" outputs="s? t\3Af:khw.v" uid="khw" uid_parent="cst"/>
+      <Constant _name="native dialog" outputs="value:kdlg.value" type="string" uid="kdlg" uid_parent="cst" value="#32770"/>
+      <Node _name="Equal?" inputs="x:tu.class,y:kdlg.value" outputs="x = y?:native.v" uid="native" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelX,y:t_x.value" outputs="x+y:sx.v" uid="sx" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelY,y:t_y.value" outputs="x+y:sy.v" uid="sy" uid_parent="cst"/>
+      <Constant _name="2^32" outputs="value:k32.value" type="uint64" uid="k32" uid_parent="cst" value="4294967296"/>
+      <Constant _name="visible\2C not transparent" outputs="value:kcwp.value" type="uint32" uid="kcwp" uid_parent="cst" value="5"/>
+      <Constant _name="at most 8 levels" outputs="value:k7.value" type="int32" uid="k7" uid_parent="cst" value="7"/>
+      <Structure _name="While Loop" count="dl.value" label="Down to the deepest child under the point" uid="dl" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:sx.v" outputs="value:dsx.value" uid="dsx" uid_parent="dl"/>
+        <Tunnel _id="In2" inputs="value:sy.v" outputs="value:dsy.value" uid="dsy" uid_parent="dl"/>
+        <Tunnel _id="In3" inputs="value:k32.value" outputs="value:dk32.value" uid="dk32" uid_parent="dl"/>
+        <Tunnel _id="In4" inputs="value:kcwp.value" outputs="value:dcwp.value" uid="dcwp" uid_parent="dl"/>
+        <Tunnel _id="In5" inputs="value:k7.value" outputs="value:dk7.value" uid="dk7" uid_parent="dl"/>
+        <ShiftReg uid="src" uid_parent="dl">
+          <Left inputs="value:tu.id" outputs="value:cur.value" uid="srcL" uid_parent="src"/>
+          <Right inputs="value:ncur.v" outputs="value:deep.value" uid="srcR" uid_parent="src"/>
+        </ShiftReg>
+        <Call inputs="hWnd:cur.value,Screen X:dsx.value,Screen Y:dsy.value" outputs="Client X:stc.Client X,Client Y:stc.Client Y,return value:,error out:" target="user32 ScreenToClient.vi" uid="stc" uid_parent="dl"/>
+        <Node _name="To Unsigned Long Integer" inputs="number:stc.Client X" outputs="unsigned 32bit integer:ux.v" uid="ux" uid_parent="dl"/>
+        <Node _name="To Unsigned Long Integer" inputs="number:stc.Client Y" outputs="unsigned 32bit integer:uy.v" uid="uy" uid_parent="dl"/>
+        <Node _name="To Unsigned Quad Integer" inputs="number:ux.v" outputs="unsigned 64bit integer:qx.v" uid="qx" uid_parent="dl"/>
+        <Node _name="To Unsigned Quad Integer" inputs="number:uy.v" outputs="unsigned 64bit integer:qy.v" uid="qy" uid_parent="dl"/>
+        <Node _name="Multiply" inputs="x:qy.v,y:dk32.value" outputs="x*y:hy.v" uid="hy" uid_parent="dl"/>
+        <Node _name="Add" inputs="x:qx.v,y:hy.v" outputs="x+y:pt.v" uid="pt" uid_parent="dl"/>
+        <Call inputs="hwnd:cur.value,pt:pt.v,flags:dcwp.value" outputs="child:cw.child,error out:" target="user32 ChildWindowFromPointEx.vi" uid="cw" uid_parent="dl"/>
+        <Node _name="Equal To 0?" inputs="x:cw.child" outputs="x = 0?:nochild.v" uid="nochild" uid_parent="dl"/>
+        <Node _name="Equal?" inputs="x:cw.child,y:cur.value" outputs="x = y?:same.v" uid="same" uid_parent="dl"/>
+        <Node _name="Or" inputs="x:nochild.v,y:same.v" outputs="x .or. y?:bottom.v" uid="bottom" uid_parent="dl"/>
+        <Node _name="Select" inputs="t:cur.value,s:bottom.v,f:cw.child" outputs="s? t\3Af:ncur.v" uid="ncur" uid_parent="dl"/>
+        <Node _name="Greater Or Equal?" inputs="x:dl.value,y:dk7.value" outputs="x &gt;= y?:deepest.v" uid="deepest" uid_parent="dl"/>
+        <Node _name="Or" inputs="x:bottom.v,y:deepest.v" outputs="x .or. y?:dstop.v" uid="dstop" uid_parent="dl"/>
+        <Condition inputs="value:dstop.v" uid="dlc" uid_parent="dl" value="stop"/>
+      </Structure>
+      <Constant _name="zero" outputs="value:kz.value" type="int32" uid="kz" uid_parent="cst" value="0"/>
+      <Call inputs="hWnd:deep.value,Screen X:kz.value,Screen Y:kz.value" outputs="Client X:o.Client X,Client Y:o.Client Y,return value:,error out:" target="user32 ScreenToClient.vi" uid="o" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelX,y:o.Client X" outputs="x+y:npx.v" uid="npx" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:gu.panelY,y:o.Client Y" outputs="x+y:npy.v" uid="npy" uid_parent="cst"/>
+      <Node _name="Bundle By Name" fields="panelX,panelY,clientX,clientY" inputs="panelX:npx.v,panelY:npy.v,clientX:kz.value,clientY:kz.value,input cluster:t_geo.value" outputs="output cluster:natgeo.v" uid="natgeo" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:deep.value,s:native.v,f:tu.id" outputs="s? t\3Af:mhw.v" uid="mhw" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:natgeo.v,s:native.v,f:lvgeo.v" outputs="s? t\3Af:mgeo.v" uid="mgeo" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:khw.v,s:t_key.value,f:mhw.v" outputs="s? t\3Af:ohw.v" uid="ohw" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:lvgeo.v,s:t_key.value,f:mgeo.v" outputs="s? t\3Af:ogeo.v" uid="ogeo" uid_parent="cst"/>
+      <Node _name="Bundle By Name" fields="hWnd,geo" inputs="hWnd:ohw.v,geo:ogeo.v,input cluster:t_pan.value" outputs="output cluster:npan.v" uid="npan" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:npan.v" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:anc.error out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="The panel" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_pan.value" uid="f_pan" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_w" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_geo" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_x" uid_parent="csf"/>
+      <Tunnel _id="In5" outputs="value:" uid="f_y" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:" uid="f_key" uid_parent="csf"/>
+      <Tunnel _id="In7" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_pan.value" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_ei.value" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+  </Structure>
+
+  <Indicator _name="panel out" conIdx="4" connection="recommended" description="panel with hWnd and geo of the target window (popup unchanged)\3B panel itself when the target is the panel." inputs="value:cs_o1.value" type="cluster{uint64.hWnd,bool.popup,cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}.geo}" uid="o_pan" uid_parent="root" value="[0,false,[0,0,0,0]]"/>
+  <Indicator _name="msg out" conIdx="6" connection="recommended" description="msg\2C or 0 when the message is dropped (a mouse message for the panel while a modal window is listed)." inputs="value:mout.v" type="uint32" uid="o_msg" uid_parent="root" value="0"/>
+  <Indicator _name="key window out" conIdx="8" connection="recommended" description="The target of a button-down (0 = the panel)\3B key window otherwise." inputs="value:nkw.v" type="uint64" uid="o_kw" uid_parent="root" value="0"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the errors of the DLL calls." inputs="value:cs_o2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

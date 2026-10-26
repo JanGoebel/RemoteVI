@@ -1,0 +1,54 @@
+<VI _name="RemoteVI Track Windows.vi" description="The windows part of one server loop iteration (docs\5Cprotocol.md section 7). When look? is TRUE (a client is connected\2C the geometry is due or a popup was open) or a modal window was listed last time\2C and at least 200 ms after the last listing (last list - listing walks every top-level window of the desktop\2C about 12 ms in the IDE\2C measured\3B every iteration would make each iteration a frame iteration\2C and the OVERLAY\2C which goes out in the iterations between frames\2C would starve)\2C the application's other windows are listed (RemoteVI List Windows.vi - Win32 only\2C so it runs while a dialog holds LabVIEW's UI thread)\3B otherwise the previous list is kept. message is the text message windows [...] of the list (RemoteVI Windows Message.vi)\2C modal? is TRUE while a listed window is modal - LabVIEW's UI thread then runs a dialog's modal loop and every VI Server UI call would block until it closes (measured on LabVIEW 2025 with a Two Button Dialog)\2C so the server loop makes none.">
+  <Control _name="look?" conIdx="0" connection="required" description="TRUE lists the windows." outputs="value:look.value" type="bool" uid="look" uid_parent="root" value="false"/>
+  <Control _name="panel hWnd" conIdx="5" connection="required" description="The published front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="state" conIdx="7" connection="recommended" description="RemoteVI List Windows.vi state from the previous iteration." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
+  <Control _name="now" conIdx="1" connection="recommended" description="Tick count (ms) of this iteration." outputs="value:now.value" type="uint32" uid="now" uid_parent="root" value="0"/>
+  <Control _name="last list" conIdx="2" connection="recommended" description="Tick count of the last listing (last list out of the previous iteration)." outputs="value:last.value" type="uint32" uid="last" uid_parent="root" value="0"/>
+  <Control _name="previous windows" conIdx="9" connection="recommended" description="windows of the previous iteration." outputs="value:pw.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="pw" uid_parent="root" value="[]"/>
+  <Structure _name="For Loop" count="" label="Was one modal?" maxin="" maxout="" uid="fp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pw.value" mode="index" outputs="value:pwe.value" uid="pwe" uid_parent="fp"/>
+    <Node _name="Unbundle By Name" fields="modal" inputs="input cluster:pwe.value" outputs="modal:pwu.modal" uid="pwu" uid_parent="fp"/>
+    <Tunnel _id="Out1" inputs="value:pwu.modal" mode="index" outputs="value:pms.value" uid="pms" uid_parent="fp"/>
+  </Structure>
+  <Node _name="Or Array Elements" inputs="Boolean array:pms.value" outputs="logical OR:wasm.v" uid="wasm" uid_parent="root"/>
+  <Node _name="Or" inputs="x:look.value,y:wasm.v" outputs="x .or. y?:want.v" uid="want" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.value,y:last.value" outputs="x-y:age.v" uid="age" uid_parent="root"/>
+  <Constant _name="200 ms" outputs="value:k200.value" type="uint32" uid="k200" uid_parent="root" value="200"/>
+  <Node _name="Greater Or Equal?" inputs="x:age.v,y:k200.value" outputs="x &gt;= y?:due.v" uid="due" uid_parent="root"/>
+  <Node _name="And" inputs="x:want.v,y:due.v" outputs="x .and. y?:go.v" uid="go" uid_parent="root"/>
+  <Node _name="Select" inputs="t:now.value,s:go.v,f:last.value" outputs="s? t\3Af:nlast.v" uid="nlast" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="go.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hw.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:st.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:pw.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="List the windows" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_st.value" uid="t_st" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:" uid="t_pw" uid_parent="cst"/>
+      <Call inputs="panel hWnd:t_hw.value,state:t_st.value" outputs="windows:lw.windows,modal?:,state out:lw.state out,error out:" target="RemoteVI List Windows.vi" uid="lw" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:lw.windows" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:lw.state out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Keep the previous list" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_hw" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_st.value" uid="f_st" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_pw.value" uid="f_pw" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_pw.value" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_st.value" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:wins.value" uid="wins" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:sto.value" uid="sto" uid_parent="cs"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Is one modal?" maxin="" maxout="" uid="fm" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wins.value" mode="index" outputs="value:we.value" uid="we" uid_parent="fm"/>
+    <Node _name="Unbundle By Name" fields="modal" inputs="input cluster:we.value" outputs="modal:wu.modal" uid="wu" uid_parent="fm"/>
+    <Tunnel _id="Out1" inputs="value:wu.modal" mode="index" outputs="value:ms.value" uid="ms" uid_parent="fm"/>
+  </Structure>
+  <Node _name="Or Array Elements" inputs="Boolean array:ms.value" outputs="logical OR:modal.v" uid="modal" uid_parent="root"/>
+  <Call inputs="windows:wins.value" outputs="message:wm.message" target="RemoteVI Windows Message.vi" uid="wm" uid_parent="root"/>
+  <Indicator _name="windows" conIdx="4" connection="recommended" description="The listed windows\2C front-most first." inputs="value:wins.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="o_w" uid_parent="root" value="[]"/>
+  <Indicator _name="message" conIdx="6" connection="recommended" description="The text message windows [...]." inputs="value:wm.message" type="string" uid="o_m" uid_parent="root" value=""/>
+  <Indicator _name="modal?" conIdx="8" connection="recommended" description="TRUE while a listed window is modal." inputs="value:modal.v" type="bool" uid="o_mod" uid_parent="root" value="false"/>
+  <Indicator _name="last list out" conIdx="3" connection="recommended" description="now when the windows were listed\2C else last list." inputs="value:nlast.v" type="uint32" uid="o_last" uid_parent="root" value="0"/>
+  <Indicator _name="state out" conIdx="10" connection="recommended" description="For the next iteration." inputs="value:sto.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="o_st" uid_parent="root" value="[false,[],[],[]]"/>
+</VI>

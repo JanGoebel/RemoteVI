@@ -2,11 +2,11 @@
 
 | Layer | Tool | What |
 |---|---|---|
-| Pure G VIs | Caraya unit tests generated from the vectors (`tests/caraya/`, see below) | Protocol, Dirty Rects, Translate Input and Track Modifiers against `tests/vectors/*.json` |
+| Pure G VIs | Caraya unit tests generated from the vectors (`tests/caraya/`, see below) | Protocol (also Window Frame Encode and the `x <id>` message), Dirty Rects, Translate Input and Track Modifiers against `tests/vectors/*.json` |
 | Benchmarks | `spikes/Bench Dirty Rects.vi`, `spikes/Bench Encode PNG.vi` | diff and PNG encode timings; `spikes/Spike Start Errors.vi` checks Start's error reporting |
 | Server acceptance | `node tools/check-server.mjs --url http://127.0.0.1:8088 [--click x,y] [--png out.png]` | black-box checks of a running server, the LabVIEW one or the reference one: HTTP surface, first frame pixel coverage, flow control, input, robustness |
 | Client and reference | `node:test` (`npm test`, Node 22+, no install) | WebSocket and HTTP parsers, end-to-end against the reference server, client file is pure ASCII and self-contained |
-| Input fidelity in LabVIEW | `RVI_LV=1 npm run test:lv` against `tests/fixtures/RemoteVI Fixture.vi` (see below) | clicks, latched buttons, typing, modifiers, hover, ring and right-click menus, tabs, wheel, double click, Shift+arrow, tip strips, run-time shortcut menu with a submenu, hover highlight in menus, submenu beside its parent, the whole window in the stream (menu bar, toolbar, scrollbars; `origin`), run-time menu bar with a submenu, scrollbar arrows |
+| Input fidelity in LabVIEW | `RVI_LV=1 npm run test:lv` against `tests/fixtures/RemoteVI Fixture.vi` (see below) | clicks, latched buttons, typing, modifiers, hover, ring and right-click menus, tabs, wheel, double click, Shift+arrow, tip strips, run-time shortcut menu with a submenu, hover highlight in menus, submenu beside its parent, the whole window in the stream (menu bar, toolbar, scrollbars; `origin`), run-time menu bar with a submenu, scrollbar arrows, a LabVIEW dialog as a modal window with its own picture (Enter answers it, the panel behind it takes no input, a click on its No button answers it), a native file dialog (Escape cancels it) |
 
 ## Shared test vectors
 
@@ -17,8 +17,8 @@
 | `websocket.json` | WS Encode Server Frame, WS Decode Client Frame | RFC 6455 accept keys, valid, invalid and incomplete client frames with close codes, server frames |
 | `http.json` | – (IG HTTP parses requests) | request heads and expected status, used by the JS parser tests |
 | `rects.json` | Dirty Rects | first capture, identical, single pixel, row merging, clipped edge tiles |
-| `frame.json` | Frame Encode | complete FRAME messages |
-| `input.json` | Parse Input | valid and malformed client messages |
+| `frame.json` | Frame Encode, Overlay Encode, Window Frame Encode | complete FRAME, OVERLAY and WINDOW FRAME messages |
+| `input.json` | Parse Input | valid and malformed client messages, also `x <id>` (close a window) |
 | `translate.json` | Translate Input, Track Modifiers | client/screen coordinate rules with and without mouse capture, wheel, double click as a second down, key scan codes, WM_CHAR wrapping, allow list; `modifiers`: modifier keys held after a message |
 
 Bytes are lowercase hex. Pixels are `0x00RRGGBB` integers, row-major.
@@ -31,6 +31,7 @@ Bytes are lowercase hex. Pixels are `0x00RRGGBB` integers, row-major.
 |---|---|---|
 | Protocol/RemoteVI Frame Encode.vi | `frame.json` cases | `unit/Protocol/Test Frame Encode.vi` |
 | Protocol/RemoteVI Overlay Encode.vi | `frame.json` overlays | `unit/Protocol/Test Overlay Encode.vi` |
+| Protocol/RemoteVI Window Frame Encode.vi | `frame.json` windowFrames | `unit/Protocol/Test Window Frame Encode.vi` |
 | Protocol/RemoteVI Parse Input.vi | `input.json` | `unit/Protocol/Test Parse Input.vi` |
 | Protocol/RemoteVI WS Encode Server Frame.vi | `websocket.json` serverFrames | `unit/Protocol/Test WS Encode Server Frame.vi` |
 | Protocol/RemoteVI WS Decode Client Frame.vi | `websocket.json` clientFrames, incompleteClientFrames | `unit/Protocol/Test WS Decode Client Frame.vi` |
@@ -38,7 +39,7 @@ Bytes are lowercase hex. Pixels are `0x00RRGGBB` integers, row-major.
 | Input/RemoteVI Translate Input.vi | `translate.json` cases (input through Parse Input first) | `unit/Input/Test Translate Input.vi` |
 | Input/RemoteVI Track Modifiers.vi | `translate.json` modifiers | `unit/Input/Test Track Modifiers.vi` |
 
-Each test has two layers. `support/RemoteVI Check <VI>.vi` calls the VI once per vector and renders expected and actual the same way: bytes as lowercase hex, structured results as short text (`mouse msg=513 x=120 y=45 wParam=1`, `posts=513:1:4325386; tracking=T cursor=-`, rects `x,y,w,h;`). It returns `labels`, `expected`, `actual` and `failures`, and needs no test framework, so it can be run on its own in the IDE. `unit/<area>/Test <VI>.vi` is the Caraya test around it: Define Test, then one Assert Equal per vector. `RemoteVI Caraya Runner.vi` runs all of them non-interactively and writes a JUnit report.
+Each test has two layers. `support/RemoteVI Check <VI>.vi` calls the VI once per vector and renders expected and actual the same way: bytes as lowercase hex, structured results as short text (`mouse msg=513 x=120 y=45 wParam=1`, `close id=5113012`, `posts=513:1:4325386; tracking=T cursor=-`, rects `x,y,w,h;`). It returns `labels`, `expected`, `actual` and `failures`, and needs no test framework, so it can be run on its own in the IDE. `unit/<area>/Test <VI>.vi` is the Caraya test around it: Define Test, then one Assert Equal per vector. `RemoteVI Caraya Runner.vi` runs all of them non-interactively and writes a JUnit report.
 
 The expected values are constants inside the generated VIs, not read from JSON at run time: LabVIEW's Unflatten From JSON fails with error -375006 when an object lacks a cluster element, and the vectors leave fields out on purpose (null results, error-or-payload frames, optional cursor). So after a vector changes:
 
@@ -65,9 +66,9 @@ In the IDE: run `tests/caraya/RemoteVI Caraya Runner.vi` (report beside it, or a
 
 ## LabVIEW integration suite
 
-`tests/lv/fixture.test.mjs` drives `tests/fixtures/RemoteVI Fixture.vi` through the real server on port 8089, exactly as the browser does, and reads LabVIEW's side from the fixture's event log (format in `tests/lv/harness.mjs`). Run the fixture (one RemoteVI server per LabVIEW instance: stop any other first), then `RVI_LV=1 npm run test:lv`; stop it with its Stop button. Keep LabVIEW the active application while the suite runs: LabVIEW shows tip strips only then, as it does for a local user, so the tip strip test fails with another program in front (measured).
+`tests/lv/fixture.test.mjs` drives `tests/fixtures/RemoteVI Fixture.vi` through the real server on port 8089, exactly as the browser does, and reads LabVIEW's side from the fixture's event log (format in `tests/lv/harness.mjs`). Run the fixture (one RemoteVI server per LabVIEW instance: stop any other first), then `RVI_LV=1 npm run test:lv`; stop it with its Stop button. Keep LabVIEW the active application while the suite runs: LabVIEW shows tip strips only then, as it does for a local user, so the tip strip test fails with another program in front (measured). The round-5 tests open a Two Button Dialog (fixture button `Ask`) and the native File Dialog (button `Open`); while one is up LabVIEW does not answer VI Server or ActiveX calls, so a tool that drives LabVIEW over them waits until the dialog is answered.
 
-The fixture is generated: `tests/fixtures/aixml/compose_fixture.py <labview-mcp bin>` composes it (through `listbox_composer.py`, which adds `style="Listbox"` to the composer, and `fix_event_data_nodes.py`, which corrects the Event Data Node indices), then `RemoteVI Fixture Arrange.vi` (Fixture = the fixture, Tab Panel = a VI holding only the tab control, made by `RemoteVI Fixture Prep Tab Panel.vi` from a copy of NI's *Programmatically Manipulate a Tab Control.vi*) pastes the tab control, sets the List rows, the Button tip strip and the layout, and saves. The layout puts error out at the bottom right, ending just inside the 900 x 600 window, which gives the panel a scroll range of about 6 px each way: both scrollbars work, and a test click still hits its control when the mouse wheel over Number has scrolled the panel (it does, as locally). At run time the fixture adds a menu Fixture in front of LabVIEW's default run-time menus (Say Hello, and More > Deep Bar; replacing the default menus with Delete Menu Items stopped LabVIEW from showing tip strips, measured), logs `menubar` and `scroll` lines, and scrolls the panel back to 0,0 1.5 s after the last scroll, so a second run finds the controls where the layout lines say. Run Arrange once per compose: it pastes the tab again on a second run.
+The fixture is generated: `tests/fixtures/aixml/compose_fixture.py <labview-mcp bin>` composes it (through `listbox_composer.py`, which adds `style="Listbox"` to the composer, and `fix_event_data_nodes.py`, which corrects the Event Data Node indices), then `RemoteVI Fixture Arrange.vi` (Fixture = the fixture, Tab Panel = a VI holding only the tab control, made by `RemoteVI Fixture Prep Tab Panel.vi` from a copy of NI's *Programmatically Manipulate a Tab Control.vi*) pastes the tab control, sets the List rows, the Button tip strip and the layout, and saves. The layout puts error out at the bottom right, ending just inside the 900 x 600 window, which gives the panel a scroll range of about 6 px each way: both scrollbars work, and a test click still hits its control when the mouse wheel over Number has scrolled the panel (it does, as locally). Ask opens the Two Button Dialog Proceed? (Yes / No) and logs `dialog TRUE|FALSE`; Open opens the native File Dialog and logs `file <path>` or `file CANCELLED` (both latched buttons, below Stop). At run time the fixture adds a menu Fixture in front of LabVIEW's default run-time menus (Say Hello, and More > Deep Bar; replacing the default menus with Delete Menu Items stopped LabVIEW from showing tip strips, measured), logs `menubar` and `scroll` lines, and scrolls the panel back to 0,0 1.5 s after the last scroll, so a second run finds the controls where the layout lines say. Run Arrange once per compose: it pastes the tab again on a second run.
 
 ## Manual acceptance
 

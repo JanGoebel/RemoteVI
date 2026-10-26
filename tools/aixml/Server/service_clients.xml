@@ -1,13 +1,15 @@
-<VI _name="RemoteVI Service Clients.vi" description="Services every client once (RemoteVI Service Client.vi)\2C in order\3A reads and handles what each one sent. popups travels from client to client\2C so a displacement d set by a popup click of one client applies to the next\3B popups out carries the last one. clicked? is TRUE when any client posted a message that may open a LabVIEW popup. No VI Server call\3B geo and hWnd come from the server loop's cache.">
-  <Control _name="clients" conIdx="0" connection="required" description="The connected clients (same cluster as in RemoteVI Server Loop.vi)." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="cl" uid_parent="root" value="[]"/>
+<VI _name="RemoteVI Service Clients.vi" description="Services every client once (RemoteVI Service Client.vi)\2C in order\3A reads and handles what each one sent. popups travels from client to client\2C so a displacement d set by a popup click of one client applies to the next\3B popups out carries the last one. clicked? is TRUE when any client posted a message that may open a LabVIEW popup. No VI Server call\3B geo\2C hWnd and windows (the application's other windows\2C docs\5Cprotocol.md section 7) come from the server loop's cache.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients (same cluster as in RemoteVI Server Loop.vi)." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="cl" uid_parent="root" value="[]"/>
   <Control _name="geo" conIdx="5" connection="required" description="Frame origin and client-area origin in screen coordinates (cached)." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
   <Control _name="hWnd" conIdx="7" connection="required" description="Native handle of the served front panel window (cached)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="popups" conIdx="9" connection="recommended" description="The modal popups at their logical positions with d (RemoteVI Track Popups.vi)." outputs="value:pp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="pp" uid_parent="root" value="[[],0,0]"/>
+  <Control _name="windows" conIdx="1" connection="recommended" description="The application's other windows\2C front-most first (RemoteVI Track Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
   <Constant outputs="value:bf.value" type="bool" uid="bf" uid_parent="root" value="false"/>
   <Structure _name="For Loop" count="" label="Service every client" maxin="" maxout="" uid="fs" uid_parent="root">
     <Tunnel _id="In1" inputs="value:cl.value" mode="index" outputs="value:s_cl.value" uid="s_cl" uid_parent="fs"/>
     <Tunnel _id="In2" inputs="value:geo.value" outputs="value:s_geo.value" uid="s_geo" uid_parent="fs"/>
     <Tunnel _id="In3" inputs="value:hw.value" outputs="value:s_hw.value" uid="s_hw" uid_parent="fs"/>
+    <Tunnel _id="In4" inputs="value:wl.value" outputs="value:s_wl.value" uid="s_wl" uid_parent="fs"/>
     <ShiftReg uid="sr_sp" uid_parent="fs">
       <Left inputs="value:pp.value" outputs="value:s_pp.value" uid="sr_spl" uid_parent="sr_sp"/>
       <Right inputs="value:sc.popups out" outputs="value:pend.value" uid="sr_spr" uid_parent="sr_sp"/>
@@ -16,11 +18,11 @@
       <Left inputs="value:bf.value" outputs="value:acl.value" uid="sr_acl" uid_parent="sr_ac"/>
       <Right inputs="value:aco.x .or. y?" outputs="value:anyclk.value" uid="sr_acr" uid_parent="sr_ac"/>
     </ShiftReg>
-    <Call inputs="Client:s_cl.value,geo:s_geo.value,hWnd:s_hw.value,popups:s_pp.value" outputs="Client out:sc.Client out,popups out:sc.popups out,clicked?:sc.clicked?,error out:" target="RemoteVI Service Client.vi" uid="sc" uid_parent="fs"/>
+    <Call inputs="Client:s_cl.value,geo:s_geo.value,hWnd:s_hw.value,popups:s_pp.value,windows:s_wl.value" outputs="Client out:sc.Client out,popups out:sc.popups out,clicked?:sc.clicked?,error out:" target="RemoteVI Service Client.vi" uid="sc" uid_parent="fs"/>
     <Node _name="Or" inputs="x:acl.value,y:sc.clicked?" outputs="x .or. y?:aco.x .or. y?" uid="aco" uid_parent="fs"/>
     <Tunnel _id="Out1" inputs="value:sc.Client out" mode="index" outputs="value:serviced.value" uid="serviced" uid_parent="fs"/>
   </Structure>
-  <Indicator _name="clients out" conIdx="4" connection="recommended" description="The clients after servicing." inputs="value:serviced.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since}}" uid="o_cl" uid_parent="root" value="[]"/>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="The clients after servicing." inputs="value:serviced.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="o_cl" uid_parent="root" value="[]"/>
   <Indicator _name="popups out" conIdx="6" connection="recommended" description="popups with the displacement d after the last client." inputs="value:pend.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="o_pp" uid_parent="root" value="[[],0,0]"/>
   <Indicator _name="clicked?" conIdx="8" connection="recommended" description="TRUE when any client posted a message that may open a popup." inputs="value:anyclk.value" type="bool" uid="o_clk" uid_parent="root" value="false"/>
 </VI>

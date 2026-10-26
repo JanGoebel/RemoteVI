@@ -1,0 +1,32 @@
+<VI _name="RemoteVI Window Frame Encode.vi" description="Encodes one RemoteVI protocol v2 WINDOW FRAME message (docs/protocol.md section 7) - the picture of another window of the application (a dialog, a file dialog, a subVI panel) with the same dirty-rectangle encoding as FRAME. Layout, all integers big-endian: 0x52, 0x03, window id U32, seq U32 (shared with FRAME), width U16, height U16, rect count U16, then per rect x I16, y I16, png length U32 and the png bytes. Pure function, cannot fail. Reference: encodeWindowFrame() in tools\5Clib\5Cprotocol.mjs.">
+  <FreeLabel comment="Header then one record per rect, big-endian" uid="lbl" uid_parent="root"/>
+  <Control _name="id" conIdx="0" connection="required" description="The window id (its HWND, docs/protocol.md section 7), written as U32." outputs="value:wid.value" type="uint32" uid="wid" uid_parent="root" value="0"/>
+  <Control _name="seq" conIdx="5" connection="required" description="Frame sequence number, written as U32." outputs="value:seq.value" type="uint32" uid="seq" uid_parent="root" value="0"/>
+  <Control _name="width" conIdx="7" connection="required" description="Window width in pixels (its client area), written as U16." outputs="value:width.value" type="uint16" uid="width" uid_parent="root" value="0"/>
+  <Control _name="height" conIdx="9" connection="required" description="Window height in pixels (its client area), written as U16." outputs="value:height.value" type="uint16" uid="height" uid_parent="root" value="0"/>
+  <Control _name="rects" conIdx="11" connection="required" description="Dirty rectangles: x and y (I16) of the top-left corner and the PNG-encoded pixels. The rect count is written as U16." outputs="value:rects.value" type="array{cluster{int16.x,int16.y,string.png}}" uid="rects" uid_parent="root" value="[]"/>
+  <Constant outputs="value:magic.value" type="uint16" uid="magic" uid_parent="root" value="20995"/>
+  <Constant outputs="value:tstr.value" type="string" uid="tstr" uid_parent="root" value=""/>
+  <Node _name="Type Cast" inputs="x:magic.value,type:tstr.value" outputs="*(type *) &amp;x:tcm.*(type *) &amp;x" uid="tcm" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:wid.value,type:tstr.value" outputs="*(type *) &amp;x:tci.*(type *) &amp;x" uid="tci" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:seq.value,type:tstr.value" outputs="*(type *) &amp;x:tcs.*(type *) &amp;x" uid="tcs" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:width.value,type:tstr.value" outputs="*(type *) &amp;x:tcw.*(type *) &amp;x" uid="tcw" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:height.value,type:tstr.value" outputs="*(type *) &amp;x:tch.*(type *) &amp;x" uid="tch" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:rects.value" outputs="size(s):asz.size(s)" uid="asz" uid_parent="root"/>
+  <Node _name="To Unsigned Word Integer" inputs="number:asz.size(s)" outputs="unsigned 16bit integer:cnt.unsigned 16bit integer" uid="cnt" uid_parent="root"/>
+  <Node _name="Type Cast" inputs="x:cnt.unsigned 16bit integer,type:tstr.value" outputs="*(type *) &amp;x:tcc.*(type *) &amp;x" uid="tcc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One record per rect" maxin="" maxout="" uid="loop" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rects.value" mode="index" outputs="value:rin.value" uid="rin" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:tstr.value" outputs="value:tin.value" uid="tin" uid_parent="loop"/>
+    <Node _name="Unbundle By Name" fields="x,y,png" inputs="input cluster:rin.value" outputs="x:unb.x,y:unb.y,png:unb.png" uid="unb" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:unb.x,type:tin.value" outputs="*(type *) &amp;x:tcx.*(type *) &amp;x" uid="tcx" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:unb.y,type:tin.value" outputs="*(type *) &amp;x:tcy.*(type *) &amp;x" uid="tcy" uid_parent="loop"/>
+    <Node _name="String Length" inputs="string:unb.png" outputs="length:slen.length" uid="slen" uid_parent="loop"/>
+    <Node _name="To Unsigned Long Integer" inputs="number:slen.length" outputs="unsigned 32bit integer:u32.unsigned 32bit integer" uid="u32" uid_parent="loop"/>
+    <Node _name="Type Cast" inputs="x:u32.unsigned 32bit integer,type:tin.value" outputs="*(type *) &amp;x:tcl.*(type *) &amp;x" uid="tcl" uid_parent="loop"/>
+    <Node _name="Concatenate Strings" inputs="string:tcx.*(type *) &amp;x,string:tcy.*(type *) &amp;x,string:tcl.*(type *) &amp;x,string:unb.png" outputs="concatenated string:rec.concatenated string" uid="rec" uid_parent="loop"/>
+    <Tunnel _id="Out1" inputs="value:rec.concatenated string" mode="index" outputs="value:recs.value" uid="recs" uid_parent="loop"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:tcm.*(type *) &amp;x,string:tci.*(type *) &amp;x,string:tcs.*(type *) &amp;x,string:tcw.*(type *) &amp;x,string:tch.*(type *) &amp;x,string:tcc.*(type *) &amp;x,string:recs.value" outputs="concatenated string:msg.concatenated string" uid="msg" uid_parent="root"/>
+  <Indicator _name="message" conIdx="4" connection="recommended" description="The complete WINDOW FRAME message, ready to send as one binary WebSocket message." inputs="value:msg.concatenated string" type="string" uid="message" uid_parent="root" value=""/>
+</VI>

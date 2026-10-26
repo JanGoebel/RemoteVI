@@ -1,0 +1,72 @@
+<VI _name="RemoteVI Thread Windows.vi" description="Which windows of the GUI thread that owns hWnd (LabVIEW's UI thread) are active\2C have the keyboard focus and hold the mouse capture right now\3A user32 GetWindowThreadProcessId.vi\2C then user32 GetGUIThreadInfo.vi with the 64-bit GUITHREADINFO (cbSize 72\2C each HWND two U32\2C low first\3A hwndActive [2\2C3]\2C hwndFocus [4\2C5]\2C hwndCapture [6\2C7])\3B when that call fails it is repeated with the 32-bit layout (cbSize 48\2C one U32 each\3A [2]\2C [3]\2C [4]). Both run in any thread\2C so this answers while a dialog or a popup holds the UI thread in its modal loop. The focus window can be a CHILD window - the file name box of a native file dialog. A window that does not exist gives 0. An incoming error skips the work.">
+  <FreeLabel comment="hwndActive\2C hwndFocus\2C hwndCapture" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnd" conIdx="0" connection="required" description="A window of the thread to ask about." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is read when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call inputs="hWnd:hw.value,error in:ei.value" outputs="thread ID:gt.thread ID,process ID:,error out:gt.error out" target="user32 GetWindowThreadProcessId.vi" uid="gt" uid_parent="root"/>
+  <Constant _name="64-bit GUITHREADINFO" outputs="value:k72.value" type="uint32" uid="k72" uid_parent="root" value="72"/>
+  <Call inputs="thread ID:gt.thread ID,cbSize:k72.value,error in:gt.error out" outputs="info:g64.info,return value:g64.return value,error out:g64.error out" target="user32 GetGUIThreadInfo.vi" uid="g64" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:g64.return value" outputs="x = 0?:fail.x = 0?" uid="fail" uid_parent="root"/>
+  <Constant _name="2^32" outputs="value:k32.value" type="uint64" uid="k32" uid_parent="root" value="4294967296"/>
+  <Structure _name="Case Structure" selectin="fail.x = 0?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:g64.info" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:gt.thread ID" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:g64.error out" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:k32.value" uid="cs_i4" uid_parent="cs"/>
+    <CaseFrame label="32-bit LabVIEW\3A ask again with cbSize 48" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_inf" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_tid.value" uid="t_tid" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_err.value" uid="t_err" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:" uid="t_k32" uid_parent="cst"/>
+      <Constant _name="32-bit GUITHREADINFO" outputs="value:k48.value" type="uint32" uid="k48" uid_parent="cst" value="48"/>
+      <Call inputs="thread ID:t_tid.value,cbSize:k48.value,error in:t_err.value" outputs="info:g32.info,return value:,error out:g32.error out" target="user32 GetGUIThreadInfo.vi" uid="g32" uid_parent="cst"/>
+      <Constant outputs="value:j2.value" type="int32" uid="j2" uid_parent="cst" value="2"/>
+      <Constant outputs="value:j3.value" type="int32" uid="j3" uid_parent="cst" value="3"/>
+      <Constant outputs="value:j4.value" type="int32" uid="j4" uid_parent="cst" value="4"/>
+      <Node _name="Index Array" inputs="array:g32.info,index:j2.value,index:j3.value,index:j4.value" outputs="element:a32.element,element:f32.element,element:c32.element" uid="ix32" uid_parent="cst"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:a32.element" outputs="unsigned 64bit integer:a64.v" uid="a64" uid_parent="cst"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:f32.element" outputs="unsigned 64bit integer:f64.v" uid="f64" uid_parent="cst"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:c32.element" outputs="unsigned 64bit integer:c64.v" uid="c64" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:a64.v" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:f64.v" uid="t_o2" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:c64.v" uid="t_o3" uid_parent="cst"/>
+      <Tunnel _id="Out4" inputs="value:g32.error out" uid="t_o4" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="64-bit LabVIEW" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_inf.value" uid="f_inf" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_tid" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_err.value" uid="f_err" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:f_k32.value" uid="f_k32" uid_parent="csf"/>
+      <Constant outputs="value:i2.value" type="int32" uid="i2" uid_parent="csf" value="2"/>
+      <Constant outputs="value:i3.value" type="int32" uid="i3" uid_parent="csf" value="3"/>
+      <Constant outputs="value:i4.value" type="int32" uid="i4" uid_parent="csf" value="4"/>
+      <Constant outputs="value:i5.value" type="int32" uid="i5" uid_parent="csf" value="5"/>
+      <Constant outputs="value:i6.value" type="int32" uid="i6" uid_parent="csf" value="6"/>
+      <Constant outputs="value:i7.value" type="int32" uid="i7" uid_parent="csf" value="7"/>
+      <Node _name="Index Array" inputs="array:f_inf.value,index:i2.value,index:i3.value,index:i4.value,index:i5.value,index:i6.value,index:i7.value" outputs="element:al.element,element:ah.element,element:fl.element,element:fh.element,element:cl.element,element:ch.element" uid="ix64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:al.element" outputs="unsigned 64bit integer:al64.v" uid="al64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:ah.element" outputs="unsigned 64bit integer:ah64.v" uid="ah64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:fl.element" outputs="unsigned 64bit integer:fl64.v" uid="fl64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:fh.element" outputs="unsigned 64bit integer:fh64.v" uid="fh64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:cl.element" outputs="unsigned 64bit integer:cl64.v" uid="cl64" uid_parent="csf"/>
+      <Node _name="To Unsigned Quad Integer" inputs="number:ch.element" outputs="unsigned 64bit integer:ch64.v" uid="ch64" uid_parent="csf"/>
+      <Node _name="Multiply" inputs="x:ah64.v,y:f_k32.value" outputs="x*y:ahs.v" uid="ahs" uid_parent="csf"/>
+      <Node _name="Multiply" inputs="x:fh64.v,y:f_k32.value" outputs="x*y:fhs.v" uid="fhs" uid_parent="csf"/>
+      <Node _name="Multiply" inputs="x:ch64.v,y:f_k32.value" outputs="x*y:chs.v" uid="chs" uid_parent="csf"/>
+      <Node _name="Add" inputs="x:al64.v,y:ahs.v" outputs="x+y:act.v" uid="act" uid_parent="csf"/>
+      <Node _name="Add" inputs="x:fl64.v,y:fhs.v" outputs="x+y:foc.v" uid="foc" uid_parent="csf"/>
+      <Node _name="Add" inputs="x:cl64.v,y:chs.v" outputs="x+y:cap.v" uid="cap" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:act.v" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:foc.v" uid="f_o2" uid_parent="csf"/>
+      <Tunnel _id="Out3" inputs="value:cap.v" uid="f_o3" uid_parent="csf"/>
+      <Tunnel _id="Out4" inputs="value:f_err.value" uid="f_o4" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:cs_o3.value" uid="cs_o3" uid_parent="cs"/>
+    <Tunnel _id="Out4" outputs="value:cs_o4.value" uid="cs_o4" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="active" conIdx="4" connection="recommended" description="hwndActive\3A the thread's active top-level window\2C 0 when none." inputs="value:cs_o1.value" type="uint64" uid="o_a" uid_parent="root" value="0"/>
+  <Indicator _name="focus" conIdx="6" connection="recommended" description="hwndFocus\3A the window with the keyboard focus (may be a child window)\2C 0 when none." inputs="value:cs_o2.value" type="uint64" uid="o_f" uid_parent="root" value="0"/>
+  <Indicator _name="capture" conIdx="8" connection="recommended" description="hwndCapture\3A the window holding the mouse capture\2C 0 when none." inputs="value:cs_o3.value" type="uint64" uid="o_c" uid_parent="root" value="0"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the errors of the DLL calls." inputs="value:cs_o4.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

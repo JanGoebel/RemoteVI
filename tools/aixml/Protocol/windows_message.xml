@@ -1,0 +1,49 @@
+<VI _name="RemoteVI Windows Message.vi" description="Builds the text message windows &lt;json&gt; (docs\5Cprotocol.md section 7) from the window list of RemoteVI List Windows.vi\3A a JSON array\2C front-most window first\2C one object per window with id\2C title\2C x\2C y\2C w\2C h\2C modal\2C active and closable in that order - windows [] when there is none. title is taken as it is\2C already a JSON string literal (RemoteVI JSON String.vi)\2C so the message is ASCII. The JSON is written field by field rather than with Flatten To JSON\3A the title has to stay the escaped literal it is (Flatten To JSON would escape its backslashes again)\2C and the field order and spelling are the protocol's. Pure function\2C cannot fail. Reference: windowsMessage() in tools\5Clib\5Cprotocol.mjs.">
+  <FreeLabel comment="One JSON object per window\2C comma joined" uid="lbl" uid_parent="root"/>
+  <Control _name="windows" conIdx="0" connection="required" description="The listed windows\2C front-most first\3A id (HWND)\2C title (JSON string literal)\2C x\2C y\2C w\2C h (client area in main-frame coordinates)\2C modal\2C active\2C closable\2C sx\2C sy (client-area origin on screen) and class." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Constant outputs="value:k1.value" type="string" uid="k1" uid_parent="root" value="\2C{&quot;id&quot;\3A"/>
+  <Constant outputs="value:k2.value" type="string" uid="k2" uid_parent="root" value="\2C&quot;title&quot;\3A"/>
+  <Constant outputs="value:k3.value" type="string" uid="k3" uid_parent="root" value="\2C&quot;x&quot;\3A"/>
+  <Constant outputs="value:k4.value" type="string" uid="k4" uid_parent="root" value="\2C&quot;y&quot;\3A"/>
+  <Constant outputs="value:k5.value" type="string" uid="k5" uid_parent="root" value="\2C&quot;w&quot;\3A"/>
+  <Constant outputs="value:k6.value" type="string" uid="k6" uid_parent="root" value="\2C&quot;h&quot;\3A"/>
+  <Constant outputs="value:k7.value" type="string" uid="k7" uid_parent="root" value="\2C&quot;modal&quot;\3A"/>
+  <Constant outputs="value:k8.value" type="string" uid="k8" uid_parent="root" value="\2C&quot;active&quot;\3A"/>
+  <Constant outputs="value:k9.value" type="string" uid="k9" uid_parent="root" value="\2C&quot;closable&quot;\3A"/>
+  <Constant outputs="value:k10.value" type="string" uid="k10" uid_parent="root" value="}"/>
+  <Constant outputs="value:kt.value" type="string" uid="kt" uid_parent="root" value="true"/>
+  <Constant outputs="value:kf.value" type="string" uid="kf" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="" label="One object per window" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wl.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:k1.value" outputs="value:t1.value" uid="t1" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:k2.value" outputs="value:t2.value" uid="t2" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:k3.value" outputs="value:t3.value" uid="t3" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:k4.value" outputs="value:t4.value" uid="t4" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:k5.value" outputs="value:t5.value" uid="t5" uid_parent="fl"/>
+    <Tunnel _id="In7" inputs="value:k6.value" outputs="value:t6.value" uid="t6" uid_parent="fl"/>
+    <Tunnel _id="In8" inputs="value:k7.value" outputs="value:t7.value" uid="t7" uid_parent="fl"/>
+    <Tunnel _id="In9" inputs="value:k8.value" outputs="value:t8.value" uid="t8" uid_parent="fl"/>
+    <Tunnel _id="In10" inputs="value:k9.value" outputs="value:t9.value" uid="t9" uid_parent="fl"/>
+    <Tunnel _id="In11" inputs="value:k10.value" outputs="value:t10.value" uid="t10" uid_parent="fl"/>
+    <Tunnel _id="In12" inputs="value:kt.value" outputs="value:tt.value" uid="tt" uid_parent="fl"/>
+    <Tunnel _id="In13" inputs="value:kf.value" outputs="value:tf.value" uid="tf" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="id,title,x,y,w,h,modal,active,closable" inputs="input cluster:w.value" outputs="id:u.id,title:u.title,x:u.x,y:u.y,w:u.w,h:u.h,modal:u.modal,active:u.active,closable:u.closable" uid="u" uid_parent="fl"/>
+    <Node _name="Number To Decimal String" inputs="number:u.id" outputs="decimal integer string:did.v" uid="did" uid_parent="fl"/>
+    <Node _name="Number To Decimal String" inputs="number:u.x" outputs="decimal integer string:dx.v" uid="dx" uid_parent="fl"/>
+    <Node _name="Number To Decimal String" inputs="number:u.y" outputs="decimal integer string:dy.v" uid="dy" uid_parent="fl"/>
+    <Node _name="Number To Decimal String" inputs="number:u.w" outputs="decimal integer string:dw.v" uid="dw" uid_parent="fl"/>
+    <Node _name="Number To Decimal String" inputs="number:u.h" outputs="decimal integer string:dh.v" uid="dh" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:tt.value,s:u.modal,f:tf.value" outputs="s? t\3Af:bm.v" uid="bm" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:tt.value,s:u.active,f:tf.value" outputs="s? t\3Af:ba.v" uid="ba" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:tt.value,s:u.closable,f:tf.value" outputs="s? t\3Af:bc.v" uid="bc" uid_parent="fl"/>
+    <Node _name="Concatenate Strings" inputs="string:t1.value,string:did.v,string:t2.value,string:u.title,string:t3.value,string:dx.v,string:t4.value,string:dy.v,string:t5.value,string:dw.v,string:t6.value,string:dh.v,string:t7.value,string:bm.v,string:t8.value,string:ba.v,string:t9.value,string:bc.v,string:t10.value" outputs="concatenated string:obj.v" uid="obj" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:obj.v" mode="index" outputs="value:objs.value" uid="objs" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:objs.value" outputs="concatenated string:all.v" uid="all" uid_parent="root"/>
+  <Constant _name="drop the leading comma" outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Node _name="String Subset" inputs="string:all.v,offset (0):one.value" outputs="substring:body.v" uid="body" uid_parent="root"/>
+  <Constant outputs="value:pre.value" type="string" uid="pre" uid_parent="root" value="windows ["/>
+  <Constant outputs="value:post.value" type="string" uid="post" uid_parent="root" value="]"/>
+  <Node _name="Concatenate Strings" inputs="string:pre.value,string:body.v,string:post.value" outputs="concatenated string:msg.v" uid="msg" uid_parent="root"/>
+  <Indicator _name="message" conIdx="4" connection="recommended" description="The text message windows [...]\2C to be sent as one WebSocket text frame." inputs="value:msg.v" type="string" uid="o_msg" uid_parent="root" value=""/>
+</VI>

@@ -1,0 +1,159 @@
+<VI _name="RemoteVI List Windows.vi" description="Lists the application's other windows (docs\5Cprotocol.md section 7)\2C front-most first. Walks LabVIEW's visible top-level windows with FindWindowExW (Z order\2C no callback)\3B a CANDIDATE is a window of LabVIEW's process that is not panel hWnd\2C not a popup (RemoteVI Window Popup Info.vi - menus\2C tip strips\2C shadows and every captionless WS_POPUP window are popups and go to the OVERLAY instead) and has a size (LabVIEW's hidden frame window LVFrame is 0 x 0). A candidate is LISTED when it is a native dialog (class #32770)\2C when it was listed before\2C when it appeared while the published panel is disabled (user32 IsWindowEnabled.vi FALSE - a modal dialog is up\3B LabVIEW disables all its windows then and owns its own dialogs by the hidden frame window\2C not by the panel\2C measured on LabVIEW 2025)\2C or when its owner chain (user32 GetWindow.vi GW_OWNER\2C up to 8 steps) reaches the panel or another such window. IDE windows that were there before (Project Explorer\2C block diagrams\2C other VIs) are not listed. APPEARED means not in the baseline\3A while the panel is enabled the baseline is the candidate set of the previous call\2C so a dialog that shows up one iteration before LabVIEW disables the panel still counts\3B while it is disabled the baseline is kept. The first call only takes the baseline. Each listed window is described by RemoteVI Window Info.vi (caption as JSON literal\2C client area in main-frame coordinates\2C modal\2C active\2C closable). Win32 calls only\2C no VI Server\2C so it works while a dialog or a popup holds LabVIEW's UI thread.">
+  <FreeLabel comment="Top-level windows of LabVIEW's process" uid="lbl" uid_parent="root"/>
+  <Control _name="panel hWnd" conIdx="0" connection="required" description="The published front panel window." outputs="value:panel.value" type="uint64" uid="panel" uid_parent="root" value="0"/>
+  <Control _name="state" conIdx="5" connection="recommended" description="From the previous call (state out)\3A initialised\2C baseline\2C previous candidates\2C listed." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="When this carries an error nothing is listed." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+  <Call inputs="error in:ei.value" outputs="process ID:pid.process ID,error out:pid.error out" target="kernel32 GetCurrentProcessId.vi" uid="pid" uid_parent="root"/>
+  <Constant _name="first" outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
+  <Structure _name="While Loop" count="" label="One top-level window per iteration" uid="loop" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pid.process ID" outputs="value:lpid.value" uid="lpid" uid_parent="loop"/>
+    <Tunnel _id="In2" inputs="value:panel.value" outputs="value:lpanel.value" uid="lpanel" uid_parent="loop"/>
+    <ShiftReg uid="srh" uid_parent="loop">
+      <Left inputs="value:k0.value" outputs="value:srhL.value" uid="srhL" uid_parent="srh"/>
+      <Right inputs="value:next.hWnd" outputs="value:srhR.value" uid="srhR" uid_parent="srh"/>
+    </ShiftReg>
+    <ShiftReg uid="sre" uid_parent="loop">
+      <Left inputs="value:pid.error out" outputs="value:srEL.value" uid="srEL" uid_parent="sre"/>
+      <Right inputs="value:cerr.value" outputs="value:srER.value" uid="srER" uid_parent="sre"/>
+    </ShiftReg>
+    <Call inputs="hWndChildAfter:srhL.value,error in:srEL.value" outputs="hWnd:next.hWnd,error out:next.error out" target="user32 FindWindowExW.vi" uid="next" uid_parent="loop"/>
+    <Call inputs="hWnd:next.hWnd,error in:next.error out" outputs="process ID:owner.process ID,thread ID:,error out:owner.error out" target="user32 GetWindowThreadProcessId.vi" uid="owner" uid_parent="loop"/>
+    <Node _name="Equal?" inputs="x:owner.process ID,y:lpid.value" outputs="x = y?:mine.v" uid="mine" uid_parent="loop"/>
+    <Node _name="Not Equal?" inputs="x:next.hWnd,y:lpanel.value" outputs="x != y?:notpanel.v" uid="notpanel" uid_parent="loop"/>
+    <Node _name="Not Equal To 0?" inputs="x:next.hWnd" outputs="x != 0?:some.v" uid="some" uid_parent="loop"/>
+    <Node _name="Build Array" inputs="element:mine.v,element:notpanel.v,element:some.v" outputs="appended array:c3.v" uid="c3" uid_parent="loop"/>
+    <Node _name="And Array Elements" inputs="Boolean array:c3.v" outputs="logical AND:look.v" uid="look" uid_parent="loop"/>
+    <Structure _name="Case Structure" selectin="look.v" uid="cs" uid_parent="loop">
+      <Tunnel _id="In1" inputs="value:next.hWnd" uid="ci1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:owner.error out" uid="ci2" uid_parent="cs"/>
+      <CaseFrame label="LabVIEW's own window - a candidate?" selector="True" selectout="" uid="ct" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:ct1.value" uid="ct1" uid_parent="ct"/>
+        <Tunnel _id="In2" outputs="value:ct2.value" uid="ct2" uid_parent="ct"/>
+        <Call inputs="hWnd:ct1.value,error in:ct2.value" outputs="visible?:vis.visible?,error out:vis.error out" target="user32 IsWindowVisible.vi" uid="vis" uid_parent="ct"/>
+        <Call inputs="hWnd:ct1.value,error in:vis.error out" outputs="popup?:info.popup?,window:info.window,error out:info.error out" target="RemoteVI Window Popup Info.vi" uid="info" uid_parent="ct"/>
+        <Constant _name="GW_OWNER" outputs="value:kow.value" type="uint32" uid="kow" uid_parent="ct" value="4"/>
+        <Call inputs="hWnd:ct1.value,uCmd:kow.value,error in:info.error out" outputs="window:gw.window,error out:gw.error out" target="user32 GetWindow.vi" uid="gw" uid_parent="ct"/>
+        <Node _name="Unbundle By Name" fields="w,h,class" inputs="input cluster:info.window" outputs="w:iu.w,h:iu.h,class:iu.class" uid="iu" uid_parent="ct"/>
+        <Node _name="Not" inputs="x:info.popup?" outputs=".not. x?:np.v" uid="np" uid_parent="ct"/>
+        <Node _name="Greater Than 0?" inputs="x:iu.w" outputs="x &gt; 0?:wp.v" uid="wp" uid_parent="ct"/>
+        <Node _name="Greater Than 0?" inputs="x:iu.h" outputs="x &gt; 0?:hp.v" uid="hp" uid_parent="ct"/>
+        <Node _name="Build Array" inputs="element:vis.visible?,element:np.v,element:wp.v,element:hp.v" outputs="appended array:c4.v" uid="c4" uid_parent="ct"/>
+        <Node _name="And Array Elements" inputs="Boolean array:c4.v" outputs="logical AND:cand.v" uid="cand" uid_parent="ct"/>
+        <Tunnel _id="Out1" inputs="value:gw.error out" uid="cto1" uid_parent="ct"/>
+        <Tunnel _id="Out2" inputs="value:cand.v" uid="cto2" uid_parent="ct"/>
+        <Tunnel _id="Out3" inputs="value:iu.class" uid="cto3" uid_parent="ct"/>
+        <Tunnel _id="Out4" inputs="value:gw.window" uid="cto4" uid_parent="ct"/>
+      </CaseFrame>
+      <CaseFrame label="Another process\2C the panel or the end" selector="False" selectout="" uid="cf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:" uid="cf1" uid_parent="cf"/>
+        <Tunnel _id="In2" outputs="value:cf2.value" uid="cf2" uid_parent="cf"/>
+        <Constant outputs="value:cff.value" type="bool" uid="cff" uid_parent="cf" value="false"/>
+        <Constant outputs="value:cfs.value" type="string" uid="cfs" uid_parent="cf" value=""/>
+        <Constant outputs="value:cfo.value" type="uint64" uid="cfo" uid_parent="cf" value="0"/>
+        <Tunnel _id="Out1" inputs="value:cf2.value" uid="cfo1" uid_parent="cf"/>
+        <Tunnel _id="Out2" inputs="value:cff.value" uid="cfo2" uid_parent="cf"/>
+        <Tunnel _id="Out3" inputs="value:cfs.value" uid="cfo3" uid_parent="cf"/>
+        <Tunnel _id="Out4" inputs="value:cfo.value" uid="cfo4" uid_parent="cf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cerr.value" uid="cerr" uid_parent="cs"/>
+      <Tunnel _id="Out2" outputs="value:ccand.value" uid="ccand" uid_parent="cs"/>
+      <Tunnel _id="Out3" outputs="value:cclass.value" uid="cclass" uid_parent="cs"/>
+      <Tunnel _id="Out4" outputs="value:cown.value" uid="cown" uid_parent="cs"/>
+    </Structure>
+    <Node _name="Equal To 0?" inputs="x:next.hWnd" outputs="x = 0?:last.v" uid="last" uid_parent="loop"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cerr.value" outputs="status:est.status" uid="est" uid_parent="loop"/>
+    <Node _name="Or" inputs="x:last.v,y:est.status" outputs="x .or. y?:stop.v" uid="stop" uid_parent="loop"/>
+    <Condition inputs="value:stop.v" uid="cond" uid_parent="loop" value="stop"/>
+    <Tunnel _id="Out1" cond="ccand.value" inputs="value:next.hWnd" mode="index" outputs="value:cands.value" uid="cands" uid_parent="loop"/>
+    <Tunnel _id="Out2" cond="ccand.value" inputs="value:cclass.value" mode="index" outputs="value:classes.value" uid="classes" uid_parent="loop"/>
+    <Tunnel _id="Out3" cond="ccand.value" inputs="value:cown.value" mode="index" outputs="value:owners.value" uid="owners" uid_parent="loop"/>
+  </Structure>
+
+  <Call inputs="hWnd:panel.value,error in:srER.value" outputs="enabled?:en.enabled?,error out:en.error out" target="user32 IsWindowEnabled.vi" uid="en" uid_parent="root"/>
+  <Node _name="Not" inputs="x:en.enabled?" outputs=".not. x?:dis.v" uid="dis" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="initialised,baseline,previous,listed" inputs="input cluster:st.value" outputs="initialised:su.initialised,baseline:su.baseline,previous:su.previous,listed:su.listed" uid="su" uid_parent="root"/>
+  <Node _name="Select" inputs="t:su.previous,s:en.enabled?,f:su.baseline" outputs="s? t\3Af:bl1.v" uid="bl1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:bl1.v,s:su.initialised,f:cands.value" outputs="s? t\3Af:bl.v" uid="bl" uid_parent="root"/>
+  <Constant _name="native dialog" outputs="value:kdlg.value" type="string" uid="kdlg" uid_parent="root" value="#32770"/>
+
+  <Structure _name="For Loop" count="" label="Listed by its own merits?" maxin="" maxout="" uid="fb" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cands.value" mode="index" outputs="value:bh.value" uid="bh" uid_parent="fb"/>
+    <Tunnel _id="In2" inputs="value:classes.value" mode="index" outputs="value:bc.value" uid="bc" uid_parent="fb"/>
+    <Tunnel _id="In3" inputs="value:owners.value" mode="index" outputs="value:bo.value" uid="bo" uid_parent="fb"/>
+    <Tunnel _id="In4" inputs="value:kdlg.value" outputs="value:bk.value" uid="bk" uid_parent="fb"/>
+    <Tunnel _id="In5" inputs="value:panel.value" outputs="value:bp.value" uid="bp" uid_parent="fb"/>
+    <Tunnel _id="In6" inputs="value:su.listed" outputs="value:bli.value" uid="bli" uid_parent="fb"/>
+    <Tunnel _id="In7" inputs="value:bl.v" outputs="value:bbl.value" uid="bbl" uid_parent="fb"/>
+    <Tunnel _id="In8" inputs="value:dis.v" outputs="value:bdis.value" uid="bdis" uid_parent="fb"/>
+    <Node _name="Equal?" inputs="x:bc.value,y:bk.value" outputs="x = y?:isdlg.v" uid="isdlg" uid_parent="fb"/>
+    <Node _name="Equal?" inputs="x:bo.value,y:bp.value" outputs="x = y?:ownp.v" uid="ownp" uid_parent="fb"/>
+    <Node _name="Search 1D Array" inputs="1D array:bli.value,element:bh.value" outputs="index of element:wasl.v" uid="wasl" uid_parent="fb"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:wasl.v" outputs="x &gt;= 0?:sticky.v" uid="sticky" uid_parent="fb"/>
+    <Node _name="Search 1D Array" inputs="1D array:bbl.value,element:bh.value" outputs="index of element:inb.v" uid="inb" uid_parent="fb"/>
+    <Node _name="Less Than 0?" inputs="x:inb.v" outputs="x &lt; 0?:isnew.v" uid="isnew" uid_parent="fb"/>
+    <Node _name="And" inputs="x:bdis.value,y:isnew.v" outputs="x .and. y?:newdis.v" uid="newdis" uid_parent="fb"/>
+    <Node _name="Build Array" inputs="element:isdlg.v,element:ownp.v,element:sticky.v,element:newdis.v" outputs="appended array:b4.v" uid="b4" uid_parent="fb"/>
+    <Node _name="Or Array Elements" inputs="Boolean array:b4.v" outputs="logical OR:base.v" uid="base" uid_parent="fb"/>
+    <Tunnel _id="Out1" inputs="value:base.v" mode="index" outputs="value:bases.value" uid="bases" uid_parent="fb"/>
+    <Tunnel _id="Out2" cond="base.v" inputs="value:bh.value" mode="index" outputs="value:baseset.value" uid="baseset" uid_parent="fb"/>
+  </Structure>
+
+  <Structure _name="For Loop" count="" label="Or owned by the panel or a listed window" maxin="" maxout="" uid="fo" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cands.value" mode="index" outputs="value:oh.value" uid="oh" uid_parent="fo"/>
+    <Tunnel _id="In2" inputs="value:owners.value" mode="index" outputs="value:oo.value" uid="oo" uid_parent="fo"/>
+    <Tunnel _id="In3" inputs="value:bases.value" mode="index" outputs="value:ob.value" uid="ob" uid_parent="fo"/>
+    <Tunnel _id="In4" inputs="value:baseset.value" outputs="value:os.value" uid="os" uid_parent="fo"/>
+    <Tunnel _id="In5" inputs="value:panel.value" outputs="value:op.value" uid="op" uid_parent="fo"/>
+    <Constant _name="GW_OWNER" outputs="value:kgo.value" type="uint32" uid="kgo" uid_parent="fo" value="4"/>
+    <Constant _name="at most 8 owners" outputs="value:k7.value" type="int32" uid="k7" uid_parent="fo" value="7"/>
+    <Constant outputs="value:fb0.value" type="bool" uid="fb0" uid_parent="fo" value="false"/>
+    <Structure _name="While Loop" count="wo.value" label="Walk the owner chain" uid="wo" uid_parent="fo">
+      <Tunnel _id="In1" inputs="value:os.value" outputs="value:wos.value" uid="wos" uid_parent="wo"/>
+      <Tunnel _id="In2" inputs="value:op.value" outputs="value:wop.value" uid="wop" uid_parent="wo"/>
+      <Tunnel _id="In3" inputs="value:kgo.value" outputs="value:wgo.value" uid="wgo" uid_parent="wo"/>
+      <Tunnel _id="In4" inputs="value:k7.value" outputs="value:wk7.value" uid="wk7" uid_parent="wo"/>
+      <ShiftReg uid="sro" uid_parent="wo">
+        <Left inputs="value:oo.value" outputs="value:own.value" uid="sroL" uid_parent="sro"/>
+        <Right inputs="value:up.window" outputs="value:" uid="sroR" uid_parent="sro"/>
+      </ShiftReg>
+      <Node _name="Equal?" inputs="x:own.value,y:wop.value" outputs="x = y?:isp.v" uid="isp" uid_parent="wo"/>
+      <Node _name="Search 1D Array" inputs="1D array:wos.value,element:own.value" outputs="index of element:ins.v" uid="ins" uid_parent="wo"/>
+      <Node _name="Greater Or Equal To 0?" inputs="x:ins.v" outputs="x &gt;= 0?:inset.v" uid="inset" uid_parent="wo"/>
+      <Node _name="Or" inputs="x:isp.v,y:inset.v" outputs="x .or. y?:hit.v" uid="hit" uid_parent="wo"/>
+      <Call inputs="hWnd:own.value,uCmd:wgo.value" outputs="window:up.window,error out:" target="user32 GetWindow.vi" uid="up" uid_parent="wo"/>
+      <Node _name="Equal To 0?" inputs="x:own.value" outputs="x = 0?:none.v" uid="none" uid_parent="wo"/>
+      <Node _name="Greater Or Equal?" inputs="x:wo.value,y:wk7.value" outputs="x &gt;= y?:enough.v" uid="enough" uid_parent="wo"/>
+      <Node _name="Build Array" inputs="element:hit.v,element:none.v,element:enough.v" outputs="appended array:s3.v" uid="s3" uid_parent="wo"/>
+      <Node _name="Or Array Elements" inputs="Boolean array:s3.v" outputs="logical OR:wstop.v" uid="wstop" uid_parent="wo"/>
+      <Condition inputs="value:wstop.v" uid="woc" uid_parent="wo" value="stop"/>
+      <Tunnel _id="Out1" inputs="value:hit.v" outputs="value:chit.value" uid="chit" uid_parent="wo"/>
+    </Structure>
+    <Node _name="Or" inputs="x:ob.value,y:chit.value" outputs="x .or. y?:lst.v" uid="lst" uid_parent="fo"/>
+    <Tunnel _id="Out1" cond="lst.v" inputs="value:oh.value" mode="index" outputs="value:listed.value" uid="listed" uid_parent="fo"/>
+  </Structure>
+
+  <Call inputs="hWnd:panel.value,error in:en.error out" outputs="rect:pfr.rect,error out:pfr.error out" target="RemoteVI Frame Rect.vi" uid="pfr" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pfr.rect" outputs="x:pfu.x,y:pfu.y" uid="pfu" uid_parent="root"/>
+  <Constant outputs="value:fo0.value" type="cluster{int32.x,int32.y}" uid="fo0" uid_parent="root" value="[0,0]"/>
+  <Node _name="Bundle By Name" fields="x,y" inputs="x:pfu.x,y:pfu.y,input cluster:fo0.value" outputs="output cluster:forg.v" uid="forg" uid_parent="root"/>
+  <Call inputs="hWnd:panel.value,error in:pfr.error out" outputs="active:tw.active,focus:,capture:,error out:tw.error out" target="RemoteVI Thread Windows.vi" uid="tw" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Describe each listed window" maxin="" maxout="" uid="fd" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:listed.value" mode="index" outputs="value:dh.value" uid="dh" uid_parent="fd"/>
+    <Tunnel _id="In2" inputs="value:forg.v" outputs="value:dfo.value" uid="dfo" uid_parent="fd"/>
+    <Tunnel _id="In3" inputs="value:en.enabled?" outputs="value:den.value" uid="den" uid_parent="fd"/>
+    <Tunnel _id="In4" inputs="value:tw.active" outputs="value:dact.value" uid="dact" uid_parent="fd"/>
+    <Call inputs="hWnd:dh.value,frame origin:dfo.value,panel enabled?:den.value,active:dact.value" outputs="window:wi.window,error out:" target="RemoteVI Window Info.vi" uid="wi" uid_parent="fd"/>
+    <Tunnel _id="Out1" inputs="value:wi.window" mode="index" outputs="value:wins.value" uid="wins" uid_parent="fd"/>
+  </Structure>
+  <Node _name="Empty Array?" inputs="array:listed.value" outputs="empty?:nol.v" uid="nol" uid_parent="root"/>
+  <Node _name="Not" inputs="x:nol.v" outputs=".not. x?:anyl.v" uid="anyl" uid_parent="root"/>
+  <Node _name="And" inputs="x:dis.v,y:anyl.v" outputs="x .and. y?:modal.v" uid="modal" uid_parent="root"/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Node _name="Bundle By Name" fields="initialised,baseline,previous,listed" inputs="initialised:tru.value,baseline:bl.v,previous:cands.value,listed:listed.value,input cluster:st.value" outputs="output cluster:sto.v" uid="sto" uid_parent="root"/>
+
+  <Indicator _name="windows" conIdx="4" connection="recommended" description="The listed windows\2C front-most first (RemoteVI Window Info.vi)." inputs="value:wins.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="o_w" uid_parent="root" value="[]"/>
+  <Indicator _name="modal?" conIdx="6" connection="recommended" description="TRUE when a window is listed and the published panel is disabled\3A a modal dialog is up." inputs="value:modal.v" type="bool" uid="o_m" uid_parent="root" value="false"/>
+  <Indicator _name="state out" conIdx="8" connection="recommended" description="For the next call." inputs="value:sto.v" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="o_st" uid_parent="root" value="[false,[],[],[]]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the first DLL call error of the enumeration." inputs="value:tw.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

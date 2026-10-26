@@ -1,0 +1,35 @@
+<VI _name="RemoteVI Send Windows.vi" description="Sends the application's other windows to every client (docs\5Cprotocol.md section 7)\3A message (windows [...]) is encoded once as a WebSocket text frame\2C and when capture? is TRUE (a frame was made in this iteration\2C so windows follow the frame rate) every listed window is captured once (RemoteVI Capture Windows.vi). Then each client gets the list when it changed and each window's changes as a WINDOW FRAME (RemoteVI Send Client Windows.vi). No VI Server call.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="windows" conIdx="5" connection="required" description="The listed windows (RemoteVI Track Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Control _name="message" conIdx="7" connection="required" description="The windows message of that list." outputs="value:msg.value" type="string" uid="msg" uid_parent="root" value=""/>
+  <Control _name="capture?" conIdx="9" connection="recommended" description="TRUE in an iteration that made a frame." outputs="value:cap.value" type="bool" uid="cap" uid_parent="root" value="false"/>
+  <Constant _name="text" outputs="value:op1.value" type="uint8" uid="op1" uid_parent="root" value="1"/>
+  <Call inputs="opcode:op1.value,payload:msg.value" outputs="frame:wf.frame" target="RemoteVI WS Encode Server Frame.vi" uid="wf" uid_parent="root"/>
+  <Constant outputs="value:nocap.value" type="array{cluster{uint64.id,array.2{uint32}.pixels,int32.width,int32.height}}" uid="nocap" uid_parent="root" value="[]"/>
+  <Structure _name="Case Structure" selectin="cap.value" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wl.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:nocap.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="Capture every window" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_wl.value" uid="t_wl" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:" uid="t_nc" uid_parent="cst"/>
+      <Call inputs="windows:t_wl.value" outputs="captures:cw.captures" target="RemoteVI Capture Windows.vi" uid="cw" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:cw.captures" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_wl" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_nc.value" uid="f_nc" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_nc.value" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:caps.value" uid="caps" uid_parent="cs"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Each client" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:msg.value" outputs="value:lm.value" uid="lm" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:wf.frame" outputs="value:lf.value" uid="lf" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:caps.value" outputs="value:lc.value" uid="lc" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:cap.value" outputs="value:lcap.value" uid="lcap" uid_parent="fl"/>
+    <Call inputs="Client:c.value,message:lm.value,frame:lf.value,captures:lc.value,capture?:lcap.value" outputs="Client out:scw.Client out" target="RemoteVI Send Client Windows.vi" uid="scw" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:scw.Client out" mode="index" outputs="value:out.value" uid="out" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="The clients after sending." inputs="value:out.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="o_cl" uid_parent="root" value="[]"/>
+</VI>

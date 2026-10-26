@@ -1,0 +1,36 @@
+<VI _name="RemoteVI JSON String.vi" description="Turns UTF-16 text (code units\2C e.g. a window caption from user32 GetWindowTextW.vi) into a JSON string literal made of ASCII only\2C quotes included\3A printable ASCII 0x20-0x7E is kept as it is except &quot; and \5C\2C every other code unit is written as \5Cu followed by four hex digits (LabVIEW writes them upper case) (a surrogate pair as two such escapes\2C which JSON allows). So any caption travels in a WebSocket text message\2C which must be valid UTF-8\2C whatever the host's code page - LabVIEW strings are bytes in the system code page\2C and a caption narrowed to them would be neither UTF-8 nor reversible. Pure function\2C cannot fail. Used for the windows message (docs\5Cprotocol.md section 7).">
+  <FreeLabel comment="Printable ASCII as is\2C the rest as \5CuXXXX" uid="lbl" uid_parent="root"/>
+  <Control _name="text" conIdx="0" connection="required" description="UTF-16 code units\2C without a terminating 0." outputs="value:tx.value" type="array{uint16}" uid="tx" uid_parent="root" value="[]"/>
+  <Constant _name="space" outputs="value:k20.value" type="uint16" uid="k20" uid_parent="root" value="32"/>
+  <Constant _name="tilde" outputs="value:k7e.value" type="uint16" uid="k7e" uid_parent="root" value="126"/>
+  <Constant _name="quote" outputs="value:k22.value" type="uint16" uid="k22" uid_parent="root" value="34"/>
+  <Constant _name="backslash" outputs="value:k5c.value" type="uint16" uid="k5c" uid_parent="root" value="92"/>
+  <Constant _name="escape" outputs="value:esc.value" type="string" uid="esc" uid_parent="root" value="\5Cu"/>
+  <Constant _name="4 hex digits" outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="%04x"/>
+  <Structure _name="For Loop" count="" label="One code unit per iteration" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:tx.value" mode="index" outputs="value:u.value" uid="u" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:k20.value" outputs="value:t20.value" uid="t20" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:k7e.value" outputs="value:t7e.value" uid="t7e" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:k22.value" outputs="value:t22.value" uid="t22" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:k5c.value" outputs="value:t5c.value" uid="t5c" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:esc.value" outputs="value:tesc.value" uid="tesc" uid_parent="fl"/>
+    <Tunnel _id="In7" inputs="value:fmt.value" outputs="value:tfmt.value" uid="tfmt" uid_parent="fl"/>
+    <Node _name="Greater Or Equal?" inputs="x:u.value,y:t20.value" outputs="x &gt;= y?:ge.v" uid="ge" uid_parent="fl"/>
+    <Node _name="Less Or Equal?" inputs="x:u.value,y:t7e.value" outputs="x &lt;= y?:le.v" uid="le" uid_parent="fl"/>
+    <Node _name="Not Equal?" inputs="x:u.value,y:t22.value" outputs="x != y?:nq.v" uid="nq" uid_parent="fl"/>
+    <Node _name="Not Equal?" inputs="x:u.value,y:t5c.value" outputs="x != y?:nb.v" uid="nb" uid_parent="fl"/>
+    <Node _name="Build Array" inputs="element:ge.v,element:le.v,element:nq.v,element:nb.v" outputs="appended array:conds.v" uid="conds" uid_parent="fl"/>
+    <Node _name="And Array Elements" inputs="Boolean array:conds.v" outputs="logical AND:plain.v" uid="plain" uid_parent="fl"/>
+    <Node _name="To Unsigned Byte Integer" inputs="number:u.value" outputs="unsigned 8bit integer:b8.v" uid="b8" uid_parent="fl"/>
+    <Node _name="Build Array" inputs="element:b8.v" outputs="appended array:b1.v" uid="b1" uid_parent="fl"/>
+    <Node _name="Byte Array To String" inputs="unsigned byte array:b1.v" outputs="string:ch.v" uid="ch" uid_parent="fl"/>
+    <Node _name="Format Into String" inputs="format string:tfmt.value,input 1:u.value" outputs="resulting string:hx.v" uid="hx" uid_parent="fl"/>
+    <Node _name="Concatenate Strings" inputs="string:tesc.value,string:hx.v" outputs="concatenated string:ue.v" uid="ue" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:ch.v,s:plain.v,f:ue.v" outputs="s? t\3Af:piece.v" uid="piece" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:piece.v" mode="index" outputs="value:pieces.value" uid="pieces" uid_parent="fl"/>
+  </Structure>
+  <Constant _name="quote mark" outputs="value:qm.value" type="string" uid="qm" uid_parent="root" value="&quot;"/>
+  <Node _name="Concatenate Strings" inputs="string:pieces.value" outputs="concatenated string:body.v" uid="body" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:qm.value,string:body.v,string:qm.value" outputs="concatenated string:js.v" uid="js" uid_parent="root"/>
+  <Indicator _name="json" conIdx="4" connection="recommended" description="The JSON string literal\2C quotes included\2C ASCII only." inputs="value:js.v" type="string" uid="o_js" uid_parent="root" value=""/>
+</VI>

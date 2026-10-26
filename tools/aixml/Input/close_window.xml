@@ -1,0 +1,42 @@
+<VI _name="RemoteVI Close Window.vi" description="Handles the client message x &lt;id&gt; (docs\5Cprotocol.md section 7)\3A when kind is close and id is a LISTED window whose closable flag is set (it has a close box\2C WS_SYSMENU)\2C WM_SYSCOMMAND (0x112) with SC_CLOSE (0xF060) is posted to it with user32 PostMessageW.vi - exactly what its title bar's close button sends\2C so the window closes the way it would locally (a native dialog cancels). A bare WM_CLOSE is NOT posted\3A measured on LabVIEW 2025\2C WM_CLOSE posted to a Two Button Dialog destroyed its window while the dialog function kept waiting for an answer\2C which hung the calling VI and LabVIEW's VI Server. Anything else does nothing\3A nothing goes to the published panel (it is not in windows) or to a window the server does not list\2C and no other message can be sent this way. closed? is TRUE when it was posted.">
+  <FreeLabel comment="Close box (SC_CLOSE) of a listed window only" uid="lbl" uid_parent="root"/>
+  <Control _name="kind" conIdx="0" connection="required" description="From RemoteVI Parse Input.vi." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack,close}" uid="kind" uid_parent="root" value="0"/>
+  <Control _name="id" conIdx="5" connection="required" description="From RemoteVI Parse Input.vi\3A the window to close." outputs="value:id.value" type="uint64" uid="id" uid_parent="root" value="0"/>
+  <Control _name="windows" conIdx="7" connection="required" description="The listed windows (RemoteVI List Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Structure _name="For Loop" count="" label="ids and close boxes" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wl.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="id,closable" inputs="input cluster:w.value" outputs="id:wu.id,closable:wu.closable" uid="wu" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:wu.id" mode="index" outputs="value:ids.value" uid="ids" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:wu.closable" mode="index" outputs="value:cls.value" uid="cls" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:ids.value,element:id.value" outputs="index of element:ix.v" uid="ix" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:cls.value,index:ix.v" outputs="element:cb.v" uid="cb" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:ix.v" outputs="x &gt;= 0?:listed.v" uid="listed" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:kind.value" outputs="32bit integer:kn.v" uid="kn" uid_parent="root"/>
+  <Constant _name="close" outputs="value:k4.value" type="int32" uid="k4" uid_parent="root" value="4"/>
+  <Node _name="Equal?" inputs="x:kn.v,y:k4.value" outputs="x = y?:isc.v" uid="isc" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:isc.v,element:listed.v,element:cb.v" outputs="appended array:c3.v" uid="c3" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:c3.v" outputs="logical AND:doit.v" uid="doit" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="doit.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:id.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:ei.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="Post WM_SYSCOMMAND SC_CLOSE" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_id.value" uid="t_id" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Constant _name="WM_SYSCOMMAND" outputs="value:kwc.value" type="uint32" uid="kwc" uid_parent="cst" value="274"/>
+      <Constant _name="SC_CLOSE" outputs="value:kw0.value" type="uint64" uid="kw0" uid_parent="cst" value="61536"/>
+      <Constant outputs="value:kl0.value" type="int64" uid="kl0" uid_parent="cst" value="0"/>
+      <Call inputs="hWnd:t_id.value,Msg:kwc.value,wParam:kw0.value,lParam:kl0.value,error in (no error):t_ei.value" outputs="return value:,error out:pm.error out" target="user32 PostMessageW.vi" uid="pm" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:pm.error out" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Not a listed\2C closable window" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_id" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_ei.value" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="closed?" conIdx="4" connection="recommended" description="TRUE when SC_CLOSE was posted." inputs="value:doit.v" type="bool" uid="o_c" uid_parent="root" value="false"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the error of posting." inputs="value:cs_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

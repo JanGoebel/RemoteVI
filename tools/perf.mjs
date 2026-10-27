@@ -141,17 +141,20 @@ await sleep(1000); // first full frame and the greeting
 
 // --- click / type: input-to-photon ----------------------------------------------------
 async function rounds(name, roi, act) {
-  const lat = [];
+  const lat = [], first = [];
   let missed = 0;
   for (let i = 0; i < Number(opt.repeat); i++) {
     const wait = waitRoiChange(roi);
+    const n0 = st.frames.length;
     const t0 = now();
     act(i);
     const t = await wait;
     if (t === null) missed++; else lat.push(t - t0);
+    if (st.frames.length > n0) first.push(st.frames[n0].t - t0);
     await sleep(700);
   }
   report[name] = { ...stats(lat), missed };
+  report[`${name} (first frame after input)`] = stats(first);
 }
 if (opt.click) {
   const [x, y] = nums(opt.click);

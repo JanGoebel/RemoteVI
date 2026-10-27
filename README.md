@@ -24,7 +24,7 @@ Then browse to `http://<machine>:<port>/`. The server also stops by itself when 
 
 ## How it works
 
-* **Out:** the whole front panel window below its title bar - menu bar (also a custom run-time menu), toolbar, panel, scrollbars - drawn with `PrintWindow` → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.
+* **Out:** the whole front panel window below its title bar - menu bar (also a custom run-time menu), toolbar, panel, scrollbars - copied from the window's composited surface (`GetDC` + `BitBlt`, also while it is covered) → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.
 * **In:** the browser sends Win32 messages (`WM_LBUTTONDOWN`, `WM_MOUSEMOVE`, `WM_CHAR`, …) with coordinates in that window picture. The server maps them to the panel's window and calls `PostMessageW`; menu bar, toolbar and scrollbars are operated like the panel.
 * **HTTP:** IG HTTP Utils / IG WebSocket Stream handle the request and the upgrade. The client is one embedded HTML file.
 
@@ -38,11 +38,11 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Protocol, WebSocket framing (`source/Protocol`) | ✅ all vectors pass |
 | Input (`source/Input`, `source/Win32`) | ✅ clicks, drags, double clicks, wheel, typing, Shift/Ctrl/Alt, hover enter/leave; host cursor and keyboard never touched |
 | Whole window: menu bar (also custom run-time menus with submenus), toolbar, scrollbars | ✅ streamed as the window shows them; menu bar menus driven like the other menus, scrollbar arrows and thumbs scroll the panel; the client learns where the panel starts (`origin`) |
-| Popups: ring/enum menus, right-click menus with submenus, graph palette, tip strips | ✅ streamed as an overlay at their real place (may extend past the panel), hover highlight, submenus beside their parent, invisible on the host when opened remotely, panel keeps updating underneath |
+| Popups: ring/enum menus, right-click menus with submenus, graph palette; tip strips as text | ✅ streamed as an overlay at their real place (may extend past the panel), hover highlight, submenus beside their parent, invisible on the host when opened remotely, panel keeps updating underneath |
 | Other windows: LabVIEW dialogs, native file dialogs, subVI panels opened by the application | ✅ listed (`windows` message: caption, place, modal, active, closable) and streamed as WINDOW FRAMEs, shown as floating windows in the browser; clicks go to the window under the pointer, keys to the modal window, Enter/Escape answer dialogs as locally, the panel behind a modal dialog takes no input, close box closes; tracked with Win32 calls only, so nothing blocks while a dialog holds LabVIEW's UI thread |
-| Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ about 16 fps, about 1–2 % of one core; idle connections don't stall it; Start reports errors |
+| Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ frames copied from the window's composited surface (2-5 ms), every 16 ms right after a click or key; click-to-photon about 60 ms on the demo with LabVIEW in the background (`tools/perf.mjs`); idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Tests | ✅ `npm test` (19), unit-test check VIs (102 vectors), LabVIEW integration suite `tests/lv` (24 of 24, with LabVIEW the active application for the tip strip test) |
+| Tests | ✅ `npm test` (19), unit-test check VIs (102 vectors), LabVIEW integration suite `tests/lv` (24 of 24, LabVIEW in the background) |
 | Caraya unit tests | ✅ 102 assertions over 9 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
 | Splitter dragging | ❓ untested on a panel with an unlocked splitter |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
@@ -51,7 +51,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 ## Known limits
 
 * **Menus are driven with keys.** The highlight follows the remote pointer and a submenu opens after 400 ms on its entry, but through arrow keys posted to LabVIEW, so a menu that takes no keys (colour picker, line width popup) shows no hover highlight remotely; it is clicked by moving just that window under the host cursor for the click. While such a popup is open its parent menus react to clicks only by closing.
-* **Remote tip strips can flash on the host.** One triggered remotely shows on the host for 20–90 ms before it is hidden, or stays visible if the host cursor is over the panel. LabVIEW shows tip strips only while it is the active application, remotely as locally.
+* **Tip strips are shown by the browser.** LabVIEW shows tip strips only while it is the foreground application, so the server sends the texts and bounds of the panel's top-level controls (`tips` message) and the browser shows them after a 500 ms hover. Controls inside tab pages and clusters are not covered. A LabVIEW tip strip the remote pointer raises while LabVIEW is in front still shows on the host for a moment before it is hidden.
 * **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
 * **One server per LabVIEW instance.** The Server Loop isn't reentrant. A second `RemoteVI Start.vi` returns error 5001, and a port in use returns the listener's error (60).
 * **Modifiers are shared.** Several clients holding Shift/Ctrl at the same time share LabVIEW's single key state.

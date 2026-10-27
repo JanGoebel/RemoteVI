@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the window hWnd (the served front panel)\2C in order\2C with user32 PostMessageW. First RemoteVI Swallow Button Up.vi drops the button-up of a click that was turned into menu keys. Without a popup (cursor.move? FALSE) each message is posted only after LabVIEW has handled the one before\3A after every PostMessageW the VI waits with RemoteVI Wait Input Handled.vi (two WM_NULL sent to hWnd\2C at most 500 ms each) - LabVIEW drops and reorders key messages that arrive in a burst (measured\3A twelve posted Backspace key-downs became one)\2C and the server decides how to post a button-up from the mouse capture the button-down set up. With a popup open (cursor.move? TRUE\2C a button message at the LOGICAL screen point cursor.x\2C cursor.y) the message goes to RemoteVI Popup Click.vi (docs\5Carchitecture.md\2C Popups)\3A on a LabVIEW menu it is done with keys (VK_LEFT\2C VK_DOWN / VK_UP\2C VK_RETURN) - no menu and no cursor moves\2C so every submenu opens where LabVIEW opens it locally\3B on a popup that takes no keys (colour picker\2C line width popup\2C graph palette popups) only that window is moved under the host cursor for the message and moved back\3B outside every popup a button-down closes them all (WM_CANCELMODE). The host cursor never moves. popups passes through to popups out unchanged (the displacement d stays 0\3A popups are no longer left displaced). No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. An incoming error posts nothing.">
+<VI _name="RemoteVI Post Input.vi" description="Posts the Win32 messages from RemoteVI Translate Input.vi to the window hWnd (the served front panel)\2C in order\2C with user32 PostMessageW. First RemoteVI Swallow Button Up.vi drops the button-up of a click that was turned into menu keys. Without a popup (cursor.move? FALSE) each message is posted only after LabVIEW has handled the one before - except after a hover move (WM_MOUSEMOVE with no button held)\2C which nothing waits on\3B at up to 60 moves per second the round trips kept the server loop waiting for LabVIEW's busy UI thread (measured on the demo) - \3A after every other PostMessageW the VI waits with RemoteVI Wait Input Handled.vi (two WM_NULL sent to hWnd\2C at most 500 ms each) - LabVIEW drops and reorders key messages that arrive in a burst (measured\3A twelve posted Backspace key-downs became one)\2C and the server decides how to post a button-up from the mouse capture the button-down set up. With a popup open (cursor.move? TRUE\2C a button message at the LOGICAL screen point cursor.x\2C cursor.y) the message goes to RemoteVI Popup Click.vi (docs\5Carchitecture.md\2C Popups)\3A on a LabVIEW menu it is done with keys (VK_LEFT\2C VK_DOWN / VK_UP\2C VK_RETURN) - no menu and no cursor moves\2C so every submenu opens where LabVIEW opens it locally\3B on a popup that takes no keys (colour picker\2C line width popup\2C graph palette popups) only that window is moved under the host cursor for the message and moved back\3B outside every popup a button-down closes them all (WM_CANCELMODE). The host cursor never moves. popups passes through to popups out unchanged (the displacement d stays 0\3A popups are no longer left displaced). No VI Server call\2C so it works while an open popup blocks LabVIEW's UI thread. An incoming error posts nothing.">
   <FreeLabel comment="Popup open\3A keys on menus\2C mouse elsewhere" uid="lbl" uid_parent="root"/>
   <Control _name="hWnd" conIdx="0" connection="required" description="Native handle of the window that receives the messages - the served front panel (RemoteVI Get Panel Geometry.vi)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="posts" conIdx="5" connection="required" description="Messages to post\2C from RemoteVI Translate Input.vi." outputs="value:ps.value" type="array{cluster{uint32.msg,uint64.wParam,int64.lParam}}" uid="ps" uid_parent="root" value="[]"/>
@@ -43,11 +43,32 @@
         <Tunnel _id="In2" inputs="value:f_hw.value" outputs="value:hi2.value" uid="hi2" uid_parent="loop"/>
         <ShiftReg uid="sr" uid_parent="loop">
           <Left inputs="value:f_e.value" outputs="value:srl.value" uid="srl" uid_parent="sr"/>
-          <Right inputs="value:wih.error out" outputs="value:srr.value" uid="srr" uid_parent="sr"/>
+          <Right inputs="value:wco.value" outputs="value:srr.value" uid="srr" uid_parent="sr"/>
         </ShiftReg>
         <Node _name="Unbundle By Name" fields="msg,wParam,lParam" inputs="input cluster:pi.value" outputs="msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam" uid="ub" uid_parent="loop"/>
         <Call inputs="hWnd:hi2.value,Msg:ub.msg,wParam:ub.wParam,lParam:ub.lParam,error in (no error):srl.value" outputs="return value:,error out:pm.error out" target="user32 PostMessageW.vi" uid="pm" uid_parent="loop"/>
-        <Call inputs="hWnd:hi2.value,error in:pm.error out" outputs="error out:wih.error out" target="RemoteVI Wait Input Handled.vi" uid="wih" uid_parent="loop"/>
+        <Constant _name="WM_MOUSEMOVE" outputs="value:kmm.value" type="uint32" uid="kmm" uid_parent="loop" value="512"/>
+        <Constant _name="MK_LBUTTON | MK_RBUTTON | MK_MBUTTON" outputs="value:kbtn.value" type="uint64" uid="kbtn" uid_parent="loop" value="19"/>
+        <Node _name="Equal?" inputs="x:ub.msg,y:kmm.value" outputs="x = y?:ismv.x = y?" uid="ismv" uid_parent="loop"/>
+        <Node _name="And" inputs="x:ub.wParam,y:kbtn.value" outputs="x .and. y?:btns.x .and. y?" uid="btns" uid_parent="loop"/>
+        <Node _name="Equal To 0?" inputs="x:btns.x .and. y?" outputs="x = 0?:nobtn.x = 0?" uid="nobtn" uid_parent="loop"/>
+        <Node _name="And" inputs="x:ismv.x = y?,y:nobtn.x = 0?" outputs="x .and. y?:hover.x .and. y?" uid="hover" uid_parent="loop"/>
+        <Structure _name="Case Structure" selectin="hover.x .and. y?" uid="wc" uid_parent="loop">
+          <Tunnel _id="In1" inputs="value:hi2.value" uid="wc_i1" uid_parent="wc"/>
+          <Tunnel _id="In2" inputs="value:pm.error out" uid="wc_i2" uid_parent="wc"/>
+          <CaseFrame label="Hover move\3A no wait (nothing depends on it being handled)" selector="True" selectout="" uid="wct" uid_parent="wc">
+            <Tunnel _id="In1" outputs="value:" uid="wct1" uid_parent="wct"/>
+            <Tunnel _id="In2" outputs="value:wct2.value" uid="wct2" uid_parent="wct"/>
+            <Tunnel _id="Out1" inputs="value:wct2.value" uid="wcto" uid_parent="wct"/>
+          </CaseFrame>
+          <CaseFrame label="Wait until LabVIEW handled it" selector="False" selectout="" uid="wcf" uid_parent="wc">
+            <Tunnel _id="In1" outputs="value:wcf1.value" uid="wcf1" uid_parent="wcf"/>
+            <Tunnel _id="In2" outputs="value:wcf2.value" uid="wcf2" uid_parent="wcf"/>
+            <Call inputs="hWnd:wcf1.value,error in:wcf2.value" outputs="error out:wih.error out" target="RemoteVI Wait Input Handled.vi" uid="wih" uid_parent="wcf"/>
+            <Tunnel _id="Out1" inputs="value:wih.error out" uid="wcfo" uid_parent="wcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:wco.value" uid="wco" uid_parent="wc"/>
+        </Structure>
       </Structure>
       <Tunnel _id="Out1" inputs="value:srr.value" uid="f_o1" uid_parent="cmf"/>
     </CaseFrame>

@@ -1,11 +1,13 @@
-<VI _name="RemoteVI Demo.vi" description="Demo of the RemoteVI toolkit. Publishes its own front panel with RemoteVI Start.vi (VI unwired\2C so the caller - this VI - is published on port 8088 - NI Application Web Server often holds 8080)\2C runs a 50 ms loop that draws a moving sine (amplitude Numeric) on the graph until Stop is pressed\2C then calls RemoteVI Stop.vi. Open URL in a browser to see and operate the panel.">
+<VI _name="RemoteVI Demo.vi" description="Demo of the RemoteVI toolkit. Publishes its own front panel with RemoteVI Start.vi (VI unwired\2C so the caller - this VI - is published on port 8088 - NI Application Web Server often holds 8080)\2C runs a 50 ms loop that draws a moving sine (amplitude Numeric) on the graph until Stop is pressed\2C then calls RemoteVI Stop.vi. Ask opens a LabVIEW Two Button Dialog and shows the answer in Answer\3B Open File opens the native file dialog and shows the chosen file's name in File - both are answered from the browser like the panel is operated (docs\5Cprotocol.md section 7). Open URL in a browser to see and operate the panel.">
   <FreeLabel comment="Start before the loop\2C Stop after it" uid="lbl" uid_parent="root"/>
   <Control _name="Stop" description="Ends the demo." outputs="value:stopc.value" style="latched" type="bool" uid="stopc" uid_parent="sl" value="false"/>
-  <Control _name="Numeric" description="Amplitude of the sine." outputs="value:num.value" type="double" uid="num" uid_parent="sl" value="1"/>
+  <Control _name="Numeric" description="Amplitude of the sine." outputs="value:num.value" type="double" uid="num" uid_parent="sl" value="6"/>
   <Control _name="Mode" description="A text ring\2C to try popup menus remotely." items="Off,Slow,Fast" outputs="value:" style="Ring" type="int32" uid="mode" uid_parent="root" value="0" values="[0,1,2]"/>
   <Control _name="Enable" description="A boolean to click remotely." outputs="value:" type="bool" uid="en" uid_parent="root" value="false"/>
   <Control _name="Message" description="A string to type into remotely." outputs="value:" type="string" uid="msg" uid_parent="root" value="Hello from LabVIEW"/>
   <Indicator _name="Sine" description="A moving sine (100 points\2C amplitude Numeric) - keeps the panel changing." inputs="value:wave.value" style="graph21703" type="array{double}" uid="chart" uid_parent="sl" value="[]"/>
+  <Control _name="Ask" description="Opens a LabVIEW Two Button Dialog\3B answer it in the browser." outputs="value:ask.value" style="latched" type="bool" uid="ask" uid_parent="sl" value="false"/>
+  <Control _name="Open File" description="Opens the native file dialog\3B choose a file or cancel in the browser." outputs="value:opn.value" style="latched" type="bool" uid="opn" uid_parent="sl" value="false"/>
   <Indicator _name="URL" description="Where the panel is served." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
 
   <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
@@ -26,6 +28,28 @@
       <Node _name="Sine" inputs="x:ph.x*y" outputs="sin(x):sn.sin(x)" uid="sn" uid_parent="wl"/>
       <Node _name="Multiply" inputs="x:sn.sin(x),y:w_a.value" outputs="x*y:mul.x*y" uid="mul" uid_parent="wl"/>
       <Tunnel _id="Out1" inputs="value:mul.x*y" mode="index" outputs="value:wave.value" uid="wave" uid_parent="wl"/>
+    </Structure>
+    <Structure _name="Case Structure" selectin="ask.value" uid="cak" uid_parent="sl">
+      <CaseFrame label="Ask the remote user" selector="True" selectout="" uid="cakt" uid_parent="cak">
+        <Constant _name="message" outputs="value:akm.value" type="string" uid="akm" uid_parent="cakt" value="Proceed with the measurement?"/>
+        <Constant _name="yes" outputs="value:aky.value" type="string" uid="aky" uid_parent="cakt" value="Yes"/>
+        <Constant _name="no" outputs="value:akn.value" type="string" uid="akn" uid_parent="cakt" value="No"/>
+        <Node _name="Two Button Dialog" inputs="message:akm.value,T button name (&quot;OK&quot;):aky.value,F button name (&quot;Cancel&quot;):akn.value" outputs="T button?:akd.T button?" uid="akd" uid_parent="cakt"/>
+        <Node _name="Select" inputs="t:aky.value,s:akd.T button?,f:akn.value" outputs="s? t\3Af:aks.s? t\3Af" uid="aks" uid_parent="cakt"/>
+        <Indicator _name="Answer" description="What the remote user answered in the Ask dialog." inputs="value:aks.s? t\3Af" type="string" uid="ans" uid_parent="cakt" value=""/>
+      </CaseFrame>
+      <CaseFrame label="Nothing to ask" selector="False" selectout="" uid="cakf" uid_parent="cak"/>
+    </Structure>
+    <Structure _name="Case Structure" selectin="opn.value" uid="cop" uid_parent="sl">
+      <CaseFrame label="Let the remote user choose a file" selector="True" selectout="" uid="copt" uid_parent="cop">
+        <Node _name="File Dialog" inputs="" outputs="selected path:opd.selected path,error out:" uid="opd" uid_parent="copt"/>
+        <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:opd.selected path" outputs="NaN/Path/Refnum?:opc.NaN/Path/Refnum?" uid="opc" uid_parent="copt"/>
+        <Node _name="Strip Path" inputs="path:opd.selected path" outputs="stripped path:,name:ops.string" uid="ops" uid_parent="copt"/>
+        <Constant _name="cancelled" outputs="value:opx.value" type="string" uid="opx" uid_parent="copt" value="(cancelled)"/>
+        <Node _name="Select" inputs="t:opx.value,s:opc.NaN/Path/Refnum?,f:ops.string" outputs="s? t\3Af:opv.s? t\3Af" uid="opv" uid_parent="copt"/>
+        <Indicator _name="File" description="Name of the file the remote user chose with Open File." inputs="value:opv.s? t\3Af" type="string" uid="fil" uid_parent="copt" value=""/>
+      </CaseFrame>
+      <CaseFrame label="Nothing to open" selector="False" selectout="" uid="copf" uid_parent="cop"/>
     </Structure>
     <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>
     <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>

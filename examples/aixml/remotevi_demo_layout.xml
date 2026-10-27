@@ -1,11 +1,11 @@
-<VI _name="RemoteVI Demo Layout.vi" description="Lays out the front panel of RemoteVI Demo.vi (the generator places a graph or chart far larger than the window and stacks the controls under it) and saves it: controls in a column on the left\2C the graph to their right with a 400 x 230 plot area\2C its graph palette (zoom\2C pan) visible and autoscaling off on both scales (Scale Fit 0\2C so a zoom is not undone by the next data write)\2C the window sized to the content. Run it once after regenerating the demo\2C with the demo idle.">
+<VI _name="RemoteVI Demo Layout.vi" description="Lays out the front panel of RemoteVI Demo.vi (the generator places a graph or chart far larger than the window and stacks the controls under it) and saves it: controls in a column on the left\2C the graph to their right\2C Ask with Answer and Open File with File in two rows below the graph with a 400 x 230 plot area\2C its graph palette (zoom\2C pan) visible and autoscaling off on both scales (Scale Fit 0\2C so a zoom is not undone by the next data write)\2C the window sized to the content. Run it once after regenerating the demo\2C with the demo idle.">
   <Control _name="path" conIdx="0" connection="required" description="Path of RemoteVI Demo.vi." outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
   <Node _name="Open VI Reference" inputs="vi path:p.value,error in (no error):ei.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
   <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:pn.reference out,error out:pn.error out,Front Panel:pn.fp" type="{LV.VI}" uid="pn" uid_parent="root"/>
   <Node _name="Property Node" fields="read+Controls[]" inputs="reference:pn.fp,error in (no error):pn.error out" outputs="error out:pc.error out,Controls[]:pc.c" type="{LV.Panel}" uid="pc" uid_parent="root"/>
-  <Constant outputs="value:names.value" type="array{string}" uid="names" uid_parent="root" value="[Stop,Numeric,Mode,Enable,Message,URL,error out,Sine]"/>
-  <Constant outputs="value:pos.value" type="array{cluster{int32.Left,int32.Top}}" uid="pos" uid_parent="root" value="[[20,20],[20,80],[20,140],[20,200],[20,260],[20,320],[20,380],[220,20]]"/>
+  <Constant outputs="value:names.value" type="array{string}" uid="names" uid_parent="root" value="[Stop,Numeric,Mode,Enable,Message,URL,error out,Sine,Ask,Answer,Open File,File]"/>
+  <Constant outputs="value:pos.value" type="array{cluster{int32.Left,int32.Top}}" uid="pos" uid_parent="root" value="[[20,20],[20,80],[20,140],[20,200],[20,260],[20,320],[20,380],[220,20],[240,385],[330,388],[240,440],[330,443]]"/>
   <Constant outputs="value:chartcls.value" type="ref{LV.WaveformGraph}" uid="chartcls" uid_parent="root" value=""/>
   <Constant outputs="value:plotsz.value" type="cluster{int32.Width,int32.Height}" uid="plotsz" uid_parent="root" value="[400,230]"/>
   <Structure _name="For Loop" count="" label="Place each control by label" maxin="" maxout="" uid="fl" uid_parent="root">
@@ -42,7 +42,7 @@
     </Structure>
     <Node _name="Property Node" fields="write+Position" inputs="reference:lt.reference out,error in (no error):lt.error out,Position:xy.element" outputs="error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="fl"/>
   </Structure>
-  <Constant outputs="value:wb.value" type="cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}" uid="wb" uid_parent="root" value="[120,120,920,600]"/>
+  <Constant outputs="value:wb.value" type="cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}" uid="wb" uid_parent="root" value="[120,120,920,690]"/>
   <Constant outputs="value:org.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="org" uid_parent="root" value="[0,0]"/>
   <Node _name="Property Node" fields="write+Front Panel Window\3AOrigin,write+Front Panel Window\3APanel Bounds" inputs="reference:pn.reference out,error in (no error):loop_err.value,Front Panel Window\3AOrigin:org.value,Front Panel Window\3APanel Bounds:wb.value" outputs="reference out:wn.reference out,error out:wn.error out" type="{LV.VI}" uid="wn" uid_parent="root"/>
   <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:wn.reference out,error in (no error):wn.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>

@@ -87,6 +87,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
+		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
 		<Item Name="RemoteVI Send Client Windows.vi" Type="VI" URL="../Server/RemoteVI Send Client Windows.vi"/>
 		<Item Name="RemoteVI Send Frame.vi" Type="VI" URL="../Server/RemoteVI Send Frame.vi"/>

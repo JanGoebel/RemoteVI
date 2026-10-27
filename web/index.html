@@ -92,6 +92,13 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
 .panel-wrap.modal #dim { display: block; }
 #win-list { max-width: 180px; height: 28px; font: inherit; border: 1px solid var(--border); border-radius: 6px; background: var(--bar-bg); color: inherit; }
 #win-list[hidden] { display: none; }
+/* Tip strip of the control under the pointer, drawn like LabVIEW's own (tips message). */
+#tip {
+  position: fixed; z-index: 1000; display: none; max-width: 400px; padding: 2px 5px;
+  background: #ffffe1; color: #000; border: 1px solid #767676; box-shadow: 1px 2px 4px rgb(0 0 0 / 0.3);
+  font: 12px/1.35 "Segoe UI", Tahoma, sans-serif; white-space: pre-wrap; pointer-events: none;
+}
+#tip.show { display: block; }
 /* Hidden input that brings up the on-screen keyboard on touch devices. */
 #kbd { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
 .toast {
@@ -136,6 +143,7 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
 </main>
 <input id="kbd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
 <div id="toast" class="toast" role="status"></div>
+<div id="tip" role="tooltip"></div>
 <script>
 'use strict';
 
@@ -189,6 +197,7 @@ const ZOOM_MIN = 0.1;
 const ZOOM_MAX = 4;
 const LONG_PRESS_MS = 550;      // touch: hold this long without moving = right click
 const TAP_SLOP_PX = 8;          // touch: moving further than this starts a drag
+const TIP_DELAY_MS = 500;       // hover this long on a control to see its tip strip
 
 function mouseFlags(e) {
   let w = 0;
@@ -282,6 +291,9 @@ class RemoteViClient {
     this.windowsLayer = document.getElementById('windows');
     this.winList = document.getElementById('win-list');
     this.pressWin = null;             // window a mouse press started in (keeps a drag on it)
+    this.tips = [];                   // tip strips {x, y, w, h, text} in frame coordinates (tips message)
+    this.tipEl = document.getElementById('tip');
+    this.tip = { at: null, timer: 0, quiet: null };  // control hovered, dwell timer, tip silenced by a click
 
     const coarse = matchMedia('(pointer: coarse)').matches;
     document.body.dataset.touch = String(coarse);
@@ -342,7 +354,53 @@ class RemoteViClient {
     } else if (cmd === 'origin') {
       const [x, y] = arg.split(' ').map(Number);
       if (Number.isFinite(x) && Number.isFinite(y)) this.origin = { x, y };
+    } else if (cmd === 'tips') {
+      let list;
+      try { list = JSON.parse(arg); } catch { return; }
+      if (!Array.isArray(list)) return;
+      this.tips = list.filter((t) => t && typeof t.text === 'string'
+        && [t.x, t.y, t.w, t.h].every(Number.isFinite));
+      this.hideTip();
     }
+  }
+
+  // --- tip strips (docs/protocol.md 3.3) ----------------------------------------------
+  // LabVIEW shows tip strips only while it is the foreground application, so the
+  // server sends the texts and the client shows them itself after a hover dwell.
+
+  /** Pointer at a client point (mouse, no button held): start, keep or hide the tip. */
+  hoverTip(clientX, clientY) {
+    let hit = null;
+    if (!this.overlay.childElementCount && !this.wrap.classList.contains('modal')
+        && !this.windowAt(clientX, clientY)) {
+      const { x, y } = this.framePoint(clientX, clientY, null);
+      hit = this.tips.find((t) => x >= t.x && y >= t.y && x < t.x + t.w && y < t.y + t.h) ?? null;
+    }
+    this.tip.pos = { x: clientX, y: clientY };
+    if (hit === this.tip.at) return;
+    this.hideTip();
+    this.tip.at = hit;
+    if (this.tip.quiet && hit !== this.tip.quiet) this.tip.quiet = null;
+    if (hit && hit !== this.tip.quiet) this.tip.timer = setTimeout(() => this.showTip(hit), TIP_DELAY_MS);
+  }
+
+  showTip(t) {
+    const el = this.tipEl;
+    el.textContent = t.text;
+    el.classList.add('show');
+    // Below and right of the pointer, as Windows places tooltips; kept inside the view.
+    const { x, y } = this.tip.pos;
+    const r = el.getBoundingClientRect();
+    el.style.left = `${Math.max(0, Math.min(x + 2, innerWidth - r.width - 2))}px`;
+    el.style.top = `${y + 22 + r.height > innerHeight ? Math.max(0, y - r.height - 4) : y + 22}px`;
+  }
+
+  /** Hide the tip; with silence, it stays hidden until the pointer leaves that control (a click). */
+  hideTip(silence = false) {
+    clearTimeout(this.tip.timer);
+    if (silence && this.tip.at) this.tip.quiet = this.tip.at;
+    if (!silence) this.tip.at = null;
+    this.tipEl.classList.remove('show');
   }
 
   onFrame(buf) {
@@ -388,6 +446,7 @@ class RemoteViClient {
   }
 
   showOverlay(popups) {
+    if (popups.length) this.hideTip(true);
     for (const img of this.overlay.querySelectorAll('img')) URL.revokeObjectURL(img.src);
     this.overlay.replaceChildren(...popups.map((p) => {
       const img = document.createElement('img');
@@ -655,6 +714,7 @@ class RemoteViClient {
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
       e.preventDefault();
+      this.hideTip(true);
       c.focus({ preventScroll: true });
       w.setPointerCapture(e.pointerId);
       this.flushMove();
@@ -678,13 +738,17 @@ class RemoteViClient {
     // Moves are coalesced to one per animation frame: only the latest position matters.
     w.addEventListener('pointermove', (e) => {
       if (e.pointerType === 'touch') { this.touchMove(e); return; }
+      if (e.buttons) this.hideTip(true); else this.hoverTip(e.clientX, e.clientY);
       const first = this.pendingMove === null;
       this.pendingMove = e;
       if (first) requestAnimationFrame(() => this.flushMove());
     });
 
+    w.addEventListener('pointerleave', () => { this.hideTip(); this.tip.quiet = null; });
+
     w.addEventListener('wheel', (e) => {
       e.preventDefault();
+      this.hideTip(true);
       if (e.ctrlKey) {
         // Ctrl+wheel and trackpad pinch zoom the view, as in any browser page.
         this.setZoom(this.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), { x: e.clientX, y: e.clientY });
@@ -790,6 +854,7 @@ class RemoteViClient {
   // --- keyboard ----------------------------------------------------------------------
 
   keyDown(e) {
+    this.hideTip(true);
     const vk = VK[e.code];
     if (vk) {
       e.preventDefault();

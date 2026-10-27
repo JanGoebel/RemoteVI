@@ -27,9 +27,11 @@
 				<Item Name="W32B Parse Spec.vi" Type="VI" URL="../scripts/Win32 Wrapper Builder/W32B Parse Spec.vi"/>
 			</Item>
 			<Item Name="Win32 Wrapper Templates" Type="Folder">
+				<Item Name="BitBlt Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/BitBlt Wrapper Template.vi"/>
 				<Item Name="ChildWindowFromPointEx Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/ChildWindowFromPointEx Wrapper Template.vi"/>
 				<Item Name="CreateCompatibleBitmap Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/CreateCompatibleBitmap Wrapper Template.vi"/>
 				<Item Name="CreateCompatibleDC Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/CreateCompatibleDC Wrapper Template.vi"/>
+				<Item Name="CreateRectRgn Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/CreateRectRgn Wrapper Template.vi"/>
 				<Item Name="DeleteDC Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/DeleteDC Wrapper Template.vi"/>
 				<Item Name="DeleteObject Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/DeleteObject Wrapper Template.vi"/>
 				<Item Name="FindWindowExW Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/FindWindowExW Wrapper Template.vi"/>
@@ -61,6 +63,7 @@
 				<Item Name="SetLayeredWindowAttributes Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/SetLayeredWindowAttributes Wrapper Template.vi"/>
 				<Item Name="SetWindowLongPtrW Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/SetWindowLongPtrW Wrapper Template.vi"/>
 				<Item Name="SetWindowPos Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/SetWindowPos Wrapper Template.vi"/>
+				<Item Name="SetWindowRgn Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/SetWindowRgn Wrapper Template.vi"/>
 				<Item Name="ShowWindow Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/ShowWindow Wrapper Template.vi"/>
 			</Item>
 			<Item Name="Build Win32 Wrappers.vi" Type="VI" URL="../scripts/Build Win32 Wrappers.vi"/>

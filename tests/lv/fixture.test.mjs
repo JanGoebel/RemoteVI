@@ -177,13 +177,21 @@ test('Shift+Right arrow arrives with the Shift modifier', opts, async () => {
   await waitLog(([k, l, key, mods]) => k === 'keydown' && l === 'Text' && /right/i.test(key) && /S/.test(mods ?? ''), { since: s });
 });
 
-test('hovering shows the tip strip in the browser and leaving hides it', opts, async () => {
+test('the tip strips of the controls reach the browser as text, also with LabVIEW in the background', opts, async () => {
+  // LabVIEW shows its own tip strips only while it is the foreground application; the
+  // server sends the texts (tips message) and the client shows them itself.
   const r = at('Button');
+  const end = Date.now() + 2000;
+  while (!c.tips && Date.now() < end) await sleep(50);
+  assert.ok(Array.isArray(c.tips), 'a tips message arrives on connect');
+  const hit = c.tips.find((t) => r.cx >= t.x && r.cx < t.x + t.w && r.cy >= t.y && r.cy < t.y + t.h);
+  assert.equal(hit?.text, 'Press me');
+  assert.ok(c.tips.every((t) => t.text !== ''), 'controls without a tip strip are left out');
+  // A hover no longer brings a LabVIEW tip strip into the OVERLAY.
   move(c, r.x - 30, r.cy); await sleep(300);
-  move(c, r.cx, r.cy);
-  await waitOverlay(c, (o) => o.length > 0, 4000);
+  move(c, r.cx, r.cy); await sleep(1200);
+  assert.equal(c.overlay.length, 0);
   move(c, r.x - 30, r.cy);
-  await waitOverlay(c, (o) => o.length === 0, 4000);
 });
 
 test('an item in a submenu of a run-time shortcut menu can be chosen', opts, async () => {

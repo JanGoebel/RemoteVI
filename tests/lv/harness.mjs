@@ -73,13 +73,16 @@ export async function connect() {
   const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
   ws.binaryType = 'arraybuffer';
   const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false,
-    windows: [], windowFrames: new Map() };
+    windows: [], windowFrames: new Map(), tips: null };
   ws.onmessage = (ev) => {
     if (typeof ev.data === 'string') {
       const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
       if (m) { c.origin = { x: Number(m[1]), y: Number(m[2]) }; c.originSeen = true; }
       if (ev.data.startsWith('windows ')) {
         try { c.windows = JSON.parse(ev.data.slice(8)); } catch { /* ignore */ }
+      }
+      if (ev.data.startsWith('tips ')) {
+        try { c.tips = JSON.parse(ev.data.slice(5)); } catch { /* ignore */ }
       }
       return;
     }

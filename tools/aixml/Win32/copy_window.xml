@@ -1,0 +1,41 @@
+<VI _name="RemoteVI Copy Window.vi" description="Copies the CLIENT AREA of the window hwnd into a 2D U32 pixmap [row\2C column] of 0x00RRGGBB values as Windows composited it last\3A user32 GetDC of the window\2C gdi32 BitBlt (SRCCOPY) into a memory bitmap of the client size (user32 GetClientRect)\2C GetDIBits as 32-bit top-down rows. With desktop composition every top-level window draws into its own surface\2C so this sees the window's pixels whether or not it is covered by other windows (measured on Windows 11 with a LabVIEW front panel behind a maximised window\2C pixel-identical to PrintWindow) - and unlike PrintWindow it does not make the window draw itself again\3A about 2-5 ms for an 817 x 543 panel instead of 40-50 ms with PrintWindow\2C during which LabVIEW's UI thread repainted the whole window (graph included) for every frame and was busy for nothing else (measured on the demo). A minimized window has an empty client area\3B pixmap is then empty. No VI Server call\2C so it works while an open popup holds LabVIEW's UI thread. Every GDI object is deselected and released again\2C also when an earlier step failed. error out carries error in\2C a Call Library Function Node error\2C 5003 when BitBlt failed or 5001 when GetDIBits copied no line.">
+  <Control _name="hwnd" type="uint64" uid="hw" uid_parent="root" value="0" conIdx="0" connection="required" description="The window whose client area is copied (HWND)\2C e.g. the published front panel." outputs="value:hw.value" />
+  <Control _name="error in" type="cluster{bool.status,int32.code,string.source}" uid="errin" uid_parent="root" value="[false,0,]" conIdx="11" connection="recommended" description="When this carries an error nothing is copied (the cleanup calls still run on null handles\2C harmlessly)." outputs="value:errin.value" />
+  <Indicator _name="pixmap" type="array.2{uint32}" uid="opix" uid_parent="root" value="[]" conIdx="4" connection="recommended" description="h rows of w pixels of the client area\2C top row first\2C each 0x00RRGGBB (the top byte is masked off)." inputs="value:rs.output array" />
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="errout" uid_parent="root" value="[false,0,]" conIdx="15" connection="recommended" description="error in\2C the first DLL call error\2C 5003 when BitBlt failed or 5001 when GetDIBits copied nothing." inputs="value:merge.error out" />
+  <Call uid="cr" uid_parent="root" target="user32 GetClientRect.vi" inputs="hWnd:hw.value,error in:errin.value" outputs="RECT:cr.RECT,return value:,error out:cr.error out" />
+  <Node _name="Unbundle By Name" uid="ur" uid_parent="root" fields="right,bottom" inputs="input cluster:cr.RECT" outputs="right:ur.right,bottom:ur.bottom" />
+  <Call uid="getdc" uid_parent="root" target="user32 GetDC.vi" inputs="hWnd:hw.value,error in:cr.error out" outputs="HDC:getdc.HDC,error out:getdc.error out" />
+  <Call uid="mkdc" uid_parent="root" target="gdi32 CreateCompatibleDC.vi" inputs="hdc:getdc.HDC,error in:getdc.error out" outputs="HDC:mkdc.HDC,error out:mkdc.error out" />
+  <Call uid="mkbmp" uid_parent="root" target="gdi32 CreateCompatibleBitmap.vi" inputs="hdc:getdc.HDC,cx:ur.right,cy:ur.bottom,error in:mkdc.error out" outputs="HBITMAP:mkbmp.HBITMAP,error out:mkbmp.error out" />
+  <Call uid="sel" uid_parent="root" target="gdi32 SelectObject.vi" inputs="hdc:mkdc.HDC,h:mkbmp.HBITMAP,error in:mkbmp.error out" outputs="previous object:sel.previous object,error out:sel.error out" />
+  <Constant _name="zero" type="int32" uid="z32" uid_parent="root" value="0" outputs="value:z32.value" />
+  <Constant _name="SRCCOPY" type="uint32" uid="rop" uid_parent="root" value="13369376" outputs="value:rop.value" />
+  <Call uid="bb" uid_parent="root" target="gdi32 BitBlt.vi" inputs="hdc:mkdc.HDC,x:z32.value,y:z32.value,cx:ur.right,cy:ur.bottom,hdcSrc:getdc.HDC,x1:z32.value,y1:z32.value,rop:rop.value,error in:sel.error out" outputs="return value:bb.return value,error out:bb.error out" />
+  <Call uid="unsel" uid_parent="root" target="gdi32 SelectObject.vi" inputs="hdc:mkdc.HDC,h:sel.previous object,error in:bb.error out" outputs="previous object:,error out:unsel.error out" />
+  <Node _name="Multiply" uid="npix" uid_parent="root" inputs="x:ur.right,y:ur.bottom" outputs="x*y:npix.x*y" />
+  <Constant type="uint32" uid="u0" uid_parent="root" value="0" outputs="value:u0.value" />
+  <Node _name="Initialize Array" uid="buf" uid_parent="root" inputs="element:u0.value,dimension size:npix.x*y" outputs="initialized array:buf.initialized array" />
+  <Node _name="Negate" uid="negh" uid_parent="root" inputs="x:ur.bottom" outputs="-x:negh.-x" />
+  <Constant _name="biSize" type="uint32" uid="bisz" uid_parent="root" value="40" outputs="value:bisz.value" />
+  <Constant _name="biPlanes" type="uint16" uid="bipl" uid_parent="root" value="1" outputs="value:bipl.value" />
+  <Constant _name="biBitCount" type="uint16" uid="bibc" uid_parent="root" value="32" outputs="value:bibc.value" />
+  <Node _name="Bundle" uid="bmi" uid_parent="root" inputs="element:bisz.value,element:ur.right,element:negh.-x,element:bipl.value,element:bibc.value,element:u0.value,element:u0.value,element:z32.value,element:z32.value,element:u0.value,element:u0.value,element:u0.value" outputs="output cluster:bmi.output cluster" />
+  <Call uid="dib" uid_parent="root" target="gdi32 GetDIBits.vi" inputs="hdc:getdc.HDC,hbm:mkbmp.HBITMAP,start:u0.value,cLines:ur.bottom,lpvBits:buf.initialized array,lpbmi:bmi.output cluster,usage:u0.value,error in:unsel.error out" outputs="lpvBits out:dib.lpvBits out,return value:dib.return value,error out:dib.error out" />
+  <Constant _name="RGB mask" type="uint32" uid="mask" uid_parent="root" value="16777215" outputs="value:mask.value" />
+  <Node _name="And" uid="and" uid_parent="root" inputs="x:dib.lpvBits out,y:mask.value" outputs="x .and. y?:and.x .and. y?" />
+  <Node _name="Reshape Array" uid="rs" uid_parent="root" inputs="array:and.x .and. y?,dimension size:ur.bottom,dimension size:ur.right" outputs="output array:rs.output array" />
+  <Node _name="Equal To 0?" uid="bbbad" uid_parent="root" inputs="x:bb.return value" outputs="x = 0?:bbbad.x = 0?" />
+  <Node _name="Equal To 0?" uid="none" uid_parent="root" inputs="x:dib.return value" outputs="x = 0?:none.x = 0?" />
+  <Constant _name="BitBlt failed" type="cluster{bool.status,int32.code,string.source}" uid="ebb" uid_parent="root" value="[true,5003,RemoteVI Copy Window.vi\3A BitBlt failed - the window is gone or minimized]" outputs="value:ebb.value" />
+  <Constant _name="GetDIBits failed" type="cluster{bool.status,int32.code,string.source}" uid="efail" uid_parent="root" value="[true,5001,RemoteVI Copy Window.vi\3A GetDIBits copied no line - empty window or GDI failure]" outputs="value:efail.value" />
+  <Constant _name="no error" type="cluster{bool.status,int32.code,string.source}" uid="enone" uid_parent="root" value="[false,0,]" outputs="value:enone.value" />
+  <Node _name="Select" uid="echk" uid_parent="root" inputs="t:efail.value,s:none.x = 0?,f:enone.value" outputs="s? t\3Af:echk.out" />
+  <Node _name="Select" uid="echk2" uid_parent="root" inputs="t:ebb.value,s:bbbad.x = 0?,f:echk.out" outputs="s? t\3Af:echk2.out" />
+  <Call uid="clr" uid_parent="root" target="Clear Errors.vi" inputs="error in (no error):dib.error out" outputs="error out:clr.error out" />
+  <Call uid="delbmp" uid_parent="root" target="gdi32 DeleteObject.vi" inputs="ho:mkbmp.HBITMAP,error in:clr.error out" outputs="return value:,error out:delbmp.error out" />
+  <Call uid="deldc" uid_parent="root" target="gdi32 DeleteDC.vi" inputs="hdc:mkdc.HDC,error in:clr.error out" outputs="return value:,error out:deldc.error out" />
+  <Call uid="reldc" uid_parent="root" target="user32 ReleaseDC.vi" inputs="hWnd:hw.value,hDC:getdc.HDC,error in:clr.error out" outputs="return value:,error out:reldc.error out" />
+  <Node _name="Merge Errors" uid="merge" uid_parent="root" inputs="error in:dib.error out,error in:echk2.out,error in:delbmp.error out,error in:deldc.error out,error in:reldc.error out" outputs="error out:merge.error out" />
+  <FreeLabel comment="BitBlt from the window's DC - its composited surface\2C also when covered" uid="cmt" uid_parent="root" />
+</VI>

@@ -1,16 +1,10 @@
-<VI _name="RemoteVI Capture Frame.vi" description="Makes the image for one frame\3A the WHOLE front panel window below its title bar - menu bar\2C toolbar\2C panel and scrollbars\2C as the window shows them. The window is drawn by PrintWindow (RemoteVI Capture Window.vi on hWnd\2C flags 0 - the window paints itself through WM_PRINT\2C whether it is covered\2C on another monitor or behind an open menu\3B LabVIEW keeps redrawing the panel while a menu's modal loop runs\2C measured) and cut to the frame (RemoteVI Frame Rect.vi\3A the client area\2C which holds LabVIEW's own menu bar\2C toolbar and scrollbars). No VI Server call\2C so it also runs while a popup is open. FP.Get Image was the capture before\3A it shows only the panel area - no menu bar\2C toolbar or scrollbars - and blocks while a popup is open. The capture becomes the cache (pixmap\2C width\2C height\3B time is passed through). When the window cannot be drawn - PrintWindow failed\2C the window is minimized or gone (frame width or height 0) - the cached image is the frame and the cache is left as it was.">
+<VI _name="RemoteVI Capture Frame.vi" description="Makes the image for one frame\3A the WHOLE front panel window below its title bar - menu bar\2C toolbar\2C panel and scrollbars\2C as the window shows them - which is the window's client area (LabVIEW draws its own menu bar\2C toolbar and scrollbars inside it). The client area is copied from the window's composited surface (RemoteVI Copy Window.vi\3A GetDC + BitBlt)\2C which also works while the window is covered or behind an open menu\2C and does not make LabVIEW draw the window again\3A 2-5 ms instead of 40-50 ms for the demo with PrintWindow\2C which also kept LabVIEW's UI thread busy repainting the whole window for every frame (measured). No VI Server call\2C so it also runs while a popup is open. When the window cannot be copied (minimized\2C gone) the cache is kept\2C so the last frame stays.">
   <Control _name="cache" conIdx="0" connection="required" description="The last frame image with its size and the tick count of the last frame." outputs="value:ca.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="ca" uid_parent="root" value="[[],0,0,0]"/>
   <Control _name="hWnd" conIdx="5" connection="required" description="Native handle of the served front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
-  <Call inputs="hWnd:hw.value" outputs="rect:fr.rect,error out:fr.error out" target="RemoteVI Frame Rect.vi" uid="fr" uid_parent="root"/>
-  <Call inputs="hwnd:hw.value,error in:fr.error out" outputs="pixmap:pwc.pixmap,rect:pwc.rect,error out:pwc.error out" target="RemoteVI Capture Window.vi" uid="pwc" uid_parent="root"/>
-  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pwc.rect" outputs="x:wr.x,y:wr.y" uid="wr" uid_parent="root"/>
-  <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:fr.rect" outputs="x:fu.x,y:fu.y,w:fu.w,h:fu.h" uid="fu" uid_parent="root"/>
-  <Node _name="Subtract" inputs="x:fu.x,y:wr.x" outputs="x-y:ox.x-y" uid="ox" uid_parent="root"/>
-  <Node _name="Subtract" inputs="x:fu.y,y:wr.y" outputs="x-y:oy.x-y" uid="oy" uid_parent="root"/>
-  <Node _name="Array Subset" dimensions="2" inputs="array:pwc.pixmap,index:oy.x-y,length:fu.h,index:ox.x-y,length:fu.w" outputs="subarray:crop.subarray" uid="crop" uid_parent="root"/>
+  <Call inputs="hwnd:hw.value" outputs="pixmap:pwc.pixmap,error out:pwc.error out" target="RemoteVI Copy Window.vi" uid="pwc" uid_parent="root"/>
   <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
-  <Node _name="Index Array" dimensions="2" inputs="array:crop.subarray,index (row):k0.value,disabled index (col):" outputs="element:row0.element" uid="row0" uid_parent="root"/>
-  <Node _name="Index Array" dimensions="2" inputs="array:crop.subarray,disabled index (row):,index (col):k0.value" outputs="element:col0.element" uid="col0" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:pwc.pixmap,index (row):k0.value,disabled index (col):" outputs="element:row0.element" uid="row0" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:pwc.pixmap,disabled index (row):,index (col):k0.value" outputs="element:col0.element" uid="col0" uid_parent="root"/>
   <Node _name="Array Size" inputs="array:row0.element" outputs="size(s):cols.element" uid="cols" uid_parent="root"/>
   <Node _name="Array Size" inputs="array:col0.element" outputs="size(s):rows.element" uid="rows" uid_parent="root"/>
   <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pwc.error out" outputs="status:pe.status" uid="pe" uid_parent="root"/>
@@ -19,10 +13,10 @@
   <Node _name="Not" inputs="x:pe.status" outputs=".not. x?:pok..not. x?" uid="pok" uid_parent="root"/>
   <Node _name="Build Array" inputs="element:pok..not. x?,element:hr.x &gt; 0?,element:hc.x &gt; 0?" outputs="appended array:okv.appended array" uid="okv" uid_parent="root"/>
   <Node _name="And Array Elements" inputs="Boolean array:okv.appended array" outputs="logical AND:ok.logical AND" uid="ok" uid_parent="root"/>
-  <Node _name="Bundle By Name" fields="pixmap,width,height" inputs="pixmap:crop.subarray,width:cols.element,height:rows.element,input cluster:ca.value" outputs="output cluster:nca.output cluster" uid="nca" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="pixmap,width,height" inputs="pixmap:pwc.pixmap,width:cols.element,height:rows.element,input cluster:ca.value" outputs="output cluster:nca.output cluster" uid="nca" uid_parent="root"/>
   <Node _name="Select" inputs="t:nca.output cluster,s:ok.logical AND,f:ca.value" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="root"/>
   <Node _name="Unbundle By Name" fields="pixmap" inputs="input cluster:sel.s? t\3Af" outputs="pixmap:selp.pixmap" uid="selp" uid_parent="root"/>
-  <FreeLabel comment="PrintWindow the window\2C cut to the frame" uid="lbl" uid_parent="root"/>
+  <FreeLabel comment="Copy the client area from the composited surface" uid="lbl" uid_parent="root"/>
   <Indicator _name="frame" conIdx="4" connection="recommended" description="The frame image to send\2C [row\2C column] 0x00RRGGBB." inputs="value:selp.pixmap" type="array.2{uint32}" uid="o_fr" uid_parent="root" value="[]"/>
   <Indicator _name="cache out" conIdx="6" connection="recommended" description="The new capture with its size\2C or cache when the window could not be drawn. time is passed through." inputs="value:sel.s? t\3Af" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="o_ca" uid_parent="root" value="[[],0,0,0]"/>
 </VI>

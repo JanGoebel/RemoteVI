@@ -50,6 +50,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI JSON String.vi" Type="VI" URL="../Protocol/RemoteVI JSON String.vi"/>
 		<Item Name="RemoteVI Overlay Encode.vi" Type="VI" URL="../Protocol/RemoteVI Overlay Encode.vi"/>
 		<Item Name="RemoteVI Parse Input.vi" Type="VI" URL="../Protocol/RemoteVI Parse Input.vi"/>
+		<Item Name="RemoteVI Tips Message.vi" Type="VI" URL="../Protocol/RemoteVI Tips Message.vi"/>
 		<Item Name="RemoteVI Window Frame Encode.vi" Type="VI" URL="../Protocol/RemoteVI Window Frame Encode.vi"/>
 		<Item Name="RemoteVI Windows Message.vi" Type="VI" URL="../Protocol/RemoteVI Windows Message.vi"/>
 		<Item Name="RemoteVI WS Decode Client Frame.vi" Type="VI" URL="../Protocol/RemoteVI WS Decode Client Frame.vi"/>
@@ -107,14 +108,17 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Yield If Idle.vi" Type="VI" URL="../Server/RemoteVI Yield If Idle.vi"/>
 	</Item>
 	<Item Name="Win32" Type="Folder">
+		<Item Name="gdi32 BitBlt.vi" Type="VI" URL="../Win32/gdi32 BitBlt.vi"/>
 		<Item Name="gdi32 CreateCompatibleBitmap.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleBitmap.vi"/>
 		<Item Name="gdi32 CreateCompatibleDC.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleDC.vi"/>
+		<Item Name="gdi32 CreateRectRgn.vi" Type="VI" URL="../Win32/gdi32 CreateRectRgn.vi"/>
 		<Item Name="gdi32 DeleteDC.vi" Type="VI" URL="../Win32/gdi32 DeleteDC.vi"/>
 		<Item Name="gdi32 DeleteObject.vi" Type="VI" URL="../Win32/gdi32 DeleteObject.vi"/>
 		<Item Name="gdi32 GetDIBits.vi" Type="VI" URL="../Win32/gdi32 GetDIBits.vi"/>
 		<Item Name="gdi32 SelectObject.vi" Type="VI" URL="../Win32/gdi32 SelectObject.vi"/>
 		<Item Name="kernel32 GetCurrentProcessId.vi" Type="VI" URL="../Win32/kernel32 GetCurrentProcessId.vi"/>
 		<Item Name="RemoteVI Capture Window.vi" Type="VI" URL="../Win32/RemoteVI Capture Window.vi"/>
+		<Item Name="RemoteVI Copy Window.vi" Type="VI" URL="../Win32/RemoteVI Copy Window.vi"/>
 		<Item Name="RemoteVI Cursor Outside Window.vi" Type="VI" URL="../Win32/RemoteVI Cursor Outside Window.vi"/>
 		<Item Name="RemoteVI Find Popups.vi" Type="VI" URL="../Win32/RemoteVI Find Popups.vi"/>
 		<Item Name="RemoteVI Frame Rect.vi" Type="VI" URL="../Win32/RemoteVI Frame Rect.vi"/>
@@ -158,6 +162,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="user32 SetLayeredWindowAttributes.vi" Type="VI" URL="../Win32/user32 SetLayeredWindowAttributes.vi"/>
 		<Item Name="user32 SetWindowLongPtrW.vi" Type="VI" URL="../Win32/user32 SetWindowLongPtrW.vi"/>
 		<Item Name="user32 SetWindowPos.vi" Type="VI" URL="../Win32/user32 SetWindowPos.vi"/>
+		<Item Name="user32 SetWindowRgn.vi" Type="VI" URL="../Win32/user32 SetWindowRgn.vi"/>
 		<Item Name="user32 ShowWindow.vi" Type="VI" URL="../Win32/user32 ShowWindow.vi"/>
 	</Item>
 </Library>

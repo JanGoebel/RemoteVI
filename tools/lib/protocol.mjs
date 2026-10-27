@@ -70,6 +70,33 @@ export function windowsMessage(windows) {
 }
 
 /**
+ * A JSON string literal made of ASCII only, quotes included (Protocol/JSON String.vi):
+ * printable ASCII 0x20-0x7E as it is except `"` and `\`, every other UTF-16 code
+ * unit as \uXXXX with upper-case hex digits, as LabVIEW's %04x writes them.
+ */
+export function jsonString(text) {
+  let out = '"';
+  for (let i = 0; i < text.length; i++) {
+    const u = text.charCodeAt(i);
+    out += u >= 0x20 && u <= 0x7e && u !== 0x22 && u !== 0x5c
+      ? text[i] : `\\u${u.toString(16).toUpperCase().padStart(4, '0')}`;
+  }
+  return `${out}"`;
+}
+
+/**
+ * The `tips <json>` text message (docs/protocol.md 3.3): the tip strips of the
+ * panel's visible controls, {x, y, w, h, text} in frame coordinates, in that field
+ * order. Controls without a tip strip are left out. Protocol/Tips Message.vi.
+ * @param {{x:number,y:number,w:number,h:number,text:string}[]} tips
+ */
+export function tipsMessage(tips) {
+  const items = tips.filter((t) => t.text !== '')
+    .map((t) => `{"x":${t.x},"y":${t.y},"w":${t.w},"h":${t.h},"text":${jsonString(t.text)}}`);
+  return `tips [${items.join(',')}]`;
+}
+
+/**
  * OVERLAY: the popups currently open over the panel (menus, dropdowns, palette
  * popups). Replaces the previous overlay entirely; an empty list clears it.
  * Positions are relative to the panel origin and may lie outside the panel.

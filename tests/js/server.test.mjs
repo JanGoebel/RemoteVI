@@ -46,6 +46,7 @@ function connect() {
   ws.onclose = (ev) => push({ closed: ev.code });
   return {
     ws,
+    queue,
     opened: new Promise((r) => { ws.onopen = r; }),
     next(pred = () => true, ms = 2000) {
       const i = queue.findIndex(pred);
@@ -271,5 +272,25 @@ test('a modal dialog arrives as a window with its own frames; it is operated and
   assert.equal((await c.next((m) => m.text?.startsWith('windows '))).text, 'windows []');
   assert.equal(srv.panel.answer, 'CLOSED');
   srv.panel.answer = '';
+  c.ws.close();
+});
+
+test('tip strips arrive on connect and again when they change, never while a popup is open', async () => {
+  const c = connect();
+  await c.opened;
+  const first = JSON.parse((await c.next((m) => m.text?.startsWith('tips '))).text.slice(5));
+  assert.deepEqual(first[0], { x: 24, y: 40, w: 96, h: 30, text: 'Starts or stops the pump' });
+  assert.ok(first.every((t) => t.text !== ''), 'controls without a tip strip are left out');
+
+  const pump = srv.panel.byId('c1');
+  srv.panel.popup = { x: 0, y: 0, items: ['A'] }; // while a popup is open the tips are not read
+  pump.tip = 'Changed while a popup is open';
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal(c.queue.find((m) => m.text?.startsWith('tips ')), undefined);
+  srv.panel.popup = null;
+  const changed = JSON.parse((await c.next((m) => m.text?.startsWith('tips '))).text.slice(5));
+  assert.equal(changed[0].text, 'Changed while a popup is open');
+  pump.tip = 'Starts or stops the pump';
+  await c.next((m) => m.text?.startsWith('tips '));
   c.ws.close();
 });

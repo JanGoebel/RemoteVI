@@ -1,0 +1,100 @@
+{
+ "description": "Protocol/JSON String.vi and Protocol/Tips Message.vi. text is UTF-16 code units; json is the ASCII-only JSON string literal (quotes included). tips: x, y, w, h in frame coordinates and text as code units; message is the complete tips text message (docs/protocol.md 3.3).",
+ "jsonStrings": [
+  {
+   "name": "empty",
+   "text": [],
+   "json": "\"\""
+  },
+  {
+   "name": "plain ASCII",
+   "text": [80,117,109,112,32,79,110],
+   "json": "\"Pump On\""
+  },
+  {
+   "name": "quote and backslash",
+   "text": [115,97,121,32,34,104,105,34,32,67,58,92,116,101,109,112],
+   "json": "\"say \\u0022hi\\u0022 C:\\u005Ctemp\""
+  },
+  {
+   "name": "line breaks and tab",
+   "text": [108,105,110,101,32,49,13,10,108,105,110,101,32,50,9,101,110,100],
+   "json": "\"line 1\\u000D\\u000Aline 2\\u0009end\""
+  },
+  {
+   "name": "Latin-1 letters",
+   "text": [71,114,246,223,101,32,105,110,32,181,109],
+   "json": "\"Gr\\u00F6\\u00DFe in \\u00B5m\""
+  },
+  {
+   "name": "euro sign and a surrogate pair",
+   "text": [8364,32,55357,56832],
+   "json": "\"\\u20AC \\uD83D\\uDE00\""
+  },
+  {
+   "name": "DEL and tilde",
+   "text": [126,127],
+   "json": "\"~\\u007F\""
+  }
+ ],
+ "tips": [
+  {
+   "name": "none",
+   "tips": [],
+   "message": "tips []"
+  },
+  {
+   "name": "one tip",
+   "tips": [
+    {
+     "x": 24,
+     "y": 40,
+     "w": 96,
+     "h": 30,
+     "text": [83,116,97,114,116,115,32,111,114,32,115,116,111,112,115,32,116,104,101,32,112,117,109,112]
+    }
+   ],
+   "message": "tips [{\"x\":24,\"y\":40,\"w\":96,\"h\":30,\"text\":\"Starts or stops the pump\"}]"
+  },
+  {
+   "name": "empty texts are left out",
+   "tips": [
+    {
+     "x": 0,
+     "y": 0,
+     "w": 10,
+     "h": 10,
+     "text": []
+    },
+    {
+     "x": 300,
+     "y": 216,
+     "w": 216,
+     "h": 22,
+     "text": [83,116,97,116,117,115]
+    }
+   ],
+   "message": "tips [{\"x\":300,\"y\":216,\"w\":216,\"h\":22,\"text\":\"Status\"}]"
+  },
+  {
+   "name": "escaped text, negative position",
+   "tips": [
+    {
+     "x": -4,
+     "y": 46,
+     "w": 917,
+     "h": 600,
+     "text": [116,119,111,10,108,105,110,101,115,32,34,113,117,111,116,101,100,34,32,228]
+    },
+    {
+     "x": 10,
+     "y": 20,
+     "w": 30,
+     "h": 40,
+     "text": [115,101,99,111,110,100]
+    }
+   ],
+   "message": "tips [{\"x\":-4,\"y\":46,\"w\":917,\"h\":600,\"text\":\"two\\u000Alines \\u0022quoted\\u0022 \\u00E4\"},{\"x\":10,\"y\":20,\"w\":30,\"h\":40,\"text\":\"second\"}]"
+  }
+ ]
+}

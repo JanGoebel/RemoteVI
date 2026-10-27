@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { dirtyRects } from './lib/rects.mjs';
-import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam } from './lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
@@ -240,6 +240,33 @@ function translateVectors() {
   };
 }
 
+function textVectors() {
+  // Texts are given as UTF-16 code units, as the G side holds them (a LabVIEW string
+  // of the system code page widened byte by byte, or GetWindowTextW's output).
+  const units = (s) => Array.from({ length: s.length }, (_, i) => s.charCodeAt(i));
+  const strings = [
+    ['empty', ''], ['plain ASCII', 'Pump On'], ['quote and backslash', 'say "hi" C:\\temp'],
+    ['line breaks and tab', 'line 1\r\nline 2\tend'], ['Latin-1 letters', 'Gr\u00f6\u00dfe in \u00b5m'],
+    ['euro sign and a surrogate pair', '\u20ac \ud83d\ude00'], ['DEL and tilde', '~\u007f'],
+  ];
+  const tips = [
+    ['none', []],
+    ['one tip', [{ x: 24, y: 40, w: 96, h: 30, text: 'Starts or stops the pump' }]],
+    ['empty texts are left out', [{ x: 0, y: 0, w: 10, h: 10, text: '' }, { x: 300, y: 216, w: 216, h: 22, text: 'Status' }]],
+    ['escaped text, negative position', [{ x: -4, y: 46, w: 917, h: 600, text: 'two\nlines "quoted" \u00e4' },
+      { x: 10, y: 20, w: 30, h: 40, text: 'second' }]],
+  ];
+  return {
+    description: 'Protocol/JSON String.vi and Protocol/Tips Message.vi. text is UTF-16 code units; json is the ASCII-only '
+      + 'JSON string literal (quotes included). tips: x, y, w, h in frame coordinates and text as code units; message is '
+      + 'the complete tips text message (docs/protocol.md 3.3).',
+    jsonStrings: strings.map(([name, s]) => ({ name, text: units(s), json: jsonString(s) })),
+    tips: tips.map(([name, list]) => ({
+      name, tips: list.map((t) => ({ ...t, text: units(t.text) })), message: tipsMessage(list),
+    })),
+  };
+}
+
 export function buildVectors() {
   return {
     'websocket.json': websocketVectors(),
@@ -248,6 +275,7 @@ export function buildVectors() {
     'frame.json': frameVectors(),
     'input.json': inputVectors(),
     'translate.json': translateVectors(),
+    'text.json': textVectors(),
   };
 }
 

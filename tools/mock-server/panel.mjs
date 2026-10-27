@@ -33,14 +33,20 @@ export class SimulatedPanel {
     this.answer = '';
     this.state = { pump: false, setpoint: 2.5, gain: 4, mode: 1, operator: 'JANE', history: [] };
     this.controls = [
-      { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30] },
-      { id: 'c2', label: 'Setpoint', kind: 'numeric', bounds: [24, 104, 120, 22], edit: [24, 104, 104, 22], min: -10, max: 10 },
+      { id: 'c1', label: 'Pump On', kind: 'boolean', mech: 'switch-when-pressed', bounds: [24, 40, 96, 30], tip: 'Starts or stops the pump' },
+      { id: 'c2', label: 'Setpoint', kind: 'numeric', bounds: [24, 104, 120, 22], edit: [24, 104, 104, 22], min: -10, max: 10, tip: 'Target amplitude' },
       { id: 'c3', label: 'Gain', kind: 'slider', bounds: [24, 160, 220, 22], min: 0, max: 10 },
       { id: 'c4', label: 'Mode', kind: 'enum', bounds: [24, 216, 120, 22], items: ['IDLE', 'RUN', 'CALIBRATE'] },
       { id: 'c5', label: 'Operator', kind: 'string', bounds: [24, 264, 160, 22] },
       { id: 'c6', label: 'Signal', kind: 'chart', readonly: true, bounds: [280, 40, 216, 146] },
       { id: 'c7', label: 'Status', kind: 'string', readonly: true, bounds: [280, 216, 216, 22] },
     ];
+  }
+
+  /** Tip strips of the controls that have one, {x, y, w, h, text} (docs/protocol.md 3.3). */
+  tips() {
+    return this.controls.filter((c) => c.tip)
+      .map((c) => ({ x: c.bounds[0], y: c.bounds[1], w: c.bounds[2], h: c.bounds[3], text: c.tip }));
   }
 
   byId(id) {

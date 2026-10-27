@@ -21,7 +21,7 @@ import {
   acceptKey, decodeClientFrame, encodeServerFrame, closePayload, WsError,
   OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG, CLOSE_NORMAL, CLOSE_POLICY, CLOSE_PROTOCOL_ERROR,
 } from '../lib/websocket.mjs';
-import { encodeFrame, encodeOverlay, encodeWindowFrame, windowsMessage, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, encodeWindowFrame, windowsMessage, tipsMessage, parseInput, FRAMES_IN_FLIGHT } from '../lib/protocol.mjs';
 import { translateInput } from '../lib/input.mjs';
 import { dirtyRects, crop } from '../lib/rects.mjs';
 import { encodePng } from '../lib/png-encode.mjs';
@@ -115,6 +115,7 @@ export function startServer(opts = {}) {
       this.write(OP_TEXT, 'origin 0 0'); // the simulated panel has no window frame
       if (overlay.message) this.write(OP_BINARY, overlay.message);
       this.write(OP_TEXT, windows.message);
+      this.write(OP_TEXT, tips.message);
       this.windowSent = null;
       cfg.log(`client connected (${clients.size})`);
       if (initial.length) this.onData(initial);
@@ -217,6 +218,16 @@ export function startServer(opts = {}) {
     windows.message = windowsMessage(d ? [{ ...d, modal: true, active: true, closable: true }] : []);
     for (const c of clients) { c.write(OP_TEXT, windows.message); c.windowSent = null; }
   }
+  // Tip strips (docs/protocol.md 3.3): read with the geometry, never while a popup or
+  // a modal window is open, and sent to every client when they changed.
+  const tips = { message: tipsMessage(panel.tips()) };
+  function pushTips() {
+    if (panel.popup || panel.dialog) return;
+    const message = tipsMessage(panel.tips());
+    if (message === tips.message) return;
+    tips.message = message;
+    for (const c of clients) c.write(OP_TEXT, message);
+  }
   function pushOverlay() {
     const p = panel.renderPopup();
     const key = p ? `${p.x},${p.y},${panel.state.mode}` : '';
@@ -233,6 +244,7 @@ export function startServer(opts = {}) {
     if (!clients.size) return;
     pushOverlay();
     pushWindows();
+    pushTips();
     const dlg = panel.renderDialog();
     if (dlg) {
       const png = encodePng(dlg.pixels, dlg.w, dlg.h);

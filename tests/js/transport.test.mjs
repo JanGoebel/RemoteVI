@@ -88,3 +88,18 @@ test('WebSocket server frames match RFC 6455 examples', () => {
   }
 });
 
+
+test('text vectors: JSON string literals are ASCII and decode back; tips messages are valid JSON', () => {
+  const v = vectors('text.json');
+  for (const c of v.jsonStrings) {
+    assert.match(c.json, /^[\x20-\x7e]*$/, c.name);
+    assert.equal(JSON.parse(c.json), String.fromCharCode(...c.text), c.name);
+  }
+  for (const c of v.tips) {
+    assert.ok(c.message.startsWith('tips ['), c.name);
+    const list = JSON.parse(c.message.slice(5));
+    const expected = c.tips.filter((t) => t.text.length)
+      .map((t) => ({ x: t.x, y: t.y, w: t.w, h: t.h, text: String.fromCharCode(...t.text) }));
+    assert.deepEqual(list, expected, c.name);
+  }
+});

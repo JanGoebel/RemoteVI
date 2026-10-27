@@ -24,6 +24,7 @@ client                                   server
   │  ◄──────────────── "title <VI name>"   │  text
   │  ◄──────────────── "viewonly 0|1"      │  text
   │  ◄──────────────── "origin <x> <y>"    │  text, where the panel starts in the frame
+  │  ◄──────────────── "tips [...]"        │  text, tip strips of the controls
   │  ◄──────────────── FRAME seq 1         │  whole frame
   │  "a 1" ────────────────────────────►   │  ack after painting
   │  "m 513 120 45 1" ─────────────────►   │  input, any time
@@ -65,7 +66,7 @@ The client resizes its canvas to the frame size when it changes, then draws each
 
 ### 3.2 OVERLAY (binary message)
 
-The LabVIEW popups that are open over the panel: ring/enum menus, right-click menus and their submenus, combo-box lists, graph-palette popups, tip strips. Each OVERLAY **replaces** the previous one; an empty list clears it. The server sends one whenever the popups or their pixels change, outside flow control (they are small and rare), and sends the current one to a client that connects while a popup is open.
+The LabVIEW popups that are open over the panel: ring/enum menus, right-click menus and their submenus, combo-box lists, graph-palette popups. Not tip strips: those travel as text (`tips`, §3.3). Each OVERLAY **replaces** the previous one; an empty list clears it. The server sends one whenever the popups or their pixels change, outside flow control (they are small and rare), and sends the current one to a client that connects while a popup is open.
 
 | Offset | Type | Field |
 |---|---|---|
@@ -85,6 +86,7 @@ One command word, a space, and an argument. Clients ignore commands they don't k
 | `title <name>` | name of the published VI, for display |
 | `viewonly 0` / `viewonly 1` | whether the server ignores this client's input |
 | `windows <json>` | the application's other windows (dialogs, native file dialogs, subVI panels): see §7 |
+| `tips <json>` | the tip strips of the panel's visible controls: a JSON array of `{"x":..,"y":..,"w":..,"h":..,"text":".."}` in that field order, the control's bounds in frame coordinates and its tip strip text; controls without a tip strip are left out, `tips []` means none. Sent on connect and whenever the list changed. The server reads it with the window geometry (every 500 ms), never while a popup or a modal window is open, so the list may lag a moved control by that much. The text is an ASCII-only JSON string literal (`\uXXXX` escapes; `tipsMessage()` and `jsonString()` in `tools/lib/protocol.mjs`, `tests/vectors/text.json`). The client shows the text itself, styled like a LabVIEW tip strip, once the pointer has rested on the control for 500 ms, and hides it on a click, a key, the wheel, an open popup or when the pointer leaves the control. LabVIEW shows its own tip strips only while it is the foreground application, which a remotely operated machine usually is not. |
 | `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect (with the greeting, before the first FRAME) and whenever it changes (the server reads it every 500 ms with the window geometry: `Front Panel Window:Panel Bounds` minus the frame origin). It is information only: all coordinates of the protocol are frame coordinates. |
 
 ## 4. Client → server (text messages)
@@ -130,7 +132,7 @@ Server side (`translateInput()` in `tools/lib/input.mjs`, `tests/vectors/transla
 
 Every popup therefore stays where LabVIEW put it, a submenu opens beside its parent exactly as on the host, and OVERLAY positions are the popups' real positions relative to the frame. The wheel is still dropped while a popup is open. Frames keep coming while a popup is open (the window is drawn with `PrintWindow`).
 
-**Tip strips** (window class `LVTipStrip`) are part of the OVERLAY but are not a popup in the sense above: input stays in normal mode while one is shown, so the remote pointer's next move hides it as on the host (measured: a posted move off the control closes it). LabVIEW shows a tip strip for posted hover moves; no real cursor dwell is needed (measured).
+**Tip strips** (window class `LVTipStrip`) are neither a popup in the sense above nor part of the OVERLAY: input stays in normal mode while one is shown, so the remote pointer's next move hides it as on the host (measured: a posted move off the control closes it). LabVIEW shows a tip strip for posted hover moves, but only while it is the foreground application (measured), so the client shows the texts of the `tips` message itself (§3.3), and a LabVIEW tip strip the remote pointer raised is hidden on the host.
 
 ### 4.2 Keyboard
 

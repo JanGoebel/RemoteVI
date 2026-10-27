@@ -67,9 +67,35 @@ In the IDE: run `tests/caraya/RemoteVI Caraya Runner.vi` (report beside it, or a
 
 ## LabVIEW integration suite
 
-`tests/lv/fixture.test.mjs` drives `tests/fixtures/RemoteVI Fixture.vi` through the real server on port 8089, exactly as the browser does, and reads LabVIEW's side from the fixture's event log (format in `tests/lv/harness.mjs`). Run the fixture (one RemoteVI server per LabVIEW instance: stop any other first), then `RVI_LV=1 npm run test:lv`; stop it with its Stop button. Keep LabVIEW the active application while the suite runs: LabVIEW shows tip strips only then, as it does for a local user, so the tip strip test fails with another program in front (measured). The round-5 tests open a Two Button Dialog (fixture button `Ask`) and the native File Dialog (button `Open`); while one is up LabVIEW does not answer VI Server or ActiveX calls, so a tool that drives LabVIEW over them waits until the dialog is answered.
+`tests/lv/fixture.test.mjs` drives `tests/fixtures/RemoteVI Fixture.vi` through the real server on port 8089, exactly as the browser does, and reads LabVIEW's side from the fixture's event log (format in `tests/lv/harness.mjs`). Run the fixture (one RemoteVI server per LabVIEW instance: stop any other first), then `RVI_LV=1 npm run test:lv`; stop it with its Stop button. LabVIEW may stay in the background while the suite runs, as in real use: tip strips reach the browser as the `tips` message, which does not depend on LabVIEW being the active application (LabVIEW itself shows tip strips only then). The round-5 tests open a Two Button Dialog (fixture button `Ask`) and the native File Dialog (button `Open`); while one is up LabVIEW does not answer VI Server or ActiveX calls, so a tool that drives LabVIEW over them waits until the dialog is answered.
 
 The fixture is generated: `tests/fixtures/aixml/compose_fixture.py <labview-mcp bin>` composes it (through `listbox_composer.py`, which adds `style="Listbox"` to the composer, and `fix_event_data_nodes.py`, which corrects the Event Data Node indices), then `RemoteVI Fixture Arrange.vi` (Fixture = the fixture, Tab Panel = a VI holding only the tab control, made by `RemoteVI Fixture Prep Tab Panel.vi` from a copy of NI's *Programmatically Manipulate a Tab Control.vi*) pastes the tab control, sets the List rows, the Button tip strip and the layout, and saves. The layout puts error out at the bottom right, ending just inside the 900 x 600 window, which gives the panel a scroll range of about 6 px each way: both scrollbars work, and a test click still hits its control when the mouse wheel over Number has scrolled the panel (it does, as locally). Ask opens the Two Button Dialog Proceed? (Yes / No) and logs `dialog TRUE|FALSE`; Open opens the native File Dialog and logs `file <path>` or `file CANCELLED` (both latched buttons, below Stop). At run time the fixture adds a menu Fixture in front of LabVIEW's default run-time menus (Say Hello, and More > Deep Bar; replacing the default menus with Delete Menu Items stopped LabVIEW from showing tip strips, measured), logs `menubar` and `scroll` lines, and scrolls the panel back to 0,0 1.5 s after the last scroll, so a second run finds the controls where the layout lines say. Run Arrange once per compose: it pastes the tab again on a second run.
+
+## Performance
+
+`tools/perf.mjs` measures a running server the way a browser uses it (it decodes every frame into a framebuffer and acks each frame right after decoding it):
+
+```
+node tools/perf.mjs --url http://127.0.0.1:8088 --seconds 5 \
+  --click 48,275 --roi 26,265,52,22 --repeat 20 \
+  --type 60,336 --type-roi 22,326,95,20 --hover 20,60,180,380
+```
+
+* **stream**: frames per second, gaps between frames, bytes, rects and pixels per frame. Frames only go out when something changed, so on the demo this is the rate at which the demo redraws its graph, not the server's limit.
+* **click** / **type**: input-to-photon - from posting a click (move, down, up) at a point, or one character into a string clicked first, until a FRAME changes a pixel inside the region of interest (the Enable switch and the Message string of the demo above), plus the time to the first frame after the input.
+* **hover**: frame gaps while a mouse move is sent every 16 ms, against the idle gaps of the stream phase.
+
+Demo (`examples/RemoteVI Demo.vi`, port 8088), LabVIEW in the background, a second browser connected, medians (p90):
+
+| Build | click-to-photon | key-to-photon | stream gaps | hover fps |
+|---|---|---|---|---|
+| 4e157a5 (panel only, `FP.Get Image`) | 67 ms (103) | 57 ms (88) | 58 ms | 14.8 |
+| 3be4bfd (whole window, `PrintWindow`) | 88 ms (137) | 74 ms (99) | 59 ms | 14.7 |
+| 11aaf70 / 97d6ceb (window tracking, full Z-order walks) | 87-117 ms (112-238) | 102-121 ms (137-375) | 64-67 ms | 11.2-11.4 |
+| 8dda8cc (before this work) | 93-185 ms (165-249) | 53-204 ms (91-233) | 56-127 ms | 6.8-15.2 |
+| now (BitBlt capture, frames every 16 ms after input, no wait after hover moves) | 59 ms (90) | 35 ms (74) | 71 ms* | 13.2 |
+
+\* the demo now draws a 6x larger sine; its own loop (50 ms wait plus the graph) sets the frame rate. The remaining latency is mostly LabVIEW's UI thread, which handles a posted click 0-50 ms late while the demo redraws its graph (measured by posting a click and polling the window's surface). Per call on the demo: `PrintWindow` capture of the 817 x 543 window 40-50 ms, `BitBlt` copy 2-5 ms, PNG of an 817 x 128 band 5 ms, Find Popups 0.3 ms and List Windows 0.6 ms with LVFrame at Z position ~120 of 613 windows.
 
 ## Manual acceptance
 

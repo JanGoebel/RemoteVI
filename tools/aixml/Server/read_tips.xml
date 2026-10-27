@@ -1,0 +1,53 @@
+<VI _name="RemoteVI Read Tips.vi" description="Reads the tip strips of the published panel for the tips message (docs\5Cprotocol.md 3.3) - LabVIEW shows its own tip strips only while it is the foreground application\2C so the browser shows them itself. When refresh? is TRUE (the server loop just refreshed the geometry\3A every 500 ms\2C never while a popup or a modal window is open\2C because this is a VI Server call that would block in their modal loop)\2C every control of the front panel (Front Panel\3AControls[]\2C top level) that is visible and has a tip strip gives one entry\3A its bounds (Position and Bounds\2C the label included) in frame coordinates - panel coordinates minus Front Panel Window\3AOrigin (the panel's scroll position) plus origin (where the panel starts inside the frame) - and its Tip Strip text\3B RemoteVI Tips Message.vi builds message out from them. Controls inside tab pages and clusters are not read. Otherwise\2C or on an error\2C message out is message in.">
+  <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel is published." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="refresh?" conIdx="1" connection="required" description="TRUE reads the tip strips now." outputs="value:rf.value" type="bool" uid="rf" uid_parent="root" value="false"/>
+  <Control _name="origin" conIdx="2" connection="required" description="Where the panel area starts inside the frame (RemoteVI Get Panel Geometry.vi)." outputs="value:og.value" type="cluster{int32.x,int32.y}" uid="og" uid_parent="root" value="[0,0]"/>
+  <Control _name="message in" conIdx="3" connection="required" description="The tips message of the last read." outputs="value:mi.value" type="string" uid="mi" uid_parent="root" value="tips []"/>
+  <Structure _name="Case Structure" selectin="rf.value" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:og.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:mi.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="Read the tip strips" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_vi.value" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_og.value" uid="t_og" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_mi.value" uid="t_mi" uid_parent="cst"/>
+      <Node _name="Property Node" fields="read+Front Panel,read+Front Panel Window\3AOrigin" inputs="reference:t_vi.value,error in (no error):" outputs="Front Panel:vp.fp,Front Panel Window\3AOrigin:vp.org,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="cst"/>
+      <Node _name="Property Node" fields="read+Controls[]" inputs="reference:vp.fp,error in (no error):vp.error out" outputs="Controls[]:pc.c,reference out:,error out:pc.error out" type="{LV.Panel}" uid="pc" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:vp.org" outputs="Horizontal:uo.h,Vertical:uo.v" uid="uo" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:t_og.value" outputs="x:ug.x,y:ug.y" uid="ug" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.x,y:uo.h" outputs="x-y:dx.x-y" uid="dx" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.y,y:uo.v" outputs="x-y:dy.x-y" uid="dy" uid_parent="cst"/>
+      <Constant _name="tip0" outputs="value:t0.value" type="cluster{int32.x,int32.y,int32.w,int32.h,string.text}" uid="t0" uid_parent="cst" value="[0,0,0,0,]"/>
+      <Structure _name="For Loop" count="" label="One entry per visible control" maxin="" maxout="" uid="fl" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+        <Tunnel _id="In2" inputs="value:dx.x-y" outputs="value:l_dx.value" uid="l_dx" uid_parent="fl"/>
+        <Tunnel _id="In3" inputs="value:dy.x-y" outputs="value:l_dy.value" uid="l_dy" uid_parent="fl"/>
+        <Tunnel _id="In4" inputs="value:t0.value" outputs="value:l_t0.value" uid="l_t0" uid_parent="fl"/>
+        <ShiftReg uid="sre" uid_parent="fl">
+          <Left inputs="value:pc.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+          <Right inputs="value:pn.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+        </ShiftReg>
+        <Node _name="Property Node" fields="read+Visible,read+Tip Strip,read+Position,read+Bounds" inputs="reference:c.value,error in (no error):le.value" outputs="Visible:pn.vis,Tip Strip:pn.tip,Position:pn.pos,Bounds:pn.bnd,reference out:,error out:pn.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:pn.pos" outputs="Left:up.l,Top:up.t" uid="up" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:pn.bnd" outputs="Width:ub.w,Height:ub.h" uid="ub" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:up.l,y:l_dx.value" outputs="x+y:fx.x+y" uid="fx" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:up.t,y:l_dy.value" outputs="x+y:fy.x+y" uid="fy" uid_parent="fl"/>
+        <Node _name="Bundle By Name" fields="x,y,w,h,text" inputs="x:fx.x+y,y:fy.x+y,w:ub.w,h:ub.h,text:pn.tip,input cluster:l_t0.value" outputs="output cluster:bt.output cluster" uid="bt" uid_parent="fl"/>
+        <Tunnel _id="Out1" inputs="value:bt.output cluster" mode="index" cond="pn.vis" outputs="value:tips.value" uid="tips" uid_parent="fl"/>
+      </Structure>
+      <Node _name="Close Reference" inputs="reference:vp.fp,error in (no error):" outputs="error out:" uid="crp" uid_parent="cst"/>
+      <Call inputs="tips:tips.value" outputs="message:tm.message" target="RemoteVI Tips Message.vi" uid="tm" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:lerr.value" outputs="status:es.status" uid="es" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:t_mi.value,s:es.status,f:tm.message" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:sel.s? t\3Af" uid="cst_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Not now\3A keep the last message" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_og" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_mi.value" uid="f_mi" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_mi.value" uid="csf_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="message out" conIdx="4" connection="recommended" description="The tips message (tips [...]) - new when read\2C else message in." inputs="value:cs_o1.value" type="string" uid="o_m" uid_parent="root" value=""/>
+</VI>

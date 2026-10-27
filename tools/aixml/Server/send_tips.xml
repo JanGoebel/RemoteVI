@@ -1,0 +1,27 @@
+<VI _name="RemoteVI Send Tips.vi" description="Tells every client the tip strips of the panel when they changed (docs\5Cprotocol.md 3.3)\3A if message (RemoteVI Read Tips.vi) differs from message sent (what the clients were last told - a new client gets the current message with its greeting)\2C it is written as a WebSocket text frame (RemoteVI WS Encode Server Frame.vi) to every client that is not closed (RemoteVI Write To Clients.vi\2C 500 ms per client). No VI Server call.">
+  <Control _name="clients" conIdx="0" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="message" conIdx="5" connection="required" description="The tips message now." outputs="value:m.value" type="string" uid="m" uid_parent="root" value=""/>
+  <Control _name="message sent" conIdx="7" connection="required" description="The tips message the clients were last told." outputs="value:ms.value" type="string" uid="ms" uid_parent="root" value=""/>
+  <Node _name="Not Equal?" inputs="x:m.value,y:ms.value" outputs="x != y?:chg.x != y?" uid="chg" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="chg.x != y?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:m.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="Changed\3A tell every client" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_cl.value" uid="t_cl" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_m.value" uid="t_m" uid_parent="cst"/>
+      <Constant _name="text" outputs="value:op1.value" type="uint8" uid="op1" uid_parent="cst" value="1"/>
+      <Call inputs="opcode:op1.value,payload:t_m.value" outputs="frame:wf.frame" target="RemoteVI WS Encode Server Frame.vi" uid="wf" uid_parent="cst"/>
+      <Constant _name="500 ms per client" outputs="value:to.value" type="int32" uid="to" uid_parent="cst" value="500"/>
+      <Call inputs="clients:t_cl.value,data:wf.frame,timeout ms:to.value" outputs="clients out:wc.clients out" target="RemoteVI Write To Clients.vi" uid="wc" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:wc.clients out" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_cl.value" uid="f_cl" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_m" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_cl.value" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="clients out" conIdx="4" connection="recommended" description="clients\3B closed is set where the write failed." inputs="value:cs_o1.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window}}" uid="o_cl" uid_parent="root" value="[]"/>
+  <Indicator _name="message sent out" conIdx="6" connection="recommended" description="message - the clients know it now." inputs="value:m.value" type="string" uid="o_ms" uid_parent="root" value=""/>
+</VI>

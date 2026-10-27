@@ -86,6 +86,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
+		<Item Name="RemoteVI Read Tips.vi" Type="VI" URL="../Server/RemoteVI Read Tips.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
 		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
@@ -94,6 +95,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Send Origin.vi" Type="VI" URL="../Server/RemoteVI Send Origin.vi"/>
 		<Item Name="RemoteVI Send Overlay.vi" Type="VI" URL="../Server/RemoteVI Send Overlay.vi"/>
 		<Item Name="RemoteVI Send Static Response.vi" Type="VI" URL="../Server/RemoteVI Send Static Response.vi"/>
+		<Item Name="RemoteVI Send Tips.vi" Type="VI" URL="../Server/RemoteVI Send Tips.vi"/>
 		<Item Name="RemoteVI Send Window Frame.vi" Type="VI" URL="../Server/RemoteVI Send Window Frame.vi"/>
 		<Item Name="RemoteVI Send Windows.vi" Type="VI" URL="../Server/RemoteVI Send Windows.vi"/>
 		<Item Name="RemoteVI Serve Pending Connection.vi" Type="VI" URL="../Server/RemoteVI Serve Pending Connection.vi"/>

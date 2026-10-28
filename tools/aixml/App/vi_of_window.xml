@@ -1,0 +1,37 @@
+<VI _name="RemoteVI VI Of Window.vi" description="The RUNNING VI of this application instance whose front panel window is window (Application\3AAll VIs In Memory\2C Front Panel Window\3AOS Window)\3A RemoteVI Server shares a panel of its own LabVIEW as a VI target (tip strips\2C splitter dragging) and any other window - also the panel of a VI that is not running\2C which a VI target would stop sharing at once - as a window target. found? is FALSE when no running VI's open panel has that handle\3B VI is then not a valid refnum. The references of the other VIs are closed\3B VI stays open (the share uses it). Errors of single VIs are skipped.">
+  <Control _name="window" conIdx="0" connection="required" description="The window (HWND)." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Node _name="Property Node" fields="read+Application\3AAll VIs In Memory" inputs="reference:" outputs="Application\3AAll VIs In Memory:ap.vis,reference out:,error out:" type="{LV.Application}" uid="ap" uid_parent="root"/>
+  <Constant _name="running top level" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Structure _name="For Loop" count="" label="Each VI in memory\3A keep the one with this panel window" maxin="" maxout="" uid="fv" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ap.vis" mode="index" outputs="value:vn.value" uid="vn" uid_parent="fv"/>
+    <Tunnel _id="In2" inputs="value:win.value" outputs="value:vw.value" uid="vw" uid_parent="fv"/>
+    <Tunnel _id="In3" inputs="value:k2.value" outputs="value:vk.value" uid="vk" uid_parent="fv"/>
+    <Node _name="Open VI Reference" inputs="vi path:vn.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fv"/>
+    <Node _name="Property Node" fields="read+Execution\3AState,read+Front Panel Window\3AOpen,read+Front Panel Window\3AOS Window" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="Execution\3AState:pv.state,Front Panel Window\3AOpen:pv.open,Front Panel Window\3AOS Window:pv.os,reference out:,error out:pv.error out" type="{LV.VI}" uid="pv" uid_parent="fv"/>
+    <Node _name="To Unsigned Quad Integer" inputs="number:pv.os" outputs="unsigned 64bit integer:oq.u" uid="oq" uid_parent="fv"/>
+    <Node _name="Equal?" inputs="x:oq.u,y:vw.value" outputs="x = y?:same.v" uid="same" uid_parent="fv"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pv.error out" outputs="status:es.status" uid="es" uid_parent="fv"/>
+    <Node _name="Not" inputs="x:es.status" outputs=".not. x?:ok.v" uid="ok" uid_parent="fv"/>
+    <Node _name="To Long Integer" inputs="number:pv.state" outputs="32bit integer:st.i" uid="st" uid_parent="fv"/>
+    <Node _name="Greater Or Equal?" inputs="x:st.i,y:vk.value" outputs="x &gt;= y?:run.v" uid="run" uid_parent="fv"/>
+    <Node _name="Build Array" inputs="element:same.v,element:pv.open,element:ok.v,element:run.v" outputs="appended array:b3.v" uid="b3" uid_parent="fv"/>
+    <Node _name="And Array Elements" inputs="Boolean array:b3.v" outputs="logical AND:keep.v" uid="keep" uid_parent="fv"/>
+    <Structure _name="Case Structure" selectin="keep.v" uid="cc" uid_parent="fv">
+      <Tunnel _id="In1" inputs="value:ov.vi reference" uid="cc_i1" uid_parent="cc"/>
+      <CaseFrame label="This one\3A keep its reference" selector="True" selectout="" uid="cct" uid_parent="cc">
+        <Tunnel _id="In1" outputs="value:" uid="t_r" uid_parent="cct"/>
+      </CaseFrame>
+      <CaseFrame label="Another VI\3A close its reference" selector="False" selectout="" uid="ccf" uid_parent="cc">
+        <Tunnel _id="In1" outputs="value:f_r.value" uid="f_r" uid_parent="ccf"/>
+        <Node _name="Close Reference" inputs="reference:f_r.value" outputs="error out:" uid="cr" uid_parent="ccf"/>
+      </CaseFrame>
+    </Structure>
+    <Tunnel _id="Out1" cond="keep.v" inputs="value:ov.vi reference" mode="index" outputs="value:found.value" uid="found" uid_parent="fv"/>
+  </Structure>
+  <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:found.value,index:i0.value" outputs="element:first.v" uid="first" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:found.value" outputs="size(s):nf.v" uid="nf" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:nf.v,y:i0.value" outputs="x &gt; y?:any.v" uid="any" uid_parent="root"/>
+  <Indicator _name="VI" conIdx="4" connection="recommended" description="The VI whose panel is window." inputs="value:first.v" type="ref{LV.VI}" uid="o_vi" uid_parent="root" value=""/>
+  <Indicator _name="found?" conIdx="6" connection="recommended" description="TRUE when a VI of this application instance has window as its open panel." inputs="value:any.v" type="bool" uid="o_f" uid_parent="root" value="false"/>
+</VI>

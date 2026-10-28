@@ -1,0 +1,7 @@
+<VI _name="RemoteVI Copy Text.vi" description="Puts text on the Windows clipboard (clip.exe reads it from standard input\2C through System Exec.vi). RemoteVI Server's Copy link.">
+  <Control _name="text" conIdx="0" connection="required" description="The text." outputs="value:tx.value" type="string" uid="tx" uid_parent="root" value=""/>
+  <Constant outputs="value:cmd.value" type="string" uid="cmd" uid_parent="root" value="clip"/>
+  <Constant outputs="value:hid.value" type="bool" uid="hid" uid_parent="root" value="true"/>
+  <Call inputs="command line:cmd.value,standard input:tx.value,run minimized? (F):hid.value" outputs="error out:x.error out" target="System Exec.vi" uid="x" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="System Exec's error." inputs="value:x.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

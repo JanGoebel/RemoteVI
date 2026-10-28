@@ -1,0 +1,19 @@
+<VI _name="RemoteVI Process Path.vi" description="The full path of the program process ID runs (kernel32 OpenProcess.vi with PROCESS_QUERY_LIMITED_INFORMATION\2C kernel32 QueryFullProcessImageNameW.vi\2C kernel32 CloseHandle.vi)\2C UTF-16 narrowed to bytes (Latin-1\3B other characters become ?). Empty when the process cannot be opened (another user's or a protected process). Errors of the calls are not reported.">
+  <Control _name="process ID" conIdx="0" connection="required" description="The process." outputs="value:pid.value" type="uint32" uid="pid" uid_parent="root" value="0"/>
+  <Call inputs="process ID:pid.value" outputs="HANDLE:op.HANDLE,error out:op.error out" target="kernel32 OpenProcess.vi" uid="op" uid_parent="root"/>
+  <Call inputs="hProcess:op.HANDLE,error in:op.error out" outputs="path:qp.path,return value:,error out:qp.error out" target="kernel32 QueryFullProcessImageNameW.vi" uid="qp" uid_parent="root"/>
+  <Call inputs="hObject:op.HANDLE,error in:qp.error out" outputs="return value:,error out:" target="kernel32 CloseHandle.vi" uid="ch" uid_parent="root"/>
+  <Constant outputs="value:k255.value" type="uint16" uid="k255" uid_parent="root" value="255"/>
+  <Constant outputs="value:kq.value" type="uint16" uid="kq" uid_parent="root" value="63"/>
+  <Structure _name="For Loop" count="" label="Latin-1 or ?" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:qp.path" mode="index" outputs="value:u.value" uid="u" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:k255.value" outputs="value:l_255.value" uid="l_255" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:kq.value" outputs="value:l_q.value" uid="l_q" uid_parent="fl"/>
+    <Node _name="Greater?" inputs="x:u.value,y:l_255.value" outputs="x &gt; y?:big.v" uid="big" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:l_q.value,s:big.v,f:u.value" outputs="s? t\3Af:ch2.v" uid="ch2" uid_parent="fl"/>
+    <Node _name="To Unsigned Byte Integer" inputs="number:ch2.v" outputs="unsigned 8bit integer:b.v" uid="b" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:b.v" mode="index" outputs="value:bytes.value" uid="bytes" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:bytes.value" outputs="string:s.v" uid="s" uid_parent="root"/>
+  <Indicator _name="path" conIdx="4" connection="recommended" description="The program's path\3B empty when unknown." inputs="value:s.v" type="string" uid="o_p" uid_parent="root" value=""/>
+</VI>

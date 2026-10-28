@@ -1,0 +1,76 @@
+<VI _name="RemoteVI List Top Windows.vi" description="Every visible top-level window of the desktop\2C for RemoteVI Server's list (RemoteVI Window Rows.vi filters and groups them)\3A walks the Z order with user32 FindWindowExW.vi (no callback\2C at most 4000 windows)\3B for each VISIBLE window its caption (RemoteVI Target Name.vi)\2C class (user32 GetClassNameW.vi)\2C process (user32 GetWindowThreadProcessId.vi) and that process's program path (RemoteVI Process Path.vi)\2C whether it has an owner (user32 GetWindow.vi GW_OWNER)\2C its extended style (GWL_EXSTYLE) and size (user32 GetWindowRect.vi). Win32 only\2C so it also lists the windows of other programs and of other LabVIEWs.">
+  <Constant outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
+  <Constant outputs="value:n4000.value" type="int32" uid="n4000" uid_parent="root" value="4000"/>
+  <Constant _name="GW_OWNER" outputs="value:kow.value" type="uint32" uid="kow" uid_parent="root" value="4"/>
+  <Constant _name="GWL_EXSTYLE" outputs="value:kex.value" type="int32" uid="kex" uid_parent="root" value="-20"/>
+  <Constant outputs="value:n256.value" type="int32" uid="n256" uid_parent="root" value="256"/>
+  <Constant _name="raw0" outputs="value:w0.value" type="cluster{uint64.hWnd,uint32.pid,string.path,string.class,string.title,bool.visible,bool.owned,uint32.ex style,int32.w,int32.h}" uid="w0" uid_parent="root" value="[0,0,,,,false,false,0,0,0]"/>
+  <Constant _name="no VI" outputs="value:novi.value" type="ref{LV.VI}" uid="novi" uid_parent="root" value=""/>
+  <Structure _name="While Loop" count="wl.value" label="Every top-level window\2C top-most first" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:kow.value" outputs="value:l_ow.value" uid="l_ow" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:kex.value" outputs="value:l_ex.value" uid="l_ex" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:n256.value" outputs="value:l_256.value" uid="l_256" uid_parent="wl"/>
+    <Tunnel _id="In4" inputs="value:w0.value" outputs="value:l_w0.value" uid="l_w0" uid_parent="wl"/>
+    <Tunnel _id="In5" inputs="value:k0.value" outputs="value:l_k0.value" uid="l_k0" uid_parent="wl"/>
+    <Tunnel _id="In6" inputs="value:n4000.value" outputs="value:l_max.value" uid="l_max" uid_parent="wl"/>
+    <Tunnel _id="In7" inputs="value:novi.value" outputs="value:l_novi.value" uid="l_novi" uid_parent="wl"/>
+    <ShiftReg uid="srh" uid_parent="wl">
+      <Left inputs="value:k0.value" outputs="value:prev.value" uid="srhl" uid_parent="srh"/>
+      <Right inputs="value:nx.hWnd" outputs="value:" uid="srhr" uid_parent="srh"/>
+    </ShiftReg>
+    <Call inputs="hWndChildAfter:prev.value" outputs="hWnd:nx.hWnd,error out:" target="user32 FindWindowExW.vi" uid="nx" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:nx.hWnd,y:l_k0.value" outputs="x = y?:end.v" uid="end" uid_parent="wl"/>
+    <Call inputs="hWnd:nx.hWnd" outputs="visible?:vis.visible?,error out:" target="user32 IsWindowVisible.vi" uid="vis" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:end.v" outputs=".not. x?:some.v" uid="some" uid_parent="wl"/>
+    <Node _name="And" inputs="x:some.v,y:vis.visible?" outputs="x .and. y?:look.v" uid="look" uid_parent="wl"/>
+    <Structure _name="Case Structure" selectin="look.v" uid="cs" uid_parent="wl">
+      <Tunnel _id="In1" inputs="value:nx.hWnd" uid="cs_i1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:l_ow.value" uid="cs_i2" uid_parent="cs"/>
+      <Tunnel _id="In3" inputs="value:l_ex.value" uid="cs_i3" uid_parent="cs"/>
+      <Tunnel _id="In4" inputs="value:l_256.value" uid="cs_i4" uid_parent="cs"/>
+      <Tunnel _id="In5" inputs="value:l_w0.value" uid="cs_i5" uid_parent="cs"/>
+      <Tunnel _id="In6" inputs="value:l_k0.value" uid="cs_i6" uid_parent="cs"/>
+      <Tunnel _id="In7" inputs="value:l_novi.value" uid="cs_i7" uid_parent="cs"/>
+      <CaseFrame label="A visible window\3A describe it" selector="True" selectout="" uid="cst" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:t_h.value" uid="t_h" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:t_ow.value" uid="t_ow" uid_parent="cst"/>
+        <Tunnel _id="In3" outputs="value:t_ex.value" uid="t_ex" uid_parent="cst"/>
+        <Tunnel _id="In4" outputs="value:t_256.value" uid="t_256" uid_parent="cst"/>
+        <Tunnel _id="In5" outputs="value:t_w0.value" uid="t_w0" uid_parent="cst"/>
+        <Tunnel _id="In6" outputs="value:t_k0.value" uid="t_k0" uid_parent="cst"/>
+        <Tunnel _id="In7" outputs="value:t_novi.value" uid="t_novi" uid_parent="cst"/>
+        <Call inputs="VI:t_novi.value,window:t_h.value" outputs="name:tn.name,error out:" target="RemoteVI Target Name.vi" uid="tn" uid_parent="cst"/>
+        <Call inputs="hWnd:t_h.value,nMaxCount:t_256.value" outputs="class name:cn.class name,return value:,error out:" target="user32 GetClassNameW.vi" uid="cn" uid_parent="cst"/>
+        <Call inputs="hWnd:t_h.value" outputs="process ID:pr.process ID,thread ID:,error out:" target="user32 GetWindowThreadProcessId.vi" uid="pr" uid_parent="cst"/>
+        <Call inputs="process ID:pr.process ID" outputs="path:pp.path" target="RemoteVI Process Path.vi" uid="pp" uid_parent="cst"/>
+        <Call inputs="hWnd:t_h.value,uCmd:t_ow.value" outputs="window:ow.window,error out:" target="user32 GetWindow.vi" uid="ow" uid_parent="cst"/>
+        <Node _name="Not Equal?" inputs="x:ow.window,y:t_k0.value" outputs="x != y?:owned.v" uid="owned" uid_parent="cst"/>
+        <Call inputs="hWnd:t_h.value,nIndex:t_ex.value" outputs="return value:gl.return value,error out:" target="user32 GetWindowLongPtrW.vi" uid="gl" uid_parent="cst"/>
+        <Node _name="To Unsigned Long Integer" inputs="number:gl.return value" outputs="unsigned 32bit integer:ex.v" uid="ex" uid_parent="cst"/>
+        <Call inputs="hWnd:t_h.value" outputs="RECT:gr.RECT,return value:,error out:" target="user32 GetWindowRect.vi" uid="gr" uid_parent="cst"/>
+        <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:gr.RECT" outputs="left:rc.l,top:rc.t,right:rc.r,bottom:rc.b" uid="rc" uid_parent="cst"/>
+        <Node _name="Subtract" inputs="x:rc.r,y:rc.l" outputs="x-y:ww.v" uid="ww" uid_parent="cst"/>
+        <Node _name="Subtract" inputs="x:rc.b,y:rc.t" outputs="x-y:wh.v" uid="wh" uid_parent="cst"/>
+        <Constant outputs="value:vt.value" type="bool" uid="vt" uid_parent="cst" value="true"/>
+        <Node _name="Bundle By Name" fields="hWnd,pid,path,class,title,visible,owned,ex style,w,h" inputs="input cluster:t_w0.value,hWnd:t_h.value,pid:pr.process ID,path:pp.path,class:cn.class name,title:tn.name,visible:vt.value,owned:owned.v,ex style:ex.v,w:ww.v,h:wh.v" outputs="output cluster:wb.v" uid="wb" uid_parent="cst"/>
+        <Tunnel _id="Out1" inputs="value:wb.v" uid="t_o1" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="csf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:" uid="f_h" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:" uid="f_ow" uid_parent="csf"/>
+        <Tunnel _id="In3" outputs="value:" uid="f_ex" uid_parent="csf"/>
+        <Tunnel _id="In4" outputs="value:" uid="f_256" uid_parent="csf"/>
+        <Tunnel _id="In5" outputs="value:f_w0.value" uid="f_w0" uid_parent="csf"/>
+        <Tunnel _id="In6" outputs="value:" uid="f_k0" uid_parent="csf"/>
+        <Tunnel _id="In7" outputs="value:" uid="f_novi" uid_parent="csf"/>
+        <Tunnel _id="Out1" inputs="value:f_w0.value" uid="f_o1" uid_parent="csf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    </Structure>
+    <Tunnel _id="Out1" cond="look.v" inputs="value:cs_o1.value" mode="index" outputs="value:wins.value" uid="wins" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:wl.value,y:l_max.value" outputs="x &gt;= y?:many.v" uid="many" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:end.v,y:many.v" outputs="x .or. y?:stop.v" uid="stop" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Indicator _name="windows" conIdx="4" connection="recommended" description="The visible top-level windows\2C top-most first." inputs="value:wins.value" type="array{cluster{uint64.hWnd,uint32.pid,string.path,string.class,string.title,bool.visible,bool.owned,uint32.ex style,int32.w,int32.h}}" uid="o_w" uid_parent="root" value="[]"/>
+</VI>

@@ -1,0 +1,8 @@
+<VI _name="RemoteVI Open URL.vi" description="Opens URL in the default web browser (rundll32 url.dll\2CFileProtocolHandler\2C through System Exec.vi\2C without waiting). RemoteVI Server's Open in browser.">
+  <Control _name="URL" conIdx="0" connection="required" description="An http link." outputs="value:url.value" type="string" uid="url" uid_parent="root" value=""/>
+  <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="rundll32 url.dll\2CFileProtocolHandler "/>
+  <Node _name="Concatenate Strings" inputs="string:pfx.value,string:url.value" outputs="concatenated string:cmd.s" uid="cmd" uid_parent="root"/>
+  <Constant outputs="value:nw.value" type="bool" uid="nw" uid_parent="root" value="false"/>
+  <Call inputs="command line:cmd.s,wait until completion? (T):nw.value" outputs="error out:x.error out" target="System Exec.vi" uid="x" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="System Exec's error." inputs="value:x.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

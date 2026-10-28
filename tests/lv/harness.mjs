@@ -90,7 +90,7 @@ export async function connect({ fb = false } = {}) {
   const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
   ws.binaryType = 'arraybuffer';
   const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false,
-    windows: [], windowFrames: new Map(), tips: null, fb: null, wfb: new Map() };
+    windows: [], windowFrames: new Map(), tips: null, bars: null, fb: null, wfb: new Map() };
   ws.onmessage = (ev) => {
     if (typeof ev.data === 'string') {
       const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
@@ -100,6 +100,9 @@ export async function connect({ fb = false } = {}) {
       }
       if (ev.data.startsWith('tips ')) {
         try { c.tips = JSON.parse(ev.data.slice(5)); } catch { /* ignore */ }
+      }
+      if (ev.data.startsWith('splitters ')) {
+        try { c.bars = JSON.parse(ev.data.slice(10)); } catch { /* ignore */ }
       }
       return;
     }
@@ -210,6 +213,15 @@ export function splitters(c, { y, x }) {
     hs.push(i); s = i + 1;
   }
   return { vertical: vs, horizontal: hs };
+}
+
+/** Drag splitter bar `bar` (an entry of the splitters message) as web/index.html does: the client moves
+ *  the bar itself and sends `s <id> <pos>` with the new left (vertical) or top (horizontal) edge. */
+export async function dragSplitter(c, bar, delta, { settle = 1200 } = {}) {
+  const pos = Math.max(bar.min, Math.min(bar.max, (bar.vertical ? bar.x : bar.y) + delta));
+  c.ws.send(`s ${bar.id} ${pos}`);
+  await sleep(settle);
+  return pos;
 }
 
 export function keyDown(c, vk, extended = false) {

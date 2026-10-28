@@ -18,7 +18,7 @@ import path from 'node:path';
 
 import {
   connect, layout, readLog, waitLog, click, move, drag, keyDown, keyUp, typeText, waitOverlay, sleep, VK, waitWindows,
-  splitters, pixel, useLog,
+  splitters, pixel, useLog, dragSplitter,
 } from './harness.mjs';
 
 const enabled = process.env.RVI_LV_COMPLEX === '1';
@@ -325,35 +325,43 @@ after(async () => {
   await sleep(500);
 });
 
-// Last: a press on a splitter bar can leave LabVIEW in its own tracking loop, which takes the next presses.
-const LIMIT = 'LabVIEW does not move a splitter bar for posted mouse messages (README, Known limits)';
+// Splitter bars: LabVIEW moves a bar only while it tracks the real mouse, so the client drags the bar
+// itself and sends `s <id> <pos>`; the server sets the splitter's Position through VI Server.
 
-test('the vertical splitter bar can be dragged', { ...opts, todo: LIMIT }, async () => {
+test('the splitters message lists the bars where the frame shows them', opts, () => {
   const st = at('Settings');
-  const y = st.y + 200;
-  const bar = splitters(c, { y, x: st.x + 100 }).vertical.filter((x) => x < st.x).at(-1);
-  assert.ok(bar, 'vertical splitter bar left of the main pane');
-  await drag(c, bar - 4, y, bar + 56, y, { settle: 1200 });
-  const moved = at('Settings').x - st.x;
-  try {
-    assert.ok(Math.abs(moved - 60) < 15, `main pane content moved by ${moved}, expected 60`);
-  } finally {
-    if (moved) await drag(c, bar + 56, y, bar - 4, y, { settle: 1200 });
-  }
+  assert.ok(Array.isArray(c.bars), 'splitters message received');
+  const px = splitters(c, { y: st.y + 200, x: st.x + 300 });
+  const v = c.bars.filter((b) => b.vertical), h = c.bars.filter((b) => !b.vertical);
+  assert.ok(v.length && h.length, `bars ${JSON.stringify(c.bars)}`);
+  for (const b of v) assert.ok(px.vertical.some((x) => x >= b.x - 2 && x < b.x + b.w + 2), `vertical bar at ${b.x}, frame shows ${px.vertical}`);
+  for (const b of h) assert.ok(px.horizontal.some((y) => y >= b.y - 2 && y < b.y + b.h + 2), `horizontal bar at ${b.y}, frame shows ${px.horizontal}`);
 });
 
-test('the horizontal splitter bar can be dragged', { ...opts, todo: LIMIT }, async () => {
+async function dragBar(pick, delta, axis) {
   const st = at('Settings');
-  const x = st.x + 300;
-  const bar = splitters(c, { y: st.y + 100, x }).horizontal.filter((y) => y < st.y).at(-1);
-  assert.ok(bar, 'horizontal splitter bar above the main pane');
-  await drag(c, x, bar - 4, x, bar + 36, { settle: 1200 });
-  const moved = at('Settings').y - st.y;
+  const bar = c.bars.find(pick);
+  assert.ok(bar, `bar to drag in ${JSON.stringify(c.bars)}`);
+  await dragSplitter(c, bar, delta);
+  const moved = at('Settings')[axis] - st[axis];
   try {
-    assert.ok(Math.abs(moved - 40) < 12, `main pane content moved by ${moved}, expected 40`);
+    assert.ok(Math.abs(moved - delta) < 4, `main pane content moved by ${moved}, expected ${delta}`);
+    const now = c.bars.find((b) => b.id === bar.id);
+    assert.equal(now[axis], bar[axis] + delta, 'the splitters message follows the move');
   } finally {
-    if (moved) await drag(c, x, bar + 36, x, bar - 4, { settle: 1200 });
+    const now = c.bars.find((b) => b.id === bar.id);
+    if (now && now[axis] !== bar[axis]) await dragSplitter(c, now, bar[axis] - now[axis]);
   }
+}
+
+test('the vertical splitter bar can be dragged', opts, async () => {
+  const st = at('Settings');
+  await dragBar((b) => b.vertical && b.x < st.x, 60, 'x');
+});
+
+test('the horizontal splitter bar can be dragged', opts, async () => {
+  const st = at('Settings');
+  await dragBar((b) => !b.vertical && b.y < st.y, 40, 'y');
 });
 
 test('a .NET or ActiveX container (child window) is operable', { ...opts, skip: opts.skip || 'the fixture has no .NET/ActiveX container: no donor control in LabVIEW 2025 that can be pasted, and the composer\'s container part is untested (README, Known limits)' }, () => {});

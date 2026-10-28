@@ -1,0 +1,32 @@
+<VI _name="RemoteVI Token Check.vi" description="Checks the share's access token (docs\5Csecurity.md)\3A query is the request target after the path\2C with or without its leading question mark\3B every question mark counts as a parameter separator like an ampersand. The first t parameter is compared with token in constant time (the bytes are XORed and the differences ORed up\2C no early exit)\3B ok? is TRUE only when both have the same length\2C token is not empty (fail closed) and every byte matches. The value is compared as sent\2C without percent-decoding (tokens are hex). Pure function\2C cannot fail. Reference\3A tokenOk() in tools\5Clib\5Chttp.mjs\2C vectors tests\5Cvectors\5Chttp.json (tokens).">
+  <FreeLabel comment="First t parameter\2C compared in constant time" uid="lbl" uid_parent="root"/>
+  <Control _name="query" conIdx="0" connection="required" description="The query of the request target\2C e.g. t=3f9a... or ?t=3f9a...&amp;x=1." outputs="value:q.value" type="string" uid="q" uid_parent="root" value=""/>
+  <Control _name="token" conIdx="1" connection="required" description="The share's access token. Empty never matches." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
+  <Constant outputs="value:qm.value" type="string" uid="qm" uid_parent="root" value="?"/>
+  <Constant outputs="value:amp.value" type="string" uid="amp" uid_parent="root" value="&amp;"/>
+  <Constant outputs="value:key.value" type="string" uid="key" uid_parent="root" value="&amp;t="/>
+  <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Constant outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Constant outputs="value:z32.value" type="uint32" uid="z32" uid_parent="root" value="0"/>
+  <Node _name="Search and Replace String" inputs="input string:q.value,search string:qm.value,replace string:amp.value,replace all?:kt.value" outputs="result string:sr.result string" uid="sr" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:amp.value,string:sr.result string" outputs="concatenated string:q2.v" uid="q2" uid_parent="root"/>
+  <Node _name="Search/Split String" inputs="string:q2.v,search string/char (-):key.value" outputs="substring before match:,match + rest of string:ss.rest,offset of match:ss.off" uid="ss" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:ss.off,y:k0.value" outputs="x &gt;= y?:found.v" uid="found" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:ss.rest,offset (0):k3.value" outputs="substring:v0.v" uid="v0" uid_parent="root"/>
+  <Node _name="Search/Split String" inputs="string:v0.v,search string/char (-):amp.value" outputs="substring before match:sv.before,match + rest of string:,offset of match:" uid="sv" uid_parent="root"/>
+  <Node _name="String To Byte Array" inputs="string:sv.before" outputs="unsigned byte array:ba.v" uid="ba" uid_parent="root"/>
+  <Node _name="String To Byte Array" inputs="string:tk.value" outputs="unsigned byte array:bb.v" uid="bb" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:ba.v" outputs="size(s):na.v" uid="na" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:bb.v" outputs="size(s):nb.v" uid="nb" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:na.v,y:nb.v" outputs="x = y?:samelen.v" uid="samelen" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:nb.v,y:k0.value" outputs="x &gt; y?:hastok.v" uid="hastok" uid_parent="root"/>
+  <Node _name="Exclusive Or" inputs="x:ba.v,y:bb.v" outputs="x .xor. y?:xb.v" uid="xb" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:xb.v" outputs="unsigned 32bit integer:xw.v" uid="xw" uid_parent="root"/>
+  <Node _name="Add Array Elements" inputs="numeric array:xw.v" outputs="sum:sum.v" uid="sum" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:sum.v,y:z32.value" outputs="x = y?:same.v" uid="same" uid_parent="root"/>
+  <Node _name="And" inputs="x:found.v,y:samelen.v" outputs="x .and. y?:a1.v" uid="a1" uid_parent="root"/>
+  <Node _name="And" inputs="x:a1.v,y:hastok.v" outputs="x .and. y?:a2.v" uid="a2" uid_parent="root"/>
+  <Node _name="And" inputs="x:a2.v,y:same.v" outputs="x .and. y?:ok.v" uid="ok" uid_parent="root"/>
+  <Indicator _name="ok?" conIdx="4" connection="recommended" description="TRUE when the first t parameter equals token." inputs="value:ok.v" type="bool" uid="o_ok" uid_parent="root" value="false"/>
+</VI>

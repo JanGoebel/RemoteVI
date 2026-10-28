@@ -9,6 +9,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 	<Property Name="NI.LV.All.SourceOnly" Type="Bool">true</Property>
 	<Item Name="API" Type="Folder">
 		<Item Name="RemoteVI Start.vi" Type="VI" URL="../API/RemoteVI Start.vi"/>
+		<Item Name="RemoteVI Status.vi" Type="VI" URL="../API/RemoteVI Status.vi"/>
 		<Item Name="RemoteVI Stop.vi" Type="VI" URL="../API/RemoteVI Stop.vi"/>
 	</Item>
 	<Item Name="Capture" Type="Folder">
@@ -74,6 +75,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Cross Origin.vi" Type="VI" URL="../Server/RemoteVI Cross Origin.vi"/>
 		<Item Name="RemoteVI Drop Closed Clients.vi" Type="VI" URL="../Server/RemoteVI Drop Closed Clients.vi"/>
 		<Item Name="RemoteVI Encode Popups.vi" Type="VI" URL="../Server/RemoteVI Encode Popups.vi"/>
+		<Item Name="RemoteVI Format Duration.vi" Type="VI" URL="../Server/RemoteVI Format Duration.vi"/>
 		<Item Name="RemoteVI Greeting.vi" Type="VI" URL="../Server/RemoteVI Greeting.vi"/>
 		<Item Name="RemoteVI Handle Connection.vi" Type="VI" URL="../Server/RemoteVI Handle Connection.vi"/>
 		<Item Name="RemoteVI Handle Text Message.vi" Type="VI" URL="../Server/RemoteVI Handle Text Message.vi"/>
@@ -84,10 +86,12 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Logical Popups.vi" Type="VI" URL="../Server/RemoteVI Logical Popups.vi"/>
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
 		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
+		<Item Name="RemoteVI New Token.vi" Type="VI" URL="../Server/RemoteVI New Token.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
 		<Item Name="RemoteVI Origin Message.vi" Type="VI" URL="../Server/RemoteVI Origin Message.vi"/>
 		<Item Name="RemoteVI Panel Controls.vi" Type="VI" URL="../Server/RemoteVI Panel Controls.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
+		<Item Name="RemoteVI Publish Status.vi" Type="VI" URL="../Server/RemoteVI Publish Status.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
 		<Item Name="RemoteVI Read Splitters.vi" Type="VI" URL="../Server/RemoteVI Read Splitters.vi"/>
@@ -110,7 +114,12 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Service Client.vi" Type="VI" URL="../Server/RemoteVI Service Client.vi"/>
 		<Item Name="RemoteVI Service Clients.vi" Type="VI" URL="../Server/RemoteVI Service Clients.vi"/>
 		<Item Name="RemoteVI Set Server Loop Inputs.vi" Type="VI" URL="../Server/RemoteVI Set Server Loop Inputs.vi"/>
+		<Item Name="RemoteVI Share Running.vi" Type="VI" URL="../Server/RemoteVI Share Running.vi"/>
 		<Item Name="RemoteVI Splitter Request.vi" Type="VI" URL="../Server/RemoteVI Splitter Request.vi"/>
+		<Item Name="RemoteVI Status Convert.vi" Type="VI" URL="../Server/RemoteVI Status Convert.vi"/>
+		<Item Name="RemoteVI Status Registry.vi" Type="VI" URL="../Server/RemoteVI Status Registry.vi"/>
+		<Item Name="RemoteVI Status Text.vi" Type="VI" URL="../Server/RemoteVI Status Text.vi"/>
+		<Item Name="RemoteVI Token Check.vi" Type="VI" URL="../Server/RemoteVI Token Check.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>
 		<Item Name="RemoteVI VI Stopped.vi" Type="VI" URL="../Server/RemoteVI VI Stopped.vi"/>
@@ -118,6 +127,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Yield If Idle.vi" Type="VI" URL="../Server/RemoteVI Yield If Idle.vi"/>
 	</Item>
 	<Item Name="Win32" Type="Folder">
+		<Item Name="bcrypt BCryptGenRandom.vi" Type="VI" URL="../Win32/bcrypt BCryptGenRandom.vi"/>
 		<Item Name="gdi32 BitBlt.vi" Type="VI" URL="../Win32/gdi32 BitBlt.vi"/>
 		<Item Name="gdi32 CreateCompatibleBitmap.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleBitmap.vi"/>
 		<Item Name="gdi32 CreateCompatibleDC.vi" Type="VI" URL="../Win32/gdi32 CreateCompatibleDC.vi"/>
@@ -126,7 +136,11 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="gdi32 DeleteObject.vi" Type="VI" URL="../Win32/gdi32 DeleteObject.vi"/>
 		<Item Name="gdi32 GetDIBits.vi" Type="VI" URL="../Win32/gdi32 GetDIBits.vi"/>
 		<Item Name="gdi32 SelectObject.vi" Type="VI" URL="../Win32/gdi32 SelectObject.vi"/>
+		<Item Name="kernel32 CloseHandle.vi" Type="VI" URL="../Win32/kernel32 CloseHandle.vi"/>
 		<Item Name="kernel32 GetCurrentProcessId.vi" Type="VI" URL="../Win32/kernel32 GetCurrentProcessId.vi"/>
+		<Item Name="kernel32 GetCurrentThreadId.vi" Type="VI" URL="../Win32/kernel32 GetCurrentThreadId.vi"/>
+		<Item Name="kernel32 OpenProcess.vi" Type="VI" URL="../Win32/kernel32 OpenProcess.vi"/>
+		<Item Name="kernel32 QueryFullProcessImageNameW.vi" Type="VI" URL="../Win32/kernel32 QueryFullProcessImageNameW.vi"/>
 		<Item Name="RemoteVI Capture Window.vi" Type="VI" URL="../Win32/RemoteVI Capture Window.vi"/>
 		<Item Name="RemoteVI Copy Window.vi" Type="VI" URL="../Win32/RemoteVI Copy Window.vi"/>
 		<Item Name="RemoteVI Cursor Outside Window.vi" Type="VI" URL="../Win32/RemoteVI Cursor Outside Window.vi"/>
@@ -145,6 +159,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Wait Input Handled.vi" Type="VI" URL="../Win32/RemoteVI Wait Input Handled.vi"/>
 		<Item Name="RemoteVI Window Info.vi" Type="VI" URL="../Win32/RemoteVI Window Info.vi"/>
 		<Item Name="RemoteVI Window Popup Info.vi" Type="VI" URL="../Win32/RemoteVI Window Popup Info.vi"/>
+		<Item Name="user32 AttachThreadInput.vi" Type="VI" URL="../Win32/user32 AttachThreadInput.vi"/>
 		<Item Name="user32 ChildWindowFromPointEx.vi" Type="VI" URL="../Win32/user32 ChildWindowFromPointEx.vi"/>
 		<Item Name="user32 FindWindowExW.vi" Type="VI" URL="../Win32/user32 FindWindowExW.vi"/>
 		<Item Name="user32 GetAncestor.vi" Type="VI" URL="../Win32/user32 GetAncestor.vi"/>
@@ -161,6 +176,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="user32 GetWindowTextW.vi" Type="VI" URL="../Win32/user32 GetWindowTextW.vi"/>
 		<Item Name="user32 GetWindowThreadProcessId.vi" Type="VI" URL="../Win32/user32 GetWindowThreadProcessId.vi"/>
 		<Item Name="user32 IsIconic.vi" Type="VI" URL="../Win32/user32 IsIconic.vi"/>
+		<Item Name="user32 IsWindow.vi" Type="VI" URL="../Win32/user32 IsWindow.vi"/>
 		<Item Name="user32 IsWindowEnabled.vi" Type="VI" URL="../Win32/user32 IsWindowEnabled.vi"/>
 		<Item Name="user32 IsWindowVisible.vi" Type="VI" URL="../Win32/user32 IsWindowVisible.vi"/>
 		<Item Name="user32 PostMessageW.vi" Type="VI" URL="../Win32/user32 PostMessageW.vi"/>

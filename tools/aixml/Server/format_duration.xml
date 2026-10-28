@@ -1,0 +1,23 @@
+<VI _name="RemoteVI Format Duration.vi" description="Writes a duration in whole seconds (rounded down\2C negative counts as 0) as 12 s\2C 3 min 5 s or 2 h 7 min - for the status text (RemoteVI Status Text.vi). Pure function\2C cannot fail. Reference\3A formatDuration() in tools\5Clib\5Cstatus.mjs\2C vectors tests\5Cvectors\5Cstatus.json (durations).">
+  <Control _name="seconds" conIdx="0" connection="required" description="The duration in seconds." outputs="value:sec.value" type="double" uid="sec" uid_parent="root" value="0"/>
+  <Constant outputs="value:d0.value" type="double" uid="d0" uid_parent="root" value="0"/>
+  <Node _name="Round Toward -Infinity" inputs="x:sec.value" outputs="?parmout:fl.v" uid="fl" uid_parent="root"/>
+  <Node _name="Max &amp; Min" inputs="x:fl.v,y:d0.value" outputs="max(x\2Cy):mx.v" uid="mx" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:mx.v" outputs="32bit integer:s.v" uid="s" uid_parent="root"/>
+  <Constant outputs="value:k60.value" type="int32" uid="k60" uid_parent="root" value="60"/>
+  <Constant outputs="value:k3600.value" type="int32" uid="k3600" uid_parent="root" value="3600"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:s.v,y:k60.value" outputs="x-y*floor(x/y):qm.rem,floor(x/y):qm.quo" uid="qm" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:s.v,y:k3600.value" outputs="x-y*floor(x/y):qh.rem,floor(x/y):qh.quo" uid="qh" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:qm.quo,y:k60.value" outputs="x-y*floor(x/y):qmm.rem,floor(x/y):" uid="qmm" uid_parent="root"/>
+  <Constant outputs="value:f1.value" type="string" uid="f1" uid_parent="root" value="%d s"/>
+  <Constant outputs="value:f2.value" type="string" uid="f2" uid_parent="root" value="%d min %d s"/>
+  <Constant outputs="value:f3.value" type="string" uid="f3" uid_parent="root" value="%d h %d min"/>
+  <Node _name="Format Into String" inputs="format string:f1.value,input 1:s.v" outputs="resulting string:t1.v" uid="t1" uid_parent="root"/>
+  <Node _name="Format Into String" inputs="format string:f2.value,input 1:qm.quo,input 2:qm.rem" outputs="resulting string:t2.v" uid="t2" uid_parent="root"/>
+  <Node _name="Format Into String" inputs="format string:f3.value,input 1:qh.quo,input 2:qmm.rem" outputs="resulting string:t3.v" uid="t3" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:s.v,y:k60.value" outputs="x &lt; y?:lt60.v" uid="lt60" uid_parent="root"/>
+  <Node _name="Less?" inputs="x:s.v,y:k3600.value" outputs="x &lt; y?:lt3600.v" uid="lt3600" uid_parent="root"/>
+  <Node _name="Select" inputs="t:t2.v,s:lt3600.v,f:t3.v" outputs="s? t\3Af:sa.v" uid="sa" uid_parent="root"/>
+  <Node _name="Select" inputs="t:t1.v,s:lt60.v,f:sa.v" outputs="s? t\3Af:sb.v" uid="sb" uid_parent="root"/>
+  <Indicator _name="text" conIdx="4" connection="recommended" description="The duration as text." inputs="value:sb.v" type="string" uid="o_t" uid_parent="root" value=""/>
+</VI>

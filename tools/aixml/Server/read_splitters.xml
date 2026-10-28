@@ -1,0 +1,91 @@
+<VI _name="RemoteVI Read Splitters.vi" description="Reads the splitter bars of the published panel for the splitters message (docs\5Cprotocol.md 3.3) - LabVIEW moves a splitter bar only while it tracks the real mouse\2C so the browser drags the bars itself and the server sets the new position (RemoteVI Apply Splitter.vi). When refresh? is TRUE (right after a geometry refresh or a splitter move\2C never while a popup or a modal window is open\2C because these are VI Server calls that would block in their modal loop) every bar of {LV.Panel} Splitters[] gives one entry\3A the area the splitter divides starts at its GObject Position (panel coordinates)\2C the bar lies Splitter Position pixels into it (to the right for a vertical bar\2C down for a horizontal one) and is GObject Bounds wide and high. Its top-left is converted to screen coordinates (CvtPanelToScreenCoords) and then to frame coordinates (minus the top-left of Front Panel Window\3APanel Bounds\2C plus origin). min is where the area starts in the frame\2C max where the bar's edge may go at most (the end of the panel area minus the bar's thickness)\3B LabVIEW keeps its own minimum pane sizes when the position is set. bars out keeps the bars for RemoteVI Apply Splitter.vi\3B RemoteVI Splitters Message.vi builds message out. Otherwise\2C or on an error\2C message out and bars out are message in and bars in.">
+  <FreeLabel comment="Area origin plus splitter position\2C panel to screen to frame" uid="lbl" uid_parent="root"/>
+  <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel is published." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="refresh?" conIdx="1" connection="required" description="TRUE reads the splitter bars now." outputs="value:rf.value" type="bool" uid="rf" uid_parent="root" value="false"/>
+  <Control _name="origin" conIdx="2" connection="required" description="Where the panel area starts inside the frame (RemoteVI Get Panel Geometry.vi)." outputs="value:og.value" type="cluster{int32.x,int32.y}" uid="og" uid_parent="root" value="[0,0]"/>
+  <Control _name="message in" conIdx="3" connection="required" description="The splitters message of the last read." outputs="value:mi.value" type="string" uid="mi" uid_parent="root" value="splitters []"/>
+  <Control _name="bars in" conIdx="5" connection="recommended" description="The bars of the last read." outputs="value:bi.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="bi" uid_parent="root" value="[]"/>
+  <Structure _name="Case Structure" selectin="rf.value" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:og.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:mi.value" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:bi.value" uid="cs_i4" uid_parent="cs"/>
+    <CaseFrame label="Read the splitter bars" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_vi.value" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_og.value" uid="t_og" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_mi.value" uid="t_mi" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_bi.value" uid="t_bi" uid_parent="cst"/>
+      <Node _name="Property Node" fields="read+Front Panel,read+Front Panel Window\3APanel Bounds" inputs="reference:t_vi.value,error in (no error):" outputs="Front Panel:vp.fp,Front Panel Window\3APanel Bounds:vp.pb,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="cst"/>
+      <Node _name="Property Node" fields="read+Splitters[]" inputs="reference:vp.fp,error in (no error):vp.error out" outputs="reference out:,error out:ps.error out,Splitters[]:ps.sp" type="{LV.Panel}" uid="ps" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:vp.pb" outputs="left:ub0.l,top:ub0.t,right:ub0.r,bottom:ub0.b" uid="ub0" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:t_og.value" outputs="x:ug.x,y:ug.y" uid="ug" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.x,y:ub0.l" outputs="x-y:dx.x-y" uid="dx" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.y,y:ub0.t" outputs="x-y:dy.x-y" uid="dy" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ub0.r,y:ub0.l" outputs="x-y:pw.x-y" uid="pw" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ub0.b,y:ub0.t" outputs="x-y:ph.x-y" uid="ph" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:ug.x,y:pw.x-y" outputs="x+y:rx.x+y" uid="rx" uid_parent="cst"/>
+      <Node _name="Add" inputs="x:ug.y,y:ph.x-y" outputs="x+y:by.x+y" uid="by" uid_parent="cst"/>
+      <Constant _name="bar0" outputs="value:b0.value" type="cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}" uid="b0" uid_parent="cst" value="[0,0,0,0,false,0,0]"/>
+      <Constant outputs="value:z0.value" type="int32" uid="z0" uid_parent="cst" value="0"/>
+      <Structure _name="For Loop" count="" label="One entry per splitter bar" maxin="" maxout="" uid="fl" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:ps.sp" mode="index" outputs="value:s.value" uid="s" uid_parent="fl"/>
+        <Tunnel _id="In2" inputs="value:dx.x-y" outputs="value:l_dx.value" uid="l_dx" uid_parent="fl"/>
+        <Tunnel _id="In3" inputs="value:dy.x-y" outputs="value:l_dy.value" uid="l_dy" uid_parent="fl"/>
+        <Tunnel _id="In4" inputs="value:b0.value" outputs="value:l_b0.value" uid="l_b0" uid_parent="fl"/>
+        <Tunnel _id="In5" inputs="value:vp.fp" outputs="value:l_fp.value" uid="l_fp" uid_parent="fl"/>
+        <Tunnel _id="In6" inputs="value:rx.x+y" outputs="value:l_rx.value" uid="l_rx" uid_parent="fl"/>
+        <Tunnel _id="In7" inputs="value:by.x+y" outputs="value:l_by.value" uid="l_by" uid_parent="fl"/>
+        <Tunnel _id="In8" inputs="value:z0.value" outputs="value:l_z.value" uid="l_z" uid_parent="fl"/>
+        <ShiftReg uid="sre" uid_parent="fl">
+          <Left inputs="value:ps.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+          <Right inputs="value:sc.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+        </ShiftReg>
+        <Node _name="Property Node" fields="read+Position,read+Bounds" inputs="reference:s.value,error in (no error):le.value" outputs="Position:gp.pos,Bounds:gp.bnd,reference out:,error out:gp.error out" type="{LV.GObject}" uid="gp" uid_parent="fl"/>
+        <Node _name="Property Node" fields="read+Position" inputs="reference:s.value,error in (no error):gp.error out" outputs="reference out:,error out:sp.error out,Position:sp.pos" type="{LV.Splitter}" uid="sp" uid_parent="fl"/>
+        <Node _name="Property Node" fields="read+IsVertical?" inputs="reference:s.value,error in (no error):sp.error out" outputs="reference out:,error out:sv.error out,IsVertical?:sv.v" type="{LV.Splitter}" uid="sv" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:gp.pos" outputs="Left:ua.l,Top:ua.t" uid="ua" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:gp.bnd" outputs="Width:ub.w,Height:ub.h" uid="ub" uid_parent="fl"/>
+        <Node _name="Select" inputs="t:sp.pos,s:sv.v,f:l_z.value" outputs="s? t\3Af:ox.v" uid="ox" uid_parent="fl"/>
+        <Node _name="Select" inputs="t:l_z.value,s:sv.v,f:sp.pos" outputs="s? t\3Af:oy.v" uid="oy" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:ua.l,y:ox.v" outputs="x+y:px.x+y" uid="px" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:ua.t,y:oy.v" outputs="x+y:py.x+y" uid="py" uid_parent="fl"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:gp.pos,Left:px.x+y,Top:py.x+y" outputs="output cluster:bp.v" uid="bp" uid_parent="fl"/>
+        <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:l_fp.value,error in (no error):sv.error out,PanelCoords:bp.v" outputs="reference out:,error out:sc.error out,ScreenCoords:sc.sc" uid="sc" uid_parent="fl"/>
+        <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:l_fp.value,error in (no error):sc.error out,PanelCoords:gp.pos" outputs="reference out:,error out:,ScreenCoords:sa.sc" uid="sa" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:sc.sc" outputs="Horizontal:us.h,Vertical:us.v" uid="us" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:sa.sc" outputs="Horizontal:uz.h,Vertical:uz.v" uid="uz" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:us.h,y:l_dx.value" outputs="x+y:fx.x+y" uid="fx" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:us.v,y:l_dy.value" outputs="x+y:fy.x+y" uid="fy" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:uz.h,y:l_dx.value" outputs="x+y:ax.x+y" uid="ax" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:uz.v,y:l_dy.value" outputs="x+y:ay.x+y" uid="ay" uid_parent="fl"/>
+        <Node _name="To Long Integer" inputs="number:ub.w" outputs="32bit integer:iw.v" uid="iw" uid_parent="fl"/>
+        <Node _name="To Long Integer" inputs="number:ub.h" outputs="32bit integer:ih.v" uid="ih" uid_parent="fl"/>
+        <Node _name="Subtract" inputs="x:l_rx.value,y:iw.v" outputs="x-y:mxv.x-y" uid="mxv" uid_parent="fl"/>
+        <Node _name="Subtract" inputs="x:l_by.value,y:ih.v" outputs="x-y:mxh.x-y" uid="mxh" uid_parent="fl"/>
+        <Node _name="Select" inputs="t:ax.x+y,s:sv.v,f:ay.x+y" outputs="s? t\3Af:mn.v" uid="mn" uid_parent="fl"/>
+        <Node _name="Select" inputs="t:mxv.x-y,s:sv.v,f:mxh.x-y" outputs="s? t\3Af:mx.v" uid="mx" uid_parent="fl"/>
+        <Node _name="Bundle By Name" fields="x,y,w,h,vertical,min,max" inputs="x:fx.x+y,y:fy.x+y,w:iw.v,h:ih.v,vertical:sv.v,min:mn.v,max:mx.v,input cluster:l_b0.value" outputs="output cluster:bt.v" uid="bt" uid_parent="fl"/>
+        <Tunnel _id="Out1" inputs="value:bt.v" mode="index" outputs="value:bars.value" uid="bars" uid_parent="fl"/>
+      </Structure>
+      <Node _name="Close Reference" inputs="reference:vp.fp,error in (no error):" outputs="error out:" uid="crp" uid_parent="cst"/>
+      <Call inputs="bars:bars.value" outputs="message:sm.message" target="RemoteVI Splitters Message.vi" uid="sm" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:lerr.value" outputs="status:es.status" uid="es" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:t_mi.value,s:es.status,f:sm.message" outputs="s? t\3Af:sel.v" uid="sel" uid_parent="cst"/>
+      <Node _name="Select" inputs="t:t_bi.value,s:es.status,f:bars.value" outputs="s? t\3Af:selb.v" uid="selb" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:sel.v" uid="cst_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:selb.v" uid="cst_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Not now\3A keep the last read" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_og" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_mi.value" uid="f_mi" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:f_bi.value" uid="f_bi" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_mi.value" uid="csf_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:f_bi.value" uid="csf_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="message out" conIdx="4" connection="recommended" description="The splitters message (splitters [...]) - new when read\2C else message in." inputs="value:cs_o1.value" type="string" uid="o_m" uid_parent="root" value=""/>
+  <Indicator _name="bars out" conIdx="6" connection="recommended" description="The bars in frame coordinates - new when read\2C else bars in. The index is the id of the splitters message." inputs="value:cs_o2.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="o_b" uid_parent="root" value="[]"/>
+</VI>

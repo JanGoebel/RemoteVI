@@ -1,0 +1,310 @@
+{
+ "classes": {
+  "LV.Cluster": {
+   "nodeName": "Clust",
+   "oMId": "000D"
+  },
+  "LV.Control": {
+   "nodeName": "Ctl",
+   "oMId": "0007"
+  },
+  "LV.Decoration": {
+   "nodeName": "Decor",
+   "oMId": "0005"
+  },
+  "LV.IntensityGraph": {
+   "nodeName": "IntGraph (strict)",
+   "oMId": "000B"
+  },
+  "LV.Panel": {
+   "nodeName": "Pnl",
+   "oMId": "0007"
+  },
+  "LV.Splitter": {
+   "nodeName": "Splitter",
+   "oMId": "009A"
+  },
+  "LV.String": {
+   "nodeName": "Str",
+   "oMId": "0099"
+  },
+  "LV.VI": {
+   "nodeName": "VI",
+   "oMId": "0004"
+  }
+ },
+ "methods": {
+  "LV.Pane": {
+   "CvtPaneToPanelCoords": {
+    "code": 1689232394,
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi"
+   },
+   "Set Scaling": {
+    "code": 1689232392,
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi"
+   }
+  },
+  "LV.Panel": {
+   "CvtPanelToScreenCoords": {
+    "code": 104104975,
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi"
+   }
+  },
+  "LV.String": {
+   "FitControlToPane": {
+    "code": 104012819,
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi"
+   }
+  }
+ },
+ "props": {
+  "LV.Cluster": {
+   "Decos[]": {
+    "access": "r",
+    "code": 104102915,
+    "declaredBy": "LV.Cluster",
+    "label": "Decos[]",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0004\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
+   },
+   "Left": {
+    "access": "w",
+    "code": 103983105,
+    "declaredBy": "LV.Cluster",
+    "label": "Left",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "Top": {
+    "access": "w",
+    "code": 103983106,
+    "declaredBy": "LV.Cluster",
+    "label": "Top",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.Control": {
+   "Bounds Rect": {
+    "access": "r",
+    "code": 103983114,
+    "declaredBy": "LV.Control",
+    "label": "",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Bounds Rect\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Right\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Bottom\" /></TypeDesc><Label Text=\"LVRectTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Height": {
+    "access": "r",
+    "code": 103983109,
+    "declaredBy": "LV.Control",
+    "label": "Height",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "Left": {
+    "access": "r",
+    "code": 103983105,
+    "declaredBy": "LV.Control",
+    "label": "Left",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "OwningPane": {
+    "access": "r",
+    "code": 104013886,
+    "declaredBy": "LV.Control",
+    "label": "OwningPane",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x004B\" HasItem=\"0\" Format=\"inline\" />"
+   },
+   "OwningVI": {
+    "access": "r",
+    "code": 103970818,
+    "declaredBy": "LV.Control",
+    "label": "OwningVI",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0002\" HasItem=\"0\" Format=\"inline\" />"
+   },
+   "Top": {
+    "access": "r",
+    "code": 103983106,
+    "declaredBy": "LV.Control",
+    "label": "Top",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "Visible": {
+    "access": "r",
+    "code": 104013824,
+    "declaredBy": "LV.Control",
+    "label": "Visible",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"Boolean\" Format=\"inline\" />"
+   },
+   "Width": {
+    "access": "r",
+    "code": 103983108,
+    "declaredBy": "LV.Control",
+    "label": "Width",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.Decoration": {
+   "Bounds Rect": {
+    "access": "r",
+    "code": 103983114,
+    "declaredBy": "LV.Decoration",
+    "label": "",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Bounds Rect\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Right\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Bottom\" /></TypeDesc><Label Text=\"LVRectTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Visible": {
+    "access": "r",
+    "code": 103992326,
+    "declaredBy": "LV.Decoration",
+    "label": "Visible",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"Boolean\" Format=\"inline\" />"
+   },
+   "Width": {
+    "access": "r",
+    "code": 103992321,
+    "declaredBy": "LV.Decoration",
+    "label": "Width",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.IntensityGraph": {
+   "Height": {
+    "access": "w",
+    "code": 104078338,
+    "declaredBy": "LV.IntensityGraph",
+    "label": "Height",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "Plot Bounds": {
+    "access": "w",
+    "code": 104078361,
+    "declaredBy": "LV.IntensityGraph",
+    "label": "",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Plot Bounds\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Right\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Bottom\" /></TypeDesc><Label Text=\"LVRectTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Position": {
+    "access": "w",
+    "code": 103983104,
+    "declaredBy": "LV.IntensityGraph",
+    "label": "",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Position\"><TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /></TypeDesc><Label Text=\"LVPositionTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Width": {
+    "access": "w",
+    "code": 104078337,
+    "declaredBy": "LV.IntensityGraph",
+    "label": "Width",
+    "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.Panel": {
+   "Controls[]": {
+    "access": "r",
+    "code": 104105985,
+    "declaredBy": "LV.Panel",
+    "label": "Controls[]",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0006\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
+   },
+   "Decos[]": {
+    "access": "r",
+    "code": 104105986,
+    "declaredBy": "LV.Panel",
+    "label": "Decos[]",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0004\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
+   },
+   "Width": {
+    "access": "r",
+    "code": 103983108,
+    "declaredBy": "LV.Panel",
+    "label": "Width",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.Splitter": {
+   "Locked": {
+    "access": "w",
+    "code": 2056308741,
+    "declaredBy": "LV.Splitter",
+    "label": "Locked",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"Boolean\" Format=\"inline\" />"
+   },
+   "OwningVI": {
+    "access": "r",
+    "code": 103970818,
+    "declaredBy": "LV.Splitter",
+    "label": "OwningVI",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0002\" HasItem=\"0\" Format=\"inline\" />"
+   },
+   "Position": {
+    "access": "rw",
+    "code": 2056308737,
+    "declaredBy": "LV.Splitter",
+    "label": "Position",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "Width": {
+    "access": "r",
+    "code": 103983108,
+    "declaredBy": "LV.Splitter",
+    "label": "Width",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.String": {
+   "Visible": {
+    "access": "w",
+    "code": 104013824,
+    "declaredBy": "LV.String",
+    "label": "Visible",
+    "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"Boolean\" Format=\"inline\" />"
+   }
+  },
+  "LV.VI": {
+   "Front Panel.PanelBounds": {
+    "access": "r",
+    "code": 556,
+    "declaredBy": "LV.VI",
+    "label": "",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Front Panel.PanelBounds\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Right\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Bottom\" /></TypeDesc><Label Text=\"LVRectTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Front Panel.WinBounds": {
+    "access": "r",
+    "code": 536,
+    "declaredBy": "LV.VI",
+    "label": "",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Front Panel.WinBounds\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Left\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Top\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Right\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Bottom\" /></TypeDesc><Label Text=\"LVRectTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "Panel": {
+    "access": "r",
+    "code": 573,
+    "declaredBy": "LV.VI",
+    "label": "Panel",
+    "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Ref Ctrl\\Reference Rectangle.vi",
+    "type": "<TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x001F\" HasItem=\"0\" Format=\"inline\" />"
+   }
+  }
+ }
+}

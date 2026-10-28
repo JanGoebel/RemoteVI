@@ -1,0 +1,222 @@
+{
+ "description": "Server/RemoteVI Status Convert.vi (raw entries as the server loops publish them, times in seconds since the LabVIEW epoch, and now -> the status RemoteVI Status.vi returns; running: published within 2 s; idle -1: no input yet), Server/RemoteVI Format Duration.vi and Server/RemoteVI Status Text.vi.",
+ "durations": [
+  {
+   "seconds": 0,
+   "text": "0 s"
+  },
+  {
+   "seconds": 0.9,
+   "text": "0 s"
+  },
+  {
+   "seconds": 59.99,
+   "text": "59 s"
+  },
+  {
+   "seconds": 60,
+   "text": "1 min 0 s"
+  },
+  {
+   "seconds": 65.4,
+   "text": "1 min 5 s"
+  },
+  {
+   "seconds": 3599,
+   "text": "59 min 59 s"
+  },
+  {
+   "seconds": 3600,
+   "text": "1 h 0 min"
+  },
+  {
+   "seconds": 3700,
+   "text": "1 h 1 min"
+  },
+  {
+   "seconds": 7322,
+   "text": "2 h 2 min"
+  },
+  {
+   "seconds": -3,
+   "text": "0 s"
+  }
+ ],
+ "convert": {
+  "now": 3800000000,
+  "raw": [
+   {
+    "port": 8088,
+    "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+    "target": "RemoteVI Demo.vi",
+    "kind": "VI",
+    "wholeNetwork": false,
+    "started": 3799999934.6,
+    "updated": 3799999999.7,
+    "clients": [
+     {
+      "address": "127.0.0.1",
+      "since": 3799999989.8,
+      "lastInput": 3799999997.3
+     },
+     {
+      "address": "192.168.1.5",
+      "since": 3799996300,
+      "lastInput": 0
+     }
+    ],
+    "fps": 18.04,
+    "bytesPerS": 122900,
+    "frames": 1234,
+    "latencyMs": 35.2,
+    "viewOnly": false,
+    "lastError": ""
+   },
+   {
+    "port": 8100,
+    "url": "http://pc-17:8100/?t=00ff",
+    "target": "Untitled - Notepad",
+    "kind": "Window",
+    "wholeNetwork": true,
+    "started": 3799992700,
+    "updated": 3799999995,
+    "clients": [],
+    "fps": 0,
+    "bytesPerS": 0,
+    "frames": 0,
+    "latencyMs": 0,
+    "viewOnly": true,
+    "lastError": "TCP Write: error 66"
+   }
+  ],
+  "status": [
+   {
+    "port": 8088,
+    "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+    "target": "RemoteVI Demo.vi",
+    "kind": "VI",
+    "wholeNetwork": false,
+    "running": true,
+    "uptime": 65.40000009536743,
+    "clients": [
+     {
+      "address": "127.0.0.1",
+      "connected": 10.199999809265137,
+      "idle": 2.6999998092651367
+     },
+     {
+      "address": "192.168.1.5",
+      "connected": 3700,
+      "idle": -1
+     }
+    ],
+    "fps": 18.04,
+    "kBps": 120.01953125,
+    "frames": 1234,
+    "latencyMs": 35.2,
+    "viewOnly": false,
+    "lastError": ""
+   },
+   {
+    "port": 8100,
+    "url": "http://pc-17:8100/?t=00ff",
+    "target": "Untitled - Notepad",
+    "kind": "Window",
+    "wholeNetwork": true,
+    "running": false,
+    "uptime": 7300,
+    "clients": [],
+    "fps": 0,
+    "kBps": 0,
+    "frames": 0,
+    "latencyMs": 0,
+    "viewOnly": true,
+    "lastError": "TCP Write: error 66"
+   }
+  ]
+ },
+ "texts": [
+  {
+   "name": "none",
+   "status": [],
+   "text": "No RemoteVI share is running."
+  },
+  {
+   "name": "one running, one stopped",
+   "status": [
+    {
+     "port": 8088,
+     "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+     "target": "RemoteVI Demo.vi",
+     "kind": "VI",
+     "wholeNetwork": false,
+     "running": true,
+     "uptime": 65.40000009536743,
+     "clients": [
+      {
+       "address": "127.0.0.1",
+       "connected": 10.199999809265137,
+       "idle": 2.6999998092651367
+      },
+      {
+       "address": "192.168.1.5",
+       "connected": 3700,
+       "idle": -1
+      }
+     ],
+     "fps": 18.04,
+     "kBps": 120.01953125,
+     "frames": 1234,
+     "latencyMs": 35.2,
+     "viewOnly": false,
+     "lastError": ""
+    },
+    {
+     "port": 8100,
+     "url": "http://pc-17:8100/?t=00ff",
+     "target": "Untitled - Notepad",
+     "kind": "Window",
+     "wholeNetwork": true,
+     "running": false,
+     "uptime": 7300,
+     "clients": [],
+     "fps": 0,
+     "kBps": 0,
+     "frames": 0,
+     "latencyMs": 0,
+     "viewOnly": true,
+     "lastError": "TCP Write: error 66"
+    }
+   ],
+   "text": "Port 8088: RemoteVI Demo.vi (VI), running for 1 min 5 s, this computer only\n  http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\n  2 clients, 18.0 fps, 120 kB/s, 1234 frames, input to frame 35 ms\n  127.0.0.1, connected 10 s, last input 2 s ago\n  192.168.1.5, connected 1 h 1 min, no input yet\nPort 8100: Untitled - Notepad (Window), stopped, whole network, view only\n  http://pc-17:8100/?t=00ff\n  0 clients, 0.0 fps, 0 kB/s, 0 frames, input to frame 0 ms\n  last error: TCP Write: error 66"
+  },
+  {
+   "name": "one client",
+   "status": [
+    {
+     "port": 8088,
+     "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+     "target": "RemoteVI Demo.vi",
+     "kind": "VI",
+     "wholeNetwork": false,
+     "running": true,
+     "uptime": 65.40000009536743,
+     "clients": [
+      {
+       "address": "127.0.0.1",
+       "connected": 10.199999809265137,
+       "idle": 2.6999998092651367
+      }
+     ],
+     "fps": 18.04,
+     "kBps": 120.01953125,
+     "frames": 1234,
+     "latencyMs": 35.2,
+     "viewOnly": false,
+     "lastError": ""
+    }
+   ],
+   "text": "Port 8088: RemoteVI Demo.vi (VI), running for 1 min 5 s, this computer only\n  http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\n  1 client, 18.0 fps, 120 kB/s, 1234 frames, input to frame 35 ms\n  127.0.0.1, connected 10 s, last input 2 s ago"
+  }
+ ]
+}

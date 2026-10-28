@@ -17,6 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { dirtyRects } from './lib/rects.mjs';
 import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage, splittersMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
+import { statusConvert, statusText, formatDuration } from './lib/status.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS, tokenOk } from './lib/http.mjs';
 
@@ -296,6 +297,35 @@ function textVectors() {
   };
 }
 
+// --- status API -------------------------------------------------------------------------
+
+function statusVectors() {
+  const now = 3800000000;
+  const raw = [
+    { port: 8088, url: 'http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1', target: 'RemoteVI Demo.vi', kind: 'VI',
+      wholeNetwork: false, started: now - 65.4, updated: now - 0.3,
+      clients: [{ address: '127.0.0.1', since: now - 10.2, lastInput: now - 2.7 }, { address: '192.168.1.5', since: now - 3700, lastInput: 0 }],
+      fps: 18.04, bytesPerS: 122900, frames: 1234, latencyMs: 35.2, viewOnly: false, lastError: '' },
+    { port: 8100, url: 'http://pc-17:8100/?t=00ff', target: 'Untitled - Notepad', kind: 'Window',
+      wholeNetwork: true, started: now - 7300, updated: now - 5, clients: [],
+      fps: 0, bytesPerS: 0, frames: 0, latencyMs: 0, viewOnly: true, lastError: 'TCP Write: error 66' },
+  ];
+  const converted = statusConvert(raw, now);
+  return {
+    description: 'Server/RemoteVI Status Convert.vi (raw entries as the server loops publish them, times in seconds '
+      + 'since the LabVIEW epoch, and now -> the status RemoteVI Status.vi returns; running: published within 2 s; '
+      + 'idle -1: no input yet), Server/RemoteVI Format Duration.vi and Server/RemoteVI Status Text.vi.',
+    durations: [0, 0.9, 59.99, 60, 65.4, 3599, 3600, 3700, 7322, -3].map((seconds) => ({ seconds, text: formatDuration(seconds) })),
+    convert: { now, raw, status: converted },
+    texts: [
+      { name: 'none', status: [], text: statusText([]) },
+      { name: 'one running, one stopped', status: converted, text: statusText(converted) },
+      { name: 'one client', status: [{ ...converted[0], clients: converted[0].clients.slice(0, 1) }],
+        text: statusText([{ ...converted[0], clients: converted[0].clients.slice(0, 1) }]) },
+    ],
+  };
+}
+
 export function buildVectors() {
   return {
     'websocket.json': websocketVectors(),
@@ -305,6 +335,7 @@ export function buildVectors() {
     'input.json': inputVectors(),
     'translate.json': translateVectors(),
     'text.json': textVectors(),
+    'status.json': statusVectors(),
   };
 }
 

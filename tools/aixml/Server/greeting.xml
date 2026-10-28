@@ -1,9 +1,12 @@
-<VI _name="RemoteVI Greeting.vi" description="The frames every new client gets first (docs\5Cprotocol.md)\3A the text messages &quot;title &lt;VI name&gt;&quot; and &quot;viewonly 0&quot;\2C each as a WebSocket text frame (RemoteVI WS Encode Server Frame.vi)\2C concatenated. Pure.">
+<VI _name="RemoteVI Greeting.vi" description="The frames every new client gets first (docs\5Cprotocol.md)\3A the text messages &quot;title &lt;VI name&gt;&quot; and &quot;viewonly 0&quot; (1 with view only? TRUE)\2C each as a WebSocket text frame (RemoteVI WS Encode Server Frame.vi)\2C concatenated. Pure.">
   <Control _name="VI name" conIdx="0" connection="required" description="Name of the published VI." outputs="value:nm.value" type="string" uid="nm" uid_parent="root" value=""/>
   <Constant outputs="value:ttl.value" type="string" uid="ttl" uid_parent="root" value="title "/>
   <Node _name="Concatenate Strings" inputs="string:ttl.value,string:nm.value" outputs="concatenated string:tmsg.concatenated string" uid="tmsg" uid_parent="root"/>
   <Constant _name="text" outputs="value:op1.value" type="uint8" uid="op1" uid_parent="root" value="1"/>
-  <Constant outputs="value:vo.value" type="string" uid="vo" uid_parent="root" value="viewonly 0"/>
+  <Control _name="view only?" conIdx="1" connection="recommended" description="TRUE\3A the server ignores the clients' input." outputs="value:vob.value" type="bool" uid="vob" uid_parent="root" value="false"/>
+  <Constant outputs="value:vo0.value" type="string" uid="vo0" uid_parent="root" value="viewonly 0"/>
+  <Constant outputs="value:vo1.value" type="string" uid="vo1" uid_parent="root" value="viewonly 1"/>
+  <Node _name="Select" inputs="t:vo1.value,s:vob.value,f:vo0.value" outputs="s? t\3Af:vo.value" uid="vo" uid_parent="root"/>
   <Call inputs="opcode:op1.value,payload:tmsg.concatenated string" outputs="frame:f1.frame" target="RemoteVI WS Encode Server Frame.vi" uid="f1" uid_parent="root"/>
   <Call inputs="opcode:op1.value,payload:vo.value" outputs="frame:f2.frame" target="RemoteVI WS Encode Server Frame.vi" uid="f2" uid_parent="root"/>
   <Node _name="Concatenate Strings" inputs="string:f1.frame,string:f2.frame" outputs="concatenated string:hello.concatenated string" uid="hello" uid_parent="root"/>

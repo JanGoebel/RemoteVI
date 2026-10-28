@@ -8,15 +8,19 @@
 // Use it to develop the web client without LabVIEW and as the behavioural
 // reference for the G code.
 //
-//   node tools/mock-server/server.mjs [--port 8090] [--host 127.0.0.1] [--fps 30] [--view-only]
+//   node tools/mock-server/server.mjs [--port 8090] [--host 127.0.0.1] [--fps 30] [--view-only] [--token <t>]
+//
+// Like the toolkit, every request needs the share's access token as ?t=<token> (docs/security.md);
+// without --token a random one is made and printed with the URL.
 
 import net from 'node:net';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-import { findHeadEnd, parseRequestHead, isWebSocketUpgrade, buildResponseHead, HttpError, SECURITY_HEADERS } from '../lib/http.mjs';
+import { findHeadEnd, parseRequestHead, isWebSocketUpgrade, buildResponseHead, HttpError, SECURITY_HEADERS, tokenOk } from '../lib/http.mjs';
 import {
   acceptKey, decodeClientFrame, encodeServerFrame, closePayload, WsError,
   OP_TEXT, OP_BINARY, OP_CLOSE, OP_PING, OP_PONG, CLOSE_NORMAL, CLOSE_POLICY, CLOSE_PROTOCOL_ERROR,
@@ -32,7 +36,7 @@ const MAX_CLIENTS = 8;
 
 export function startServer(opts = {}) {
   const cfg = {
-    port: 8090, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log,
+    port: 8090, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log, token: crypto.randomBytes(16).toString('hex'),
     indexPath: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/index.html'),
     ...opts,
   };
@@ -73,6 +77,9 @@ export function startServer(opts = {}) {
   }
 
   function route(socket, req, rest) {
+    // The page and the WebSocket both need the token; nothing else is served either way.
+    const known = req.path === '/ws' || req.path === '/' || req.path === '/index.html';
+    if (known && !tokenOk(req.search, cfg.token)) throw new HttpError(403, 'missing or wrong access token');
     if (req.path === '/ws') {
       if (!isWebSocketUpgrade(req)) throw new HttpError(426, 'websocket upgrade required');
       // Browsers always send Origin on WebSocket handshakes: refuse other sites' pages.
@@ -265,7 +272,7 @@ export function startServer(opts = {}) {
     server.listen(cfg.port, cfg.host, () => {
       const { port } = server.address();
       resolve({
-        url: `http://${cfg.host}:${port}/`, port, panel, posted,
+        url: `http://${cfg.host}:${port}/?t=${cfg.token}`, port, token: cfg.token, panel, posted,
         close: () => new Promise((r) => {
           clearInterval(timer);
           for (const c of clients) c.close(1001, 'server shutting down');
@@ -280,11 +287,12 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   const { values } = parseArgs({
     options: {
       port: { type: 'string', default: '8090' }, host: { type: 'string', default: '127.0.0.1' },
-      fps: { type: 'string', default: '30' }, 'view-only': { type: 'boolean', default: false },
+      fps: { type: 'string', default: '30' }, 'view-only': { type: 'boolean', default: false }, token: { type: 'string' },
     },
   });
   const srv = await startServer({
     port: Number(values.port), host: values.host, fps: Number(values.fps), viewOnly: values['view-only'],
+    ...(values.token ? { token: values.token } : {}),
   });
   console.log(`RemoteVI reference server: open ${srv.url}`);
 }

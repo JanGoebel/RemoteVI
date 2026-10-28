@@ -25,9 +25,22 @@ function rawRequest(text) {
   });
 }
 
+/** Like rawRequest, but resolves with the response head and drops the connection (for a 101 upgrade). */
+function rawHead(text) {
+  return new Promise((resolve, reject) => {
+    const s = net.connect(srv.port, '127.0.0.1', () => s.write(text));
+    let got = '';
+    s.on('data', (d) => {
+      got += d.toString('latin1');
+      if (got.includes('\r\n\r\n')) { s.destroy(); resolve(got); }
+    });
+    s.on('error', reject);
+  });
+}
+
 /** WebSocket client that queues messages so tests can await them in order. */
 function connect() {
-  const ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws`);
+  const ws = new WebSocket(`ws://127.0.0.1:${srv.port}/ws?t=${srv.token}`);
   ws.binaryType = 'arraybuffer';
   const queue = [];
   const waiters = [];
@@ -135,18 +148,27 @@ function paint(img, width, frame) {
 }
 
 test('GET / serves the one-file client with security headers; everything else is refused', async () => {
-  const res = await rawRequest('GET / HTTP/1.1\r\nHost: x\r\n\r\n');
+  const res = await rawRequest(`GET /?t=${srv.token} HTTP/1.1\r\nHost: x\r\n\r\n`);
   assert.match(res, /^HTTP\/1\.1 200 OK\r\n/);
   assert.match(res, /X-Content-Type-Options: nosniff/);
   assert.match(res, /<canvas id="panel"/);
   assert.match(await rawRequest('GET /js/client.js HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 404 /);
   assert.match(await rawRequest('GET /../package.json HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 404 /);
   assert.match(await rawRequest('POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\n\r\n'), /^HTTP\/1\.1 405 /);
-  assert.match(await rawRequest('GET /ws HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 426 /);
+  assert.match(await rawRequest(`GET /ws?t=${srv.token} HTTP/1.1\r\nHost: x\r\n\r\n`), /^HTTP\/1\.1 426 /);
+});
+
+test('the page and the WebSocket need the access token (?t=); without it or with a wrong one: 403', async () => {
+  const upgrade = 'Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n';
+  assert.match(await rawRequest('GET / HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 403 /);
+  assert.match(await rawRequest('GET /index.html?t=wrong HTTP/1.1\r\nHost: x\r\n\r\n'), /^HTTP\/1\.1 403 /);
+  assert.match(await rawRequest(`GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${srv.port}\r\n${upgrade}`), /^HTTP\/1\.1 403 /);
+  assert.match(await rawRequest(`GET /ws?t=${srv.token}x HTTP/1.1\r\nHost: 127.0.0.1:${srv.port}\r\n${upgrade}`), /^HTTP\/1\.1 403 /);
+  assert.match(await rawHead(`GET /ws?t=${srv.token} HTTP/1.1\r\nHost: 127.0.0.1:${srv.port}\r\n${upgrade}`), /^HTTP\/1\.1 101 /);
 });
 
 test('cross-origin WebSocket handshakes are refused', async () => {
-  const res = await rawRequest(`GET /ws HTTP/1.1\r\nHost: 127.0.0.1:${srv.port}\r\nOrigin: http://evil.example\r\n`
+  const res = await rawRequest(`GET /ws?t=${srv.token} HTTP/1.1\r\nHost: 127.0.0.1:${srv.port}\r\nOrigin: http://evil.example\r\n`
     + 'Upgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n');
   assert.match(res, /^HTTP\/1\.1 403 /);
 });

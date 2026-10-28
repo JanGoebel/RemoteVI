@@ -72,7 +72,7 @@ export function parseRequestHead(head, limits = LIMITS) {
       query[decodeURIComponentSafe(k)] = decodeURIComponentSafe(v);
     }
   }
-  return { method, path, query, version, headers };
+  return { method, path, query, search: q < 0 ? '' : target.slice(q + 1), version, headers };
 }
 
 function decodeURIComponentSafe(s) {

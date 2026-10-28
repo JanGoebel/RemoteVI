@@ -25,6 +25,7 @@ client                                   server
   │  ◄──────────────── "viewonly 0|1"      │  text
   │  ◄──────────────── "origin <x> <y>"    │  text, where the panel starts in the frame
   │  ◄──────────────── "tips [...]"        │  text, tip strips of the controls
+  │  ◄──────────────── "splitters [...]"   │  text, splitter bars the client drags
   │  ◄──────────────── FRAME seq 1         │  whole frame
   │  "a 1" ────────────────────────────►   │  ack after painting
   │  "m 513 120 45 1" ─────────────────►   │  input, any time
@@ -88,6 +89,7 @@ One command word, a space, and an argument. Clients ignore commands they don't k
 | `windows <json>` | the application's other windows (dialogs, native file dialogs, subVI panels): see §7 |
 | `tips <json>` | the tip strips of the panel's visible controls (those of every pane, of the selected tab page, cluster elements and the controls of a VI shown in a subpanel; inner controls first, so the first entry under the pointer is the one to show): a JSON array of `{"x":..,"y":..,"w":..,"h":..,"text":".."}` in that field order, the control's bounds in frame coordinates and its tip strip text; controls without a tip strip are left out, `tips []` means none. Sent on connect and whenever the list changed. The server reads it with the window geometry (every 500 ms), never while a popup or a modal window is open, so the list may lag a moved control by that much. The text is an ASCII-only JSON string literal (`\uXXXX` escapes; `tipsMessage()` and `jsonString()` in `tools/lib/protocol.mjs`, `tests/vectors/text.json`). The client shows the text itself, styled like a LabVIEW tip strip, once the pointer has rested on the control for 500 ms, and hides it on a click, a key, the wheel, an open popup or when the pointer leaves the control. LabVIEW shows its own tip strips only while it is the foreground application, which a remotely operated machine usually is not. |
 | `origin <x> <y>` | where the panel starts inside the frame. The frame shows the whole front panel window below its title bar (menu bar, toolbar, panel, scrollbars), so the panel usually starts below the menu bar and toolbar. Sent on connect (with the greeting, before the first FRAME) and whenever it changes (the server reads it every 500 ms with the window geometry: `Front Panel Window:Panel Bounds` minus the frame origin). It is information only: all coordinates of the protocol are frame coordinates. |
+| `splitters <json>` | the splitter bars of the panel, which the client drags itself (§4.5): a JSON array of `{"id":..,"x":..,"y":..,"w":..,"h":..,"vertical":true\|false,"min":..,"max":..}` in that field order. `id` is the bar's index in the list; `x, y, w, h` the bar in frame coordinates; `min` and `max` the range of the bar's left edge (vertical bar) or top edge (horizontal bar) in frame coordinates - the area the splitter divides and the end of the panel area; LabVIEW also keeps its own minimum pane sizes. `splitters []` means none. Sent on connect and whenever it changed; read with the tips (every 500 ms and right after a move, never while a popup or a modal window is open). `splittersMessage()` in `tools/lib/protocol.mjs`, `tests/vectors/text.json` → `splitters`. |
 
 ## 4. Client → server (text messages)
 
@@ -99,6 +101,7 @@ ASCII, single spaces, decimal integers. Anything malformed is **ignored**, not f
 | `m <msg> <x> <y> <wParam>` | mouse message `msg` at frame pixel (x, y) |
 | `k <msg> <wParam> <lParam>` | keyboard message `msg` |
 | `x <id>` | close window `id` (§7), like its title bar's close button |
+| `s <id> <pos>` | move splitter bar `id` (§3.3) so that its left edge (vertical bar) or top edge (horizontal bar) is at frame coordinate `pos` (§4.5); `id` not negative |
 
 `msg`, `wParam` and `lParam` are **Win32 window-message values**. The server posts them to the panel's native window as they are. Only the server translates coordinates.
 
@@ -159,6 +162,10 @@ Two things a posted message does not carry, so the server supplies them (`Remote
 * **Modifier keys.** LabVIEW reads Shift, Ctrl and Alt of every mouse and key event with `GetKeyState`, and posted messages do not update the key state Windows keeps per thread (measured: a posted Shift-click and a posted Ctrl+A arrived without modifiers, the posted `MK_SHIFT` and `VK_SHIFT` key-down notwithstanding). The server keeps per client which modifiers the remote user holds (`trackModifiers()` in `tools/lib/input.mjs`, `RemoteVI Track Modifiers.vi`, vectors in `translate.json` → `modifiers`): a `WM_KEYDOWN`/`WM_KEYUP` of `VK_SHIFT`/`VK_CONTROL`/`VK_MENU` or their left/right variants sets/clears the bit, a mouse message carries Shift and Ctrl in `MK_SHIFT`/`MK_CONTROL`. Whenever that set changes it is written into the key state of LabVIEW's UI thread before the message is posted: `GetKeyboardState` + `SetKeyboardState`, both called **in LabVIEW's UI thread** (a thread's key state can only be read and written by that thread), bit `0x80` of the generic and the left key, the right key released (`RemoteVI Set Modifier Keys.vi`). This changes nothing outside LabVIEW's UI thread: not the physical keyboard, not `GetAsyncKeyState`, not other programs; the next real input LabVIEW receives replaces it. It is not written while a popup is open (the popup's modal loop holds the UI thread); the change is written with the first message after the popup closes. A client that disconnects with modifiers written releases them.
 
 Mouse-path popup clicks (popups that take no keys) additionally wait until the popup is 350 ms old (since the server first saw it): LabVIEW ignores a click on a ring menu that arrives within about 250 ms of opening it (measured with posted messages: 200 ms ignored, 250 ms chosen). Keys to a menu need no such wait (measured: `VK_DOWN` worked 70 ms after a menu appeared).
+
+### 4.5 Splitter bars
+
+LabVIEW moves a splitter bar only while it tracks the real mouse: a posted button-down on a bar starts no drag (no mouse capture), and neither a key state with `VK_LBUTTON` set nor `WM_SETCURSOR` changes that (measured on LabVIEW 2025). The host cursor is never moved, so the client drags the bars itself: a press on a bar listed in `splitters` (a few pixels of slack across a thin bar) is not sent; the client shows a line that follows the pointer within `min..max` and sends `s <id> <pos>` on release (Escape cancels). The server keeps the move (`RemoteVI Splitter Request.vi`) and, as soon as no popup and no modal window is open, sets `{LV.Splitter} Position` to its current value plus `pos` minus the bar's edge in the last `splitters` message (`RemoteVI Apply Splitter.vi`), then reads the bars and tips again and sends what changed. The panes scale and scroll as after a local drag.
 
 ## 5. Flow control
 

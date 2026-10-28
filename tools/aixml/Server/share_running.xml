@@ -1,0 +1,17 @@
+<VI _name="RemoteVI Share Running.vi" description="TRUE when a RemoteVI share of this LabVIEW application instance serves port right now - its server loop published its status within the last 2 s (RemoteVI Status Registry.vi\2C RemoteVI Status Convert.vi). Used by RemoteVI Start.vi\2C which then launches nothing (error 5001)\3B a share whose loop was aborted is no longer running after 2 s.">
+  <Control _name="port" conIdx="0" connection="required" description="The TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Call inputs="" outputs="servers:reg.servers" target="RemoteVI Status Registry.vi" uid="reg" uid_parent="root"/>
+  <Node _name="Get Date/Time In Seconds" outputs="seconds since 1Jan1904:now0.t" uid="now0" uid_parent="root"/>
+  <Node _name="To Double Precision Float" inputs="number:now0.t" outputs="double precision float:now.v" uid="now" uid_parent="root"/>
+  <Call inputs="raw:reg.servers,now:now.v" outputs="status:cv.status" target="RemoteVI Status Convert.vi" uid="cv" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="This port and running?" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cv.status" mode="index" outputs="value:s.value" uid="s" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:port.value" outputs="value:p.value" uid="p" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="port,running" inputs="input cluster:s.value" outputs="port:u.port,running:u.run" uid="u" uid_parent="fl"/>
+    <Node _name="Equal?" inputs="x:u.port,y:p.value" outputs="x = y?:same.v" uid="same" uid_parent="fl"/>
+    <Node _name="And" inputs="x:same.v,y:u.run" outputs="x .and. y?:hit.v" uid="hit" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:hit.v" mode="index" outputs="value:hits.value" uid="hits" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Or Array Elements" inputs="Boolean array:hits.value" outputs="logical OR:any.v" uid="any" uid_parent="root"/>
+  <Indicator _name="running?" conIdx="4" connection="recommended" description="TRUE when a share of this application instance serves port." inputs="value:any.v" type="bool" uid="o_r" uid_parent="root" value="false"/>
+</VI>

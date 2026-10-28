@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { dirtyRects } from './lib/rects.mjs';
-import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage } from './lib/protocol.mjs';
+import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage, splittersMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS } from './lib/http.mjs';
@@ -168,6 +168,7 @@ function inputVectors() {
     'm 513 120 45 1', 'm 512 0 0 0', 'm 522 10 20 4287102976', 'k 256 37 16777217', 'k 257 37 3238002689',
     'k 258 65 1', 'a 12', 'a', 'm 513 1 2', 'x 1 2 3', 'm 513 a b c', '', 'm 513 1.5 2 0',
     'x 5113012', 'x', 'x -1', 'x 1 2', 'a ', 'a  12', 'a 12 ', 'a 4294967295', 'a 4294967296', 'k 256 -2147483648 0', 'k 256 -2147483649 0', 'a 1x', 'a -', 'a 1e3',
+    's 0 300', 's 1 -12', 's 2', 's -1 5', 's 0 5 6',
   ];
   return {
     description: 'Protocol/Parse Input.vi. result null means: ignore the message. '
@@ -264,6 +265,14 @@ function textVectors() {
     tips: tips.map(([name, list]) => ({
       name, tips: list.map((t) => ({ ...t, text: units(t.text) })), message: tipsMessage(list),
     })),
+    splittersDescription: 'Protocol/Splitters Message.vi: the splitter bars (x, y, w, h in frame coordinates, vertical, '
+      + 'min and max of the left or top edge) and the complete splitters text message (docs/protocol.md 3.3); id is the index.',
+    splitters: [
+      ['none', []],
+      ['vertical and horizontal', [{ x: 276, y: 46, w: 9, h: 760, vertical: true, min: 0, max: 1171 },
+        { x: 285, y: 82, w: 895, h: 8, vertical: false, min: 46, max: 798 }]],
+      ['negative position', [{ x: -3, y: -40, w: 4, h: 100, vertical: true, min: -10, max: 50 }]],
+    ].map(([name, bars]) => ({ name, bars, message: splittersMessage(bars) })),
   };
 }
 

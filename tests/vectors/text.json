@@ -96,5 +96,52 @@
    ],
    "message": "tips [{\"x\":-4,\"y\":46,\"w\":917,\"h\":600,\"text\":\"two\\u000Alines \\u0022quoted\\u0022 \\u00E4\"},{\"x\":10,\"y\":20,\"w\":30,\"h\":40,\"text\":\"second\"}]"
   }
+ ],
+ "splittersDescription": "Protocol/Splitters Message.vi: the splitter bars (x, y, w, h in frame coordinates, vertical, min and max of the left or top edge) and the complete splitters text message (docs/protocol.md 3.3); id is the index.",
+ "splitters": [
+  {
+   "name": "none",
+   "bars": [],
+   "message": "splitters []"
+  },
+  {
+   "name": "vertical and horizontal",
+   "bars": [
+    {
+     "x": 276,
+     "y": 46,
+     "w": 9,
+     "h": 760,
+     "vertical": true,
+     "min": 0,
+     "max": 1171
+    },
+    {
+     "x": 285,
+     "y": 82,
+     "w": 895,
+     "h": 8,
+     "vertical": false,
+     "min": 46,
+     "max": 798
+    }
+   ],
+   "message": "splitters [{\"id\":0,\"x\":276,\"y\":46,\"w\":9,\"h\":760,\"vertical\":true,\"min\":0,\"max\":1171},{\"id\":1,\"x\":285,\"y\":82,\"w\":895,\"h\":8,\"vertical\":false,\"min\":46,\"max\":798}]"
+  },
+  {
+   "name": "negative position",
+   "bars": [
+    {
+     "x": -3,
+     "y": -40,
+     "w": 4,
+     "h": 100,
+     "vertical": true,
+     "min": -10,
+     "max": 50
+    }
+   ],
+   "message": "splitters [{\"id\":0,\"x\":-3,\"y\":-40,\"w\":4,\"h\":100,\"vertical\":true,\"min\":-10,\"max\":50}]"
+  }
  ]
 }

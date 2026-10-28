@@ -97,6 +97,19 @@ export function tipsMessage(tips) {
 }
 
 /**
+ * The `splitters <json>` text message (docs/protocol.md 3.3): the panel's splitter bars a
+ * user can drag, {id, x, y, w, h, vertical, min, max} in that field order. x, y, w, h are the
+ * bar in frame coordinates; min and max bound its left (vertical bar) or top (horizontal bar)
+ * edge. id is the bar's index in the list. Protocol/Splitters Message.vi.
+ * @param {{x:number,y:number,w:number,h:number,vertical:boolean,min:number,max:number}[]} bars
+ */
+export function splittersMessage(bars) {
+  const items = bars.map((b, id) => `{"id":${id},"x":${b.x},"y":${b.y},"w":${b.w},"h":${b.h},`
+    + `"vertical":${b.vertical ? 'true' : 'false'},"min":${b.min},"max":${b.max}}`);
+  return `splitters [${items.join(',')}]`;
+}
+
+/**
  * OVERLAY: the popups currently open over the panel (menus, dropdowns, palette
  * popups). Replaces the previous overlay entirely; an empty list clears it.
  * Positions are relative to the panel origin and may lie outside the panel.
@@ -125,6 +138,8 @@ export function encodeOverlay(popups) {
  *   "k <msg> <wParam> <lParam>"  keyboard message
  *   "a <seq>"                    frame acknowledged
  *   "x <id>"                     close window id (docs/protocol.md 7)
+ *   "s <id> <pos>"               move splitter bar id so its left (vertical bar) or top
+ *                                (horizontal bar) edge is at frame coordinate pos (3.3)
  * Returns null for anything malformed; the server ignores those.
  */
 export function parseInput(text) {
@@ -142,6 +157,8 @@ export function parseInput(text) {
       return nums.length === 1 ? { kind: 'ack', seq: nums[0] } : null;
     case 'x':
       return nums.length === 1 && nums[0] >= 0 ? { kind: 'close', id: nums[0] } : null;
+    case 's':
+      return nums.length === 2 && nums[0] >= 0 ? { kind: 'splitter', id: nums[0], pos: nums[1] } : null;
     default:
       return null;
   }

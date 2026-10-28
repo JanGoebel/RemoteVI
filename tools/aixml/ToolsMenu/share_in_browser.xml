@@ -1,0 +1,4 @@
+<VI _name="Share in Browser.vi" description="Tools menu entry Tools &gt; RemoteVI &gt; Share in Browser (installed by the VIPM package into &lt;LabVIEW&gt;\5Cproject\5CRemoteVI)\3A opens RemoteVI Server (RemoteVI Open Server.vi) and closes its own window again.">
+  <Call inputs="" outputs="error out:os.error out" target="RemoteVI Open Server.vi" uid="os" uid_parent="root"/>
+  <Node _name="Invoke Node" target="FP.Close" type="{LV.VI}" inputs="reference:,error in (no error):os.error out" outputs="reference out:,error out:" uid="fc" uid_parent="root"/>
+</VI>

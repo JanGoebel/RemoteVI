@@ -325,18 +325,26 @@ class RemoteViClient {
 
   connect() {
     const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+    // The share's access token travels in the page URL (?t=...) and is required for the WebSocket too.
+    const token = new URLSearchParams(location.search).get('t') ?? '';
+    const ws = new WebSocket(`${scheme}://${location.host}/ws?t=${encodeURIComponent(token)}`);
     ws.binaryType = 'arraybuffer';
     this.ws = ws;
     this.setStatus('connecting', 'Connecting...');
-    ws.onopen = () => { this.backoff = 250; this.setStatus('online', 'Connected'); };
+    let opened = false;
+    ws.onopen = () => { opened = true; this.backoff = 250; this.setStatus('online', 'Connected'); };
     ws.onmessage = (ev) => {
       if (typeof ev.data === 'string') this.onText(ev.data);
       else this.onFrame(ev.data);
     };
     ws.onclose = () => {
       if (this.ws !== ws) return;
-      this.setStatus('offline', `Disconnected, retrying in ${(this.backoff / 1000).toFixed(1)} s`);
+      const retry = `retrying in ${(this.backoff / 1000).toFixed(1)} s`;
+      // The server answers a missing or wrong token with 403, which a browser reports as a plain close.
+      const why = opened ? 'Disconnected'
+        : !token ? 'This link has no access token (?t=...): open the full link of the share'
+          : 'Not connected: the access token is wrong, or the share has stopped';
+      this.setStatus('offline', `${why}, ${retry}`);
       setTimeout(() => this.connect(), this.backoff);
       this.backoff = Math.min(this.backoff * 2, 5000);
     };

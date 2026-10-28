@@ -1,0 +1,42 @@
+<VI _name="RemoteVI Status Convert.vi" description="Turns the entries of RemoteVI Status Registry.vi into the status RemoteVI Status.vi returns\2C for the time now (seconds since the LabVIEW epoch)\3A running is TRUE while the server loop published within the last 2 s\3B uptime s = now - started\3B per client connected s = now - since and idle s = now - last input\2C or -1 when the client sent no input yet\3B kB per s = bytes per s / 1024. Pure function\2C cannot fail. Reference\3A statusConvert() in tools\5Clib\5Cstatus.mjs\2C vectors tests\5Cvectors\5Cstatus.json (convert).">
+  <Control _name="raw" conIdx="0" connection="required" description="The registry's entries." outputs="value:raw.value" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="raw" uid_parent="root" value="[]"/>
+  <Control _name="now" conIdx="1" connection="required" description="Seconds since the LabVIEW epoch." outputs="value:now.value" type="double" uid="now" uid_parent="root" value="0"/>
+  <Constant _name="status0" outputs="value:s0.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error}" uid="s0" uid_parent="root" value="[0,,,,false,false,0,[],0,0,0,0,false,]"/>
+  <Constant _name="client0" outputs="value:c0.value" type="cluster{string.address,double.connected s,double.idle s}" uid="c0" uid_parent="root" value="[,0,0]"/>
+  <Constant outputs="value:alive.value" type="double" uid="alive" uid_parent="root" value="2"/>
+  <Constant outputs="value:kb.value" type="double" uid="kb" uid_parent="root" value="1024"/>
+  <Constant outputs="value:dz.value" type="double" uid="dz" uid_parent="root" value="0"/>
+  <Constant outputs="value:dm1.value" type="double" uid="dm1" uid_parent="root" value="-1"/>
+  <Structure _name="For Loop" count="" label="One status per share" maxin="" maxout="" uid="fs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:raw.value" mode="index" outputs="value:r.value" uid="r" uid_parent="fs"/>
+    <Tunnel _id="In2" inputs="value:now.value" outputs="value:t_now.value" uid="t_now" uid_parent="fs"/>
+    <Tunnel _id="In3" inputs="value:s0.value" outputs="value:t_s0.value" uid="t_s0" uid_parent="fs"/>
+    <Tunnel _id="In4" inputs="value:c0.value" outputs="value:t_c0.value" uid="t_c0" uid_parent="fs"/>
+    <Tunnel _id="In5" inputs="value:alive.value" outputs="value:t_al.value" uid="t_al" uid_parent="fs"/>
+    <Tunnel _id="In6" inputs="value:kb.value" outputs="value:t_kb.value" uid="t_kb" uid_parent="fs"/>
+    <Tunnel _id="In7" inputs="value:dz.value" outputs="value:t_dz.value" uid="t_dz" uid_parent="fs"/>
+    <Tunnel _id="In8" inputs="value:dm1.value" outputs="value:t_dm1.value" uid="t_dm1" uid_parent="fs"/>
+    <Node _name="Unbundle By Name" fields="port,url,target,kind,whole network,started,updated,clients,fps,bytes per s,frames,latency ms,view only,last error" inputs="input cluster:r.value" outputs="port:u.port,url:u.url,target:u.target,kind:u.kind,whole network:u.wn,started:u.started,updated:u.updated,clients:u.clients,fps:u.fps,bytes per s:u.bps,frames:u.frames,latency ms:u.lat,view only:u.vo,last error:u.err" uid="u" uid_parent="fs"/>
+    <Node _name="Subtract" inputs="x:t_now.value,y:u.updated" outputs="x-y:age.v" uid="age" uid_parent="fs"/>
+    <Node _name="Less?" inputs="x:age.v,y:t_al.value" outputs="x &lt; y?:run.v" uid="run" uid_parent="fs"/>
+    <Node _name="Subtract" inputs="x:t_now.value,y:u.started" outputs="x-y:up.v" uid="up" uid_parent="fs"/>
+    <Node _name="Divide" inputs="x:u.bps,y:t_kb.value" outputs="x/y:kbs.v" uid="kbs" uid_parent="fs"/>
+    <Structure _name="For Loop" count="" label="One entry per client" maxin="" maxout="" uid="fc" uid_parent="fs">
+      <Tunnel _id="In1" inputs="value:u.clients" mode="index" outputs="value:c.value" uid="c" uid_parent="fc"/>
+      <Tunnel _id="In2" inputs="value:t_now.value" outputs="value:c_now.value" uid="c_now" uid_parent="fc"/>
+      <Tunnel _id="In3" inputs="value:t_c0.value" outputs="value:c_c0.value" uid="c_c0" uid_parent="fc"/>
+      <Tunnel _id="In4" inputs="value:t_dz.value" outputs="value:c_dz.value" uid="c_dz" uid_parent="fc"/>
+      <Tunnel _id="In5" inputs="value:t_dm1.value" outputs="value:c_dm1.value" uid="c_dm1" uid_parent="fc"/>
+      <Node _name="Unbundle By Name" fields="address,since,last input" inputs="input cluster:c.value" outputs="address:cu.addr,since:cu.since,last input:cu.last" uid="cu" uid_parent="fc"/>
+      <Node _name="Subtract" inputs="x:c_now.value,y:cu.since" outputs="x-y:con.v" uid="con" uid_parent="fc"/>
+      <Node _name="Subtract" inputs="x:c_now.value,y:cu.last" outputs="x-y:idl.v" uid="idl" uid_parent="fc"/>
+      <Node _name="Greater?" inputs="x:cu.last,y:c_dz.value" outputs="x &gt; y?:had.v" uid="had" uid_parent="fc"/>
+      <Node _name="Select" inputs="t:idl.v,s:had.v,f:c_dm1.value" outputs="s? t\3Af:idle.v" uid="idle" uid_parent="fc"/>
+      <Node _name="Bundle By Name" fields="address,connected s,idle s" inputs="input cluster:c_c0.value,address:cu.addr,connected s:con.v,idle s:idle.v" outputs="output cluster:cb.v" uid="cb" uid_parent="fc"/>
+      <Tunnel _id="Out1" inputs="value:cb.v" mode="index" outputs="value:cl.value" uid="cl" uid_parent="fc"/>
+    </Structure>
+    <Node _name="Bundle By Name" fields="port,url,target,kind,whole network,running,uptime s,clients,fps,kB per s,frames,latency ms,view only,last error" inputs="input cluster:t_s0.value,port:u.port,url:u.url,target:u.target,kind:u.kind,whole network:u.wn,running:run.v,uptime s:up.v,clients:cl.value,fps:u.fps,kB per s:kbs.v,frames:u.frames,latency ms:u.lat,view only:u.vo,last error:u.err" outputs="output cluster:sb.v" uid="sb" uid_parent="fs"/>
+    <Tunnel _id="Out1" inputs="value:sb.v" mode="index" outputs="value:st.value" uid="st" uid_parent="fs"/>
+  </Structure>
+  <Indicator _name="status" conIdx="4" connection="recommended" description="One entry per share." inputs="value:st.value" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="o_st" uid_parent="root" value="[]"/>
+</VI>

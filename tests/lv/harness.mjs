@@ -31,8 +31,33 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { inflateSync } from 'node:zlib';
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 export const URL_BASE = process.env.RVI_URL ?? 'http://127.0.0.1:8089';
+
+/** The share's full link with its access token (docs/security.md): RVI_URL when it carries ?t=, else asked from
+ *  the LabVIEW that runs the fixture (tools/lv-share-url.ps1 reads RemoteVI Status.vi over LabVIEW's ActiveX server). */
+let shareUrl = null;
+export function share() {
+  if (shareUrl) return shareUrl;
+  const u = new URL(URL_BASE);
+  if (!u.searchParams.get('t')) {
+    const script = fileURLToPath(new URL('../../tools/lv-share-url.ps1', import.meta.url));
+    const out = execFileSync('powershell', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', script, '-Port', u.port || '80'],
+      { encoding: 'utf8', timeout: 30000 }).trim();
+    const found = new URL(out.split(/\r?\n/).at(-1));
+    u.search = found.search;
+  }
+  shareUrl = u;
+  return u;
+}
+
+/** ws://host:port/ws?t=<token> of the share. */
+export function wsUrl() {
+  const u = share();
+  return `ws://${u.host}/ws?t=${encodeURIComponent(u.searchParams.get('t'))}`;
+}
 export let LOG_PATH = process.env.RVI_FIXTURE_LOG ?? path.join(os.tmpdir(), 'RemoteVI Fixture.log');
 export const enabled = process.env.RVI_LV === '1';
 
@@ -87,7 +112,7 @@ function paintRects(data, o, n, fb, w) {
 /** A protocol-v2 client like web/index.html: acks frames, keeps the latest overlay. With { fb: true } it also
  *  keeps the picture: c.fb (frame, 0xRRGGBB per pixel, c.width wide) and c.wfb (window id -> {w, h, fb}). */
 export async function connect({ fb = false } = {}) {
-  const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
+  const ws = new WebSocket(wsUrl());
   ws.binaryType = 'arraybuffer';
   const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false,
     windows: [], windowFrames: new Map(), tips: null, bars: null, fb: null, wfb: new Map() };

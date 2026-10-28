@@ -1,10 +1,11 @@
-<VI _name="RemoteVI Parse Input.vi" description="Parses one client text message of the RemoteVI protocol: &quot;m msg x y wParam&quot; (mouse), &quot;k msg wParam lParam&quot; (key)\2C &quot;a seq&quot; (ack) or &quot;x id&quot; (close window id\2C docs\5Cprotocol.md section 7 - id not negative) - single spaces, decimal integers with an optional leading minus, each in -2147483648..4294967295. Anything else gives kind = invalid and all numbers 0; the server ignores those. Integers wrap into the narrower output types. Pure function, cannot fail. Reference: parseInput() in tools\5Clib\5Cprotocol.mjs.">
+<VI _name="RemoteVI Parse Input.vi" description="Parses one client text message of the RemoteVI protocol: &quot;m msg x y wParam&quot; (mouse), &quot;k msg wParam lParam&quot; (key)\2C &quot;a seq&quot; (ack) or &quot;x id&quot; (close window id\2C docs\5Cprotocol.md section 7 - id not negative) or &quot;s id pos&quot; (move splitter bar id to frame coordinate pos\2C id not negative\3B id in id\2C pos in x) - single spaces, decimal integers with an optional leading minus, each in -2147483648..4294967295. Anything else gives kind = invalid and all numbers 0; the server ignores those. Integers wrap into the narrower output types. Pure function, cannot fail. Reference: parseInput() in tools\5Clib\5Cprotocol.mjs.">
   <FreeLabel comment="Shape by Match Pattern, then values parsed" uid="lbl" uid_parent="root"/>
   <Control _name="text" conIdx="0" connection="required" description="One text WebSocket message from the client." outputs="value:txt.value" type="string" uid="txt" uid_parent="root" value=""/>
   <Constant outputs="value:rxm.value" type="string" uid="rxm" uid_parent="root" value="^m -?[0-9]+ -?[0-9]+ -?[0-9]+ -?[0-9]+$"/>
   <Constant outputs="value:rxk.value" type="string" uid="rxk" uid_parent="root" value="^k -?[0-9]+ -?[0-9]+ -?[0-9]+$"/>
   <Constant outputs="value:rxa.value" type="string" uid="rxa" uid_parent="root" value="^a -?[0-9]+$"/>
   <Constant outputs="value:rxx.value" type="string" uid="rxx" uid_parent="root" value="^x [0-9]+$"/>
+  <Constant outputs="value:rxs.value" type="string" uid="rxs" uid_parent="root" value="^s [0-9]+ -?[0-9]+$"/>
   <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
   <Constant outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
   <Constant outputs="value:i2.value" type="int32" uid="i2" uid_parent="root" value="2"/>
@@ -13,20 +14,23 @@
   <Constant outputs="value:lo.value" type="int64" uid="lo" uid_parent="root" value="-2147483648"/>
   <Constant outputs="value:hi.value" type="int64" uid="hi" uid_parent="root" value="4294967295"/>
   <Constant outputs="value:z64.value" type="int64" uid="z64" uid_parent="root" value="0"/>
-  <Constant outputs="value:kInv.value" type="uint16{invalid,mouse,key,ack,close}" uid="kInv" uid_parent="root" value="0"/>
-  <Constant outputs="value:kMou.value" type="uint16{invalid,mouse,key,ack,close}" uid="kMou" uid_parent="root" value="1"/>
-  <Constant outputs="value:kKey.value" type="uint16{invalid,mouse,key,ack,close}" uid="kKey" uid_parent="root" value="2"/>
-  <Constant outputs="value:kAck.value" type="uint16{invalid,mouse,key,ack,close}" uid="kAck" uid_parent="root" value="3"/>
-  <Constant outputs="value:kCls.value" type="uint16{invalid,mouse,key,ack,close}" uid="kCls" uid_parent="root" value="4"/>
+  <Constant outputs="value:kInv.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kInv" uid_parent="root" value="0"/>
+  <Constant outputs="value:kMou.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kMou" uid_parent="root" value="1"/>
+  <Constant outputs="value:kKey.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kKey" uid_parent="root" value="2"/>
+  <Constant outputs="value:kAck.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kAck" uid_parent="root" value="3"/>
+  <Constant outputs="value:kCls.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kCls" uid_parent="root" value="4"/>
+  <Constant outputs="value:kSpl.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kSpl" uid_parent="root" value="5"/>
 
   <Node _name="Match Pattern" inputs="string:txt.value,regular expression:rxm.value" outputs="offset past match:mm.off" uid="mm" uid_parent="root"/>
   <Node _name="Match Pattern" inputs="string:txt.value,regular expression:rxk.value" outputs="offset past match:mk.off" uid="mk" uid_parent="root"/>
   <Node _name="Match Pattern" inputs="string:txt.value,regular expression:rxa.value" outputs="offset past match:ma.off" uid="ma" uid_parent="root"/>
   <Node _name="Match Pattern" inputs="string:txt.value,regular expression:rxx.value" outputs="offset past match:mx.off" uid="mx" uid_parent="root"/>
+  <Node _name="Match Pattern" inputs="string:txt.value,regular expression:rxs.value" outputs="offset past match:ms.off" uid="ms" uid_parent="root"/>
   <Node _name="Greater Or Equal To 0?" inputs="x:mm.off" outputs="x &gt;= 0?:sm.x &gt;= 0?" uid="sm" uid_parent="root"/>
   <Node _name="Greater Or Equal To 0?" inputs="x:mk.off" outputs="x &gt;= 0?:sk.x &gt;= 0?" uid="sk" uid_parent="root"/>
   <Node _name="Greater Or Equal To 0?" inputs="x:ma.off" outputs="x &gt;= 0?:sa.x &gt;= 0?" uid="sa" uid_parent="root"/>
   <Node _name="Greater Or Equal To 0?" inputs="x:mx.off" outputs="x &gt;= 0?:sx.x &gt;= 0?" uid="sx" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:ms.off" outputs="x &gt;= 0?:ss.x &gt;= 0?" uid="ss" uid_parent="root"/>
 
   <Constant outputs="value:n4c.value" type="int32" uid="n4c" uid_parent="root" value="4"/>
   <Structure _name="For Loop" count="" label="Parse the up to four numbers" maxin="n4c.value" maxout="" uid="loop" uid_parent="root">
@@ -56,21 +60,25 @@
   <Node _name="And" inputs="x:sk.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isK.result" uid="isK" uid_parent="root"/>
   <Node _name="And" inputs="x:sa.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isA.x .and. y?" uid="isA" uid_parent="root"/>
   <Node _name="And" inputs="x:sx.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isX.x .and. y?" uid="isX" uid_parent="root"/>
+  <Node _name="And" inputs="x:ss.x &gt;= 0?,y:allin.logical AND" outputs="x .and. y?:isS.x .and. y?" uid="isS" uid_parent="root"/>
 
-  <Node _name="Select" inputs="t:kCls.value,s:isX.x .and. y?,f:kInv.value" outputs="s? t\3Af:kd0.s? t\3Af" uid="kd0" uid_parent="root"/>
+  <Node _name="Select" inputs="t:kSpl.value,s:isS.x .and. y?,f:kInv.value" outputs="s? t\3Af:kdS.s? t\3Af" uid="kdS" uid_parent="root"/>
+  <Node _name="Select" inputs="t:kCls.value,s:isX.x .and. y?,f:kdS.s? t\3Af" outputs="s? t\3Af:kd0.s? t\3Af" uid="kd0" uid_parent="root"/>
   <Node _name="Select" inputs="t:kAck.value,s:isA.x .and. y?,f:kd0.s? t\3Af" outputs="s? t\3Af:kd1.s? t\3Af" uid="kd1" uid_parent="root"/>
   <Node _name="Select" inputs="t:kKey.value,s:isK.result,f:kd1.s? t\3Af" outputs="s? t\3Af:kd2.s? t\3Af" uid="kd2" uid_parent="root"/>
   <Node _name="Select" inputs="t:kMou.value,s:isM.result,f:kd2.s? t\3Af" outputs="s? t\3Af:kind.s? t\3Af" uid="kind" uid_parent="root"/>
 
   <Node _name="Or" inputs="x:isM.result,y:isK.result" outputs="x .or. y?:mk1.x .or. y?" uid="mk1" uid_parent="root"/>
   <Node _name="Select" inputs="t:n1.v,s:mk1.x .or. y?,f:z64.value" outputs="s? t\3Af:vmsg.s? t\3Af" uid="vmsg" uid_parent="root"/>
-  <Node _name="Select" inputs="t:n2.v,s:isM.result,f:z64.value" outputs="s? t\3Af:vx.s? t\3Af" uid="vx" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isM.result,y:isS.x .and. y?" outputs="x .or. y?:ms2.x .or. y?" uid="ms2" uid_parent="root"/>
+  <Node _name="Select" inputs="t:n2.v,s:ms2.x .or. y?,f:z64.value" outputs="s? t\3Af:vx.s? t\3Af" uid="vx" uid_parent="root"/>
   <Node _name="Select" inputs="t:n3.v,s:isM.result,f:z64.value" outputs="s? t\3Af:vy.s? t\3Af" uid="vy" uid_parent="root"/>
   <Node _name="Select" inputs="t:n2.v,s:isK.result,f:z64.value" outputs="s? t\3Af:wk.s? t\3Af" uid="wk" uid_parent="root"/>
   <Node _name="Select" inputs="t:n4.v,s:isM.result,f:wk.s? t\3Af" outputs="s? t\3Af:vw.s? t\3Af" uid="vw" uid_parent="root"/>
   <Node _name="Select" inputs="t:n3.v,s:isK.result,f:z64.value" outputs="s? t\3Af:vl.s? t\3Af" uid="vl" uid_parent="root"/>
   <Node _name="Select" inputs="t:n1.v,s:isA.x .and. y?,f:z64.value" outputs="s? t\3Af:vs.s? t\3Af" uid="vs" uid_parent="root"/>
-  <Node _name="Select" inputs="t:n1.v,s:isX.x .and. y?,f:z64.value" outputs="s? t\3Af:vid.s? t\3Af" uid="vid" uid_parent="root"/>
+  <Node _name="Or" inputs="x:isX.x .and. y?,y:isS.x .and. y?" outputs="x .or. y?:xs2.x .or. y?" uid="xs2" uid_parent="root"/>
+  <Node _name="Select" inputs="t:n1.v,s:xs2.x .or. y?,f:z64.value" outputs="s? t\3Af:vid.s? t\3Af" uid="vid" uid_parent="root"/>
 
   <Node _name="To Unsigned Long Integer" inputs="number:vmsg.s? t\3Af" outputs="unsigned 32bit integer:cmsg.unsigned 32bit integer" uid="cmsg" uid_parent="root"/>
   <Node _name="To Long Integer" inputs="number:vx.s? t\3Af" outputs="32bit integer:cx.32bit integer" uid="cx" uid_parent="root"/>
@@ -79,12 +87,12 @@
   <Node _name="To Unsigned Long Integer" inputs="number:vs.s? t\3Af" outputs="unsigned 32bit integer:cs.unsigned 32bit integer" uid="cs" uid_parent="root"/>
   <Node _name="To Unsigned Quad Integer" inputs="number:vid.s? t\3Af" outputs="unsigned 64bit integer:cid.unsigned 64bit integer" uid="cid" uid_parent="root"/>
 
-  <Indicator _name="kind" conIdx="20" connection="recommended" description="Which message it was (close = x id); invalid means malformed - ignore it." inputs="value:kind.s? t\3Af" type="uint16{invalid,mouse,key,ack,close}" uid="o_kind" uid_parent="root" value="0"/>
+  <Indicator _name="kind" conIdx="20" connection="recommended" description="Which message it was (close = x id\3B splitter = s id pos); invalid means malformed - ignore it." inputs="value:kind.s? t\3Af" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="o_kind" uid_parent="root" value="0"/>
   <Indicator _name="msg" conIdx="21" connection="recommended" description="Windows message number (mouse and key). 0 otherwise." inputs="value:cmsg.unsigned 32bit integer" type="uint32" uid="o_msg" uid_parent="root" value="0"/>
-  <Indicator _name="x" conIdx="22" connection="recommended" description="Panel x coordinate (mouse). 0 otherwise." inputs="value:cx.32bit integer" type="int32" uid="o_x" uid_parent="root" value="0"/>
+  <Indicator _name="x" conIdx="22" connection="recommended" description="Frame x coordinate (mouse)\2C or the splitter position pos (splitter). 0 otherwise." inputs="value:cx.32bit integer" type="int32" uid="o_x" uid_parent="root" value="0"/>
   <Indicator _name="y" conIdx="23" connection="recommended" description="Panel y coordinate (mouse). 0 otherwise." inputs="value:cy.32bit integer" type="int32" uid="o_y" uid_parent="root" value="0"/>
   <Indicator _name="wParam" conIdx="24" connection="recommended" description="wParam (mouse and key). 0 otherwise." inputs="value:cw.unsigned 64bit integer" type="uint64" uid="o_w" uid_parent="root" value="0"/>
   <Indicator _name="lParam" conIdx="25" connection="recommended" description="lParam (key). 0 otherwise." inputs="value:vl.s? t\3Af" type="int64" uid="o_l" uid_parent="root" value="0"/>
   <Indicator _name="seq" conIdx="26" connection="recommended" description="Acknowledged frame sequence number (ack). 0 otherwise." inputs="value:cs.unsigned 32bit integer" type="uint32" uid="o_seq" uid_parent="root" value="0"/>
-  <Indicator _name="id" conIdx="27" connection="recommended" description="Window id to close (close)\3B a window handle (docs\5Cprotocol.md section 7). 0 otherwise." inputs="value:cid.unsigned 64bit integer" type="uint64" uid="o_id" uid_parent="root" value="0"/>
+  <Indicator _name="id" conIdx="27" connection="recommended" description="Window id to close (close)\3B a window handle (docs\5Cprotocol.md section 7)\2C or the splitter bar id (splitter). 0 otherwise." inputs="value:cid.unsigned 64bit integer" type="uint64" uid="o_id" uid_parent="root" value="0"/>
 </VI>

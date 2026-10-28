@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Complex Inspector.vi" description="View A of RemoteVI Complex Fixture.vi\2C shown in its subpanel Viewer. A small panel of its own\3A Note (string)\2C Count (numeric)\2C Apply (latched button). It obtains the named queue RemoteVI Complex Fixture (the fixture writes the vlayout lines of the VI shown in the subpanel). An event loop enqueues one log line per event\3A value changes of Note\2C Count and Apply\2C key down on Note\2C mouse down on all three. A parallel loop waits on the named notifier RemoteVI Complex Fixture and\2C when it fires or is destroyed\2C sets the hidden switch Inspector Quit with Value (Signaling)\2C which ends the event loop. The fixture writes the queued lines to its log.">
+<VI _name="RemoteVI Complex Inspector.vi" description="View A of RemoteVI Complex Fixture.vi\2C shown in its subpanel Viewer. A small panel of its own\3A Note (string)\2C Count (numeric)\2C Apply (latched button). It obtains the named queue RemoteVI Complex Fixture and enqueues its layout lines (ilayout\2C RemoteVI Complex Fixture Layout.vi\2C relative to its panel area) and iorigin x y\2C where its panel area starts inside its window's client area (Panel Bounds minus RemoteVI Frame Rect.vi of its window)\3B a client finds a control at window x\2Cy + iorigin + ilayout. An event loop enqueues one log line per event\3A value changes of Note\2C Count and Apply\2C key down on Note\2C mouse down on all three. A parallel loop waits on the named notifier RemoteVI Complex Fixture and\2C when it fires or is destroyed\2C sets the hidden switch Inspector Quit with Value (Signaling)\2C which ends the event loop. The fixture writes the queued lines to its log.">
   <FreeLabel comment="Logs through the fixture's queue" uid="lbl" uid_parent="root"/>
   <Constant _name="queue name" outputs="value:qn.value" type="string" uid="qn" uid_parent="root" value="RemoteVI Complex Fixture"/>
   <Constant _name="line type" outputs="value:qt.value" type="string" uid="qt" uid_parent="root" value=""/>
@@ -6,11 +6,25 @@
   <Node _name="Obtain Queue" inputs="name (unnamed):qn.value,element data type:qt.value,create if not found? (T):nc.value,error in (no error):,max queue size (-1\2C unlimited):" outputs="queue out:oq.queue out,created new?:,error out:oq.error out" uid="oq" uid_parent="root"/>
   <Constant _name="stop type" outputs="value:st.value" type="bool" uid="st" uid_parent="root" value="false"/>
   <Node _name="Obtain Notifier" inputs="name (unnamed):qn.value,notification data type:st.value,create if not found? (T):nc.value,error in (no error):" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:,error in (no error):oq.error out" outputs="Front Panel:vp.fp,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="root"/>
+  <Constant _name="kind" outputs="value:vk.value" type="string" uid="vk" uid_parent="root" value="ilayout"/>
+  <Call target="RemoteVI Complex Fixture Layout.vi" inputs="Panel:vp.fp,kind:vk.value,Host Panel:vp.fp,error in:vp.error out" outputs="layout:lay.layout,panes:,error out:lay.error out" uid="lay" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel Window\3AOS Window,read+Front Panel Window\3APanel Bounds" inputs="reference:,error in (no error):lay.error out" outputs="Front Panel Window\3AOS Window:wn.os,Front Panel Window\3APanel Bounds:wn.pb,reference out:,error out:wn.error out" type="{LV.VI}" uid="wn" uid_parent="root"/>
+  <Node _name="To Unsigned Quad Integer" inputs="number:wn.os" outputs="unsigned 64bit integer:wq.u" uid="wq" uid_parent="root"/>
+  <Call target="RemoteVI Frame Rect.vi" inputs="hWnd:wq.u,error in:wn.error out" outputs="rect:fr.rect,error out:fr.error out" uid="fr" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:fr.rect" outputs="x:fru.x,y:fru.y" uid="fru" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:wn.pb" outputs="left:pbu.l,top:pbu.t" uid="pbu" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:pbu.l,y:fru.x" outputs="x-y:iox.x-y" uid="iox" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:pbu.t,y:fru.y" outputs="x-y:ioy.x-y" uid="ioy" uid_parent="root"/>
+  <Constant _name="origin line" outputs="value:iof.value" type="string" uid="iof" uid_parent="root" value="iorigin\09%d %d\0A"/>
+  <Node _name="Format Into String" inputs="format string:iof.value,input 1:iox.x-y,input 2:ioy.x-y" outputs="resulting string:ios.resulting string" uid="ios" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:lay.layout,string:ios.resulting string" outputs="concatenated string:ilo.concatenated string" uid="ilo" uid_parent="root"/>
+  <Node _name="Enqueue Element" inputs="queue:oq.queue out,element:ilo.concatenated string,timeout in ms (-1):,error in (no error):fr.error out" outputs="queue out:,timed out?:,error out:eql.error out" uid="eql" uid_parent="root"/>
 
   <Structure _name="While Loop" count="" label="Event loop - log every event" uid="evl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:oq.queue out" outputs="value:evQ.value" uid="evQ" uid_parent="evl"/>
     <ShiftReg uid="srE" uid_parent="evl">
-      <Left inputs="value:oq.error out" outputs="value:evE.value" uid="evEl" uid_parent="srE"/>
+      <Left inputs="value:eql.error out" outputs="value:evE.value" uid="evEl" uid_parent="srE"/>
       <Right inputs="value:enq.error out" outputs="value:evErr.value" uid="evEr" uid_parent="srE"/>
     </ShiftReg>
     <Structure _name="Event Structure" uid="ev" uid_parent="evl">

@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Complex Fixture Arrange.vi" description="Build tool of RemoteVI Complex Fixture.vi\3A run it after RemoteVI Complex Fixture Paste.vi\2C with the fixture idle\3B it can be run again (every step sets\2C nothing is added). Lays the panel out\3A each control is moved (GObject Move) into its pane (0 left\2C 1 toolbar\2C 2 main) or into a page of the tab control Settings and placed relative to the pane's visible top-left or to Settings. The toolbar holds Inspector\2C View\2C Stop and Status\2C the left pane Nav\2C Results and Steps (taller than the pane\2C so it scrolls) and the hidden Log Path and error out\2C the main pane Settings\3B page Acquisition holds Channel\2C Rate\2C Level and Data File\2C page Display holds Scope\2C page Viewer (added with Add Page when the tab has two) the subpanel Viewer. Then\3A pages named Acquisition\2C Display and Viewer with fixed 110 px tabs\2C Stop and Inspector switch when released\2C Data File with its browse button\2C Results with column headers and three rows\2C Steps three elements high\2C tip strips on Rate\2C on Gain inside Channel and on Nav\2C the main pane scaling Settings with the pane (Pane Set Scaling\2C Scale Single Object)\2C the window 1180 x 760\3B in View A\2C View B and the inspector (Views) the Quit switches hidden and tip strips set. Saves the fixture and the views. problems lists every row or step that returned an error\2C with its code\3B the run goes on.">
+<VI _name="RemoteVI Complex Fixture Arrange.vi" description="Build tool of RemoteVI Complex Fixture.vi\3A run it after RemoteVI Complex Fixture Paste.vi\2C with the fixture idle\3B it can be run again (every step sets\2C nothing is added). Lays the panel out\3A each control is moved (GObject Move) into its pane (0 left\2C 1 toolbar\2C 2 main) or into a page of the tab control Settings and placed at fixed panel-area coordinates (the pane coordinates are the wanted point minus where the pane's 0\2C0 lands: CvtPaneToPanelCoords\2C CvtPanelToScreenCoords\2C minus Panel Bounds - placing relative to the pane's Position drifted from run to run) or relative to Settings. The toolbar holds Inspector\2C View\2C Stop and Status\2C the left pane Nav\2C Results and Steps (taller than the pane\2C so it scrolls) and the hidden Log Path and error out\2C the main pane Settings\3B page Acquisition holds Channel\2C Rate\2C Level and Data File\2C page Display holds Scope\2C page Viewer (added with Add Page when the tab has two) the subpanel Viewer. Then\3A pages named Acquisition\2C Display and Viewer with fixed 110 px tabs\2C Stop and Inspector switch when released\2C Data File with its browse button\2C Results with column headers and three rows\2C Steps three elements high\2C tip strips on Rate\2C on Gain inside Channel and on Nav\2C the main pane scaling Settings with the pane (Pane Set Scaling\2C Scale Single Object)\2C the left pane's vertical scrollbar always on\2C the window 1180 x 760\3B in View A\2C View B and the inspector (Views) the Quit switches hidden and tip strips set. Saves the fixture and the views. problems lists every row or step that returned an error\2C with its code\3B the run goes on.">
   <FreeLabel comment="Lay the panel out\2C then save" uid="lbl" uid_parent="root"/>
   <Control _name="Fixture" conIdx="0" connection="required" description="Path of RemoteVI Complex Fixture.vi. Saved in place." outputs="value:fx.value" type="path" uid="fx" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
@@ -59,8 +59,10 @@
   <Constant _name="labels" outputs="value:rl.value" type="array{string}" uid="rl" uid_parent="root" value="[View,Status,Inspector,Stop,Nav,Results,Steps,Log Path,error out,Settings,Channel,Rate,Level,Data File,Scope,Viewer]"/>
   <Constant _name="panes" outputs="value:rp.value" type="array{int32}" uid="rp" uid_parent="root" value="[1,1,0,0,0,0,0,0,0,2,2,2,2,2,2,2]"/>
   <Constant _name="pages" outputs="value:rg.value" type="array{int32}" uid="rg" uid_parent="root" value="[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,1,2]"/>
-  <Constant _name="offsets" outputs="value:ro.value" type="array{cluster{int32.Left,int32.Top}}" uid="ro" uid_parent="root" value="[[20,-11],[130,-8],[12,8],[120,8],[12,64],[12,290],[12,450],[12,840],[12,880],[12,-6],[20,50],[230,40],[390,40],[20,220],[10,40],[20,50]]"/>
+  <Constant _name="offsets" outputs="value:ro.value" type="array{cluster{int32.Left,int32.Top}}" uid="ro" uid_parent="root" value="[[300,6],[420,7],[14,28],[120,28],[14,84],[14,310],[14,600],[14,860],[14,900],[300,52],[20,50],[230,40],[390,40],[20,220],[10,40],[20,50]]"/>
   <Constant _name="no duplicate" outputs="value:nd.value" type="bool" uid="nd" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="read+Front Panel Window\3APanel Bounds" inputs="reference:of.vi reference,error in (no error):" outputs="Front Panel Window\3APanel Bounds:fpb.pb,reference out:,error out:" type="{LV.VI}" uid="fpb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:fpb.pb" outputs="left:fpbu.l,top:fpbu.t" uid="fpbu" uid_parent="root"/>
   <Structure _name="For Loop" count="" label="Move each control into its pane or page and place it" maxin="" maxout="" uid="fl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:rl.value" mode="index" outputs="value:lL.value" uid="lL" uid_parent="fl"/>
     <Tunnel _id="In2" inputs="value:rp.value" mode="index" outputs="value:lP.value" uid="lP" uid_parent="fl"/>
@@ -71,6 +73,8 @@
     <Tunnel _id="In7" inputs="value:tab.ref" outputs="value:lT.value" uid="lT" uid_parent="fl"/>
     <Tunnel _id="In8" inputs="value:nd.value" outputs="value:lD.value" uid="lD" uid_parent="fl"/>
     <Tunnel _id="In9" inputs="value:ce0.error out" outputs="value:lE.value" uid="lE" uid_parent="fl"/>
+    <Tunnel _id="In10" inputs="value:fpbu.l" outputs="value:lBl.value" uid="lBl" uid_parent="fl"/>
+    <Tunnel _id="In11" inputs="value:fpbu.t" outputs="value:lBt.value" uid="lBt" uid_parent="fl"/>
     <Node _name="Build Array" inputs="element:lL.value" outputs="appended array:l1.appended array" uid="l1" uid_parent="fl"/>
     <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:lF.value,labels:l1.appended array,error in:lE.value" outputs="Controls:fc.Controls,error out:fc.error out" uid="fc" uid_parent="fl"/>
     <Constant _name="zero" outputs="value:z.value" type="int32" uid="z" uid_parent="fl" value="0"/>
@@ -89,21 +93,33 @@
       <Tunnel _id="In7" inputs="value:uo.t" uid="csi7" uid_parent="cs"/>
       <Tunnel _id="In8" inputs="value:lD.value" uid="csi8" uid_parent="cs"/>
       <Tunnel _id="In9" inputs="value:pnp.error out" uid="csi9" uid_parent="cs"/>
+      <Tunnel _id="In10" inputs="value:lF.value" uid="csi10" uid_parent="cs"/>
+      <Tunnel _id="In11" inputs="value:lBl.value" uid="csi11" uid_parent="cs"/>
+      <Tunnel _id="In12" inputs="value:lBt.value" uid="csi12" uid_parent="cs"/>
       <CaseFrame label="Into the pane" selector="True" selectout="" uid="cT" uid_parent="cs">
         <Tunnel _id="In1" outputs="value:t1.value" uid="t1" uid_parent="cT"/>
         <Tunnel _id="In2" outputs="value:t2.value" uid="t2" uid_parent="cT"/>
-        <Tunnel _id="In3" outputs="value:t3.value" uid="t3" uid_parent="cT"/>
+        <Tunnel _id="In3" outputs="value:" uid="t3" uid_parent="cT"/>
         <Tunnel _id="In4" outputs="value:" uid="t4" uid_parent="cT"/>
         <Tunnel _id="In5" outputs="value:" uid="t5" uid_parent="cT"/>
         <Tunnel _id="In6" outputs="value:t6.value" uid="t6" uid_parent="cT"/>
         <Tunnel _id="In7" outputs="value:t7.value" uid="t7" uid_parent="cT"/>
         <Tunnel _id="In8" outputs="value:t8.value" uid="t8" uid_parent="cT"/>
         <Tunnel _id="In9" outputs="value:t9.value" uid="t9" uid_parent="cT"/>
-        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:t3.value" outputs="Left:tq.l,Top:tq.t" uid="tq" uid_parent="cT"/>
-        <Node _name="Add" inputs="x:tq.l,y:t6.value" outputs="x+y:tx.x+y" uid="tx" uid_parent="cT"/>
-        <Node _name="Add" inputs="x:tq.t,y:t7.value" outputs="x+y:ty.x+y" uid="ty" uid_parent="cT"/>
-        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:t3.value,Left:tx.x+y,Top:ty.x+y" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cT"/>
-        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:t1.value,error in (no error):t9.value,position:tb.output cluster,owner:t2.value,duplicate:t8.value" outputs="reference out:,error out:tm.error out" uid="tm" uid_parent="cT"/>
+        <Tunnel _id="In10" outputs="value:t10.value" uid="t10" uid_parent="cT"/>
+        <Tunnel _id="In11" outputs="value:t11.value" uid="t11" uid_parent="cT"/>
+        <Tunnel _id="In12" outputs="value:t12.value" uid="t12" uid_parent="cT"/>
+        <Constant _name="pane origin" outputs="value:t0p.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="t0p" uid_parent="cT" value="[0,0]"/>
+        <Node _name="Invoke Node" target="CvtPaneToPanelCoords" type="{LV.Pane}" inputs="reference:t2.value,error in (no error):t9.value,PaneCoords:t0p.value" outputs="reference out:,error out:tcv.error out,PanelCoords:tcv.pc" uid="tcv" uid_parent="cT"/>
+        <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:t10.value,error in (no error):tcv.error out,PanelCoords:tcv.pc" outputs="reference out:,error out:tcs.error out,ScreenCoords:tcs.sc" uid="tcs" uid_parent="cT"/>
+        <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:tcs.sc" outputs="Horizontal:tq.l,Vertical:tq.t" uid="tq" uid_parent="cT"/>
+        <Node _name="Subtract" inputs="x:tq.l,y:t11.value" outputs="x-y:tbx.x-y" uid="tbx" uid_parent="cT"/>
+        <Node _name="Subtract" inputs="x:tq.t,y:t12.value" outputs="x-y:tby.x-y" uid="tby" uid_parent="cT"/>
+        <Node _name="Subtract" inputs="x:t6.value,y:tbx.x-y" outputs="x-y:tx.x+y" uid="tx" uid_parent="cT"/>
+        <Node _name="Subtract" inputs="x:t7.value,y:tby.x-y" outputs="x-y:ty.x+y" uid="ty" uid_parent="cT"/>
+        <Constant _name="position" outputs="value:tp0.value" type="cluster{int32.Left,int32.Top}" uid="tp0" uid_parent="cT" value="[0,0]"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:tp0.value,Left:tx.x+y,Top:ty.x+y" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cT"/>
+        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:t1.value,error in (no error):tcs.error out,position:tb.output cluster,owner:t2.value,duplicate:t8.value" outputs="reference out:,error out:tm.error out" uid="tm" uid_parent="cT"/>
         <Node _name="Property Node" fields="write+Position" inputs="reference:t1.value,error in (no error):tm.error out,Position:tb.output cluster" outputs="reference out:,error out:tw.error out" type="{LV.Control}" uid="tw" uid_parent="cT"/>
         <Tunnel _id="Out1" inputs="value:tw.error out" uid="tO1" uid_parent="cT"/>
       </CaseFrame>
@@ -117,6 +133,9 @@
         <Tunnel _id="In7" outputs="value:f7.value" uid="f7" uid_parent="cF"/>
         <Tunnel _id="In8" outputs="value:f8.value" uid="f8" uid_parent="cF"/>
         <Tunnel _id="In9" outputs="value:f9.value" uid="f9" uid_parent="cF"/>
+        <Tunnel _id="In10" outputs="value:" uid="f10" uid_parent="cF"/>
+        <Tunnel _id="In11" outputs="value:" uid="f11" uid_parent="cF"/>
+        <Tunnel _id="In12" outputs="value:" uid="f12" uid_parent="cF"/>
         <Node _name="Property Node" fields="read+Pages" inputs="reference:f4.value,error in (no error):f9.value" outputs="reference out:,error out:fpq.error out,Pages:fpq.pages" type="{LV.TabControl}" uid="fpq" uid_parent="cF"/>
         <Node _name="Index Array" inputs="array:fpq.pages,index:f5.value" outputs="element:fpe.element" uid="fpe" uid_parent="cF"/>
         <Node _name="Property Node" fields="read+Position" inputs="reference:f4.value,error in (no error):fpq.error out" outputs="reference out:,error out:ftp.error out,Position:ftp.pos" type="{LV.Control}" uid="ftp" uid_parent="cF"/>
@@ -284,6 +303,12 @@
   <Node _name="Unbundle By Name" fields="code" inputs="input cluster:sc.error out" outputs="code:sce.code" uid="sce" uid_parent="root"/>
   <Constant _name="fmt" outputs="value:scm.value" type="string" uid="scm" uid_parent="root" value="Set Scaling %d"/>
   <Node _name="Format Into String" inputs="format string:scm.value,input 1:sce.code" outputs="resulting string:scs.resulting string" uid="scs" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pp.panes,index:i0.value" outputs="element:lp0.element" uid="lp0" uid_parent="root"/>
+  <Constant _name="always on" outputs="value:vsb.value" type="uint16{Always On,Always Off,Off While Running}" uid="vsb" uid_parent="root" value="0"/>
+  <Node _name="Property Node" fields="write+VertScrollbarVisibility" inputs="reference:lp0.element,error in (no error):sc.error out,VertScrollbarVisibility:vsb.value" outputs="reference out:,error out:sb.error out" type="{LV.Pane}" uid="sb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:sb.error out" outputs="code:sbe.code" uid="sbe" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:sbm.value" type="string" uid="sbm" uid_parent="root" value="VertScrollbarVisibility %d"/>
+  <Node _name="Format Into String" inputs="format string:sbm.value,input 1:sbe.code" outputs="resulting string:sbs.resulting string" uid="sbs" uid_parent="root"/>
   <Control _name="Views" conIdx="1" connection="recommended" description="Paths of RemoteVI Complex View A.vi\2C View B.vi and Inspector.vi\3B each is edited and saved." outputs="value:vws.value" type="array{path}" uid="vws" uid_parent="root" value="[]"/>
   <Constant _name="quit labels" outputs="value:vql.value" type="array{string}" uid="vql" uid_parent="root" value="[A Quit,B Quit,Inspector Quit]"/>
   <Constant _name="tip labels" outputs="value:vtl.value" type="array{string}" uid="vtl" uid_parent="root" value="[A Apply,B Run,Apply]"/>
@@ -312,9 +337,9 @@
     <Node _name="Format Into String" inputs="format string:vfm.value,input 1:vq.value,input 2:vce.code" outputs="resulting string:vfs.resulting string" uid="vfs" uid_parent="fv"/>
     <Tunnel _id="Out1" inputs="value:vfs.resulting string" mode="index" outputs="value:viewProblems.value" uid="viewProblems" uid_parent="fv"/>
   </Structure>
-  <Node _name="Build Array" inputs="array:rowProblems.value,element:s0s.resulting string,element:s1s.resulting string,element:s2s.resulting string,element:s3s.resulting string,element:s4s.resulting string,element:s5s.resulting string,element:s6s.resulting string,element:s7s.resulting string,element:s8s.resulting string,element:s9s.resulting string,element:s10s.resulting string,element:s11s.resulting string,element:s12s.resulting string,element:s13s.resulting string,element:scs.resulting string,array:viewProblems.value" outputs="appended array:all.appended array" uid="all" uid_parent="root"/>
+  <Node _name="Build Array" inputs="array:rowProblems.value,element:s0s.resulting string,element:s1s.resulting string,element:s2s.resulting string,element:s3s.resulting string,element:s4s.resulting string,element:s5s.resulting string,element:s6s.resulting string,element:s7s.resulting string,element:s8s.resulting string,element:s9s.resulting string,element:s10s.resulting string,element:s11s.resulting string,element:s12s.resulting string,element:s13s.resulting string,element:scs.resulting string,element:sbs.resulting string,array:viewProblems.value" outputs="appended array:all.appended array" uid="all" uid_parent="root"/>
   <Indicator _name="problems" conIdx="4" connection="recommended" description="One line per row and step\3A its label and error code (0 = done)." inputs="value:all.appended array" type="array{string}" uid="pr" uid_parent="root" value="[]"/>
-  <Node _name="Merge Errors" inputs="error in:s13p.error out,error in:sc.error out" outputs="error out:mm.error out" uid="mm" uid_parent="root"/>
+  <Node _name="Merge Errors" inputs="error in:s13p.error out,error in:sb.error out" outputs="error out:mm.error out" uid="mm" uid_parent="root"/>
   <Call target="Clear Errors.vi" inputs="error in (no error):mm.error out" outputs="error out:ce2.error out" uid="ce2" uid_parent="root"/>
   <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:of.vi reference,error in (no error):ce2.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>
   <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>

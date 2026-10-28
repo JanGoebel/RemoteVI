@@ -33,8 +33,13 @@ import path from 'node:path';
 import { inflateSync } from 'node:zlib';
 
 export const URL_BASE = process.env.RVI_URL ?? 'http://127.0.0.1:8089';
-export const LOG_PATH = process.env.RVI_FIXTURE_LOG ?? path.join(os.tmpdir(), 'RemoteVI Fixture.log');
+export let LOG_PATH = process.env.RVI_FIXTURE_LOG ?? path.join(os.tmpdir(), 'RemoteVI Fixture.log');
 export const enabled = process.env.RVI_LV === '1';
+
+/** Read another fixture's log from now on (the complex fixture writes RemoteVI Complex Fixture.log). */
+export function useLog(p) {
+  LOG_PATH = p;
+}
 
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -43,12 +48,12 @@ export function readLog() {
   return fs.readFileSync(LOG_PATH, 'utf8').split(/\r?\n/).filter(Boolean).map((line) => line.split('\t'));
 }
 
-/** Control body rectangles from the fixture's layout lines. */
-export function layout(c) {
+/** Control body rectangles from the fixture's layout lines (the latest line per label wins). */
+export function layout(c, kinds = ['layout']) {
   const ox = c?.origin.x ?? 0, oy = c?.origin.y ?? 0;
   const map = new Map();
   for (const [kind, label, rect] of readLog()) {
-    if (kind === 'layout') {
+    if (kinds.includes(kind) && rect) {
       let [x, y, w, h] = rect.split(' ').map(Number);
       x += ox; y += oy;
       map.set(label, { x, y, w, h, cx: Math.round(x + w / 2), cy: Math.round(y + h / 2) });
@@ -68,12 +73,24 @@ export async function waitLog(pred, { since = 0, ms = 3000 } = {}) {
   }
 }
 
-/** A protocol-v2 client like web/index.html: acks frames, keeps the latest overlay. */
-export async function connect() {
+/** Paint the PNG rects of a FRAME or WINDOW FRAME message (rects at offset o) into the 0xRRGGBB buffer fb of width w. */
+function paintRects(data, o, n, fb, w) {
+  const v = new DataView(data);
+  for (let i = 0; i < n; i++) {
+    const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
+    const img = decodePng(Buffer.from(data, o + 8, len));
+    for (let yy = 0; yy < img.h; yy++) for (let xx = 0; xx < img.w; xx++) fb[(y + yy) * w + x + xx] = img.rgb(xx, yy);
+    o += 8 + len;
+  }
+}
+
+/** A protocol-v2 client like web/index.html: acks frames, keeps the latest overlay. With { fb: true } it also
+ *  keeps the picture: c.fb (frame, 0xRRGGBB per pixel, c.width wide) and c.wfb (window id -> {w, h, fb}). */
+export async function connect({ fb = false } = {}) {
   const ws = new WebSocket(`${URL_BASE.replace(/^http/, 'ws')}/ws`);
   ws.binaryType = 'arraybuffer';
   const c = { ws, overlay: [], overlays: 0, frames: 0, width: 0, height: 0, origin: { x: 0, y: 0 }, originSeen: false,
-    windows: [], windowFrames: new Map(), tips: null };
+    windows: [], windowFrames: new Map(), tips: null, fb: null, wfb: new Map() };
   ws.onmessage = (ev) => {
     if (typeof ev.data === 'string') {
       const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
@@ -90,6 +107,12 @@ export async function connect() {
       const v = new DataView(ev.data);
       const id = v.getUint32(2);
       c.windowFrames.set(id, (c.windowFrames.get(id) ?? 0) + 1);
+      if (fb) {
+        const w = v.getUint16(10), h = v.getUint16(12);
+        let pic = c.wfb.get(id);
+        if (!pic || pic.w !== w || pic.h !== h) c.wfb.set(id, pic = { w, h, fb: new Uint32Array(w * h) });
+        paintRects(ev.data, 16, v.getUint16(14), pic.fb, w);
+      }
       ws.send(`a ${v.getUint32(6)}`);
       return;
     }
@@ -107,8 +130,11 @@ export async function connect() {
       c.overlays++;
     } else {
       c.frames++;
-      c.width = v.getUint16(6);
-      c.height = v.getUint16(8);
+      const w = v.getUint16(6), h = v.getUint16(8);
+      if (fb && (!c.fb || w !== c.width || h !== c.height)) c.fb = new Uint32Array(w * h);
+      c.width = w;
+      c.height = h;
+      if (fb) paintRects(ev.data, 12, v.getUint16(10), c.fb, w);
       ws.send(`a ${v.getUint32(2)}`);
     }
   };
@@ -123,16 +149,67 @@ export async function connect() {
 const MK = { L: 1, R: 2, SHIFT: 4, CTRL: 8 };
 
 export function move(c, x, y, wParam = 0) {
-  c.ws.send(`m 512 ${x} ${y} ${wParam}`);
+  c.ws.send(`m 512 ${Math.round(x)} ${Math.round(y)} ${wParam}`); // the server takes integers only
 }
 
 export async function click(c, x, y, { button = 'left', shift = false, ctrl = false, settle = 250 } = {}) {
   const mods = (shift ? MK.SHIFT : 0) | (ctrl ? MK.CTRL : 0);
   const [down, up, flag] = button === 'right' ? [516, 517, MK.R] : [513, 514, MK.L];
+  x = Math.round(x); y = Math.round(y);
   move(c, x, y, mods);
   c.ws.send(`m ${down} ${x} ${y} ${flag | mods}`);
   c.ws.send(`m ${up} ${x} ${y} ${mods}`);
   await sleep(settle);
+}
+
+/** Press at (x0, y0), move in steps to (x1, y1) with the button held, release there. */
+export async function drag(c, x0, y0, x1, y1, { steps = 8, stepMs = 30, settle = 400 } = {}) {
+  [x0, y0, x1, y1] = [x0, y0, x1, y1].map(Math.round);
+  move(c, x0, y0);
+  await sleep(stepMs);
+  c.ws.send(`m 513 ${x0} ${y0} ${MK.L}`);
+  await sleep(stepMs * 2);
+  for (let i = 1; i <= steps; i++) {
+    const x = Math.round(x0 + ((x1 - x0) * i) / steps), y = Math.round(y0 + ((y1 - y0) * i) / steps);
+    c.ws.send(`m 512 ${x} ${y} ${MK.L}`);
+    await sleep(stepMs);
+  }
+  c.ws.send(`m 514 ${x1} ${y1} 0`);
+  await sleep(settle);
+}
+
+/** The frame pixel at (x, y) as 0xRRGGBB (needs connect({ fb: true })). */
+export const pixel = (c, x, y) => c.fb[y * c.width + x];
+
+const gray = (p) => { const r = p >> 16, g = (p >> 8) & 255, b = p & 255; return r === g && g === b ? r : -1; };
+
+/** LabVIEW's splitter bar as the frame shows it: a run of light grays fading to a dark gray edge
+ *  (0xF8 .. 0xB5 then 0x87, 9 px wide). Returns the coordinate of the dark edge along the line
+ *  given by at(i) for i in [from, to), or -1. */
+function findBar(at, from, to) {
+  for (let i = from + 8; i < to; i++) {
+    const d = gray(at(i));
+    if (d < 0x70 || d > 0x9a) continue;
+    const l = gray(at(i - 7));
+    if (l >= 0xf0) return i;
+  }
+  return -1;
+}
+
+/** The splitter bars on the frame: vertical ones crossing the row y, horizontal ones crossing the column x. */
+export function splitters(c, { y, x }) {
+  const vs = [], hs = [];
+  for (let s = 0; s < c.width;) {
+    const i = findBar((k) => pixel(c, k, y), s, c.width);
+    if (i < 0) break;
+    vs.push(i); s = i + 1;
+  }
+  for (let s = 0; s < c.height;) {
+    const i = findBar((k) => pixel(c, x, k), s, c.height);
+    if (i < 0) break;
+    hs.push(i); s = i + 1;
+  }
+  return { vertical: vs, horizontal: hs };
 }
 
 export function keyDown(c, vk, extended = false) {

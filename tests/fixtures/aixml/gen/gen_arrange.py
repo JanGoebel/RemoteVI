@@ -5,13 +5,14 @@ ERR = 'cluster{bool.status,int32.code,string.source}'
 E = '[false,0,]'
 POS = 'cluster{int32.Left,int32.Top}'
 
-# label, pane, page (-1: the pane itself), x, y  (pane rows: from the pane's visible top-left; page rows: from Settings)
+# label, pane, page (-1: the pane itself), x, y  (pane rows: where the control's top-left lands in the frame minus the
+# origin message, the coordinates of the layout lines; page rows: from Settings, in pane coordinates)
 ROWS = [
-    ('View', 1, -1, 20, -11), ('Status', 1, -1, 130, -8),
-    ('Inspector', 0, -1, 12, 8), ('Stop', 0, -1, 120, 8),
-    ('Nav', 0, -1, 12, 64), ('Results', 0, -1, 12, 290), ('Steps', 0, -1, 12, 450),
-    ('Log Path', 0, -1, 12, 840), ('error out', 0, -1, 12, 880),
-    ('Settings', 2, -1, 12, -6),
+    ('View', 1, -1, 300, 6), ('Status', 1, -1, 420, 7),
+    ('Inspector', 0, -1, 14, 28), ('Stop', 0, -1, 120, 28),
+    ('Nav', 0, -1, 14, 84), ('Results', 0, -1, 14, 310), ('Steps', 0, -1, 14, 600),
+    ('Log Path', 0, -1, 14, 860), ('error out', 0, -1, 14, 900),
+    ('Settings', 2, -1, 300, 52),
     ('Channel', 2, 0, 20, 50), ('Rate', 2, 0, 230, 40), ('Level', 2, 0, 390, 40), ('Data File', 2, 0, 20, 220),
     ('Scope', 2, 1, 10, 40),
     ('Viewer', 2, 2, 20, 50),
@@ -20,7 +21,7 @@ lit = lambda xs: '[%s]' % ','.join(str(x) for x in xs)
 
 o = []
 w = o.append
-w('<VI _name="RemoteVI Complex Fixture Arrange.vi" description="Build tool of RemoteVI Complex Fixture.vi\\3A run it after RemoteVI Complex Fixture Paste.vi\\2C with the fixture idle\\3B it can be run again (every step sets\\2C nothing is added). Lays the panel out\\3A each control is moved (GObject Move) into its pane (0 left\\2C 1 toolbar\\2C 2 main) or into a page of the tab control Settings and placed relative to the pane\'s visible top-left or to Settings. The toolbar holds Inspector\\2C View\\2C Stop and Status\\2C the left pane Nav\\2C Results and Steps (taller than the pane\\2C so it scrolls) and the hidden Log Path and error out\\2C the main pane Settings\\3B page Acquisition holds Channel\\2C Rate\\2C Level and Data File\\2C page Display holds Scope\\2C page Viewer (added with Add Page when the tab has two) the subpanel Viewer. Then\\3A pages named Acquisition\\2C Display and Viewer with fixed 110 px tabs\\2C Stop and Inspector switch when released\\2C Data File with its browse button\\2C Results with column headers and three rows\\2C Steps three elements high\\2C tip strips on Rate\\2C on Gain inside Channel and on Nav\\2C the main pane scaling Settings with the pane (Pane Set Scaling\\2C Scale Single Object)\\2C the window 1180 x 760\\3B in View A\\2C View B and the inspector (Views) the Quit switches hidden and tip strips set. Saves the fixture and the views. problems lists every row or step that returned an error\\2C with its code\\3B the run goes on.">')
+w('<VI _name="RemoteVI Complex Fixture Arrange.vi" description="Build tool of RemoteVI Complex Fixture.vi\\3A run it after RemoteVI Complex Fixture Paste.vi\\2C with the fixture idle\\3B it can be run again (every step sets\\2C nothing is added). Lays the panel out\\3A each control is moved (GObject Move) into its pane (0 left\\2C 1 toolbar\\2C 2 main) or into a page of the tab control Settings and placed at fixed panel-area coordinates (the pane coordinates are the wanted point minus where the pane\'s 0\\2C0 lands: CvtPaneToPanelCoords\\2C CvtPanelToScreenCoords\\2C minus Panel Bounds - placing relative to the pane\'s Position drifted from run to run) or relative to Settings. The toolbar holds Inspector\\2C View\\2C Stop and Status\\2C the left pane Nav\\2C Results and Steps (taller than the pane\\2C so it scrolls) and the hidden Log Path and error out\\2C the main pane Settings\\3B page Acquisition holds Channel\\2C Rate\\2C Level and Data File\\2C page Display holds Scope\\2C page Viewer (added with Add Page when the tab has two) the subpanel Viewer. Then\\3A pages named Acquisition\\2C Display and Viewer with fixed 110 px tabs\\2C Stop and Inspector switch when released\\2C Data File with its browse button\\2C Results with column headers and three rows\\2C Steps three elements high\\2C tip strips on Rate\\2C on Gain inside Channel and on Nav\\2C the main pane scaling Settings with the pane (Pane Set Scaling\\2C Scale Single Object)\\2C the left pane\'s vertical scrollbar always on\\2C the window 1180 x 760\\3B in View A\\2C View B and the inspector (Views) the Quit switches hidden and tip strips set. Saves the fixture and the views. problems lists every row or step that returned an error\\2C with its code\\3B the run goes on.">')
 w('  <FreeLabel comment="Lay the panel out\\2C then save" uid="lbl" uid_parent="root"/>')
 w('  <Control _name="Fixture" conIdx="0" connection="required" description="Path of RemoteVI Complex Fixture.vi. Saved in place." outputs="value:fx.value" type="path" uid="fx" uid_parent="root" value=""/>')
 w('  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="%s" uid="ei" uid_parent="root" value="%s"/>' % (ERR, E))
@@ -86,10 +87,12 @@ w('  <Constant _name="panes" outputs="value:rp.value" type="array{int32}" uid="r
 w('  <Constant _name="pages" outputs="value:rg.value" type="array{int32}" uid="rg" uid_parent="root" value="%s"/>' % lit(r[2] for r in ROWS))
 w('  <Constant _name="offsets" outputs="value:ro.value" type="array{%s}" uid="ro" uid_parent="root" value="%s"/>' % (POS, lit('[%d,%d]' % (r[3], r[4]) for r in ROWS)))
 w('  <Constant _name="no duplicate" outputs="value:nd.value" type="bool" uid="nd" uid_parent="root" value="false"/>')
+w('  <Node _name="Property Node" fields="read+Front Panel Window\\3APanel Bounds" inputs="reference:of.vi reference,error in (no error):" outputs="Front Panel Window\\3APanel Bounds:fpb.pb,reference out:,error out:" type="{LV.VI}" uid="fpb" uid_parent="root"/>')
+w('  <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:fpb.pb" outputs="left:fpbu.l,top:fpbu.t" uid="fpbu" uid_parent="root"/>')
 w('  <Structure _name="For Loop" count="" label="Move each control into its pane or page and place it" maxin="" maxout="" uid="fl" uid_parent="root">')
 for i, (src, nm) in enumerate((('rl.value', 'lL'), ('rp.value', 'lP'), ('rg.value', 'lG'), ('ro.value', 'lO')), 1):
     w('    <Tunnel _id="In%d" inputs="value:%s" mode="index" outputs="value:%s.value" uid="%s" uid_parent="fl"/>' % (i, src, nm, nm))
-for i, (src, nm) in enumerate((('fpf.fp', 'lF'), ('pp.panes', 'lPs'), ('tab.ref', 'lT'), ('nd.value', 'lD'), ('ce0.error out', 'lE')), 5):
+for i, (src, nm) in enumerate((('fpf.fp', 'lF'), ('pp.panes', 'lPs'), ('tab.ref', 'lT'), ('nd.value', 'lD'), ('ce0.error out', 'lE'), ('fpbu.l', 'lBl'), ('fpbu.t', 'lBt')), 5):
     w('    <Tunnel _id="In%d" inputs="value:%s" outputs="value:%s.value" uid="%s" uid_parent="fl"/>' % (i, src, nm, nm))
 w('    <Node _name="Build Array" inputs="element:lL.value" outputs="appended array:l1.appended array" uid="l1" uid_parent="fl"/>')
 w('    <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:lF.value,labels:l1.appended array,error in:lE.value" outputs="Controls:fc.Controls,error out:fc.error out" uid="fc" uid_parent="fl"/>')
@@ -100,24 +103,30 @@ w('    <Node _name="Property Node" fields="read+Position" inputs="reference:pane
 w('    <Node _name="Less Than 0?" inputs="x:lG.value" outputs="x &lt; 0?:np.x &lt; 0?" uid="np" uid_parent="fl"/>')
 w('    <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:lO.value" outputs="Left:uo.l,Top:uo.t" uid="uo" uid_parent="fl"/>')
 w('    <Structure _name="Case Structure" selectin="np.x &lt; 0?" uid="cs" uid_parent="fl">')
-for i, src in enumerate(('ctl.element', 'pane.element', 'pnp.pos', 'lT.value', 'lG.value', 'uo.l', 'uo.t', 'lD.value', 'pnp.error out'), 1):
+for i, src in enumerate(('ctl.element', 'pane.element', 'pnp.pos', 'lT.value', 'lG.value', 'uo.l', 'uo.t', 'lD.value', 'pnp.error out', 'lF.value', 'lBl.value', 'lBt.value'), 1):
     w('      <Tunnel _id="In%d" inputs="value:%s" uid="csi%d" uid_parent="cs"/>' % (i, src, i))
 # pane row: owner = the pane, position = pane origin + offset
 w('      <CaseFrame label="Into the pane" selector="True" selectout="" uid="cT" uid_parent="cs">')
-for i in range(1, 10):
-    w('        <Tunnel _id="In%d" outputs="value:%s" uid="t%d" uid_parent="cT"/>' % (i, ('t%d.value' % i) if i not in (4, 5) else '', i))
-w('        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:t3.value" outputs="Left:tq.l,Top:tq.t" uid="tq" uid_parent="cT"/>')
-w('        <Node _name="Add" inputs="x:tq.l,y:t6.value" outputs="x+y:tx.x+y" uid="tx" uid_parent="cT"/>')
-w('        <Node _name="Add" inputs="x:tq.t,y:t7.value" outputs="x+y:ty.x+y" uid="ty" uid_parent="cT"/>')
-w('        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:t3.value,Left:tx.x+y,Top:ty.x+y" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cT"/>')
-w('        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:t1.value,error in (no error):t9.value,position:tb.output cluster,owner:t2.value,duplicate:t8.value" outputs="reference out:,error out:tm.error out" uid="tm" uid_parent="cT"/>')
+for i in range(1, 13):
+    w('        <Tunnel _id="In%d" outputs="value:%s" uid="t%d" uid_parent="cT"/>' % (i, ('t%d.value' % i) if i not in (3, 4, 5) else '', i))
+w('        <Constant _name="pane origin" outputs="value:t0p.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="t0p" uid_parent="cT" value="[0,0]"/>')
+w('        <Node _name="Invoke Node" target="CvtPaneToPanelCoords" type="{LV.Pane}" inputs="reference:t2.value,error in (no error):t9.value,PaneCoords:t0p.value" outputs="reference out:,error out:tcv.error out,PanelCoords:tcv.pc" uid="tcv" uid_parent="cT"/>')
+w('        <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:t10.value,error in (no error):tcv.error out,PanelCoords:tcv.pc" outputs="reference out:,error out:tcs.error out,ScreenCoords:tcs.sc" uid="tcs" uid_parent="cT"/>')
+w('        <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:tcs.sc" outputs="Horizontal:tq.l,Vertical:tq.t" uid="tq" uid_parent="cT"/>')
+w('        <Node _name="Subtract" inputs="x:tq.l,y:t11.value" outputs="x-y:tbx.x-y" uid="tbx" uid_parent="cT"/>')
+w('        <Node _name="Subtract" inputs="x:tq.t,y:t12.value" outputs="x-y:tby.x-y" uid="tby" uid_parent="cT"/>')
+w('        <Node _name="Subtract" inputs="x:t6.value,y:tbx.x-y" outputs="x-y:tx.x+y" uid="tx" uid_parent="cT"/>')
+w('        <Node _name="Subtract" inputs="x:t7.value,y:tby.x-y" outputs="x-y:ty.x+y" uid="ty" uid_parent="cT"/>')
+w('        <Constant _name="position" outputs="value:tp0.value" type="cluster{int32.Left,int32.Top}" uid="tp0" uid_parent="cT" value="[0,0]"/>')
+w('        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:tp0.value,Left:tx.x+y,Top:ty.x+y" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cT"/>')
+w('        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:t1.value,error in (no error):tcs.error out,position:tb.output cluster,owner:t2.value,duplicate:t8.value" outputs="reference out:,error out:tm.error out" uid="tm" uid_parent="cT"/>')
 w('        <Node _name="Property Node" fields="write+Position" inputs="reference:t1.value,error in (no error):tm.error out,Position:tb.output cluster" outputs="reference out:,error out:tw.error out" type="{LV.Control}" uid="tw" uid_parent="cT"/>')
 w('        <Tunnel _id="Out1" inputs="value:tw.error out" uid="tO1" uid_parent="cT"/>')
 w('      </CaseFrame>')
 # page row: owner = the page of Settings, position = Settings position + offset
 w('      <CaseFrame label="Onto a page of Settings" selector="False" selectout="" uid="cF" uid_parent="cs">')
-for i in range(1, 10):
-    w('        <Tunnel _id="In%d" outputs="value:%s" uid="f%d" uid_parent="cF"/>' % (i, ('f%d.value' % i) if i not in (2, 3) else '', i))
+for i in range(1, 13):
+    w('        <Tunnel _id="In%d" outputs="value:%s" uid="f%d" uid_parent="cF"/>' % (i, ('f%d.value' % i) if i not in (2, 3, 10, 11, 12) else '', i))
 w('        <Node _name="Property Node" fields="read+Pages" inputs="reference:f4.value,error in (no error):f9.value" outputs="reference out:,error out:fpq.error out,Pages:fpq.pages" type="{LV.TabControl}" uid="fpq" uid_parent="cF"/>')
 w('        <Node _name="Index Array" inputs="array:fpq.pages,index:f5.value" outputs="element:fpe.element" uid="fpe" uid_parent="cF"/>')
 w('        <Node _name="Property Node" fields="read+Position" inputs="reference:f4.value,error in (no error):fpq.error out" outputs="reference out:,error out:ftp.error out,Position:ftp.pos" type="{LV.Control}" uid="ftp" uid_parent="cF"/>')
@@ -183,6 +192,13 @@ w('  <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="ref
 w('  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:sc.error out" outputs="code:sce.code" uid="sce" uid_parent="root"/>')
 w('  <Constant _name="fmt" outputs="value:scm.value" type="string" uid="scm" uid_parent="root" value="Set Scaling %d"/>')
 w('  <Node _name="Format Into String" inputs="format string:scm.value,input 1:sce.code" outputs="resulting string:scs.resulting string" uid="scs" uid_parent="root"/>')
+# the left pane gets a vertical scrollbar (NI's donor panel has them off while running), so it scrolls
+w('  <Node _name="Index Array" inputs="array:pp.panes,index:i0.value" outputs="element:lp0.element" uid="lp0" uid_parent="root"/>')
+w('  <Constant _name="always on" outputs="value:vsb.value" type="uint16{Always On,Always Off,Off While Running}" uid="vsb" uid_parent="root" value="0"/>')
+w('  <Node _name="Property Node" fields="write+VertScrollbarVisibility" inputs="reference:lp0.element,error in (no error):sc.error out,VertScrollbarVisibility:vsb.value" outputs="reference out:,error out:sb.error out" type="{LV.Pane}" uid="sb" uid_parent="root"/>')
+w('  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:sb.error out" outputs="code:sbe.code" uid="sbe" uid_parent="root"/>')
+w('  <Constant _name="fmt" outputs="value:sbm.value" type="string" uid="sbm" uid_parent="root" value="VertScrollbarVisibility %d"/>')
+w('  <Node _name="Format Into String" inputs="format string:sbm.value,input 1:sbe.code" outputs="resulting string:sbs.resulting string" uid="sbs" uid_parent="root"/>')
 
 # the views and the inspector window: hide the Quit switches (set with Value (Signaling) at stop), tip strip on A Apply
 w('  <Control _name="Views" conIdx="1" connection="recommended" description="Paths of RemoteVI Complex View A.vi\\2C View B.vi and Inspector.vi\\3B each is edited and saved." outputs="value:vws.value" type="array{path}" uid="vws" uid_parent="root" value="[]"/>')
@@ -213,12 +229,12 @@ w('    <Constant _name="fmt" outputs="value:vfm.value" type="string" uid="vfm" u
 w('    <Node _name="Format Into String" inputs="format string:vfm.value,input 1:vq.value,input 2:vce.code" outputs="resulting string:vfs.resulting string" uid="vfs" uid_parent="fv"/>')
 w('    <Tunnel _id="Out1" inputs="value:vfs.resulting string" mode="index" outputs="value:viewProblems.value" uid="viewProblems" uid_parent="fv"/>')
 w('  </Structure>')
-parts = ','.join(['element:rowProblems.value' ] + ['element:s%ds.resulting string' % k for k in range(len(STEPS))] + ['element:scs.resulting string'])
+parts = ','.join(['element:rowProblems.value' ] + ['element:s%ds.resulting string' % k for k in range(len(STEPS))] + ['element:scs.resulting string', 'element:sbs.resulting string'])
 # Build Array: the rows' array first (concatenated), then one element per step
-w('  <Node _name="Build Array" inputs="%s" outputs="appended array:all.appended array" uid="all" uid_parent="root"/>' % ','.join(['array:rowProblems.value'] + ['element:s%ds.resulting string' % k for k in range(len(STEPS))] + ['element:scs.resulting string', 'array:viewProblems.value']))
+w('  <Node _name="Build Array" inputs="%s" outputs="appended array:all.appended array" uid="all" uid_parent="root"/>' % ','.join(['array:rowProblems.value'] + ['element:s%ds.resulting string' % k for k in range(len(STEPS))] + ['element:scs.resulting string', 'element:sbs.resulting string', 'array:viewProblems.value']))
 w('  <Indicator _name="problems" conIdx="4" connection="recommended" description="One line per row and step\\3A its label and error code (0 = done)." inputs="value:all.appended array" type="array{string}" uid="pr" uid_parent="root" value="[]"/>')
 # save after everything: sequence through the last step's error and the scaling
-w('  <Node _name="Merge Errors" inputs="error in:s%dp.error out,error in:sc.error out" outputs="error out:mm.error out" uid="mm" uid_parent="root"/>' % (len(STEPS) - 1))
+w('  <Node _name="Merge Errors" inputs="error in:s%dp.error out,error in:sb.error out" outputs="error out:mm.error out" uid="mm" uid_parent="root"/>' % (len(STEPS) - 1))
 w('  <Call target="Clear Errors.vi" inputs="error in (no error):mm.error out" outputs="error out:ce2.error out" uid="ce2" uid_parent="root"/>')
 w('  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:of.vi reference,error in (no error):ce2.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>')
 w('  <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>')

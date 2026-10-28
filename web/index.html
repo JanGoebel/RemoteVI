@@ -99,6 +99,11 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
   font: 12px/1.35 "Segoe UI", Tahoma, sans-serif; white-space: pre-wrap; pointer-events: none;
 }
 #tip.show { display: block; }
+/* Splitter bars (splitters message): the client drags them itself and shows this line meanwhile. */
+#ghost { position: absolute; display: none; pointer-events: none; background: rgb(0 0 0 / 0.45); outline: 1px dashed #fff; }
+#ghost.show { display: block; }
+.panel-wrap.split-v, .panel-wrap.split-v #panel { cursor: col-resize; }
+.panel-wrap.split-h, .panel-wrap.split-h #panel { cursor: row-resize; }
 /* Hidden input that brings up the on-screen keyboard on touch devices. */
 #kbd { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
 .toast {
@@ -139,6 +144,7 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
     <div id="dim"></div>
     <div id="windows"></div>
     <div id="overlay"></div>
+    <div id="ghost"></div>
   </div>
 </main>
 <input id="kbd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
@@ -294,6 +300,9 @@ class RemoteViClient {
     this.tips = [];                   // tip strips {x, y, w, h, text} in frame coordinates (tips message)
     this.tipEl = document.getElementById('tip');
     this.tip = { at: null, timer: 0, quiet: null };  // control hovered, dwell timer, tip silenced by a click
+    this.splitters = [];              // draggable splitter bars {id, x, y, w, h, vertical, min, max} (splitters message)
+    this.split = null;                // splitter drag in progress {bar, pos, pointerId}
+    this.ghost = document.getElementById('ghost');
 
     const coarse = matchMedia('(pointer: coarse)').matches;
     document.body.dataset.touch = String(coarse);
@@ -361,7 +370,70 @@ class RemoteViClient {
       this.tips = list.filter((t) => t && typeof t.text === 'string'
         && [t.x, t.y, t.w, t.h].every(Number.isFinite));
       this.hideTip();
+    } else if (cmd === 'splitters') {
+      let list;
+      try { list = JSON.parse(arg); } catch { return; }
+      if (!Array.isArray(list)) return;
+      this.splitters = list.filter((b) => b && Number.isInteger(b.id)
+        && [b.x, b.y, b.w, b.h, b.min, b.max].every(Number.isFinite));
     }
+  }
+
+  // --- splitter bars (docs/protocol.md 3.3, 4) ----------------------------------------
+  // LabVIEW moves a splitter bar only while it tracks the real mouse, so the client drags
+  // the bar itself (a line follows the pointer) and sends `s <id> <pos>` on release; the
+  // server sets the splitter's position through VI Server.
+
+  /** The draggable bar under a client point, or null (not over a popup, a window or while modal). */
+  splitterAt(clientX, clientY) {
+    if (!this.splitters.length || this.overlay.childElementCount || this.wrap.classList.contains('modal')
+        || this.windowAt(clientX, clientY)) return null;
+    const { x, y } = this.framePoint(clientX, clientY, null);
+    // A thin bar is easier to hit with a few pixels of slack across it.
+    return this.splitters.find((b) => {
+      const sx = b.vertical ? 3 : 0, sy = b.vertical ? 0 : 3;
+      return x >= b.x - sx && x < b.x + b.w + sx && y >= b.y - sy && y < b.y + b.h + sy;
+    }) ?? null;
+  }
+
+  /** Cursor hint over a bar. */
+  splitterHover(clientX, clientY) {
+    const b = this.split?.bar ?? this.splitterAt(clientX, clientY);
+    this.wrap.classList.toggle('split-v', !!b?.vertical);
+    this.wrap.classList.toggle('split-h', !!b && !b.vertical);
+  }
+
+  splitStart(bar, e) {
+    this.hideTip(true);
+    this.split = { bar, pos: bar.vertical ? bar.x : bar.y, pointerId: e.pointerId, moved: false };
+    this.wrap.setPointerCapture(e.pointerId);
+    this.splitMove(e);
+  }
+
+  splitMove(e) {
+    const s = this.split;
+    const b = s.bar;
+    const { x, y } = this.framePoint(e.clientX, e.clientY, null);
+    const at = Math.round((b.vertical ? x - b.w / 2 : y - b.h / 2));
+    const pos = Math.max(b.min, Math.min(b.max, at));
+    if (pos !== s.pos) s.moved = true;
+    s.pos = pos;
+    const z = this.zoom;
+    const g = this.ghost.style;
+    g.left = `${(b.vertical ? pos : b.x) * z}px`;
+    g.top = `${(b.vertical ? b.y : pos) * z}px`;
+    g.width = `${Math.max(2, b.w * z)}px`;
+    g.height = `${Math.max(2, b.h * z)}px`;
+    this.ghost.classList.add('show');
+  }
+
+  splitEnd(cancel) {
+    const s = this.split;
+    this.split = null;
+    this.ghost.classList.remove('show');
+    if (!s || cancel || !s.moved) return;
+    const b = s.bar;
+    this.send(`s ${b.id} ${s.pos}`);
   }
 
   // --- tip strips (docs/protocol.md 3.3) ----------------------------------------------
@@ -710,6 +782,11 @@ class RemoteViClient {
     w.addEventListener('contextmenu', (e) => e.preventDefault());
 
     w.addEventListener('pointerdown', (e) => {
+      if (this.split) return;
+      // A splitter bar is dragged by the client, by mouse or by one finger.
+      const bar = e.button === 0 && e.isPrimary && !(e.pointerType === 'touch' && this.touches.size)
+        ? this.splitterAt(e.clientX, e.clientY) : null;
+      if (bar && document.body.dataset.viewOnly !== 'true') { e.preventDefault(); this.splitStart(bar, e); return; }
       if (e.pointerType === 'touch') { this.touchDown(e); return; }
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
@@ -725,6 +802,7 @@ class RemoteViClient {
     });
 
     const up = (e) => {
+      if (this.split?.pointerId === e.pointerId) { this.splitEnd(e.type === 'pointercancel'); this.splitterHover(e.clientX, e.clientY); return; }
       if (e.pointerType === 'touch') { this.touchUp(e); return; }
       const msgs = BUTTON_MSGS[e.button];
       if (!msgs) return;
@@ -737,6 +815,8 @@ class RemoteViClient {
 
     // Moves are coalesced to one per animation frame: only the latest position matters.
     w.addEventListener('pointermove', (e) => {
+      if (this.split?.pointerId === e.pointerId) { this.splitMove(e); return; }
+      if (e.pointerType !== 'touch' && !e.buttons) this.splitterHover(e.clientX, e.clientY);
       if (e.pointerType === 'touch') { this.touchMove(e); return; }
       if (e.buttons) this.hideTip(true); else this.hoverTip(e.clientX, e.clientY);
       const first = this.pendingMove === null;
@@ -855,6 +935,7 @@ class RemoteViClient {
 
   keyDown(e) {
     this.hideTip(true);
+    if (this.split && e.code === 'Escape') { e.preventDefault(); this.splitEnd(true); return; }
     const vk = VK[e.code];
     if (vk) {
       e.preventDefault();

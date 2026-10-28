@@ -6,15 +6,20 @@ Version 2 replaces version 1's per-control model (layout, `set`, overlays, QOI t
 
 ## 1. HTTP endpoints
 
+Every share has a random **access token** (32 hex digits from the operating system's secure random number generator, or one the caller chose). Every request carries it as the query parameter `t`; the link a share hands out is `http://<host>:<port>/?t=<token>`.
+
 | Request | Response |
 |---|---|
-| `GET /` or `GET /index.html` | the browser client, one self-contained HTML file |
-| `GET /ws` with a WebSocket upgrade (RFC 6455, version 13) | `101`, then the session below |
-| `GET /ws` without an upgrade | `426` |
+| `GET /?t=<token>` or `GET /index.html?t=<token>` | the browser client, one self-contained HTML file |
+| `GET /ws?t=<token>` with a WebSocket upgrade (RFC 6455, version 13) | `101`, then the session below |
+| `GET /ws?t=<token>` without an upgrade | `426` |
+| `/`, `/index.html` or `/ws` without the token or with a wrong one | `403` |
 | a WebSocket upgrade whose `Origin` host differs from `Host` | `403` |
 | any other path | `404` |
 
-Static responses carry the headers in [security.md](security.md#response-headers) and close the connection.
+The token is compared in constant time (`tokenOk()` in `tools/lib/http.mjs`, `RemoteVI Token Check.vi`, `tests/vectors/http.json` → `tokens`): the first `t=` parameter, its value up to the next `&`, equal length and every character equal. The client reads `t` from its own address and appends it to `/ws`. Static responses carry the headers in [security.md](security.md#response-headers) and close the connection.
+
+**Landing page** (RemoteVI Server.exe only): a separate port (default 8088, the next free one when that is in use) with a token of its own answers `GET /?t=<token>` with a page that links every running share of the application (`landingPage()` in `tools/lib/server-app.mjs`, `tests/vectors/server-app.json`), `403` without the token and `404` for anything else.
 
 ## 2. Session
 

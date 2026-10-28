@@ -80,7 +80,7 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Tools_Menu>
         <LLB>false</LLB>
         <Preserve_Hierarchy>true</Preserve_Hierarchy>
-        <Path/>
+        <Path>&lt;application&gt;\project</Path>
       </Tools_Menu>
       <Help_Menu>
         <LLB>false</LLB>
@@ -113,6 +113,12 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Destination_Overrides>
         <Path>examples</Path>
         <Destination>1</Destination>
+        <Additional_Destination>false</Additional_Destination>
+        <Additional_Destination_Index>0</Additional_Destination_Index>
+      </Destination_Overrides>
+      <Destination_Overrides>
+        <Path>tools-menu</Path>
+        <Destination>7</Destination>
         <Additional_Destination>false</Additional_Destination>
         <Additional_Destination_Index>0</Additional_Destination_Index>
       </Destination_Overrides>
@@ -221,8 +227,8 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Name>RemoteVI</Name>
       <View_Format>Icons</View_Format>
       <Size>
-        <Height_Row>1</Height_Row>
-        <Width_Col.>2</Width_Col.>
+        <Height_Row>3</Height_Row>
+        <Width_Col.>3</Width_Col.>
       </Size>
       <_256_Color_Icon/>
       <BW_Color_Icon>00000000</BW_Color_Icon>
@@ -261,6 +267,76 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         </Position>
         <Icon/>
         <Path>source\API\RemoteVI Stop.vi</Path>
+        <VI_Title/>
+      </Items_Data>
+      <Items_Data>
+        <Type>Item</Type>
+        <Sub_Palette_Index>-1</Sub_Palette_Index>
+        <NameSub_Menu_Name>RemoteVI Start Window.vi</NameSub_Menu_Name>
+        <Short_Name/>
+        <is_Merge_VI>false</is_Merge_VI>
+        <Position>
+          <Row>0</Row>
+          <Column>2</Column>
+        </Position>
+        <Icon/>
+        <Path>source\API\RemoteVI Start Window.vi</Path>
+        <VI_Title/>
+      </Items_Data>
+      <Items_Data>
+        <Type>Item</Type>
+        <Sub_Palette_Index>-1</Sub_Palette_Index>
+        <NameSub_Menu_Name>RemoteVI Status.vi</NameSub_Menu_Name>
+        <Short_Name/>
+        <is_Merge_VI>false</is_Merge_VI>
+        <Position>
+          <Row>1</Row>
+          <Column>0</Column>
+        </Position>
+        <Icon/>
+        <Path>source\API\RemoteVI Status.vi</Path>
+        <VI_Title/>
+      </Items_Data>
+      <Items_Data>
+        <Type>Item</Type>
+        <Sub_Palette_Index>-1</Sub_Palette_Index>
+        <NameSub_Menu_Name>RemoteVI Status Panel.vi</NameSub_Menu_Name>
+        <Short_Name/>
+        <is_Merge_VI>false</is_Merge_VI>
+        <Position>
+          <Row>1</Row>
+          <Column>1</Column>
+        </Position>
+        <Icon/>
+        <Path>source\API\RemoteVI Status Panel.vi</Path>
+        <VI_Title/>
+      </Items_Data>
+      <Items_Data>
+        <Type>Item</Type>
+        <Sub_Palette_Index>-1</Sub_Palette_Index>
+        <NameSub_Menu_Name>RemoteVI Show Status.vi</NameSub_Menu_Name>
+        <Short_Name/>
+        <is_Merge_VI>false</is_Merge_VI>
+        <Position>
+          <Row>1</Row>
+          <Column>2</Column>
+        </Position>
+        <Icon/>
+        <Path>source\API\RemoteVI Show Status.vi</Path>
+        <VI_Title/>
+      </Items_Data>
+      <Items_Data>
+        <Type>Item</Type>
+        <Sub_Palette_Index>-1</Sub_Palette_Index>
+        <NameSub_Menu_Name>RemoteVI Open Server.vi</NameSub_Menu_Name>
+        <Short_Name/>
+        <is_Merge_VI>false</is_Merge_VI>
+        <Position>
+          <Row>2</Row>
+          <Column>0</Column>
+        </Position>
+        <Icon/>
+        <Path>source\API\RemoteVI Open Server.vi</Path>
         <VI_Title/>
       </Items_Data>
       <GUID>4E2B7F1A9C3D5E6F708192A3B4C5D6E7</GUID>

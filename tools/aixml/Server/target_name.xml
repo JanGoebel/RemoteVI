@@ -1,0 +1,45 @@
+<VI _name="RemoteVI Target Name.vi" description="The name of what is shared\2C for the title message and the status\3A window 0 - the name of VI (VI Server)\3B otherwise the caption of the shared window (user32 GetWindowTextW.vi)\2C UTF-16 code units narrowed to bytes (Latin-1\3B other characters become ?).">
+  <Control _name="VI" conIdx="0" connection="required" description="The shared VI (ignored for a window target)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="window" conIdx="5" connection="recommended" description="The shared window\3B 0 = VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant outputs="value:z.value" type="uint64" uid="z" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:win.value,y:z.value" outputs="x != y?:isw.v" uid="isw" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="isw.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:win.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:ei.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="A window\3A its caption" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_win.value" uid="t_win" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Constant outputs="value:n256.value" type="int32" uid="n256" uid_parent="cst" value="256"/>
+      <Call inputs="hWnd:t_win.value,nMaxCount:n256.value,error in:t_ei.value" outputs="text:gt.text,return value:,error out:gt.error out" target="user32 GetWindowTextW.vi" uid="gt" uid_parent="cst"/>
+      <Constant outputs="value:k255.value" type="uint16" uid="k255" uid_parent="cst" value="255"/>
+      <Constant outputs="value:kq.value" type="uint16" uid="kq" uid_parent="cst" value="63"/>
+      <Structure _name="For Loop" count="" label="Latin-1 or ?" maxin="" maxout="" uid="fl" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:gt.text" mode="index" outputs="value:u.value" uid="u" uid_parent="fl"/>
+        <Tunnel _id="In2" inputs="value:k255.value" outputs="value:l_255.value" uid="l_255" uid_parent="fl"/>
+        <Tunnel _id="In3" inputs="value:kq.value" outputs="value:l_q.value" uid="l_q" uid_parent="fl"/>
+        <Node _name="Greater?" inputs="x:u.value,y:l_255.value" outputs="x &gt; y?:big.v" uid="big" uid_parent="fl"/>
+        <Node _name="Select" inputs="t:l_q.value,s:big.v,f:u.value" outputs="s? t\3Af:ch.v" uid="ch" uid_parent="fl"/>
+        <Node _name="To Unsigned Byte Integer" inputs="number:ch.v" outputs="unsigned 8bit integer:b.v" uid="b" uid_parent="fl"/>
+        <Tunnel _id="Out1" inputs="value:b.v" mode="index" outputs="value:bytes.value" uid="bytes" uid_parent="fl"/>
+      </Structure>
+      <Node _name="Byte Array To String" inputs="unsigned byte array:bytes.value" outputs="string:s.v" uid="s" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:s.v" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:gt.error out" uid="t_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="The VI's name" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_vi.value" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_win" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Node _name="Property Node" fields="read+VI Name" inputs="reference:f_vi.value,error in (no error):f_ei.value" outputs="error out:pn.error out,VI Name:pn.VI Name" type="{LV.VI}" uid="pn" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:pn.VI Name" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:pn.error out" uid="f_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:o_n.value" uid="o_n" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:o_e.value" uid="o_e" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="name" conIdx="4" connection="recommended" description="The VI's name or the window's caption." inputs="value:o_n.value" type="string" uid="i_n" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:o_e.value" type="cluster{bool.status,int32.code,string.source}" uid="i_e" uid_parent="root" value="[false,0,]"/>
+</VI>

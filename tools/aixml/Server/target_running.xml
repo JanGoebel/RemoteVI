@@ -1,0 +1,30 @@
+<VI _name="RemoteVI Target Running.vi" description="Whether what is shared still runs\3A window 0 - VI's Execution\3AState is Run Top Level or Running (2 or more)\3B a window target - the window still exists (user32 IsWindow.vi\2C no VI Server call). An error reading the state counts as not running.">
+  <Control _name="VI" conIdx="0" connection="required" description="The shared VI (ignored for a window target)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="window" conIdx="5" connection="recommended" description="The shared window\3B 0 = VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Constant outputs="value:z.value" type="uint64" uid="z" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:win.value,y:z.value" outputs="x != y?:isw.v" uid="isw" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="isw.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:win.value" uid="cs_i2" uid_parent="cs"/>
+    <CaseFrame label="A window\3A does it still exist?" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_win.value" uid="t_win" uid_parent="cst"/>
+      <Call inputs="hWnd:t_win.value" outputs="window?:iw.window?,error out:" target="user32 IsWindow.vi" uid="iw" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:iw.window?" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Is VI still running?" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_vi.value" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_win" uid_parent="csf"/>
+      <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:f_vi.value" outputs="error out:es.error out,Execution\3AState:es.Execution\3AState" type="{LV.VI}" uid="es" uid_parent="csf"/>
+      <Node _name="To Long Integer" inputs="number:es.Execution\3AState" outputs="32bit integer:st.v" uid="st" uid_parent="csf"/>
+      <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="csf" value="1"/>
+      <Node _name="Greater?" inputs="x:st.v,y:k1.value" outputs="x &gt; y?:run.v" uid="run" uid_parent="csf"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:es.error out" outputs="status:ess.status" uid="ess" uid_parent="csf"/>
+      <Node _name="Not" inputs="x:ess.status" outputs=".not. x?:ok.v" uid="ok" uid_parent="csf"/>
+      <Node _name="And" inputs="x:run.v,y:ok.v" outputs="x .and. y?:alive.v" uid="alive" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:alive.v" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:o_r.value" uid="o_r" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="running?" conIdx="4" connection="recommended" description="TRUE while the VI runs or the window exists." inputs="value:o_r.value" type="bool" uid="i_r" uid_parent="root" value="false"/>
+</VI>

@@ -43,6 +43,7 @@
     <Tunnel _id="In8" inputs="value:shu.vo" outputs="value:l_vo.value" uid="l_vo" uid_parent="sl"/>
     <Tunnel _id="In9" inputs="value:info.v" outputs="value:l_info.value" uid="l_info" uid_parent="sl"/>
     <Tunnel _id="In10" inputs="value:started.v" outputs="value:l_sta.value" uid="l_sta" uid_parent="sl"/>
+    <Tunnel _id="In11" inputs="value:port.value" outputs="value:l_port.value" uid="l_port" uid_parent="sl"/>
     <ShiftReg uid="sr_pst" uid_parent="sl">
       <Left inputs="value:pst0.value" outputs="value:pst.value" uid="sr_pstl" uid_parent="sr_pst"/>
       <Right inputs="value:pub.state out" outputs="value:" uid="sr_pstr" uid_parent="sr_pst"/>
@@ -165,7 +166,8 @@
 
     <Call inputs="clients:ac.clients out,last geometry:lastgeo.value,last click:lastclk.value,popup was open?:prevpop.value" outputs="now:lf.now,look?:lf.look?,geometry due?:lf.geometry due?,remote click?:lf.remote click?,recent click?:lf.recent click?" target="RemoteVI Loop Flags.vi" uid="lf" uid_parent="sl"/>
     <Call inputs="look?:lf.look?,panel hWnd:hw.value,d:dprev.value,previous popup hWnds:prevall.value,previously hidden:prevhid.value,remote click?:lf.remote click?" outputs="popups:tp.popups,overlay popups:tp.overlay popups,popup open?:tp.popup open?,popup hWnds:tp.popup hWnds,hidden hWnds:tp.hidden hWnds" target="RemoteVI Track Popups.vi" uid="tp" uid_parent="sl"/>
-    <Call inputs="look?:lf.look?,panel hWnd:hw.value,state:wst.value,previous windows:pwl.value,now:lf.now,last list:lastwl.value" outputs="windows:tw.windows,message:tw.message,modal?:tw.modal?,state out:tw.state out,last list out:tw.last list out" target="RemoteVI Track Windows.vi" uid="tw" uid_parent="sl"/>
+    <Call inputs="port:l_port.value" outputs="hWnds:osh.hWnds" target="RemoteVI Other Shares.vi" uid="osh" uid_parent="sl"/>
+    <Call inputs="look?:lf.look?,panel hWnd:hw.value,state:wst.value,previous windows:pwl.value,now:lf.now,last list:lastwl.value,other shares:osh.hWnds" outputs="windows:tw.windows,message:tw.message,modal?:tw.modal?,state out:tw.state out,last list out:tw.last list out" target="RemoteVI Track Windows.vi" uid="tw" uid_parent="sl"/>
     <Node _name="Or" inputs="x:tp.popup open?,y:tw.modal?" outputs="x .or. y?:busy.x .or. y?" uid="busy" uid_parent="sl"/>
     <Call inputs="VI:l_vi.value,hWnd:hw.value,bars:bars.value,busy?:busy.x .or. y?" outputs="moved?:asp.moved?" target="RemoteVI Apply Splitter.vi" uid="asp" uid_parent="sl"/>
     <Call inputs="VI:l_vi.value,geo:geo.value,hWnd:hw.value,last refresh:lastgeo.value,now:lf.now,geometry due?:lf.geometry due?,popup was open?:prevpop.value,popup open?:busy.x .or. y?,recent click?:lf.recent click?,origin:org.value" outputs="geo out:rg.geo out,hWnd out:rg.hWnd out,origin out:rg.origin out,last refresh out:rg.last refresh out" target="RemoteVI Refresh Geometry.vi" uid="rg" uid_parent="sl"/>
@@ -198,7 +200,7 @@
     <Call inputs="clients:sw.clients out,overlay popups:rt.overlay popups out,geo:rg.geo out,d:cks.d,state:soe.state out,period:ovper.s? t\3Af" outputs="clients out:so.clients out,state out:so.state out" target="RemoteVI Send Overlay.vi" uid="so" uid_parent="sl"/>
     <Call inputs="clients:so.clients out" outputs="clients out:dc.clients out" target="RemoteVI Drop Closed Clients.vi" uid="dc" uid_parent="sl"/>
     <Constant outputs="value:pf.value" type="bool" uid="pf" uid_parent="sl" value="false"/>
-    <Call inputs="info:l_info.value,started:l_sta.value,clients:dc.clients out,captured?:cs.captured?,clicked?:sc.clicked?,error:nerr.s? t\3Af,stop?:pf.value,state:pst.value" outputs="state out:pub.state out" target="RemoteVI Publish Status.vi" uid="pub" uid_parent="sl"/>
+    <Call inputs="info:l_info.value,started:l_sta.value,clients:dc.clients out,captured?:cs.captured?,clicked?:sc.clicked?,error:nerr.s? t\3Af,stop?:pf.value,state:pst.value,hWnd:rg.hWnd out" outputs="state out:pub.state out" target="RemoteVI Publish Status.vi" uid="pub" uid_parent="sl"/>
 
     <Constant outputs="value:t0.value" type="int32" uid="t0" uid_parent="sl" value="0"/>
     <Node _name="Wait on Notification" inputs="notifier:l_not.value,timeout in ms (-1):t0.value" outputs="timed out?:wn.timed out?" uid="wn" uid_parent="sl"/>

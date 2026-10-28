@@ -89,6 +89,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI New Token.vi" Type="VI" URL="../Server/RemoteVI New Token.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
 		<Item Name="RemoteVI Origin Message.vi" Type="VI" URL="../Server/RemoteVI Origin Message.vi"/>
+		<Item Name="RemoteVI Other Shares.vi" Type="VI" URL="../Server/RemoteVI Other Shares.vi"/>
 		<Item Name="RemoteVI Panel Controls.vi" Type="VI" URL="../Server/RemoteVI Panel Controls.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Publish Status.vi" Type="VI" URL="../Server/RemoteVI Publish Status.vi"/>

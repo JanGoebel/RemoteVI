@@ -2,12 +2,16 @@
 
 RemoteVI lets a browser operate a running VI with mouse and keyboard. That is remote control of whatever the VI controls, so treat a published panel like an unlocked keyboard at the machine.
 
-## What v1 of the G toolkit does
+## What the G toolkit does
 
 | Aspect | Behaviour |
 |---|---|
-| Listener | all interfaces on the chosen port. Use the Windows firewall, or a reverse proxy on a localhost-bound setup (below), to limit who can connect. A *bind address* option is planned. |
-| Authentication | none yet. Anyone who can reach the port can view and operate the panel. A per-start access token (URL fragment, compared in constant time) is planned. |
+| Listener | **this computer only by default**: a share listens on `127.0.0.1`. `whole network? = TRUE` (RemoteVI Start.vi, Start Window.vi; the *Whole network* button of RemoteVI Server; `--whole-network`) listens on every interface, and the link then names this computer's IP address. Choose it per share, and keep the Windows firewall in front of it. |
+| Authentication | a random **access token per share** (32 hex digits from `BCryptGenRandom`, or one the caller passes). Every request needs it as `?t=<token>` - the page, the WebSocket upgrade and the landing page; without it, or with a wrong one, the answer is `403`. It is compared in constant time. The link with the token is the key: give it only to who should operate the panel, and stop the share (or start it again for a new token) to revoke it. The token travels in the URL, so it can end up in a browser's history and, over plain HTTP, be read on the network (below). |
+| View only | `view only? = TRUE` shows the panel and ignores every input of the browsers (the client is told with `viewonly 1`). |
+| Landing page | RemoteVI Server.exe lists its running shares, with their links, on a page of its own (default port 8088, the next free port when that one is in use; `--landing-port`, 0 = none). It has its own token and binds like the shares (this computer only unless `--whole-network`). In LabVIEW (Tools menu) no landing page runs. |
+| What can be shared | RemoteVI Start.vi shares a VI's panel. RemoteVI Start Window.vi and RemoteVI Server share any window of any program of the logged-in user - also a browser or a mail program. Share only what the people with the link may see and operate. |
+| Host input | the host's cursor and keyboard are never moved or pressed: input is posted to the shared window as window messages (no `SendInput`, `SetCursorPos`, `keybd_event`, `mouse_event`). Shift, Ctrl and Alt held in the browser are set in LabVIEW's own key state (`SetKeyboardState` in LabVIEW's UI thread, put back after the message) - only for a panel in the same LabVIEW; another process gets them only in the mouse messages' flags, as attaching to its input queue could not be shown to leave the host's keyboard state alone. |
 | Cross-site WebSocket hijacking | refused: a WebSocket upgrade whose `Origin` host differs from `Host` gets `403`. So a page in the operator's browser on another site cannot drive the panel. |
 | Clients | at most 8 at a time; more get `503`. |
 | Input | only the window messages in protocol §4.3 (mouse buttons, moves, wheel, key down/up, characters) are posted to the panel window. `WM_CLOSE`, `WM_COMMAND`, `WM_SYSCOMMAND` and anything else are dropped, so a client cannot close or reconfigure the window. Input only reaches the published panel's own window. |

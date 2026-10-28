@@ -13,6 +13,7 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>
+		<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>
 		<Item Name="Examples" Type="Folder">
 			<Item Name="RemoteVI Demo Layout.vi" Type="VI" URL="../examples/RemoteVI Demo Layout.vi"/>
 			<Item Name="RemoteVI Demo.vi" Type="VI" URL="../examples/RemoteVI Demo.vi"/>
@@ -74,6 +75,7 @@
 				<Item Name="ShowWindow Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/ShowWindow Wrapper Template.vi"/>
 			</Item>
 			<Item Name="Build Win32 Wrappers.vi" Type="VI" URL="../scripts/Build Win32 Wrappers.vi"/>
+			<Item Name="Set Reentrant.vi" Type="VI" URL="../scripts/Set Reentrant.vi"/>
 		</Item>
 		<Item Name="Spikes" Type="Folder">
 			<Item Name="Bench Dirty Rects.vi" Type="VI" URL="../spikes/Bench Dirty Rects.vi"/>
@@ -177,6 +179,53 @@
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>
 		<Item Name="Build Specifications" Type="Build">
+			<Item Name="RemoteVI Hooks" Type="Packed Library">
+				<Property Name="Bld_buildCacheID" Type="Str">{2BCCFE4E-AB82-5B56-893A-D10C90C9961F}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">RemoteVI Hooks</Property>
+				<Property Name="Bld_excludeDependentPPLs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">false</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../builds/RemoteVI Hooks</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{266F2247-F41A-5C1F-A16D-8E0EBF34C6A7}</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">RemoteVI Hooks.lvlibp</Property>
+				<Property Name="Destination[0].path" Type="Path">../builds/RemoteVI Hooks/RemoteVI Hooks.lvlibp</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../builds/RemoteVI Hooks</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="PackedLib_callersAdapt" Type="Bool">true</Property>
+				<Property Name="Source[0].itemID" Type="Str">{B58DBEEA-10E0-5B64-B269-F9F5064E2F82}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/RemoteVI Hooks.lvlib/RemoteVI Remote Hooks.vi</Property>
+				<Property Name="Source[1].properties[0].type" Type="Str">Remove front panel</Property>
+				<Property Name="Source[1].properties[0].value" Type="Bool">false</Property>
+				<Property Name="Source[1].propertiesCount" Type="Int">1</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[2].itemID" Type="Ref">/My Computer/RemoteVI Hooks.lvlib</Property>
+				<Property Name="Source[2].Library.allowMissingMembers" Type="Bool">true</Property>
+				<Property Name="Source[2].Library.atomicCopy" Type="Bool">true</Property>
+				<Property Name="Source[2].Library.LVLIBPtopLevel" Type="Bool">true</Property>
+				<Property Name="Source[2].preventRename" Type="Bool">true</Property>
+				<Property Name="Source[2].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[2].type" Type="Str">Library</Property>
+				<Property Name="SourceCount" Type="Int">3</Property>
+				<Property Name="TgtF_companyName" Type="Str">Jan Goebel</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">RemoteVI Hooks - run inside another LabVIEW process over VI Server</Property>
+				<Property Name="TgtF_internalName" Type="Str">RemoteVI Hooks</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright (c) 2026 Jan Goebel, MIT license</Property>
+				<Property Name="TgtF_productName" Type="Str">RemoteVI Hooks</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{A6C3D236-7830-5AA6-BF92-7B1741A073C7}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Hooks.lvlibp</Property>
+			</Item>
 			<Item Name="RemoteVI Server" Type="EXE">
 				<Property Name="App_copyErrors" Type="Bool">true</Property>
 				<Property Name="App_INI_aliasGUID" Type="Str">{81C9FC2F-8BC2-548F-9224-E283476CB9FC}</Property>

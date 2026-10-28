@@ -6,13 +6,17 @@ fight with the library, which already owns the toolkit VIs: they caused the "ite
 exists" / "conflict" errors when VIs were re-added to RemoteVI.lvlib. So the project lists:
 
   RemoteVI.lvlib            the toolkit (its own virtual folders mirror source/)
+  RemoteVI Hooks.lvlib      hooks/: the VI RemoteVI runs inside another LabVIEW process over VI Server
   Examples/                 examples/*.vi
   Tests/Fixture, Tests/Caraya/...   test VIs (outside the library)
   Scripts/...               build scripts and Win32 wrapper templates
   Spikes/                   benchmarks
   Tools Menu/RemoteVI       the Tools menu entry (the VIPM package installs it into <LabVIEW>/project)
 
-and four build specifications (builds/ is git-ignored, nothing built is committed):
+and five build specifications (builds/ is git-ignored, nothing built is committed):
+
+  RemoteVI Hooks            builds/RemoteVI Hooks/RemoteVI Hooks.lvlibp - a packed library (compiled code, which
+                            the Run-Time Engine of a built application needs to load it over VI Server)
 
   RemoteVI Server           builds/RemoteVI Server/RemoteVI Server.exe - App/RemoteVI Server.vi
   RemoteVI Demo             builds/RemoteVI Demo/RemoteVI Demo.exe - examples/RemoteVI Demo.vi
@@ -192,6 +196,64 @@ def any_files(node):
     return bool(node.get('__files__')) or any(any_files(v) for k, v in node.items() if k != '__files__')
 
 
+def hooks_spec(indent='\t\t\t'):
+    """Packed library RemoteVI Hooks.lvlibp: the hooks VI keeps its front panel (it is driven with Set Control
+    Value over VI Server), everything is compiled in, the RemoteVI.lvlib VIs it calls are included."""
+    name, dest = 'RemoteVI Hooks', '../builds/RemoteVI Hooks'
+    props = [
+        ('Bld_buildCacheID', 'Str', guid(name + '/cache')),
+        ('Bld_buildSpecName', 'Str', name),
+        ('Bld_excludeDependentPPLs', 'Bool', 'true'),
+        ('Bld_excludeInlineSubVIs', 'Bool', 'true'),
+        ('Bld_excludeLibraryItems', 'Bool', 'false'),
+        ('Bld_excludePolymorphicVIs', 'Bool', 'true'),
+        ('Bld_localDestDir', 'Path', dest),
+        ('Bld_localDestDirType', 'Str', 'relativeToProject'),
+        ('Bld_modifyLibraryFile', 'Bool', 'true'),
+        ('Bld_previewCacheID', 'Str', guid(name + '/preview')),
+        ('Bld_version.major', 'Int', '1'),
+        ('Destination[0].destName', 'Str', 'RemoteVI Hooks.lvlibp'),
+        ('Destination[0].path', 'Path', dest + '/RemoteVI Hooks.lvlibp'),
+        ('Destination[0].path.type', 'Str', 'relativeToProject'),
+        ('Destination[0].preserveHierarchy', 'Bool', 'true'),
+        ('Destination[0].type', 'Str', 'App'),
+        ('Destination[1].destName', 'Str', 'Support Directory'),
+        ('Destination[1].path', 'Path', dest),
+        ('Destination[1].path.type', 'Str', 'relativeToProject'),
+        ('DestinationCount', 'Int', '2'),
+        ('PackedLib_callersAdapt', 'Bool', 'true'),
+        ('Source[0].itemID', 'Str', guid(name + '/container')),
+        ('Source[0].type', 'Str', 'Container'),
+        ('Source[1].destinationIndex', 'Int', '0'),
+        ('Source[1].itemID', 'Ref', '/My Computer/RemoteVI Hooks.lvlib/RemoteVI Remote Hooks.vi'),
+        ('Source[1].properties[0].type', 'Str', 'Remove front panel'),
+        ('Source[1].properties[0].value', 'Bool', 'false'),
+        ('Source[1].propertiesCount', 'Int', '1'),
+        ('Source[1].type', 'Str', 'VI'),
+        ('Source[2].destinationIndex', 'Int', '0'),
+        ('Source[2].itemID', 'Ref', '/My Computer/RemoteVI Hooks.lvlib'),
+        ('Source[2].Library.allowMissingMembers', 'Bool', 'true'),
+        ('Source[2].Library.atomicCopy', 'Bool', 'true'),
+        ('Source[2].Library.LVLIBPtopLevel', 'Bool', 'true'),
+        ('Source[2].preventRename', 'Bool', 'true'),
+        ('Source[2].sourceInclusion', 'Str', 'TopLevel'),
+        ('Source[2].type', 'Str', 'Library'),
+        ('SourceCount', 'Int', '3'),
+        ('TgtF_companyName', 'Str', 'Jan Goebel'),
+        ('TgtF_fileDescription', 'Str', 'RemoteVI Hooks - run inside another LabVIEW process over VI Server'),
+        ('TgtF_internalName', 'Str', name),
+        ('TgtF_legalCopyright', 'Str', 'Copyright (c) 2026 Jan Goebel, MIT license'),
+        ('TgtF_productName', 'Str', name),
+        ('TgtF_targetfileGUID', 'Str', guid(name + '/target')),
+        ('TgtF_targetfileName', 'Str', 'RemoteVI Hooks.lvlibp'),
+    ]
+    out = ['%s<Item Name="%s" Type="Packed Library">' % (indent, name)]
+    for k, ty, v in props:
+        out.append('%s\t<Property Name="%s" Type="%s">%s</Property>' % (indent, k, ty, escape(v)))
+    out.append('%s</Item>' % indent)
+    return out
+
+
 def main():
     body = render(build_tree(), '\t\t')
     text = '\n'.join([
@@ -210,9 +272,11 @@ def main():
         '\t\t<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>',
         '\t\t<Property Name="specify.custom.address" Type="Bool">false</Property>',
         '\t\t<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>',
+        '\t\t<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>',
         *body,
         '\t\t<Item Name="Dependencies" Type="Dependencies"/>',
         '\t\t<Item Name="Build Specifications" Type="Build">',
+        *hooks_spec(),
         *[line for spec in EXES for line in build_spec(*spec)],
         '\t\t</Item>',
         '\t</Item>',

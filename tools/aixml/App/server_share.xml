@@ -1,0 +1,83 @@
+<VI _name="RemoteVI Server Share.vi" description="RemoteVI Server's Share button\3A shares the window of row. A panel of a RUNNING VI of this application instance (RemoteVI VI Of Window.vi) is shared as a VI target (RemoteVI Start.vi\3A tip strips and splitter dragging work)\3B every other window - of another LabVIEW\2C a built application or any program\2C or the panel of a VI that is not running - as a window target (RemoteVI Start Window.vi). message is one line for the UI\3A the link\2C or why it failed (port in use\2C port shared already).">
+  <Control _name="row" conIdx="0" connection="required" description="The window (RemoteVI Window Rows.vi)." outputs="value:row.value" type="cluster{int32.group,string.program,string.title,uint32.pid,uint64.hWnd}" uid="row" uid_parent="root" value="[0,,,0,0]"/>
+  <Control _name="port" conIdx="1" connection="recommended" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8100"/>
+  <Control _name="whole network?" conIdx="2" connection="recommended" description="FALSE\3A this computer only." outputs="value:wn.value" type="bool" uid="wn" uid_parent="root" value="false"/>
+  <Control _name="view only?" conIdx="3" connection="recommended" description="TRUE\3A the browsers cannot operate it." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
+  <Control _name="token" conIdx="8" connection="optional" description="Empty (default)\3A a new random token." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
+  <Node _name="Unbundle By Name" fields="title,pid,hWnd" inputs="input cluster:row.value" outputs="title:ru.t,pid:ru.p,hWnd:ru.h" uid="ru" uid_parent="root"/>
+  <Call inputs="" outputs="process ID:me.process ID,error out:" target="kernel32 GetCurrentProcessId.vi" uid="me" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:ru.p,y:me.process ID" outputs="x = y?:own.v" uid="own" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="own.v" uid="co" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ru.h" uid="co_i1" uid_parent="co"/>
+    <CaseFrame label="A window of this LabVIEW\3A a running VI's panel?" selector="True" selectout="" uid="cot" uid_parent="co">
+      <Tunnel _id="In1" outputs="value:o_h.value" uid="o_h" uid_parent="cot"/>
+      <Call inputs="window:o_h.value" outputs="VI:vw.VI,found?:vw.found?" target="RemoteVI VI Of Window.vi" uid="vw" uid_parent="cot"/>
+      <Tunnel _id="Out1" inputs="value:vw.VI" uid="cot_o1" uid_parent="cot"/>
+      <Tunnel _id="Out2" inputs="value:vw.found?" uid="cot_o2" uid_parent="cot"/>
+    </CaseFrame>
+    <CaseFrame label="Another process" selector="False" selectout="" uid="cof" uid_parent="co">
+      <Tunnel _id="In1" outputs="value:" uid="f_h" uid_parent="cof"/>
+      <Constant outputs="value:novi.value" type="ref{LV.VI}" uid="novi" uid_parent="cof" value=""/>
+      <Constant outputs="value:nf.value" type="bool" uid="nf" uid_parent="cof" value="false"/>
+      <Tunnel _id="Out1" inputs="value:novi.value" uid="cof_o1" uid_parent="cof"/>
+      <Tunnel _id="Out2" inputs="value:nf.value" uid="cof_o2" uid_parent="cof"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:vir.value" uid="vir" uid_parent="co"/>
+    <Tunnel _id="Out2" outputs="value:isvi.value" uid="isvi" uid_parent="co"/>
+  </Structure>
+  <Constant outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
+  <Structure _name="Case Structure" selectin="isvi.value" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vir.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:ru.h" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:port.value" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:wn.value" uid="cs_i4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:vo.value" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:tk.value" uid="cs_i6" uid_parent="cs"/>
+    <Tunnel _id="In7" inputs="value:fps.value" uid="cs_i7" uid_parent="cs"/>
+    <CaseFrame label="VI target" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_vi.value" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:" uid="t_h" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_p.value" uid="t_p" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_wn.value" uid="t_wn" uid_parent="cst"/>
+      <Tunnel _id="In5" outputs="value:t_vo.value" uid="t_vo" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:t_tk.value" uid="t_tk" uid_parent="cst"/>
+      <Tunnel _id="In7" outputs="value:t_fps.value" uid="t_fps" uid_parent="cst"/>
+      <Call inputs="VI:t_vi.value,port:t_p.value,fps:t_fps.value,whole network?:t_wn.value,token:t_tk.value,view only?:t_vo.value" outputs="URL:sv.URL,error out:sv.error out" target="RemoteVI Start.vi" uid="sv" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:sv.URL" uid="cst_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:sv.error out" uid="cst_o2" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Window target" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:w_h.value" uid="w_h" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:w_p.value" uid="w_p" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:w_wn.value" uid="w_wn" uid_parent="csf"/>
+      <Tunnel _id="In5" outputs="value:w_vo.value" uid="w_vo" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:w_tk.value" uid="w_tk" uid_parent="csf"/>
+      <Tunnel _id="In7" outputs="value:w_fps.value" uid="w_fps" uid_parent="csf"/>
+      <Call inputs="window:w_h.value,port:w_p.value,fps:w_fps.value,whole network?:w_wn.value,token:w_tk.value,view only?:w_vo.value" outputs="URL:sw.URL,error out:sw.error out" target="RemoteVI Start Window.vi" uid="sw" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:sw.URL" uid="csf_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:sw.error out" uid="csf_o2" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:url.value" uid="url" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:err.value" uid="err" uid_parent="cs"/>
+  </Structure>
+  <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:err.value" outputs="status:eu.status,code:eu.code" uid="eu" uid_parent="root"/>
+  <Constant outputs="value:fok.value" type="string" uid="fok" uid_parent="root" value="Sharing %s at %s"/>
+  <Node _name="Format Into String" inputs="format string:fok.value,input 1:ru.t,input 2:url.value" outputs="resulting string:mok.s" uid="mok" uid_parent="root"/>
+  <Constant outputs="value:f60.value" type="string" uid="f60" uid_parent="root" value="Port %d is in use by another program. Choose another port."/>
+  <Node _name="Format Into String" inputs="format string:f60.value,input 1:port.value" outputs="resulting string:m60.s" uid="m60" uid_parent="root"/>
+  <Constant outputs="value:f5001.value" type="string" uid="f5001" uid_parent="root" value="Port %d is shared already. Choose another port."/>
+  <Node _name="Format Into String" inputs="format string:f5001.value,input 1:port.value" outputs="resulting string:m5001.s" uid="m5001" uid_parent="root"/>
+  <Constant outputs="value:fe.value" type="string" uid="fe" uid_parent="root" value="Could not share %s (error %d)."/>
+  <Node _name="Format Into String" inputs="format string:fe.value,input 1:ru.t,input 2:eu.code" outputs="resulting string:mer.s" uid="mer" uid_parent="root"/>
+  <Constant outputs="value:c60.value" type="int32" uid="c60" uid_parent="root" value="60"/>
+  <Constant outputs="value:c5001.value" type="int32" uid="c5001" uid_parent="root" value="5001"/>
+  <Node _name="Equal?" inputs="x:eu.code,y:c60.value" outputs="x = y?:is60.v" uid="is60" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:eu.code,y:c5001.value" outputs="x = y?:is5001.v" uid="is5001" uid_parent="root"/>
+  <Node _name="Select" inputs="t:m5001.s,s:is5001.v,f:mer.s" outputs="s? t\3Af:mb1.v" uid="mb1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:m60.s,s:is60.v,f:mb1.v" outputs="s? t\3Af:mbad.v" uid="mbad" uid_parent="root"/>
+  <Node _name="Select" inputs="t:mbad.v,s:eu.status,f:mok.s" outputs="s? t\3Af:msg.v" uid="msg" uid_parent="root"/>
+  <Indicator _name="URL" conIdx="4" connection="recommended" description="The share's link." inputs="value:url.value" type="string" uid="o_u" uid_parent="root" value=""/>
+  <Indicator _name="message" conIdx="5" connection="recommended" description="One line for the UI." inputs="value:msg.v" type="string" uid="o_m" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="The error of RemoteVI Start.vi or Start Window.vi." inputs="value:err.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

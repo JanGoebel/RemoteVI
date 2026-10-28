@@ -1,0 +1,456 @@
+<VI _name="RemoteVI Server.vi" description="RemoteVI Server\3A share any window in a web browser without writing code. Left\3A the windows that can be shared\2C LabVIEW's own first\2C then LabVIEW-built applications\2C then other programs (LabVIEW windows only narrows the list\3B it refreshes every 3 s and on Refresh list). Select one\2C choose the port\2C Whole network (default\3A this computer only) and View only\2C and press Share selected window. Right\3A the shares of this application instance with their port\2C reach and clients\2C live\3B select one for its details\2C Stop sharing\2C Copy link or Open in browser. Every link carries its share's random access token (docs\5Csecurity.md). A running VI of this LabVIEW is shared as a VI target\2C any other window as a window target (RemoteVI Server Share.vi). In LabVIEW (Tools menu) closing the window keeps the shares running\3B RemoteVI Server.exe stops every share when its window closes\2C runs a landing page listing the shares (default port 8088\2C the next free port when that is in use) and reads its command line (RemoteVI Parse Arguments.vi\3A --share &lt;window title&gt; --port N --token T --whole-network --view-only --landing-port P).">
+  <Node _name="VI Server Reference" type="{LV.VI}" outputs="This VI:tv.This VI" uid="tv" uid_parent="root"/>
+  <Constant _name="layout" outputs="value:lay.value" type="array{cluster{string.label,int32.left,int32.top,int32.width,int32.height}}" uid="lay" uid_parent="root" value="[[Windows you can share,16,12,440,420],[LabVIEW windows only,16,446,180,28],[Refresh list,336,446,120,28],[Port,480,12,90,0],[Whole network,650,30,155,28],[View only,820,30,155,28],[Share selected window,480,72,495,40],[Shared now,480,126,440,170],[Stop sharing,480,306,155,28],[Copy link,650,306,155,28],[Open in browser,820,306,155,28],[Details,480,346,495,128],[Message,16,488,960,24],[Landing page,16,532,960,24],[tick,0,0,-1,0]]"/>
+  <Constant _name="panel size" outputs="value:psz.value" type="cluster{int32.width,int32.height}" uid="psz" uid_parent="root" value="[992,576]"/>
+  <Constant _name="title" outputs="value:ttl.value" type="string" uid="ttl" uid_parent="root" value="RemoteVI Server"/>
+  <Call inputs="VI:tv.This VI,layout:lay.value,panel size:psz.value,title:ttl.value" outputs="" target="RemoteVI Arrange Controls.vi" uid="arr" uid_parent="root"/>
+
+  <Node _name="VI Server Reference" element="Windows you can share" outputs="Windows you can share:wl0.Windows you can share" uid="wl0" uid_parent="root"/>
+  <Constant outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
+  <Constant outputs="value:k4.value" type="int32" uid="k4" uid_parent="root" value="4"/>
+  <Constant outputs="value:km1.value" type="int32" uid="km1" uid_parent="root" value="-1"/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Constant outputs="value:wh.value" type="array{string}" uid="wh" uid_parent="root" value="[Window,Program,Kind]"/>
+  <Constant outputs="value:sh.value" type="array{string}" uid="sh" uid_parent="root" value="[Shared,Port,Reach,Clients]"/>
+  <Node _name="Property Node" fields="write+Number of Columns,write+Visible Items\3AColumn Headers Visible,write+Column Header Strings[],write+Value" inputs="reference:wl0.Windows you can share,Number of Columns:k3.value,Visible Items\3AColumn Headers Visible:tru.value,Column Header Strings[]:wh.value,Value:km1.value" outputs="reference out:wl1.ref,error out:" type="{LV.MulticolumnListbox}" uid="wl1" uid_parent="root"/>
+  <Node _name="VI Server Reference" element="Shared now" outputs="Shared now:sl0.Shared now" uid="sl0" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Number of Columns,write+Visible Items\3AColumn Headers Visible,write+Column Header Strings[],write+Value" inputs="reference:sl0.Shared now,Number of Columns:k4.value,Visible Items\3AColumn Headers Visible:tru.value,Column Header Strings[]:sh.value,Value:km1.value" outputs="reference out:sl1.ref,error out:" type="{LV.MulticolumnListbox}" uid="sl1" uid_parent="root"/>
+  <Constant _name="column widths" outputs="value:cwd.value" type="array{cluster{int32.list,int32.column,uint32.width}}" uid="cwd" uid_parent="root" value="[[0,0,236],[0,1,120],[0,2,80],[1,0,196],[1,1,46],[1,2,104],[1,3,50]]"/>
+  <Node _name="Build Array" inputs="element:wl1.ref,element:sl1.ref" outputs="appended array:lists.v" uid="lists" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Column widths" maxin="" maxout="" uid="fcw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cwd.value" mode="index" outputs="value:cw.value" uid="cw" uid_parent="fcw"/>
+    <Tunnel _id="In2" inputs="value:lists.v" outputs="value:cw_l.value" uid="cw_l" uid_parent="fcw"/>
+    <Node _name="Unbundle By Name" fields="list,column,width" inputs="input cluster:cw.value" outputs="list:cwu.l,column:cwu.c,width:cwu.w" uid="cwu" uid_parent="fcw"/>
+    <Node _name="Index Array" inputs="array:cw_l.value,index:cwu.l" outputs="element:cwr.v" uid="cwr" uid_parent="fcw"/>
+    <Constant outputs="value:cwa0.value" type="cluster{int32.Row,int32.Column}" uid="cwa0" uid_parent="fcw" value="[-1,0]"/>
+    <Node _name="Bundle By Name" fields="Column" inputs="input cluster:cwa0.value,Column:cwu.c" outputs="output cluster:cwa.v" uid="cwa" uid_parent="fcw"/>
+    <Node _name="Property Node" fields="write+Active Cell\3AActive Cell,write+Cell Size\3AWidth" inputs="reference:cwr.v,Active Cell\3AActive Cell:cwa.v,Cell Size\3AWidth:cwu.w" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="cwp" uid_parent="fcw"/>
+  </Structure>
+  <Control _name="Windows you can share" description="The windows that can be shared\3A window\2C program\2C kind (LabVIEW\2C LabVIEW app\2C other program)." outputs="value:" style="Listbox" type="int32" uid="wlist" uid_parent="root" value="0"/>
+  <Control _name="Shared now" description="The shares of this application instance\3A shared window\2C port\2C reach\2C clients (or stopped)." outputs="value:" style="Listbox" type="int32" uid="slist" uid_parent="root" value="0"/>
+
+  <Node _name="Property Node" fields="read+Front Panel Window\3AOS Window" inputs="reference:tv.This VI" outputs="Front Panel Window\3AOS Window:me.os,reference out:,error out:" type="{LV.VI}" uid="me" uid_parent="root"/>
+  <Node _name="To Unsigned Quad Integer" inputs="number:me.os" outputs="unsigned 64bit integer:own.u" uid="own" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Application\3AKind,read+Application\3ACommand Line Arguments" inputs="reference:" outputs="Application\3AKind:ap.kind,Application\3ACommand Line Arguments:ap.args,reference out:,error out:" type="{LV.Application}" uid="ap" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:ap.kind" outputs="32bit integer:kind.i" uid="kind" uid_parent="root"/>
+  <Constant _name="Development System" outputs="value:kdev.value" type="int32" uid="kdev" uid_parent="root" value="1"/>
+  <Node _name="Not Equal?" inputs="x:kind.i,y:kdev.value" outputs="x != y?:rt.v" uid="rt" uid_parent="root"/>
+  <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="root" value="1"/>
+  <Node _name="Array Subset" inputs="array:ap.args,index:k1.value" outputs="subarray:args.v" uid="args" uid_parent="root"/>
+  <Call inputs="args:args.v" outputs="options:pa.options" target="RemoteVI Parse Arguments.vi" uid="pa" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="share,port,token,whole network,view only,landing port" inputs="input cluster:pa.options" outputs="share:po.share,port:po.port,token:po.token,whole network:po.wn,view only:po.vo,landing port:po.lp" uid="po" uid_parent="root"/>
+  <Constant outputs="value:u0.value" type="uint16" uid="u0" uid_parent="root" value="0"/>
+  <Node _name="Greater?" inputs="x:po.lp,y:u0.value" outputs="x &gt; y?:haslp.v" uid="haslp" uid_parent="root"/>
+  <Node _name="And" inputs="x:rt.v,y:haslp.v" outputs="x .and. y?:dolp.v" uid="dolp" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="dolp.v" uid="clp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:po.lp" uid="clp_i1" uid_parent="clp"/>
+    <Tunnel _id="In2" inputs="value:po.wn" uid="clp_i2" uid_parent="clp"/>
+    <Tunnel _id="In3" inputs="value:u0.value" uid="clp_i3" uid_parent="clp"/>
+    <CaseFrame label="RemoteVI Server.exe\3A start the landing page" selector="True" selectout="" uid="clpt" uid_parent="clp">
+      <Tunnel _id="In1" outputs="value:l_lp.value" uid="l_lp" uid_parent="clpt"/>
+      <Tunnel _id="In2" outputs="value:l_wn.value" uid="l_wn" uid_parent="clpt"/>
+      <Tunnel _id="In3" outputs="value:l_u0.value" uid="l_u0" uid_parent="clpt"/>
+      <Call inputs="port:l_lp.value,whole network?:l_wn.value" outputs="URL:slp.URL,port out:slp.port out,error out:slp.error out" target="RemoteVI Start Landing Page.vi" uid="slp" uid_parent="clpt"/>
+      <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:slp.error out" outputs="status:le.status,code:le.code" uid="le" uid_parent="clpt"/>
+      <Constant outputs="value:lfmt.value" type="string" uid="lfmt" uid_parent="clpt" value="Landing page (a list of every share)\3A %s"/>
+      <Node _name="Format Into String" inputs="format string:lfmt.value,input 1:slp.URL" outputs="resulting string:lok.s" uid="lok" uid_parent="clpt"/>
+      <Constant outputs="value:lbad.value" type="string" uid="lbad" uid_parent="clpt" value="The landing page did not start (error %d)."/>
+      <Node _name="Format Into String" inputs="format string:lbad.value,input 1:le.code" outputs="resulting string:lbs.s" uid="lbs" uid_parent="clpt"/>
+      <Node _name="Select" inputs="t:lbs.s,s:le.status,f:lok.s" outputs="s? t\3Af:ltxt.v" uid="ltxt" uid_parent="clpt"/>
+      <Node _name="Select" inputs="t:l_u0.value,s:le.status,f:slp.port out" outputs="s? t\3Af:lport.v" uid="lport" uid_parent="clpt"/>
+      <Tunnel _id="Out1" inputs="value:ltxt.v" uid="clpt_o1" uid_parent="clpt"/>
+      <Tunnel _id="Out2" inputs="value:lport.v" uid="clpt_o2" uid_parent="clpt"/>
+    </CaseFrame>
+    <CaseFrame label="In LabVIEW\3A no landing page" selector="False" selectout="" uid="clpf" uid_parent="clp">
+      <Tunnel _id="In1" outputs="value:" uid="n_lp" uid_parent="clpf"/>
+      <Tunnel _id="In2" outputs="value:" uid="n_wn" uid_parent="clpf"/>
+      <Tunnel _id="In3" outputs="value:n_u0.value" uid="n_u0" uid_parent="clpf"/>
+      <Constant outputs="value:nol.value" type="string" uid="nol" uid_parent="clpf" value="Each share has its own link (Copy link). RemoteVI Server.exe also runs a landing page that lists them all."/>
+      <Tunnel _id="Out1" inputs="value:nol.value" uid="clpf_o1" uid_parent="clpf"/>
+      <Tunnel _id="Out2" inputs="value:n_u0.value" uid="clpf_o2" uid_parent="clpf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:lptxt.value" uid="lptxt" uid_parent="clp"/>
+    <Tunnel _id="Out2" outputs="value:lpport.value" uid="lpport" uid_parent="clp"/>
+  </Structure>
+  <Indicator _name="Landing page" description="The landing page's link (RemoteVI Server.exe)." inputs="value:lptxt.value" type="string" uid="o_lp" uid_parent="root" value=""/>
+
+  <Constant outputs="value:f0.value" type="bool" uid="f0" uid_parent="root" value="false"/>
+  <Constant outputs="value:h0.value" type="uint64" uid="h0" uid_parent="root" value="0"/>
+  <Call inputs="labview only?:f0.value,skip:own.u,selected hWnd:h0.value" outputs="rows:sw0.rows,items:sw0.items,selected:" target="RemoteVI Server Windows.vi" uid="sw0" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Item Names" inputs="reference:wl0.Windows you can share,Item Names:sw0.items" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="wl2" uid_parent="root"/>
+  <Call inputs="" outputs="servers:st0.servers,text:" target="RemoteVI Status.vi" uid="st0" uid_parent="root"/>
+  <Call inputs="status:st0.servers" outputs="items:,ports:sr0.ports" target="RemoteVI Share Rows.vi" uid="sr0" uid_parent="root"/>
+  <Call inputs="used:sr0.ports,start:po.port" outputs="port:nf0.port" target="RemoteVI Next Free Port.vi" uid="nf0" uid_parent="root"/>
+  <Node _name="Local Variable" element="Port" inputs="Port:nf0.port" uid="lp0" uid_parent="root"/>
+
+  <FreeLabel comment="--share &lt;title&gt;\3A share that window now" uid="lbl1" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Titles" maxin="" maxout="" uid="ftl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:sw0.rows" mode="index" outputs="value:fr.value" uid="fr" uid_parent="ftl"/>
+    <Node _name="Unbundle By Name" fields="title" inputs="input cluster:fr.value" outputs="title:frt.t" uid="frt" uid_parent="ftl"/>
+    <Tunnel _id="Out1" inputs="value:frt.t" mode="index" outputs="value:titles.value" uid="titles" uid_parent="ftl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:titles.value,element:po.share" outputs="index of element:shi.v" uid="shi" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:po.share" outputs="empty?:she.v" uid="she" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Greater Or Equal?" inputs="x:shi.v,y:k0.value" outputs="x &gt;= y?:shf.v" uid="shf" uid_parent="root"/>
+  <Constant outputs="value:m0.value" type="string" uid="m0" uid_parent="root" value="Select a window\2C then press Share selected window."/>
+  <Structure _name="Case Structure" selectin="she.v" uid="csh" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:shf.v" uid="csh_i1" uid_parent="csh"/>
+    <Tunnel _id="In2" inputs="value:sw0.rows" uid="csh_i2" uid_parent="csh"/>
+    <Tunnel _id="In3" inputs="value:shi.v" uid="csh_i3" uid_parent="csh"/>
+    <Tunnel _id="In4" inputs="value:pa.options" uid="csh_i4" uid_parent="csh"/>
+    <Tunnel _id="In5" inputs="value:m0.value" uid="csh_i5" uid_parent="csh"/>
+    <CaseFrame label="No --share" selector="True" selectout="" uid="csht" uid_parent="csh">
+      <Tunnel _id="In1" outputs="value:" uid="a1" uid_parent="csht"/>
+      <Tunnel _id="In2" outputs="value:" uid="a2" uid_parent="csht"/>
+      <Tunnel _id="In3" outputs="value:" uid="a3" uid_parent="csht"/>
+      <Tunnel _id="In4" outputs="value:" uid="a4" uid_parent="csht"/>
+      <Tunnel _id="In5" outputs="value:a5.value" uid="a5" uid_parent="csht"/>
+      <Tunnel _id="Out1" inputs="value:a5.value" uid="csht_o1" uid_parent="csht"/>
+    </CaseFrame>
+    <CaseFrame label="--share\3A find the window by its title" selector="False" selectout="" uid="cshf" uid_parent="csh">
+      <Tunnel _id="In1" outputs="value:b1.value" uid="b1" uid_parent="cshf"/>
+      <Tunnel _id="In2" outputs="value:b2.value" uid="b2" uid_parent="cshf"/>
+      <Tunnel _id="In3" outputs="value:b3.value" uid="b3" uid_parent="cshf"/>
+      <Tunnel _id="In4" outputs="value:b4.value" uid="b4" uid_parent="cshf"/>
+      <Tunnel _id="In5" outputs="value:" uid="b5" uid_parent="cshf"/>
+      <Structure _name="Case Structure" selectin="b1.value" uid="cfd" uid_parent="cshf">
+        <Tunnel _id="In1" inputs="value:b2.value" uid="cfd_i1" uid_parent="cfd"/>
+        <Tunnel _id="In2" inputs="value:b3.value" uid="cfd_i2" uid_parent="cfd"/>
+        <Tunnel _id="In3" inputs="value:b4.value" uid="cfd_i3" uid_parent="cfd"/>
+        <CaseFrame label="Found\3A share it" selector="True" selectout="" uid="cfdt" uid_parent="cfd">
+          <Tunnel _id="In1" outputs="value:d_rows.value" uid="d_rows" uid_parent="cfdt"/>
+          <Tunnel _id="In2" outputs="value:d_i.value" uid="d_i" uid_parent="cfdt"/>
+          <Tunnel _id="In3" outputs="value:d_o.value" uid="d_o" uid_parent="cfdt"/>
+          <Node _name="Index Array" inputs="array:d_rows.value,index:d_i.value" outputs="element:drow.v" uid="drow" uid_parent="cfdt"/>
+          <Node _name="Unbundle By Name" fields="port,token,whole network,view only" inputs="input cluster:d_o.value" outputs="port:du.port,token:du.token,whole network:du.wn,view only:du.vo" uid="du" uid_parent="cfdt"/>
+          <Call inputs="row:drow.v,port:du.port,whole network?:du.wn,view only?:du.vo,token:du.token" outputs="URL:,message:dsh.message,error out:" target="RemoteVI Server Share.vi" uid="dsh" uid_parent="cfdt"/>
+          <Tunnel _id="Out1" inputs="value:dsh.message" uid="cfdt_o1" uid_parent="cfdt"/>
+        </CaseFrame>
+        <CaseFrame label="Not found" selector="False" selectout="" uid="cfdf" uid_parent="cfd">
+          <Tunnel _id="In1" outputs="value:" uid="e_rows" uid_parent="cfdf"/>
+          <Tunnel _id="In2" outputs="value:" uid="e_i" uid_parent="cfdf"/>
+          <Tunnel _id="In3" outputs="value:e_o.value" uid="e_o" uid_parent="cfdf"/>
+          <Node _name="Unbundle By Name" fields="share" inputs="input cluster:e_o.value" outputs="share:eu.share" uid="eu" uid_parent="cfdf"/>
+          <Constant outputs="value:enf.value" type="string" uid="enf" uid_parent="cfdf" value="No window is called %s."/>
+          <Node _name="Format Into String" inputs="format string:enf.value,input 1:eu.share" outputs="resulting string:em.s" uid="em" uid_parent="cfdf"/>
+          <Tunnel _id="Out1" inputs="value:em.s" uid="cfdf_o1" uid_parent="cfdf"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:fdm.value" uid="fdm" uid_parent="cfd"/>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:fdm.value" uid="cshf_o1" uid_parent="cshf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:msg0.value" uid="msg0" uid_parent="csh"/>
+  </Structure>
+  <Indicator _name="Message" description="What happened last." inputs="value:msg0.value" type="string" uid="o_m" uid_parent="root" value=""/>
+  <Indicator _name="Details" description="The status of the share selected in Shared now (all shares when none is selected)\3A link\2C clients\2C frame rate\2C data rate\2C last error." inputs="value:dt0.value" type="string" uid="o_d" uid_parent="root" value=""/>
+  <Constant outputs="value:dt0.value" type="string" uid="dt0" uid_parent="root" value=""/>
+
+  <Constant _name="state" outputs="value:s0.value" type="cluster{array{cluster{int32.group,string.program,string.title,uint32.pid,uint64.hWnd}}.rows,array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}}.servers,array.2{string}.items,int32.count,bool.force,uint16.landing port,bool.runtime}" uid="s0" uid_parent="root" value="[[],[],[],0,false,0,false]"/>
+  <Constant outputs="value:it0.value" type="array.2{string}" uid="it0" uid_parent="root" value="[]"/>
+  <Node _name="Bundle By Name" fields="rows,servers,items,count,force,landing port,runtime" inputs="input cluster:s0.value,rows:sw0.rows,servers:st0.servers,items:it0.value,count:k1.value,force:f0.value,landing port:lpport.value,runtime:rt.v" outputs="output cluster:si.v" uid="si" uid_parent="root"/>
+
+  <Constant outputs="value:ntype.value" type="bool" uid="ntype" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="notification data type:ntype.value" outputs="notifier out:on.notifier out,error out:" uid="on" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Tick every 500 ms until the event loop ends" uid="tl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:t_not.value" uid="t_not" uid_parent="tl"/>
+    <Constant outputs="value:k500.value" type="int32" uid="k500" uid_parent="tl" value="500"/>
+    <Node _name="Wait on Notification" inputs="notifier:t_not.value,timeout in ms (-1):k500.value" outputs="timed out?:wn.timed out?" uid="wn" uid_parent="tl"/>
+    <Structure _name="Case Structure" selectin="wn.timed out?" uid="tc" uid_parent="tl">
+      <CaseFrame label="Tick\3A signal the hidden tick control" selector="True" selectout="" uid="tct" uid_parent="tc">
+        <Node _name="VI Server Reference" element="tick" outputs="tick:tr.tick" uid="tr" uid_parent="tct"/>
+        <Constant outputs="value:ttru.value" type="bool" uid="ttru" uid_parent="tct" value="true"/>
+        <Node _name="Property Node" fields="write+Value (Signaling)" inputs="reference:tr.tick,Value (Signaling):ttru.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="sig" uid_parent="tct"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="tcf" uid_parent="tc"/>
+    </Structure>
+    <Node _name="Not" inputs="x:wn.timed out?" outputs=".not. x?:tstop.v" uid="tstop" uid_parent="tl"/>
+    <Condition inputs="value:tstop.v" uid="tlc" uid_parent="tl" value="stop"/>
+  </Structure>
+
+  <Structure _name="While Loop" count="" label="Event loop" uid="evl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:e_not.value" uid="e_not" uid_parent="evl"/>
+    <Tunnel _id="In2" inputs="value:own.u" outputs="value:e_own.value" uid="e_own" uid_parent="evl"/>
+    <ShiftReg uid="srs" uid_parent="evl">
+      <Left inputs="value:si.v" outputs="value:state.value" uid="srsl" uid_parent="srs"/>
+      <Right inputs="value:ev_st.value" outputs="value:" uid="srsr" uid_parent="srs"/>
+    </ShiftReg>
+    <Structure _name="Event Structure" uid="ev" uid_parent="evl">
+      <Tunnel _id="In1" inputs="value:state.value" uid="evI1" uid_parent="ev"/>
+      <Tunnel _id="In2" inputs="value:e_own.value" uid="evI2" uid_parent="ev"/>
+      <CaseFrame selector=" &quot;tick&quot;\3A Value Change " uid="ftk" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:ftk_st.value" uid="ftk_st" uid_parent="ftk"/>
+        <Tunnel _id="In2" outputs="value:ftk_lv.value" uid="ftk_lv" uid_parent="ftk"/>
+        <Constant outputs="value:ftk_f.value" type="bool" uid="ftk_f" uid_parent="ftk" value="false"/>
+        <Control _name="tick" description="Hidden\3B the tick loop signals it every 500 ms." outputs="value:" type="bool" uid="tick" uid_parent="ftk" value="false"/>
+        <Node _name="Unbundle By Name" fields="rows,items,count,force" inputs="input cluster:ftk_st.value" outputs="rows:ftku.rows,items:ftku.items,count:ftku.count,force:ftku.force" uid="ftku" uid_parent="ftk"/>
+        <Call inputs="" outputs="servers:ftks.servers,text:" target="RemoteVI Status.vi" uid="ftks" uid_parent="ftk"/>
+        <Call inputs="status:ftks.servers" outputs="items:ftkr.items,ports:" target="RemoteVI Share Rows.vi" uid="ftkr" uid_parent="ftk"/>
+        <Node _name="Flatten To String" inputs="anything:ftkr.items" outputs="data string:ftkfa.s" uid="ftkfa" uid_parent="ftk"/>
+        <Node _name="Flatten To String" inputs="anything:ftku.items" outputs="data string:ftkfb.s" uid="ftkfb" uid_parent="ftk"/>
+        <Node _name="Not Equal?" inputs="x:ftkfa.s,y:ftkfb.s" outputs="x != y?:ftkch.v" uid="ftkch" uid_parent="ftk"/>
+        <Structure _name="Case Structure" selectin="ftkch.v" uid="ftkc1" uid_parent="ftk">
+          <Tunnel _id="In1" inputs="value:ftkr.items" uid="ftkc1i1" uid_parent="ftkc1"/>
+          <CaseFrame label="Shares changed" selector="True" selectout="" uid="ftkc1t" uid_parent="ftkc1">
+            <Tunnel _id="In1" outputs="value:ftkc1a.value" uid="ftkc1a" uid_parent="ftkc1t"/>
+            <Node _name="VI Server Reference" element="Shared now" outputs="Shared now:ftksn.Shared now" uid="ftksn" uid_parent="ftkc1t"/>
+            <Node _name="Property Node" fields="write+Item Names" inputs="reference:ftksn.Shared now,Item Names:ftkc1a.value" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="ftkwi" uid_parent="ftkc1t"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="ftkc1f" uid_parent="ftkc1">
+            <Tunnel _id="In1" outputs="value:" uid="ftkc1b" uid_parent="ftkc1f"/>
+          </CaseFrame>
+        </Structure>
+        <Node _name="Local Variable" element="Shared now" outputs="Shared now:ftkls.value" uid="ftkls" uid_parent="ftk"/>
+        <Node _name="Array Size" inputs="array:ftks.servers" outputs="size(s):ftkn.v" uid="ftkn" uid_parent="ftk"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:ftkls.value" outputs="x &gt;= 0?:ftkp0.v" uid="ftkp0" uid_parent="ftk"/>
+        <Node _name="Less?" inputs="x:ftkls.value,y:ftkn.v" outputs="x &lt; y?:ftkp1.v" uid="ftkp1" uid_parent="ftk"/>
+        <Node _name="And" inputs="x:ftkp0.v,y:ftkp1.v" outputs="x .and. y?:ftkone.v" uid="ftkone" uid_parent="ftk"/>
+        <Constant outputs="value:ftkk1.value" type="int32" uid="ftkk1" uid_parent="ftk" value="1"/>
+        <Node _name="Array Subset" inputs="array:ftks.servers,index:ftkls.value,length:ftkk1.value" outputs="subarray:ftksub.v" uid="ftksub" uid_parent="ftk"/>
+        <Node _name="Select" inputs="t:ftksub.v,s:ftkone.v,f:ftks.servers" outputs="s? t\3Af:ftksel.v" uid="ftksel" uid_parent="ftk"/>
+        <Call inputs="status:ftksel.v" outputs="text:ftktx.text" target="RemoteVI Status Text.vi" uid="ftktx" uid_parent="ftk"/>
+        <Node _name="Local Variable" element="Details" inputs="Details:ftktx.text" uid="ftkld" uid_parent="ftk"/>
+        <Constant outputs="value:ftkk6.value" type="int32" uid="ftkk6" uid_parent="ftk" value="6"/>
+        <Node _name="Quotient &amp; Remainder" inputs="x:ftku.count,y:ftkk6.value" outputs="x-y*floor(x/y):ftkqr.rem,floor(x/y):" uid="ftkqr" uid_parent="ftk"/>
+        <Constant outputs="value:ftkk0.value" type="int32" uid="ftkk0" uid_parent="ftk" value="0"/>
+        <Node _name="Equal?" inputs="x:ftkqr.rem,y:ftkk0.value" outputs="x = y?:ftkdue.v" uid="ftkdue" uid_parent="ftk"/>
+        <Node _name="Or" inputs="x:ftkdue.v,y:ftku.force" outputs="x .or. y?:ftkrw.v" uid="ftkrw" uid_parent="ftk"/>
+        <Structure _name="Case Structure" selectin="ftkrw.v" uid="ftkc2" uid_parent="ftk">
+          <Tunnel _id="In1" inputs="value:ftku.rows" uid="ftkc2i1" uid_parent="ftkc2"/>
+          <Tunnel _id="In2" inputs="value:ftk_lv.value" uid="ftkc2i2" uid_parent="ftkc2"/>
+          <CaseFrame label="Refresh the window list\2C keep the selected window selected" selector="True" selectout="" uid="ftkc2t" uid_parent="ftkc2">
+            <Tunnel _id="In1" outputs="value:ftkw_rows.value" uid="ftkw_rows" uid_parent="ftkc2t"/>
+            <Tunnel _id="In2" outputs="value:ftkw_skip.value" uid="ftkw_skip" uid_parent="ftkc2t"/>
+            <Node _name="Local Variable" element="Windows you can share" outputs="Windows you can share:ftklw.value" uid="ftklw" uid_parent="ftkc2t"/>
+            <Node _name="Index Array" inputs="array:ftkw_rows.value,index:ftklw.value" outputs="element:ftkold.v" uid="ftkold" uid_parent="ftkc2t"/>
+            <Node _name="Unbundle By Name" fields="hWnd" inputs="input cluster:ftkold.v" outputs="hWnd:ftkoh.h" uid="ftkoh" uid_parent="ftkc2t"/>
+            <Node _name="Local Variable" element="LabVIEW windows only" outputs="LabVIEW windows only:ftklo.value" uid="ftklo" uid_parent="ftkc2t"/>
+            <Call inputs="labview only?:ftklo.value,skip:ftkw_skip.value,selected hWnd:ftkoh.h" outputs="rows:ftksw.rows,items:ftksw.items,selected:ftksw.selected" target="RemoteVI Server Windows.vi" uid="ftksw" uid_parent="ftkc2t"/>
+            <Node _name="VI Server Reference" element="Windows you can share" outputs="Windows you can share:ftkwr.Windows you can share" uid="ftkwr" uid_parent="ftkc2t"/>
+            <Node _name="Property Node" fields="write+Item Names,write+Value" inputs="reference:ftkwr.Windows you can share,Item Names:ftksw.items,Value:ftksw.selected" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="ftkww" uid_parent="ftkc2t"/>
+            <Tunnel _id="Out1" inputs="value:ftksw.rows" uid="ftkc2to" uid_parent="ftkc2t"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="ftkc2f" uid_parent="ftkc2">
+            <Tunnel _id="In1" outputs="value:ftkk_rows.value" uid="ftkk_rows" uid_parent="ftkc2f"/>
+            <Tunnel _id="In2" outputs="value:" uid="ftkk_skip" uid_parent="ftkc2f"/>
+            <Tunnel _id="Out1" inputs="value:ftkk_rows.value" uid="ftkc2fo" uid_parent="ftkc2f"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:ftknrows.value" uid="ftknrows" uid_parent="ftkc2"/>
+        </Structure>
+        <Node _name="Add" inputs="x:ftku.count,y:ftkk1.value" outputs="x+y:ftknc.v" uid="ftknc" uid_parent="ftk"/>
+        <Constant outputs="value:ftknf.value" type="bool" uid="ftknf" uid_parent="ftk" value="false"/>
+        <Node _name="Bundle By Name" fields="rows,servers,items,count,force" inputs="input cluster:ftk_st.value,rows:ftknrows.value,servers:ftks.servers,items:ftkr.items,count:ftknc.v,force:ftknf.value" outputs="output cluster:ftknb.v" uid="ftknb" uid_parent="ftk"/>
+        <Tunnel _id="Out1" inputs="value:ftk_f.value" uid="ftk_o1" uid_parent="ftk"/>
+        <Tunnel _id="Out2" inputs="value:ftknb.v" uid="ftk_o2" uid_parent="ftk"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Refresh list&quot;\3A Value Change " uid="frf" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:frf_st.value" uid="frf_st" uid_parent="frf"/>
+        <Tunnel _id="In2" outputs="value:" uid="frf_lv" uid_parent="frf"/>
+        <Constant outputs="value:frf_f.value" type="bool" uid="frf_f" uid_parent="frf" value="false"/>
+        <Control _name="Refresh list" description="Reads the window list again." outputs="value:" style="latched" type="bool" uid="rfb" uid_parent="frf" value="false"/>
+        <Constant outputs="value:frft.value" type="bool" uid="frft" uid_parent="frf" value="true"/>
+        <Node _name="Bundle By Name" fields="force" inputs="input cluster:frf_st.value,force:frft.value" outputs="output cluster:frfnb.v" uid="frfnb" uid_parent="frf"/>
+        <Tunnel _id="Out1" inputs="value:frf_f.value" uid="frf_o1" uid_parent="frf"/>
+        <Tunnel _id="Out2" inputs="value:frfnb.v" uid="frf_o2" uid_parent="frf"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;LabVIEW windows only&quot;\3A Value Change " uid="flo" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:flo_st.value" uid="flo_st" uid_parent="flo"/>
+        <Tunnel _id="In2" outputs="value:" uid="flo_lv" uid_parent="flo"/>
+        <Constant outputs="value:flo_f.value" type="bool" uid="flo_f" uid_parent="flo" value="false"/>
+        <Control _name="LabVIEW windows only" description="Lists only the windows of LabVIEW and of LabVIEW-built applications." outputs="value:" type="bool" uid="lob" uid_parent="flo" value="false"/>
+        <Constant outputs="value:flot.value" type="bool" uid="flot" uid_parent="flo" value="true"/>
+        <Node _name="Bundle By Name" fields="force" inputs="input cluster:flo_st.value,force:flot.value" outputs="output cluster:flonb.v" uid="flonb" uid_parent="flo"/>
+        <Tunnel _id="Out1" inputs="value:flo_f.value" uid="flo_o1" uid_parent="flo"/>
+        <Tunnel _id="Out2" inputs="value:flonb.v" uid="flo_o2" uid_parent="flo"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Share selected window&quot;\3A Value Change " uid="fsh" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fsh_st.value" uid="fsh_st" uid_parent="fsh"/>
+        <Tunnel _id="In2" outputs="value:" uid="fsh_lv" uid_parent="fsh"/>
+        <Constant outputs="value:fsh_f.value" type="bool" uid="fsh_f" uid_parent="fsh" value="false"/>
+        <Control _name="Share selected window" description="Shares the window selected in the list." outputs="value:" style="latched" type="bool" uid="shb" uid_parent="fsh" value="false"/>
+        <Control _name="Port" description="TCP port of the next share." outputs="value:fshport.value" type="uint16" uid="fshport" uid_parent="fsh" value="8100"/>
+        <Control _name="Whole network" description="FALSE (default)\3A the link works on this computer only. TRUE\3A everyone who can reach this computer and has the link." outputs="value:fshwn.value" type="bool" uid="fshwn" uid_parent="fsh" value="false"/>
+        <Control _name="View only" description="TRUE\3A the browsers see the window but cannot operate it." outputs="value:fshvo.value" type="bool" uid="fshvo" uid_parent="fsh" value="false"/>
+        <Node _name="Unbundle By Name" fields="rows" inputs="input cluster:fsh_st.value" outputs="rows:fshu.rows" uid="fshu" uid_parent="fsh"/>
+        <Node _name="Local Variable" element="Windows you can share" outputs="Windows you can share:fshlw.value" uid="fshlw" uid_parent="fsh"/>
+        <Node _name="Array Size" inputs="array:fshu.rows" outputs="size(s):fshn.v" uid="fshn" uid_parent="fsh"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:fshlw.value" outputs="x &gt;= 0?:fshp0.v" uid="fshp0" uid_parent="fsh"/>
+        <Node _name="Less?" inputs="x:fshlw.value,y:fshn.v" outputs="x &lt; y?:fshp1.v" uid="fshp1" uid_parent="fsh"/>
+        <Node _name="And" inputs="x:fshp0.v,y:fshp1.v" outputs="x .and. y?:fshok.v" uid="fshok" uid_parent="fsh"/>
+        <Structure _name="Case Structure" selectin="fshok.v" uid="fshc" uid_parent="fsh">
+          <Tunnel _id="In1" inputs="value:fshu.rows" uid="fshci1" uid_parent="fshc"/>
+          <Tunnel _id="In2" inputs="value:fshlw.value" uid="fshci2" uid_parent="fshc"/>
+          <Tunnel _id="In3" inputs="value:fshport.value" uid="fshci3" uid_parent="fshc"/>
+          <Tunnel _id="In4" inputs="value:fshwn.value" uid="fshci4" uid_parent="fshc"/>
+          <Tunnel _id="In5" inputs="value:fshvo.value" uid="fshci5" uid_parent="fshc"/>
+          <CaseFrame label="Share it\2C then suggest the next free port" selector="True" selectout="" uid="fshct" uid_parent="fshc">
+            <Tunnel _id="In1" outputs="value:fsht_rows.value" uid="fsht_rows" uid_parent="fshct"/>
+            <Tunnel _id="In2" outputs="value:fsht_i.value" uid="fsht_i" uid_parent="fshct"/>
+            <Tunnel _id="In3" outputs="value:fsht_p.value" uid="fsht_p" uid_parent="fshct"/>
+            <Tunnel _id="In4" outputs="value:fsht_wn.value" uid="fsht_wn" uid_parent="fshct"/>
+            <Tunnel _id="In5" outputs="value:fsht_vo.value" uid="fsht_vo" uid_parent="fshct"/>
+            <Node _name="Index Array" inputs="array:fsht_rows.value,index:fsht_i.value" outputs="element:fshrow.v" uid="fshrow" uid_parent="fshct"/>
+            <Call inputs="row:fshrow.v,port:fsht_p.value,whole network?:fsht_wn.value,view only?:fsht_vo.value" outputs="URL:,message:fshsh.message,error out:" target="RemoteVI Server Share.vi" uid="fshsh" uid_parent="fshct"/>
+            <Call inputs="" outputs="servers:fshs.servers,text:" target="RemoteVI Status.vi" uid="fshs" uid_parent="fshct"/>
+            <Call inputs="status:fshs.servers" outputs="items:,ports:fshr.ports" target="RemoteVI Share Rows.vi" uid="fshr" uid_parent="fshct"/>
+            <Node _name="Build Array" inputs="array:fshr.ports,element:fsht_p.value" outputs="appended array:fshused.v" uid="fshused" uid_parent="fshct"/>
+            <Call inputs="used:fshused.v,start:fsht_p.value" outputs="port:fshnx.port" target="RemoteVI Next Free Port.vi" uid="fshnx" uid_parent="fshct"/>
+            <Node _name="Local Variable" element="Port" inputs="Port:fshnx.port" uid="fshlp" uid_parent="fshct"/>
+            <Tunnel _id="Out1" inputs="value:fshsh.message" uid="fshcto" uid_parent="fshct"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="fshcf" uid_parent="fshc">
+            <Tunnel _id="In1" outputs="value:" uid="fshf_rows" uid_parent="fshcf"/>
+            <Tunnel _id="In2" outputs="value:" uid="fshf_i" uid_parent="fshcf"/>
+            <Tunnel _id="In3" outputs="value:" uid="fshf_p" uid_parent="fshcf"/>
+            <Tunnel _id="In4" outputs="value:" uid="fshf_wn" uid_parent="fshcf"/>
+            <Tunnel _id="In5" outputs="value:" uid="fshf_vo" uid_parent="fshcf"/>
+            <Constant outputs="value:fshm.value" type="string" uid="fshm" uid_parent="fshcf" value="Select a window in the list first."/>
+            <Tunnel _id="Out1" inputs="value:fshm.value" uid="fshcfo" uid_parent="fshcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:fshmsg.value" uid="fshmsg" uid_parent="fshc"/>
+        </Structure>
+        <Node _name="Local Variable" element="Message" inputs="Message:fshmsg.value" uid="fshlm" uid_parent="fsh"/>
+        <Tunnel _id="Out1" inputs="value:fsh_f.value" uid="fsh_o1" uid_parent="fsh"/>
+        <Tunnel _id="Out2" inputs="value:fsh_st.value" uid="fsh_o2" uid_parent="fsh"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Stop sharing&quot;\3A Value Change " uid="fsp" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fsp_st.value" uid="fsp_st" uid_parent="fsp"/>
+        <Tunnel _id="In2" outputs="value:" uid="fsp_lv" uid_parent="fsp"/>
+        <Constant outputs="value:fsp_f.value" type="bool" uid="fsp_f" uid_parent="fsp" value="false"/>
+        <Control _name="Stop sharing" description="Stops the share selected in Shared now." outputs="value:" style="latched" type="bool" uid="fspb" uid_parent="fsp" value="false"/>
+        <Node _name="Unbundle By Name" fields="servers" inputs="input cluster:fsp_st.value" outputs="servers:fspu.servers" uid="fspu" uid_parent="fsp"/>
+        <Node _name="Local Variable" element="Shared now" outputs="Shared now:fspls.value" uid="fspls" uid_parent="fsp"/>
+        <Node _name="Array Size" inputs="array:fspu.servers" outputs="size(s):fspn.v" uid="fspn" uid_parent="fsp"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:fspls.value" outputs="x &gt;= 0?:fspp0.v" uid="fspp0" uid_parent="fsp"/>
+        <Node _name="Less?" inputs="x:fspls.value,y:fspn.v" outputs="x &lt; y?:fspp1.v" uid="fspp1" uid_parent="fsp"/>
+        <Node _name="And" inputs="x:fspp0.v,y:fspp1.v" outputs="x .and. y?:fspok.v" uid="fspok" uid_parent="fsp"/>
+        <Structure _name="Case Structure" selectin="fspok.v" uid="fspc" uid_parent="fsp">
+          <Tunnel _id="In1" inputs="value:fspu.servers" uid="fspci1" uid_parent="fspc"/>
+          <Tunnel _id="In2" inputs="value:fspls.value" uid="fspci2" uid_parent="fspc"/>
+          <CaseFrame selector="True" selectout="" uid="fspct" uid_parent="fspc">
+            <Tunnel _id="In1" outputs="value:fspt_s.value" uid="fspt_s" uid_parent="fspct"/>
+            <Tunnel _id="In2" outputs="value:fspt_i.value" uid="fspt_i" uid_parent="fspct"/>
+            <Node _name="Index Array" inputs="array:fspt_s.value,index:fspt_i.value" outputs="element:fspe.v" uid="fspe" uid_parent="fspct"/>
+            <Node _name="Unbundle By Name" fields="port,url" inputs="input cluster:fspe.v" outputs="port:fspeu.port,url:fspeu.url" uid="fspeu" uid_parent="fspct"/>
+            <Call inputs="port:fspeu.port" outputs="error out:" target="RemoteVI Stop.vi" uid="fspx" uid_parent="fspct"/>
+            <Constant outputs="value:fspaf.value" type="string" uid="fspaf" uid_parent="fspct" value="Stopped sharing on port %d."/>
+            <Node _name="Format Into String" inputs="format string:fspaf.value,input 1:fspeu.port" outputs="resulting string:fspam.s" uid="fspam" uid_parent="fspct"/>
+            <Tunnel _id="Out1" inputs="value:fspam.s" uid="fspcto" uid_parent="fspct"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="fspcf" uid_parent="fspc">
+            <Tunnel _id="In1" outputs="value:" uid="fspf_s" uid_parent="fspcf"/>
+            <Tunnel _id="In2" outputs="value:" uid="fspf_i" uid_parent="fspcf"/>
+            <Constant outputs="value:fspm.value" type="string" uid="fspm" uid_parent="fspcf" value="Select a share in Shared now first."/>
+            <Tunnel _id="Out1" inputs="value:fspm.value" uid="fspcfo" uid_parent="fspcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:fspmsg.value" uid="fspmsg" uid_parent="fspc"/>
+        </Structure>
+        <Node _name="Local Variable" element="Message" inputs="Message:fspmsg.value" uid="fsplm" uid_parent="fsp"/>
+        <Tunnel _id="Out1" inputs="value:fsp_f.value" uid="fsp_o1" uid_parent="fsp"/>
+        <Tunnel _id="Out2" inputs="value:fsp_st.value" uid="fsp_o2" uid_parent="fsp"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Copy link&quot;\3A Value Change " uid="fcp" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fcp_st.value" uid="fcp_st" uid_parent="fcp"/>
+        <Tunnel _id="In2" outputs="value:" uid="fcp_lv" uid_parent="fcp"/>
+        <Constant outputs="value:fcp_f.value" type="bool" uid="fcp_f" uid_parent="fcp" value="false"/>
+        <Control _name="Copy link" description="Copies the link of the share selected in Shared now." outputs="value:" style="latched" type="bool" uid="fcpb" uid_parent="fcp" value="false"/>
+        <Node _name="Unbundle By Name" fields="servers" inputs="input cluster:fcp_st.value" outputs="servers:fcpu.servers" uid="fcpu" uid_parent="fcp"/>
+        <Node _name="Local Variable" element="Shared now" outputs="Shared now:fcpls.value" uid="fcpls" uid_parent="fcp"/>
+        <Node _name="Array Size" inputs="array:fcpu.servers" outputs="size(s):fcpn.v" uid="fcpn" uid_parent="fcp"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:fcpls.value" outputs="x &gt;= 0?:fcpp0.v" uid="fcpp0" uid_parent="fcp"/>
+        <Node _name="Less?" inputs="x:fcpls.value,y:fcpn.v" outputs="x &lt; y?:fcpp1.v" uid="fcpp1" uid_parent="fcp"/>
+        <Node _name="And" inputs="x:fcpp0.v,y:fcpp1.v" outputs="x .and. y?:fcpok.v" uid="fcpok" uid_parent="fcp"/>
+        <Structure _name="Case Structure" selectin="fcpok.v" uid="fcpc" uid_parent="fcp">
+          <Tunnel _id="In1" inputs="value:fcpu.servers" uid="fcpci1" uid_parent="fcpc"/>
+          <Tunnel _id="In2" inputs="value:fcpls.value" uid="fcpci2" uid_parent="fcpc"/>
+          <CaseFrame selector="True" selectout="" uid="fcpct" uid_parent="fcpc">
+            <Tunnel _id="In1" outputs="value:fcpt_s.value" uid="fcpt_s" uid_parent="fcpct"/>
+            <Tunnel _id="In2" outputs="value:fcpt_i.value" uid="fcpt_i" uid_parent="fcpct"/>
+            <Node _name="Index Array" inputs="array:fcpt_s.value,index:fcpt_i.value" outputs="element:fcpe.v" uid="fcpe" uid_parent="fcpct"/>
+            <Node _name="Unbundle By Name" fields="port,url" inputs="input cluster:fcpe.v" outputs="port:fcpeu.port,url:fcpeu.url" uid="fcpeu" uid_parent="fcpct"/>
+            <Call inputs="text:fcpeu.url" outputs="error out:" target="RemoteVI Copy Text.vi" uid="fcpx" uid_parent="fcpct"/>
+            <Constant outputs="value:fcpaf.value" type="string" uid="fcpaf" uid_parent="fcpct" value="Copied %s"/>
+            <Node _name="Format Into String" inputs="format string:fcpaf.value,input 1:fcpeu.url" outputs="resulting string:fcpam.s" uid="fcpam" uid_parent="fcpct"/>
+            <Tunnel _id="Out1" inputs="value:fcpam.s" uid="fcpcto" uid_parent="fcpct"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="fcpcf" uid_parent="fcpc">
+            <Tunnel _id="In1" outputs="value:" uid="fcpf_s" uid_parent="fcpcf"/>
+            <Tunnel _id="In2" outputs="value:" uid="fcpf_i" uid_parent="fcpcf"/>
+            <Constant outputs="value:fcpm.value" type="string" uid="fcpm" uid_parent="fcpcf" value="Select a share in Shared now first."/>
+            <Tunnel _id="Out1" inputs="value:fcpm.value" uid="fcpcfo" uid_parent="fcpcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:fcpmsg.value" uid="fcpmsg" uid_parent="fcpc"/>
+        </Structure>
+        <Node _name="Local Variable" element="Message" inputs="Message:fcpmsg.value" uid="fcplm" uid_parent="fcp"/>
+        <Tunnel _id="Out1" inputs="value:fcp_f.value" uid="fcp_o1" uid_parent="fcp"/>
+        <Tunnel _id="Out2" inputs="value:fcp_st.value" uid="fcp_o2" uid_parent="fcp"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Open in browser&quot;\3A Value Change " uid="fob" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fob_st.value" uid="fob_st" uid_parent="fob"/>
+        <Tunnel _id="In2" outputs="value:" uid="fob_lv" uid_parent="fob"/>
+        <Constant outputs="value:fob_f.value" type="bool" uid="fob_f" uid_parent="fob" value="false"/>
+        <Control _name="Open in browser" description="Opens the share selected in Shared now in the default browser." outputs="value:" style="latched" type="bool" uid="fobb" uid_parent="fob" value="false"/>
+        <Node _name="Unbundle By Name" fields="servers" inputs="input cluster:fob_st.value" outputs="servers:fobu.servers" uid="fobu" uid_parent="fob"/>
+        <Node _name="Local Variable" element="Shared now" outputs="Shared now:fobls.value" uid="fobls" uid_parent="fob"/>
+        <Node _name="Array Size" inputs="array:fobu.servers" outputs="size(s):fobn.v" uid="fobn" uid_parent="fob"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:fobls.value" outputs="x &gt;= 0?:fobp0.v" uid="fobp0" uid_parent="fob"/>
+        <Node _name="Less?" inputs="x:fobls.value,y:fobn.v" outputs="x &lt; y?:fobp1.v" uid="fobp1" uid_parent="fob"/>
+        <Node _name="And" inputs="x:fobp0.v,y:fobp1.v" outputs="x .and. y?:fobok.v" uid="fobok" uid_parent="fob"/>
+        <Structure _name="Case Structure" selectin="fobok.v" uid="fobc" uid_parent="fob">
+          <Tunnel _id="In1" inputs="value:fobu.servers" uid="fobci1" uid_parent="fobc"/>
+          <Tunnel _id="In2" inputs="value:fobls.value" uid="fobci2" uid_parent="fobc"/>
+          <CaseFrame selector="True" selectout="" uid="fobct" uid_parent="fobc">
+            <Tunnel _id="In1" outputs="value:fobt_s.value" uid="fobt_s" uid_parent="fobct"/>
+            <Tunnel _id="In2" outputs="value:fobt_i.value" uid="fobt_i" uid_parent="fobct"/>
+            <Node _name="Index Array" inputs="array:fobt_s.value,index:fobt_i.value" outputs="element:fobe.v" uid="fobe" uid_parent="fobct"/>
+            <Node _name="Unbundle By Name" fields="port,url" inputs="input cluster:fobe.v" outputs="port:fobeu.port,url:fobeu.url" uid="fobeu" uid_parent="fobct"/>
+            <Call inputs="URL:fobeu.url" outputs="error out:" target="RemoteVI Open URL.vi" uid="fobx" uid_parent="fobct"/>
+            <Constant outputs="value:fobaf.value" type="string" uid="fobaf" uid_parent="fobct" value="Opened %s"/>
+            <Node _name="Format Into String" inputs="format string:fobaf.value,input 1:fobeu.url" outputs="resulting string:fobam.s" uid="fobam" uid_parent="fobct"/>
+            <Tunnel _id="Out1" inputs="value:fobam.s" uid="fobcto" uid_parent="fobct"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="fobcf" uid_parent="fobc">
+            <Tunnel _id="In1" outputs="value:" uid="fobf_s" uid_parent="fobcf"/>
+            <Tunnel _id="In2" outputs="value:" uid="fobf_i" uid_parent="fobcf"/>
+            <Constant outputs="value:fobm.value" type="string" uid="fobm" uid_parent="fobcf" value="Select a share in Shared now first."/>
+            <Tunnel _id="Out1" inputs="value:fobm.value" uid="fobcfo" uid_parent="fobcf"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:fobmsg.value" uid="fobmsg" uid_parent="fobc"/>
+        </Structure>
+        <Node _name="Local Variable" element="Message" inputs="Message:fobmsg.value" uid="foblm" uid_parent="fob"/>
+        <Tunnel _id="Out1" inputs="value:fob_f.value" uid="fob_o1" uid_parent="fob"/>
+        <Tunnel _id="Out2" inputs="value:fob_st.value" uid="fob_o2" uid_parent="fob"/>
+      </CaseFrame>
+      <CaseFrame selector=" Panel Close? " uid="fpc" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fpc_st.value" uid="fpc_st" uid_parent="fpc"/>
+        <Tunnel _id="In2" outputs="value:" uid="fpc_lv" uid_parent="fpc"/>
+        <Node _name="Unbundle By Name" fields="runtime,landing port" inputs="input cluster:fpc_st.value" outputs="runtime:fpcu.rt,landing port:fpcu.lp" uid="fpcu" uid_parent="fpc"/>
+        <Structure _name="Case Structure" selectin="fpcu.rt" uid="fpcc" uid_parent="fpc">
+          <Tunnel _id="In1" inputs="value:fpcu.lp" uid="fpcci1" uid_parent="fpcc"/>
+          <CaseFrame label="RemoteVI Server.exe\3A stop everything" selector="True" selectout="" uid="fpcct" uid_parent="fpcc">
+            <Tunnel _id="In1" outputs="value:fpct_lp.value" uid="fpct_lp" uid_parent="fpcct"/>
+            <Call inputs="" outputs="servers:fpcs.servers,text:" target="RemoteVI Status.vi" uid="fpcs" uid_parent="fpcct"/>
+            <Call inputs="status:fpcs.servers" outputs="items:,ports:fpcr.ports" target="RemoteVI Share Rows.vi" uid="fpcr" uid_parent="fpcct"/>
+            <Node _name="Build Array" inputs="array:fpcr.ports,element:fpct_lp.value" outputs="appended array:fpcall.v" uid="fpcall" uid_parent="fpcct"/>
+            <Structure _name="For Loop" count="" label="Stop each port" maxin="" maxout="" uid="fpcfl" uid_parent="fpcct">
+              <Tunnel _id="In1" inputs="value:fpcall.v" mode="index" outputs="value:fpcp.value" uid="fpcp" uid_parent="fpcfl"/>
+              <Call inputs="port:fpcp.value" outputs="error out:" target="RemoteVI Stop.vi" uid="fpcx" uid_parent="fpcfl"/>
+            </Structure>
+          </CaseFrame>
+          <CaseFrame label="In LabVIEW the shares keep running" selector="False" selectout="" uid="fpccf" uid_parent="fpcc">
+            <Tunnel _id="In1" outputs="value:" uid="fpcf_lp" uid_parent="fpccf"/>
+          </CaseFrame>
+        </Structure>
+        <Constant outputs="value:fpct.value" type="bool" uid="fpct" uid_parent="fpc" value="true"/>
+        <Tunnel _id="Out1" inputs="value:fpct.value" uid="fpc_o1" uid_parent="fpc"/>
+        <Tunnel _id="Out2" inputs="value:fpc_st.value" uid="fpc_o2" uid_parent="fpc"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:evStop.value" uid="evStop" uid_parent="ev"/>
+      <Tunnel _id="Out2" outputs="value:ev_st.value" uid="ev_st" uid_parent="ev"/>
+    </Structure>
+    <Tunnel _id="Out1" inputs="value:e_not.value" outputs="value:not_end.value" uid="not_end" uid_parent="evl"/>
+    <Condition inputs="value:evStop.value" uid="evlc" uid_parent="evl" value="stop"/>
+  </Structure>
+  <Node _name="Send Notification" inputs="notifier:not_end.value,notification:tru.value" outputs="notifier out:sn.notifier out" uid="sn" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:sn.notifier out" outputs="" uid="rn" uid_parent="root"/>
+</VI>

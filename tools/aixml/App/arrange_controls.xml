@@ -1,0 +1,348 @@
+<VI _name="RemoteVI Arrange Controls.vi" description="Lays out a running VI's own front panel (the RemoteVI UIs arrange themselves when they start\3A AIXML has no panel layout)\3A every top-level control whose label is in layout is moved to left\2C top (Position\2C label included) and sized to width\2C height where LabVIEW lets a running VI resize it (a boolean\3A Button Size\3B a string\3A Size\3B a multicolumn listbox\3A as many rows as fit into height - 0 keeps the size)\3B a NEGATIVE width hides the control instead (Visible FALSE\3B the RemoteVI UIs hide their tick and stop controls so)\3B the window gets title and a panel area of panel size (Front Panel Window\3APanel Bounds\2C its top-left kept). A boolean shows its label as its boolean text (centred) instead of beside it\2C so it looks like a labelled button. Controls not in layout are left where they are. The tool bar\2C menu bar and scroll bars are hidden (where LabVIEW allows it while the VI runs). Errors of the property writes are ignored\3B the panel still opens.">
+  <Control _name="VI" conIdx="0" connection="required" description="The VI whose panel is arranged (This VI)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="layout" conIdx="5" connection="required" description="label\2C left\2C top\2C width\2C height (panel coordinates\3B 0 keeps a size)." outputs="value:lay.value" type="array{cluster{string.label,int32.left,int32.top,int32.width,int32.height}}" uid="lay" uid_parent="root" value="[]"/>
+  <Control _name="panel size" conIdx="7" connection="recommended" description="Width and height of the panel area\3B 0 keeps it." outputs="value:ps.value" type="cluster{int32.width,int32.height}" uid="ps" uid_parent="root" value="[0,0]"/>
+  <Control _name="title" conIdx="9" connection="recommended" description="Window title\3B empty keeps it." outputs="value:ttl.value" type="string" uid="ttl" uid_parent="root" value=""/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:vi.value" outputs="reference out:,error out:fp.error out,Front Panel:fp.fp" type="{LV.VI}" uid="fp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:fp.fp,error in (no error):fp.error out" outputs="Controls[]:pc.c,reference out:,error out:pc.error out" type="{LV.Panel}" uid="pc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Labels of the layout" maxin="" maxout="" uid="fla" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:lay.value" mode="index" outputs="value:le.value" uid="le" uid_parent="fla"/>
+    <Node _name="Unbundle By Name" fields="label" inputs="input cluster:le.value" outputs="label:leu.label" uid="leu" uid_parent="fla"/>
+    <Tunnel _id="Out1" inputs="value:leu.label" mode="index" outputs="value:labels.value" uid="labels" uid_parent="fla"/>
+  </Structure>
+  <Constant outputs="value:z.value" type="int32" uid="z" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="Move and size each control of the layout" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:labels.value" outputs="value:l_lab.value" uid="l_lab" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:l_lab.value" outputs="value:lab1.value" uid="lab1" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:lay.value" outputs="value:l_lay.value" uid="l_lay" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:z.value" outputs="value:l_z.value" uid="l_z" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value" outputs="Label.Text:lt.lt,reference out:,error out:" type="{LV.Control}" uid="lt" uid_parent="fl"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_lab.value,element:lt.lt" outputs="index of element:ix.v" uid="ix" uid_parent="fl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:ix.v" outputs="x &gt;= 0?:hit.v" uid="hit" uid_parent="fl"/>
+    <Structure _name="Case Structure" selectin="hit.v" uid="ch" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:c.value" uid="ch_i1" uid_parent="ch"/>
+      <Tunnel _id="In2" inputs="value:l_lay.value" uid="ch_i2" uid_parent="ch"/>
+      <Tunnel _id="In3" inputs="value:ix.v" uid="ch_i3" uid_parent="ch"/>
+      <Tunnel _id="In4" inputs="value:l_z.value" uid="ch_i4" uid_parent="ch"/>
+      <CaseFrame label="In the layout\3A move\2C then size" selector="True" selectout="" uid="cht" uid_parent="ch">
+        <Tunnel _id="In1" outputs="value:h_c.value" uid="h_c" uid_parent="cht"/>
+        <Tunnel _id="In2" outputs="value:h_lay.value" uid="h_lay" uid_parent="cht"/>
+        <Tunnel _id="In3" outputs="value:h_ix.value" uid="h_ix" uid_parent="cht"/>
+        <Tunnel _id="In4" outputs="value:h_z.value" uid="h_z" uid_parent="cht"/>
+        <Node _name="Index Array" inputs="array:h_lay.value,index:h_ix.value" outputs="element:e.v" uid="e" uid_parent="cht"/>
+        <Node _name="Unbundle By Name" fields="left,top,width,height" inputs="input cluster:e.v" outputs="left:eu.l,top:eu.t,width:eu.w,height:eu.h" uid="eu" uid_parent="cht"/>
+        <Constant outputs="value:cbk.value" type="ref{LV.Boolean}" uid="cbk" uid_parent="cht" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:cbk.value,reference:h_c.value" outputs="specific class reference:cbt.ref,error out:cbt.error out" uid="cbt" uid_parent="cht"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cbt.error out" outputs="status:cbe.status" uid="cbe" uid_parent="cht"/>
+        <Structure _name="Case Structure" selectin="cbe.status" uid="cbc" uid_parent="cht">
+          <Tunnel _id="In1" inputs="value:cbt.ref" uid="cbi1" uid_parent="cbc"/>
+          <Tunnel _id="In2" inputs="value:eu.w" uid="cbi2" uid_parent="cbc"/>
+          <Tunnel _id="In3" inputs="value:eu.h" uid="cbi3" uid_parent="cbc"/>
+          <CaseFrame selector="True" selectout="" uid="cbct" uid_parent="cbc">
+            <Tunnel _id="In1" outputs="value:" uid="cbx1" uid_parent="cbct"/>
+            <Tunnel _id="In2" outputs="value:" uid="cbx2" uid_parent="cbct"/>
+            <Tunnel _id="In3" outputs="value:" uid="cbx3" uid_parent="cbct"/>
+          </CaseFrame>
+          <CaseFrame label="A boolean\3A its label becomes its boolean text\2C then its button size" selector="False" selectout="" uid="cbcf" uid_parent="cbc">
+            <Tunnel _id="In1" outputs="value:cb_r.value" uid="cb_r" uid_parent="cbcf"/>
+            <Tunnel _id="In2" outputs="value:cb_w.value" uid="cb_w" uid_parent="cbcf"/>
+            <Tunnel _id="In3" outputs="value:cb_h.value" uid="cb_h" uid_parent="cbcf"/>
+            <Constant outputs="value:cbbt.value" type="bool" uid="cbbt" uid_parent="cbcf" value="true"/>
+            <Constant outputs="value:cbbf.value" type="bool" uid="cbbf" uid_parent="cbcf" value="false"/>
+            <Node _name="Property Node" fields="write+Multiple Text String,read+Label.Text,read+Boolean Text,write+Lock Boolean Text In Center,write+Label.Visible" inputs="reference:cb_r.value,Multiple Text String:cbbf.value,Lock Boolean Text In Center:cbbt.value,Label.Visible:cbbf.value" outputs="Label.Text:cbbl.text,Boolean Text:cbbl.bt,reference out:cbbl.ref,error out:" type="{LV.Boolean}" uid="cbbl" uid_parent="cbcf"/>
+            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl.bt,Text:cbbl.text,Visible:cbbt.value" outputs="reference out:,error out:" type="{LV.Text}" uid="cbtx" uid_parent="cbcf"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cb_w.value" outputs="unsigned 32bit integer:cbw.u" uid="cbw" uid_parent="cbcf"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cb_h.value" outputs="unsigned 32bit integer:cbh.u" uid="cbh" uid_parent="cbcf"/>
+            <Constant outputs="value:cbs0.value" type="cluster{uint32.Width,uint32.Height}" uid="cbs0" uid_parent="cbcf" value="[0,0]"/>
+            <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:cbs0.value,Width:cbw.u,Height:cbh.u" outputs="output cluster:cbsz.v" uid="cbsz" uid_parent="cbcf"/>
+            <Constant outputs="value:cbz.value" type="int32" uid="cbz" uid_parent="cbcf" value="0"/>
+            <Node _name="Greater?" inputs="x:cb_w.value,y:cbz.value" outputs="x &gt; y?:cbhas.v" uid="cbhas" uid_parent="cbcf"/>
+            <Structure _name="Case Structure" selectin="cbhas.v" uid="cbq" uid_parent="cbcf">
+              <Tunnel _id="In1" inputs="value:cbbl.ref" uid="cbqi1" uid_parent="cbq"/>
+              <Tunnel _id="In2" inputs="value:cbsz.v" uid="cbqi2" uid_parent="cbq"/>
+              <CaseFrame selector="True" selectout="" uid="cbqt" uid_parent="cbq">
+                <Tunnel _id="In1" outputs="value:cbq_r.value" uid="cbq_r" uid_parent="cbqt"/>
+                <Tunnel _id="In2" outputs="value:cbq_s.value" uid="cbq_s" uid_parent="cbqt"/>
+                <Node _name="Property Node" fields="write+Button Size" inputs="reference:cbq_r.value,Button Size:cbq_s.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cbbs" uid_parent="cbqt"/>
+              </CaseFrame>
+              <CaseFrame selector="False" selectout="" uid="cbqf" uid_parent="cbq">
+                <Tunnel _id="In1" outputs="value:" uid="cbn_r" uid_parent="cbqf"/>
+                <Tunnel _id="In2" outputs="value:" uid="cbn_s" uid_parent="cbqf"/>
+              </CaseFrame>
+            </Structure>
+          </CaseFrame>
+        </Structure>
+        <Constant outputs="value:csk.value" type="ref{LV.String}" uid="csk" uid_parent="cht" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:csk.value,reference:h_c.value" outputs="specific class reference:cst.ref,error out:cst.error out" uid="cst" uid_parent="cht"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cst.error out" outputs="status:cse.status" uid="cse" uid_parent="cht"/>
+        <Structure _name="Case Structure" selectin="cse.status" uid="csc" uid_parent="cht">
+          <Tunnel _id="In1" inputs="value:cst.ref" uid="csi1" uid_parent="csc"/>
+          <Tunnel _id="In2" inputs="value:eu.w" uid="csi2" uid_parent="csc"/>
+          <Tunnel _id="In3" inputs="value:eu.h" uid="csi3" uid_parent="csc"/>
+          <CaseFrame selector="True" selectout="" uid="csct" uid_parent="csc">
+            <Tunnel _id="In1" outputs="value:" uid="csx1" uid_parent="csct"/>
+            <Tunnel _id="In2" outputs="value:" uid="csx2" uid_parent="csct"/>
+            <Tunnel _id="In3" outputs="value:" uid="csx3" uid_parent="csct"/>
+          </CaseFrame>
+          <CaseFrame label="A string\3A its size" selector="False" selectout="" uid="cscf" uid_parent="csc">
+            <Tunnel _id="In1" outputs="value:cs_r.value" uid="cs_r" uid_parent="cscf"/>
+            <Tunnel _id="In2" outputs="value:cs_w.value" uid="cs_w" uid_parent="cscf"/>
+            <Tunnel _id="In3" outputs="value:cs_h.value" uid="cs_h" uid_parent="cscf"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cs_w.value" outputs="unsigned 32bit integer:csw.u" uid="csw" uid_parent="cscf"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cs_h.value" outputs="unsigned 32bit integer:csh.u" uid="csh" uid_parent="cscf"/>
+            <Constant outputs="value:css0.value" type="cluster{uint32.Width,uint32.Height}" uid="css0" uid_parent="cscf" value="[0,0]"/>
+            <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:css0.value,Width:csw.u,Height:csh.u" outputs="output cluster:cssz.v" uid="cssz" uid_parent="cscf"/>
+            <Constant outputs="value:csz.value" type="int32" uid="csz" uid_parent="cscf" value="0"/>
+            <Node _name="Greater?" inputs="x:cs_w.value,y:csz.value" outputs="x &gt; y?:cshas.v" uid="cshas" uid_parent="cscf"/>
+            <Structure _name="Case Structure" selectin="cshas.v" uid="csq" uid_parent="cscf">
+              <Tunnel _id="In1" inputs="value:cs_r.value" uid="csqi1" uid_parent="csq"/>
+              <Tunnel _id="In2" inputs="value:cssz.v" uid="csqi2" uid_parent="csq"/>
+              <CaseFrame selector="True" selectout="" uid="csqt" uid_parent="csq">
+                <Tunnel _id="In1" outputs="value:csq_r.value" uid="csq_r" uid_parent="csqt"/>
+                <Tunnel _id="In2" outputs="value:csq_s.value" uid="csq_s" uid_parent="csqt"/>
+                <Node _name="Property Node" fields="write+Size" inputs="reference:csq_r.value,Size:csq_s.value" outputs="reference out:,error out:" type="{LV.String}" uid="csss" uid_parent="csqt"/>
+              </CaseFrame>
+              <CaseFrame selector="False" selectout="" uid="csqf" uid_parent="csq">
+                <Tunnel _id="In1" outputs="value:" uid="csn_r" uid_parent="csqf"/>
+                <Tunnel _id="In2" outputs="value:" uid="csn_s" uid_parent="csqf"/>
+              </CaseFrame>
+            </Structure>
+          </CaseFrame>
+        </Structure>
+        <Constant outputs="value:cmk.value" type="ref{LV.MulticolumnListbox}" uid="cmk" uid_parent="cht" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:cmk.value,reference:h_c.value" outputs="specific class reference:cmt.ref,error out:cmt.error out" uid="cmt" uid_parent="cht"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cmt.error out" outputs="status:cme.status" uid="cme" uid_parent="cht"/>
+        <Structure _name="Case Structure" selectin="cme.status" uid="cmc" uid_parent="cht">
+          <Tunnel _id="In1" inputs="value:cmt.ref" uid="cmi1" uid_parent="cmc"/>
+          <Tunnel _id="In2" inputs="value:eu.w" uid="cmi2" uid_parent="cmc"/>
+          <Tunnel _id="In3" inputs="value:eu.h" uid="cmi3" uid_parent="cmc"/>
+          <CaseFrame selector="True" selectout="" uid="cmct" uid_parent="cmc">
+            <Tunnel _id="In1" outputs="value:" uid="cmx1" uid_parent="cmct"/>
+            <Tunnel _id="In2" outputs="value:" uid="cmx2" uid_parent="cmct"/>
+            <Tunnel _id="In3" outputs="value:" uid="cmx3" uid_parent="cmct"/>
+          </CaseFrame>
+          <CaseFrame label="A multicolumn listbox\3A as many rows as fit into height (18 px each\2C one for the headers)" selector="False" selectout="" uid="cmcf" uid_parent="cmc">
+            <Tunnel _id="In1" outputs="value:cm_r.value" uid="cm_r" uid_parent="cmcf"/>
+            <Tunnel _id="In2" outputs="value:cm_w.value" uid="cm_w" uid_parent="cmcf"/>
+            <Tunnel _id="In3" outputs="value:cm_h.value" uid="cm_h" uid_parent="cmcf"/>
+            <Constant outputs="value:cmk18.value" type="int32" uid="cmk18" uid_parent="cmcf" value="18"/>
+            <Constant outputs="value:cmk1.value" type="int32" uid="cmk1" uid_parent="cmcf" value="1"/>
+            <Node _name="Quotient &amp; Remainder" inputs="x:cm_h.value,y:cmk18.value" outputs="x-y*floor(x/y):,floor(x/y):cmq.v" uid="cmq" uid_parent="cmcf"/>
+            <Node _name="Subtract" inputs="x:cmq.v,y:cmk1.value" outputs="x-y:cmn.v" uid="cmn" uid_parent="cmcf"/>
+            <Node _name="Max &amp; Min" inputs="x:cmn.v,y:cmk1.value" outputs="max(x\2Cy):cmmx.v" uid="cmmx" uid_parent="cmcf"/>
+            <Node _name="Property Node" fields="write+Number of Rows" inputs="reference:cm_r.value,Number of Rows:cmmx.v" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="cmnr" uid_parent="cmcf"/>
+          </CaseFrame>
+        </Structure>
+        <Node _name="Property Node" fields="read+Position" inputs="reference:h_c.value,error in (no error):" outputs="Position:rp.pos,reference out:,error out:rp.error out" type="{LV.Control}" uid="rp" uid_parent="cht"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:rp.pos,Left:eu.l,Top:eu.t" outputs="output cluster:np.v" uid="np" uid_parent="cht"/>
+        <Node _name="Property Node" fields="write+Position" inputs="reference:h_c.value,error in (no error):rp.error out,Position:np.v" outputs="reference out:,error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="cht"/>
+        <Node _name="Less?" inputs="x:eu.w,y:h_z.value" outputs="x &lt; y?:hide.v" uid="hide" uid_parent="cht"/>
+        <Structure _name="Case Structure" selectin="hide.v" uid="cv" uid_parent="cht">
+          <Tunnel _id="In1" inputs="value:h_c.value" uid="cv_i1" uid_parent="cv"/>
+          <CaseFrame label="Hide" selector="True" selectout="" uid="cvt" uid_parent="cv">
+            <Tunnel _id="In1" outputs="value:v_c.value" uid="v_c" uid_parent="cvt"/>
+            <Constant outputs="value:vf.value" type="bool" uid="vf" uid_parent="cvt" value="false"/>
+            <Node _name="Property Node" fields="write+Visible" inputs="reference:v_c.value,Visible:vf.value" outputs="reference out:,error out:" type="{LV.Control}" uid="wv" uid_parent="cvt"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="cvf" uid_parent="cv">
+            <Tunnel _id="In1" outputs="value:" uid="z_c" uid_parent="cvf"/>
+          </CaseFrame>
+        </Structure>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="chf" uid_parent="ch">
+        <Tunnel _id="In1" outputs="value:" uid="n_c" uid_parent="chf"/>
+        <Tunnel _id="In2" outputs="value:" uid="n_lay" uid_parent="chf"/>
+        <Tunnel _id="In3" outputs="value:" uid="n_ix" uid_parent="chf"/>
+        <Tunnel _id="In4" outputs="value:" uid="n_z" uid_parent="chf"/>
+      </CaseFrame>
+    </Structure>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Again\3A sizes and labels are set now\2C so the positions hold" maxin="" maxout="" uid="fl2" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c2.value" uid="c2" uid_parent="fl2"/>
+    <Tunnel _id="In2" inputs="value:lab1.value" outputs="value:l_lab2.value" uid="l_lab2" uid_parent="fl2"/>
+    <Tunnel _id="In3" inputs="value:lay.value" outputs="value:l_lay2.value" uid="l_lay2" uid_parent="fl2"/>
+    <Tunnel _id="In4" inputs="value:z.value" outputs="value:l_z2.value" uid="l_z2" uid_parent="fl2"/>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c2.value" outputs="Label.Text:lt2.lt,reference out:,error out:" type="{LV.Control}" uid="lt2" uid_parent="fl2"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_lab2.value,element:lt2.lt" outputs="index of element:ix2.v" uid="ix2" uid_parent="fl2"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:ix2.v" outputs="x &gt;= 0?:hit2.v" uid="hit2" uid_parent="fl2"/>
+    <Structure _name="Case Structure" selectin="hit2.v" uid="ch2" uid_parent="fl2">
+      <Tunnel _id="In1" inputs="value:c2.value" uid="ch_i12" uid_parent="ch2"/>
+      <Tunnel _id="In2" inputs="value:l_lay2.value" uid="ch_i22" uid_parent="ch2"/>
+      <Tunnel _id="In3" inputs="value:ix2.v" uid="ch_i32" uid_parent="ch2"/>
+      <Tunnel _id="In4" inputs="value:l_z2.value" uid="ch_i42" uid_parent="ch2"/>
+      <CaseFrame label="In the layout\3A move\2C then size" selector="True" selectout="" uid="cht2" uid_parent="ch2">
+        <Tunnel _id="In1" outputs="value:h_c2.value" uid="h_c2" uid_parent="cht2"/>
+        <Tunnel _id="In2" outputs="value:h_lay2.value" uid="h_lay2" uid_parent="cht2"/>
+        <Tunnel _id="In3" outputs="value:h_ix2.value" uid="h_ix2" uid_parent="cht2"/>
+        <Tunnel _id="In4" outputs="value:h_z2.value" uid="h_z2" uid_parent="cht2"/>
+        <Node _name="Index Array" inputs="array:h_lay2.value,index:h_ix2.value" outputs="element:e2.v" uid="e2" uid_parent="cht2"/>
+        <Node _name="Unbundle By Name" fields="left,top,width,height" inputs="input cluster:e2.v" outputs="left:eu2.l,top:eu2.t,width:eu2.w,height:eu2.h" uid="eu2" uid_parent="cht2"/>
+        <Constant outputs="value:cbk2.value" type="ref{LV.Boolean}" uid="cbk2" uid_parent="cht2" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:cbk2.value,reference:h_c2.value" outputs="specific class reference:cbt2.ref,error out:cbt2.error out" uid="cbt2" uid_parent="cht2"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cbt2.error out" outputs="status:cbe2.status" uid="cbe2" uid_parent="cht2"/>
+        <Structure _name="Case Structure" selectin="cbe2.status" uid="cbc2" uid_parent="cht2">
+          <Tunnel _id="In1" inputs="value:cbt2.ref" uid="cbi12" uid_parent="cbc2"/>
+          <Tunnel _id="In2" inputs="value:eu2.w" uid="cbi22" uid_parent="cbc2"/>
+          <Tunnel _id="In3" inputs="value:eu2.h" uid="cbi32" uid_parent="cbc2"/>
+          <CaseFrame selector="True" selectout="" uid="cbct2" uid_parent="cbc2">
+            <Tunnel _id="In1" outputs="value:" uid="cbx12" uid_parent="cbct2"/>
+            <Tunnel _id="In2" outputs="value:" uid="cbx22" uid_parent="cbct2"/>
+            <Tunnel _id="In3" outputs="value:" uid="cbx32" uid_parent="cbct2"/>
+          </CaseFrame>
+          <CaseFrame label="A boolean\3A its label becomes its boolean text\2C then its button size" selector="False" selectout="" uid="cbcf2" uid_parent="cbc2">
+            <Tunnel _id="In1" outputs="value:cb_r2.value" uid="cb_r2" uid_parent="cbcf2"/>
+            <Tunnel _id="In2" outputs="value:cb_w2.value" uid="cb_w2" uid_parent="cbcf2"/>
+            <Tunnel _id="In3" outputs="value:cb_h2.value" uid="cb_h2" uid_parent="cbcf2"/>
+            <Constant outputs="value:cbbt2.value" type="bool" uid="cbbt2" uid_parent="cbcf2" value="true"/>
+            <Constant outputs="value:cbbf2.value" type="bool" uid="cbbf2" uid_parent="cbcf2" value="false"/>
+            <Node _name="Property Node" fields="write+Multiple Text String,read+Label.Text,read+Boolean Text,write+Lock Boolean Text In Center,write+Label.Visible" inputs="reference:cb_r2.value,Multiple Text String:cbbf2.value,Lock Boolean Text In Center:cbbt2.value,Label.Visible:cbbf2.value" outputs="Label.Text:cbbl2.text,Boolean Text:cbbl2.bt,reference out:cbbl2.ref,error out:" type="{LV.Boolean}" uid="cbbl2" uid_parent="cbcf2"/>
+            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl2.bt,Text:cbbl2.text,Visible:cbbt2.value" outputs="reference out:,error out:" type="{LV.Text}" uid="cbtx2" uid_parent="cbcf2"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cb_w2.value" outputs="unsigned 32bit integer:cbw2.u" uid="cbw2" uid_parent="cbcf2"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cb_h2.value" outputs="unsigned 32bit integer:cbh2.u" uid="cbh2" uid_parent="cbcf2"/>
+            <Constant outputs="value:cbs02.value" type="cluster{uint32.Width,uint32.Height}" uid="cbs02" uid_parent="cbcf2" value="[0,0]"/>
+            <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:cbs02.value,Width:cbw2.u,Height:cbh2.u" outputs="output cluster:cbsz2.v" uid="cbsz2" uid_parent="cbcf2"/>
+            <Constant outputs="value:cbz2.value" type="int32" uid="cbz2" uid_parent="cbcf2" value="0"/>
+            <Node _name="Greater?" inputs="x:cb_w2.value,y:cbz2.value" outputs="x &gt; y?:cbhas2.v" uid="cbhas2" uid_parent="cbcf2"/>
+            <Structure _name="Case Structure" selectin="cbhas2.v" uid="cbq2" uid_parent="cbcf2">
+              <Tunnel _id="In1" inputs="value:cbbl2.ref" uid="cbqi12" uid_parent="cbq2"/>
+              <Tunnel _id="In2" inputs="value:cbsz2.v" uid="cbqi22" uid_parent="cbq2"/>
+              <CaseFrame selector="True" selectout="" uid="cbqt2" uid_parent="cbq2">
+                <Tunnel _id="In1" outputs="value:cbq_r2.value" uid="cbq_r2" uid_parent="cbqt2"/>
+                <Tunnel _id="In2" outputs="value:cbq_s2.value" uid="cbq_s2" uid_parent="cbqt2"/>
+                <Node _name="Property Node" fields="write+Button Size" inputs="reference:cbq_r2.value,Button Size:cbq_s2.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cbbs2" uid_parent="cbqt2"/>
+              </CaseFrame>
+              <CaseFrame selector="False" selectout="" uid="cbqf2" uid_parent="cbq2">
+                <Tunnel _id="In1" outputs="value:" uid="cbn_r2" uid_parent="cbqf2"/>
+                <Tunnel _id="In2" outputs="value:" uid="cbn_s2" uid_parent="cbqf2"/>
+              </CaseFrame>
+            </Structure>
+          </CaseFrame>
+        </Structure>
+        <Constant outputs="value:csk2.value" type="ref{LV.String}" uid="csk2" uid_parent="cht2" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:csk2.value,reference:h_c2.value" outputs="specific class reference:cst2.ref,error out:cst2.error out" uid="cst2" uid_parent="cht2"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cst2.error out" outputs="status:cse2.status" uid="cse2" uid_parent="cht2"/>
+        <Structure _name="Case Structure" selectin="cse2.status" uid="csc2" uid_parent="cht2">
+          <Tunnel _id="In1" inputs="value:cst2.ref" uid="csi12" uid_parent="csc2"/>
+          <Tunnel _id="In2" inputs="value:eu2.w" uid="csi22" uid_parent="csc2"/>
+          <Tunnel _id="In3" inputs="value:eu2.h" uid="csi32" uid_parent="csc2"/>
+          <CaseFrame selector="True" selectout="" uid="csct2" uid_parent="csc2">
+            <Tunnel _id="In1" outputs="value:" uid="csx12" uid_parent="csct2"/>
+            <Tunnel _id="In2" outputs="value:" uid="csx22" uid_parent="csct2"/>
+            <Tunnel _id="In3" outputs="value:" uid="csx32" uid_parent="csct2"/>
+          </CaseFrame>
+          <CaseFrame label="A string\3A its size" selector="False" selectout="" uid="cscf2" uid_parent="csc2">
+            <Tunnel _id="In1" outputs="value:cs_r2.value" uid="cs_r2" uid_parent="cscf2"/>
+            <Tunnel _id="In2" outputs="value:cs_w2.value" uid="cs_w2" uid_parent="cscf2"/>
+            <Tunnel _id="In3" outputs="value:cs_h2.value" uid="cs_h2" uid_parent="cscf2"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cs_w2.value" outputs="unsigned 32bit integer:csw2.u" uid="csw2" uid_parent="cscf2"/>
+            <Node _name="To Unsigned Long Integer" inputs="number:cs_h2.value" outputs="unsigned 32bit integer:csh2.u" uid="csh2" uid_parent="cscf2"/>
+            <Constant outputs="value:css02.value" type="cluster{uint32.Width,uint32.Height}" uid="css02" uid_parent="cscf2" value="[0,0]"/>
+            <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:css02.value,Width:csw2.u,Height:csh2.u" outputs="output cluster:cssz2.v" uid="cssz2" uid_parent="cscf2"/>
+            <Constant outputs="value:csz2.value" type="int32" uid="csz2" uid_parent="cscf2" value="0"/>
+            <Node _name="Greater?" inputs="x:cs_w2.value,y:csz2.value" outputs="x &gt; y?:cshas2.v" uid="cshas2" uid_parent="cscf2"/>
+            <Structure _name="Case Structure" selectin="cshas2.v" uid="csq2" uid_parent="cscf2">
+              <Tunnel _id="In1" inputs="value:cs_r2.value" uid="csqi12" uid_parent="csq2"/>
+              <Tunnel _id="In2" inputs="value:cssz2.v" uid="csqi22" uid_parent="csq2"/>
+              <CaseFrame selector="True" selectout="" uid="csqt2" uid_parent="csq2">
+                <Tunnel _id="In1" outputs="value:csq_r2.value" uid="csq_r2" uid_parent="csqt2"/>
+                <Tunnel _id="In2" outputs="value:csq_s2.value" uid="csq_s2" uid_parent="csqt2"/>
+                <Node _name="Property Node" fields="write+Size" inputs="reference:csq_r2.value,Size:csq_s2.value" outputs="reference out:,error out:" type="{LV.String}" uid="csss2" uid_parent="csqt2"/>
+              </CaseFrame>
+              <CaseFrame selector="False" selectout="" uid="csqf2" uid_parent="csq2">
+                <Tunnel _id="In1" outputs="value:" uid="csn_r2" uid_parent="csqf2"/>
+                <Tunnel _id="In2" outputs="value:" uid="csn_s2" uid_parent="csqf2"/>
+              </CaseFrame>
+            </Structure>
+          </CaseFrame>
+        </Structure>
+        <Constant outputs="value:cmk2.value" type="ref{LV.MulticolumnListbox}" uid="cmk2" uid_parent="cht2" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:cmk2.value,reference:h_c2.value" outputs="specific class reference:cmt2.ref,error out:cmt2.error out" uid="cmt2" uid_parent="cht2"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cmt2.error out" outputs="status:cme2.status" uid="cme2" uid_parent="cht2"/>
+        <Structure _name="Case Structure" selectin="cme2.status" uid="cmc2" uid_parent="cht2">
+          <Tunnel _id="In1" inputs="value:cmt2.ref" uid="cmi12" uid_parent="cmc2"/>
+          <Tunnel _id="In2" inputs="value:eu2.w" uid="cmi22" uid_parent="cmc2"/>
+          <Tunnel _id="In3" inputs="value:eu2.h" uid="cmi32" uid_parent="cmc2"/>
+          <CaseFrame selector="True" selectout="" uid="cmct2" uid_parent="cmc2">
+            <Tunnel _id="In1" outputs="value:" uid="cmx12" uid_parent="cmct2"/>
+            <Tunnel _id="In2" outputs="value:" uid="cmx22" uid_parent="cmct2"/>
+            <Tunnel _id="In3" outputs="value:" uid="cmx32" uid_parent="cmct2"/>
+          </CaseFrame>
+          <CaseFrame label="A multicolumn listbox\3A as many rows as fit into height (18 px each\2C one for the headers)" selector="False" selectout="" uid="cmcf2" uid_parent="cmc2">
+            <Tunnel _id="In1" outputs="value:cm_r2.value" uid="cm_r2" uid_parent="cmcf2"/>
+            <Tunnel _id="In2" outputs="value:cm_w2.value" uid="cm_w2" uid_parent="cmcf2"/>
+            <Tunnel _id="In3" outputs="value:cm_h2.value" uid="cm_h2" uid_parent="cmcf2"/>
+            <Constant outputs="value:cmk182.value" type="int32" uid="cmk182" uid_parent="cmcf2" value="18"/>
+            <Constant outputs="value:cmk12.value" type="int32" uid="cmk12" uid_parent="cmcf2" value="1"/>
+            <Node _name="Quotient &amp; Remainder" inputs="x:cm_h2.value,y:cmk182.value" outputs="x-y*floor(x/y):,floor(x/y):cmq2.v" uid="cmq2" uid_parent="cmcf2"/>
+            <Node _name="Subtract" inputs="x:cmq2.v,y:cmk12.value" outputs="x-y:cmn2.v" uid="cmn2" uid_parent="cmcf2"/>
+            <Node _name="Max &amp; Min" inputs="x:cmn2.v,y:cmk12.value" outputs="max(x\2Cy):cmmx2.v" uid="cmmx2" uid_parent="cmcf2"/>
+            <Node _name="Property Node" fields="write+Number of Rows" inputs="reference:cm_r2.value,Number of Rows:cmmx2.v" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="cmnr2" uid_parent="cmcf2"/>
+          </CaseFrame>
+        </Structure>
+        <Node _name="Property Node" fields="read+Position" inputs="reference:h_c2.value,error in (no error):" outputs="Position:rp2.pos,reference out:,error out:rp2.error out" type="{LV.Control}" uid="rp2" uid_parent="cht2"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:rp2.pos,Left:eu2.l,Top:eu2.t" outputs="output cluster:np2.v" uid="np2" uid_parent="cht2"/>
+        <Node _name="Property Node" fields="write+Position" inputs="reference:h_c2.value,error in (no error):rp2.error out,Position:np2.v" outputs="reference out:,error out:wp2.error out" type="{LV.Control}" uid="wp2" uid_parent="cht2"/>
+        <Node _name="Less?" inputs="x:eu2.w,y:h_z2.value" outputs="x &lt; y?:hide2.v" uid="hide2" uid_parent="cht2"/>
+        <Structure _name="Case Structure" selectin="hide2.v" uid="cv2" uid_parent="cht2">
+          <Tunnel _id="In1" inputs="value:h_c2.value" uid="cv_i12" uid_parent="cv2"/>
+          <CaseFrame label="Hide" selector="True" selectout="" uid="cvt2" uid_parent="cv2">
+            <Tunnel _id="In1" outputs="value:v_c2.value" uid="v_c2" uid_parent="cvt2"/>
+            <Constant outputs="value:vf2.value" type="bool" uid="vf2" uid_parent="cvt2" value="false"/>
+            <Node _name="Property Node" fields="write+Visible" inputs="reference:v_c2.value,Visible:vf2.value" outputs="reference out:,error out:" type="{LV.Control}" uid="wv2" uid_parent="cvt2"/>
+          </CaseFrame>
+          <CaseFrame selector="False" selectout="" uid="cvf2" uid_parent="cv2">
+            <Tunnel _id="In1" outputs="value:" uid="z_c2" uid_parent="cvf2"/>
+          </CaseFrame>
+        </Structure>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="chf2" uid_parent="ch2">
+        <Tunnel _id="In1" outputs="value:" uid="n_c2" uid_parent="chf2"/>
+        <Tunnel _id="In2" outputs="value:" uid="n_lay2" uid_parent="chf2"/>
+        <Tunnel _id="In3" outputs="value:" uid="n_ix2" uid_parent="chf2"/>
+        <Tunnel _id="In4" outputs="value:" uid="n_z2" uid_parent="chf2"/>
+      </CaseFrame>
+    </Structure>
+  </Structure>
+  <Node _name="Unbundle By Name" fields="width,height" inputs="input cluster:ps.value" outputs="width:psu.w,height:psu.h" uid="psu" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:psu.w,y:z.value" outputs="x &gt; y?:hasp.v" uid="hasp" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="hasp.v" uid="cp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cp_i1" uid_parent="cp"/>
+    <Tunnel _id="In2" inputs="value:psu.w" uid="cp_i2" uid_parent="cp"/>
+    <Tunnel _id="In3" inputs="value:psu.h" uid="cp_i3" uid_parent="cp"/>
+    <CaseFrame label="Panel size" selector="True" selectout="" uid="cpt" uid_parent="cp">
+      <Tunnel _id="In1" outputs="value:p_vi.value" uid="p_vi" uid_parent="cpt"/>
+      <Tunnel _id="In2" outputs="value:p_w.value" uid="p_w" uid_parent="cpt"/>
+      <Tunnel _id="In3" outputs="value:p_h.value" uid="p_h" uid_parent="cpt"/>
+      <Node _name="Property Node" fields="read+Front Panel Window\3APanel Bounds" inputs="reference:p_vi.value" outputs="reference out:,error out:pb.error out,Front Panel Window\3APanel Bounds:pb.b" type="{LV.VI}" uid="pb" uid_parent="cpt"/>
+      <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:pb.b" outputs="left:pbu.l,top:pbu.t" uid="pbu" uid_parent="cpt"/>
+      <Node _name="Add" inputs="x:pbu.l,y:p_w.value" outputs="x+y:pr.v" uid="pr" uid_parent="cpt"/>
+      <Node _name="Add" inputs="x:pbu.t,y:p_h.value" outputs="x+y:pbt.v" uid="pbt" uid_parent="cpt"/>
+      <Node _name="Bundle By Name" fields="right,bottom" inputs="input cluster:pb.b,right:pr.v,bottom:pbt.v" outputs="output cluster:nb.v" uid="nb" uid_parent="cpt"/>
+      <Node _name="Property Node" fields="write+Front Panel Window\3APanel Bounds" inputs="reference:p_vi.value,error in (no error):pb.error out,Front Panel Window\3APanel Bounds:nb.v" outputs="reference out:,error out:" type="{LV.VI}" uid="wb" uid_parent="cpt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cpf" uid_parent="cp">
+      <Tunnel _id="In1" outputs="value:" uid="q_vi" uid_parent="cpf"/>
+      <Tunnel _id="In2" outputs="value:" uid="q_w" uid_parent="cpf"/>
+      <Tunnel _id="In3" outputs="value:" uid="q_h" uid_parent="cpf"/>
+    </CaseFrame>
+  </Structure>
+  <Constant outputs="value:hid.value" type="bool" uid="hid" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Tool Bar\3AVisible" inputs="reference:vi.value,Tool Bar\3AVisible:hid.value" outputs="reference out:,error out:" type="{LV.VI}" uid="htb" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AShow Menu Bar" inputs="reference:vi.value,Front Panel Window\3AShow Menu Bar:hid.value" outputs="reference out:,error out:" type="{LV.VI}" uid="hmb" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AShow Scroll Bars" inputs="reference:vi.value,Front Panel Window\3AShow Scroll Bars:hid.value" outputs="reference out:,error out:" type="{LV.VI}" uid="hsb" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:ttl.value" outputs="empty?:te.v" uid="te" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="te.v" uid="ct" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="ct_i1" uid_parent="ct"/>
+    <Tunnel _id="In2" inputs="value:ttl.value" uid="ct_i2" uid_parent="ct"/>
+    <CaseFrame selector="True" selectout="" uid="ctt" uid_parent="ct">
+      <Tunnel _id="In1" outputs="value:" uid="u_vi" uid_parent="ctt"/>
+      <Tunnel _id="In2" outputs="value:" uid="u_t" uid_parent="ctt"/>
+    </CaseFrame>
+    <CaseFrame label="Window title" selector="False" selectout="" uid="ctf" uid_parent="ct">
+      <Tunnel _id="In1" outputs="value:v_vi.value" uid="v_vi" uid_parent="ctf"/>
+      <Tunnel _id="In2" outputs="value:v_t.value" uid="v_t" uid_parent="ctf"/>
+      <Node _name="Property Node" fields="write+Front Panel Window\3ATitle" inputs="reference:v_vi.value,Front Panel Window\3ATitle:v_t.value" outputs="reference out:,error out:" type="{LV.VI}" uid="wt" uid_parent="ctf"/>
+    </CaseFrame>
+  </Structure>
+</VI>

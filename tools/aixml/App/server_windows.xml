@@ -1,0 +1,21 @@
+<VI _name="RemoteVI Server Windows.vi" description="The list of RemoteVI Server\3A the shareable windows (RemoteVI List Top Windows.vi\2C then RemoteVI Window Rows.vi - LabVIEW first\2C then LabVIEW-built applications\2C then other programs) and their listbox rows window | program | kind. selected is the row of the window selected hWnd in the new list (-1 when it is gone)\2C so the selection follows the window when the list changes.">
+  <Control _name="labview only?" conIdx="0" connection="recommended" description="TRUE\3A only windows of LabVIEW and LabVIEW-built applications." outputs="value:lvo.value" type="bool" uid="lvo" uid_parent="root" value="false"/>
+  <Control _name="skip" conIdx="1" connection="recommended" description="A window to leave out (RemoteVI Server's own)." outputs="value:skip.value" type="uint64" uid="skip" uid_parent="root" value="0"/>
+  <Control _name="selected hWnd" conIdx="2" connection="recommended" description="The window selected so far (0\3A none)." outputs="value:sel.value" type="uint64" uid="sel" uid_parent="root" value="0"/>
+  <Call inputs="" outputs="windows:lt.windows" target="RemoteVI List Top Windows.vi" uid="lt" uid_parent="root"/>
+  <Call inputs="raw:lt.windows,labview only?:lvo.value,skip:skip.value" outputs="rows:wr.rows" target="RemoteVI Window Rows.vi" uid="wr" uid_parent="root"/>
+  <Constant _name="kinds" outputs="value:kinds.value" type="array{string}" uid="kinds" uid_parent="root" value="[LabVIEW,LabVIEW app,Other program]"/>
+  <Structure _name="For Loop" count="" label="One listbox row per window" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wr.rows" mode="index" outputs="value:r.value" uid="r" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:kinds.value" outputs="value:l_k.value" uid="l_k" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="group,program,title,hWnd" inputs="input cluster:r.value" outputs="group:ru.g,program:ru.p,title:ru.t,hWnd:ru.h" uid="ru" uid_parent="fl"/>
+    <Node _name="Index Array" inputs="array:l_k.value,index:ru.g" outputs="element:kn.v" uid="kn" uid_parent="fl"/>
+    <Node _name="Build Array" inputs="element:ru.t,element:ru.p,element:kn.v" outputs="appended array:row.v" uid="row" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:row.v" mode="index" outputs="value:items.value" uid="items" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:ru.h" mode="index" outputs="value:hs.value" uid="hs" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:hs.value,element:sel.value" outputs="index of element:si.v" uid="si" uid_parent="root"/>
+  <Indicator _name="rows" conIdx="4" connection="recommended" description="The windows (RemoteVI Window Rows.vi)." inputs="value:wr.rows" type="array{cluster{int32.group,string.program,string.title,uint32.pid,uint64.hWnd}}" uid="o_r" uid_parent="root" value="[]"/>
+  <Indicator _name="items" conIdx="5" connection="recommended" description="Listbox rows\3A window\2C program\2C kind." inputs="value:items.value" type="array.2{string}" uid="o_i" uid_parent="root" value="[]"/>
+  <Indicator _name="selected" conIdx="6" connection="recommended" description="Row of selected hWnd\2C -1 when it is not in the list." inputs="value:si.v" type="int32" uid="o_s" uid_parent="root" value="-1"/>
+</VI>

@@ -8,10 +8,31 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 	<Property Name="NI.Lib.Version" Type="Str">1.0.0.0</Property>
 	<Property Name="NI.LV.All.SourceOnly" Type="Bool">true</Property>
 	<Item Name="API" Type="Folder">
+		<Item Name="RemoteVI Show Status.vi" Type="VI" URL="../API/RemoteVI Show Status.vi"/>
 		<Item Name="RemoteVI Start Window.vi" Type="VI" URL="../API/RemoteVI Start Window.vi"/>
 		<Item Name="RemoteVI Start.vi" Type="VI" URL="../API/RemoteVI Start.vi"/>
+		<Item Name="RemoteVI Status Panel.vi" Type="VI" URL="../API/RemoteVI Status Panel.vi"/>
 		<Item Name="RemoteVI Status.vi" Type="VI" URL="../API/RemoteVI Status.vi"/>
 		<Item Name="RemoteVI Stop.vi" Type="VI" URL="../API/RemoteVI Stop.vi"/>
+	</Item>
+	<Item Name="App" Type="Folder">
+		<Item Name="RemoteVI Arrange Controls.vi" Type="VI" URL="../App/RemoteVI Arrange Controls.vi"/>
+		<Item Name="RemoteVI Copy Text.vi" Type="VI" URL="../App/RemoteVI Copy Text.vi"/>
+		<Item Name="RemoteVI HTML Escape.vi" Type="VI" URL="../App/RemoteVI HTML Escape.vi"/>
+		<Item Name="RemoteVI Landing Page.vi" Type="VI" URL="../App/RemoteVI Landing Page.vi"/>
+		<Item Name="RemoteVI Landing Server.vi" Type="VI" URL="../App/RemoteVI Landing Server.vi"/>
+		<Item Name="RemoteVI List Top Windows.vi" Type="VI" URL="../App/RemoteVI List Top Windows.vi"/>
+		<Item Name="RemoteVI Next Free Port.vi" Type="VI" URL="../App/RemoteVI Next Free Port.vi"/>
+		<Item Name="RemoteVI Open URL.vi" Type="VI" URL="../App/RemoteVI Open URL.vi"/>
+		<Item Name="RemoteVI Parse Arguments.vi" Type="VI" URL="../App/RemoteVI Parse Arguments.vi"/>
+		<Item Name="RemoteVI Process Path.vi" Type="VI" URL="../App/RemoteVI Process Path.vi"/>
+		<Item Name="RemoteVI Server Share.vi" Type="VI" URL="../App/RemoteVI Server Share.vi"/>
+		<Item Name="RemoteVI Server Windows.vi" Type="VI" URL="../App/RemoteVI Server Windows.vi"/>
+		<Item Name="RemoteVI Server.vi" Type="VI" URL="../App/RemoteVI Server.vi"/>
+		<Item Name="RemoteVI Share Rows.vi" Type="VI" URL="../App/RemoteVI Share Rows.vi"/>
+		<Item Name="RemoteVI Start Landing Page.vi" Type="VI" URL="../App/RemoteVI Start Landing Page.vi"/>
+		<Item Name="RemoteVI VI Of Window.vi" Type="VI" URL="../App/RemoteVI VI Of Window.vi"/>
+		<Item Name="RemoteVI Window Rows.vi" Type="VI" URL="../App/RemoteVI Window Rows.vi"/>
 	</Item>
 	<Item Name="Capture" Type="Folder">
 		<Item Name="RemoteVI Capture Panel.vi" Type="VI" URL="../Capture/RemoteVI Capture Panel.vi"/>

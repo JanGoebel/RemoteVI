@@ -593,6 +593,70 @@ def check_splitters_message():
                             cases, ["bars"])
 
 
+def check_token_check():
+    vec = json.load(open(os.path.join(VEC, "http.json")))
+    cases = [(c["name"], c["query"], "" if c.get("emptyToken") else vec["token"], "T" if c["ok"] else "F")
+             for c in vec["tokens"]]
+    d = check_doc("Token Check", "http.json (tokens)", "query and token as in the vector (the vector's token, or "
+                  "empty for emptyToken); ok? is rendered T or F.")
+    f = cases_loop(d, "string.name,string.query,string.token,string.expect", cases, ["name", "query", "token", "expect"],
+                   "One vector")
+    d.call("sut", "RemoteVI Token Check.vi", [("query", f["query"]), ("token", f["token"])], [("ok?", "sut.v")], "L")
+    act = d.tf("tok", "sut.v", "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], act))
+    return d
+
+
+def check_format_duration():
+    vec = json.load(open(os.path.join(VEC, "status.json")))
+    cases = [("%s s" % c["seconds"], float(c["seconds"]), c["text"]) for c in vec["durations"]]
+    return check_string_out("Format Duration", "status.json (durations)", "the text is compared as the string it is.",
+                            "double.seconds", cases, ["seconds"], "text")
+
+
+OUT_FIELDS = ("port", "url", "target", "kind", "wholeNetwork", "running", "uptime", "clients", "fps", "kBps",
+              "frames", "latencyMs", "viewOnly", "lastError", "hWnd")
+OUT_TYPE = ("array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,"
+            "double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,"
+            "double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}}")
+RAW_TYPE = ("array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,"
+            "double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,"
+            "double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}}")
+
+
+def out_tuple(s):
+    return tuple([(c["address"], float(c["connected"]), float(c["idle"])) for c in s["clients"]]
+                 if k == "clients" else float(s[k]) if isinstance(s[k], float) else s[k] for k in OUT_FIELDS)
+
+
+def check_status_text():
+    vec = json.load(open(os.path.join(VEC, "status.json")))
+    cases = [(c["name"], [out_tuple(s) for s in c["status"]], c["text"]) for c in vec["texts"]]
+    return check_string_out("Status Text", "status.json (texts)", "the text is compared as the string it is (lines "
+                            "joined with a line feed).", OUT_TYPE + ".status", cases, ["status"], "text")
+
+
+def check_status_convert():
+    vec = json.load(open(os.path.join(VEC, "status.json")))
+    cv = vec["convert"]
+    raw = [tuple([(c["address"], float(c["since"]), float(c["lastInput"])) for c in r["clients"]] if k == "clients"
+                 else float(r[k]) if k in ("started", "updated", "fps", "bytesPerS", "latencyMs") else r[k]
+                 for k in ("port", "url", "target", "kind", "wholeNetwork", "started", "updated", "clients", "fps",
+                           "bytesPerS", "frames", "latencyMs", "viewOnly", "lastError", "hWnd")) for r in cv["raw"]]
+    # Rendered through RemoteVI Status Text.vi: the vector's converted status gives the expected text.
+    import subprocess as _sp
+    expect = _sp.run(["node", "-e", "import('./tools/lib/status.mjs').then(m=>process.stdout.write("
+                      "m.statusText(%s)))" % json.dumps(cv["status"])], capture_output=True, text=True, cwd=ROOT).stdout
+    d = check_doc("Status Convert", "status.json (convert)", "raw and now as in the vector; the status is "
+                  "rendered with RemoteVI Status Text.vi and compared with the text of the vector's status.")
+    f = cases_loop(d, "string.name,%s.raw,double.now,string.expect" % RAW_TYPE, [("convert", raw, float(cv["now"]), expect)],
+                   ["name", "raw", "now", "expect"], "One vector")
+    d.call("sut", "RemoteVI Status Convert.vi", [("raw", f["raw"]), ("now", f["now"])], [("status", "sut.v")], "L")
+    d.call("txt", "RemoteVI Status Text.vi", [("status", "sut.v")], [("text", "txt.v")], "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], "txt.v"))
+    return d
+
+
 # --------------------------------------------------------------------------- Caraya layer
 SUBJECTS = [  # (subject, area, vector source for the description)
     ("Frame Encode", "Protocol", "frame.json cases"),
@@ -607,6 +671,10 @@ SUBJECTS = [  # (subject, area, vector source for the description)
     ("JSON String", "Protocol", "text.json jsonStrings"),
     ("Tips Message", "Protocol", "text.json tips"),
     ("Splitters Message", "Protocol", "text.json splitters"),
+    ("Token Check", "Server", "http.json tokens"),
+    ("Format Duration", "Server", "status.json durations"),
+    ("Status Text", "Server", "status.json texts"),
+    ("Status Convert", "Server", "status.json convert"),
 ]
 
 
@@ -686,6 +754,10 @@ def all_docs():
         "JSON String": check_json_string,
         "Tips Message": check_tips_message,
         "Splitters Message": check_splitters_message,
+        "Token Check": check_token_check,
+        "Format Duration": check_format_duration,
+        "Status Text": check_status_text,
+        "Status Convert": check_status_convert,
     }
     rel = []
     for subject, area, source in SUBJECTS:

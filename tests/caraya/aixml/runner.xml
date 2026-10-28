@@ -26,7 +26,15 @@
   <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p10.v" outputs="appended path:bp10.v" uid="bp10" uid_parent="root"/>
   <Constant outputs="value:p11.v" type="path" uid="p11" uid_parent="root" value="unit\5CProtocol\5CTest\20Splitters\20Message\2Evi"/>
   <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p11.v" outputs="appended path:bp11.v" uid="bp11" uid_parent="root"/>
-  <Node _name="Build Array" inputs="element:bp0.v,element:bp1.v,element:bp2.v,element:bp3.v,element:bp4.v,element:bp5.v,element:bp6.v,element:bp7.v,element:bp8.v,element:bp9.v,element:bp10.v,element:bp11.v" outputs="appended array:ba.v" uid="ba" uid_parent="root"/>
+  <Constant outputs="value:p12.v" type="path" uid="p12" uid_parent="root" value="unit\5CServer\5CTest\20Token\20Check\2Evi"/>
+  <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p12.v" outputs="appended path:bp12.v" uid="bp12" uid_parent="root"/>
+  <Constant outputs="value:p13.v" type="path" uid="p13" uid_parent="root" value="unit\5CServer\5CTest\20Format\20Duration\2Evi"/>
+  <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p13.v" outputs="appended path:bp13.v" uid="bp13" uid_parent="root"/>
+  <Constant outputs="value:p14.v" type="path" uid="p14" uid_parent="root" value="unit\5CServer\5CTest\20Status\20Text\2Evi"/>
+  <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p14.v" outputs="appended path:bp14.v" uid="bp14" uid_parent="root"/>
+  <Constant outputs="value:p15.v" type="path" uid="p15" uid_parent="root" value="unit\5CServer\5CTest\20Status\20Convert\2Evi"/>
+  <Node _name="Build Path" inputs="base path:sp.v,name or relative path:p15.v" outputs="appended path:bp15.v" uid="bp15" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:bp0.v,element:bp1.v,element:bp2.v,element:bp3.v,element:bp4.v,element:bp5.v,element:bp6.v,element:bp7.v,element:bp8.v,element:bp9.v,element:bp10.v,element:bp11.v,element:bp12.v,element:bp13.v,element:bp14.v,element:bp15.v" outputs="appended array:ba.v" uid="ba" uid_parent="root"/>
   <Constant outputs="value:dn.v" type="string" uid="dn" uid_parent="root" value="RemoteVI\20Caraya\20Report\2Exml"/>
   <Node _name="Build Path" inputs="base path:sp.v,name or relative path:dn.v" outputs="appended path:bd.v" uid="bd" uid_parent="root"/>
   <Node _name="Empty String/Path?" inputs="string/path:rp.v" outputs="empty?:ep.v" uid="ep" uid_parent="root"/>

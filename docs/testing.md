@@ -79,12 +79,17 @@ Every request needs the share's token: point the harness at a share with `RVI_UR
 
 ### Cross-process (window targets)
 
-The fixtures also run as executables in a process of their own (build specifications `RemoteVI Fixture` and `RemoteVI Complex Fixture` in `RemoteVI.lvproj`). Their window is then shared from LabVIEW with `RemoteVI Start Window.vi` (or RemoteVI Server) on another port, and the suites run against that share with `RVI_URL` and `RVI_ORIGIN` (where the panel starts in the frame, which a window target cannot ask VI Server for: `0,46` with menu bar and toolbar, `0,20` with the menu bar only). Measured on 2026-10-28, LabVIEW 2025, run-time engine 2025:
+The fixtures also run as executables in a process of their own (build specifications `RemoteVI Fixture` and `RemoteVI Complex Fixture` in `RemoteVI.lvproj`). Their window is then shared from LabVIEW with `RemoteVI Start Window.vi` (or RemoteVI Server) on another port (the executables share themselves on 8089, so use 8090/8091), and the suites run against that share with `RVI_URL`. Two modes:
 
-| Suite | In the same LabVIEW (VI target) | Another process (window target) | Differences |
-|---|---|---|---|
-| fixture | 24 / 24 | 20 / 24 | Shift and Ctrl held in the browser (2 tests) and Shift+Right arrow do not reach the other process: modifiers are set in LabVIEW's own key state only (docs/security.md, Host input); tip strips need VI Server |
-| complex | 20 / 20, 1 skipped | 15 / 20, 1 skipped | tip strips, the splitters message and both splitter drags need VI Server; the inspector (a non-modal panel opened with FP.Open, owned by the hidden frame window) is not listed, as only VI Server tells it from an IDE window |
+* **Window only:** `VI Server` input `off`, or an executable whose INI file does not enable VI Server. Also set `RVI_ORIGIN` (where the panel starts in the frame, which a window target cannot ask VI Server for: `0,46` with menu bar and toolbar, `0,22` with the menu bar only).
+* **Over VI Server:** append to the executable's INI file (`builds/<name>/<name>.ini`, section of the executable) `server.tcp.enabled=True` and `server.tcp.port=3370` (3371 for the complex fixture; set the machine access list too, docs/security.md), build the packed library `RemoteVI Hooks` once, start the executable and share its window with the `VI Server` input empty. The status shows kind `VI Server`; no `RVI_ORIGIN` is needed.
+
+Measured on 2026-10-28, LabVIEW 2025, run-time engine 2025.3.3:
+
+| Suite | In the same LabVIEW (VI target) | Another process, window only | Another process, over VI Server | Differences |
+|---|---|---|---|---|
+| fixture | 24 / 24 | 20 / 24 | **24 / 24** | window only: Shift and Ctrl held in the browser (2 tests) and Shift+Right arrow do not reach the other process (docs/security.md, Host input); tip strips need VI Server |
+| complex | 20 / 20, 1 skipped | 16 / 20, 1 skipped | 17 / 20, 1 skipped | window only: tip strips, the splitters message and both splitter drags. Over VI Server the splitters message and the tip strips of the tab pages work, but the tip strips of the VI in the subpanel are missing and both splitter drags fail: setting `{LV.Splitter} Position` through a reference into the other process does not move the bar (not investigated further). The inspector window (FP.Open, owned by the hidden frame window) is listed and operated in both modes |
 
 Everything else - clicks, drags, typing, menus and submenus, ring menus, tabs, wheel, double click, dialogs, the native file dialog, subpanels, tables, trees, graph cursors, scrollbars - works the same across processes.
 

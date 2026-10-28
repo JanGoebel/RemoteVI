@@ -11,11 +11,24 @@ RemoteVI lets a browser operate a running VI with mouse and keyboard. That is re
 | View only | `view only? = TRUE` shows the panel and ignores every input of the browsers (the client is told with `viewonly 1`). |
 | Landing page | RemoteVI Server.exe lists its running shares, with their links, on a page of its own (default port 8088, the next free port when that one is in use; `--landing-port`, 0 = none). It has its own token and binds like the shares (this computer only unless `--whole-network`). In LabVIEW (Tools menu) no landing page runs. |
 | What can be shared | RemoteVI Start.vi shares a VI's panel. RemoteVI Start Window.vi and RemoteVI Server share any window of any program of the logged-in user - also a browser or a mail program. Share only what the people with the link may see and operate. |
-| Host input | the host's cursor and keyboard are never moved or pressed: input is posted to the shared window as window messages (no `SendInput`, `SetCursorPos`, `keybd_event`, `mouse_event`). Shift, Ctrl and Alt held in the browser are set in LabVIEW's own key state (`SetKeyboardState` in LabVIEW's UI thread, put back after the message) - only for a panel in the same LabVIEW; another process gets them only in the mouse messages' flags, as attaching to its input queue could not be shown to leave the host's keyboard state alone. |
+| Host input | the host's cursor and keyboard are never moved or pressed: input is posted to the shared window as window messages (no `SendInput`, `SetCursorPos`, `keybd_event`, `mouse_event`). Shift, Ctrl and Alt held in the browser are set in LabVIEW's own key state (`SetKeyboardState` in LabVIEW's UI thread, put back after the message) - for a panel in the same LabVIEW, and for a LabVIEW-built application reached over VI Server, where the same VI runs inside that application (below). Any other process gets them only in the mouse messages' flags; RemoteVI does not attach to another process's input queue (`AttachThreadInput`). |
 | Cross-site WebSocket hijacking | refused: a WebSocket upgrade whose `Origin` host differs from `Host` gets `403`. So a page in the operator's browser on another site cannot drive the panel. |
 | Clients | at most 8 at a time; more get `503`. |
 | Input | only the window messages in protocol §4.3 (mouse buttons, moves, wheel, key down/up, characters) are posted to the panel window. `WM_CLOSE`, `WM_COMMAND`, `WM_SYSCOMMAND` and anything else are dropped, so a client cannot close or reconfigure the window. Input only reaches the published panel's own window. |
 | Malformed input | ignored. Invalid WebSocket framing closes the session (`1002`/`1008`/`1009`). |
+
+## VI Server for full features with a built application
+
+A window of another LabVIEW process is shared with full features (Shift, Ctrl and Alt, tip strips, splitter bars) when that application runs VI Server: RemoteVI then opens an application reference to it and runs `RemoteVI Remote Hooks.vi` inside it (docs/architecture.md, Window targets). To enable it, the application's INI file (`<application>.ini` next to the executable, in the section named like the executable) needs:
+
+```
+server.tcp.enabled=True
+server.tcp.port=3363
+```
+
+and the machine access list should allow this computer only: in the project, **My Computer » Properties » VI Server » Machine Access**, entry `127.0.0.1` allowed, and remove `*`; the build specification writes it into the INI file as `server.tcp.acl` (an encoded list - LabVIEW 2025 no longer reads `server.tcp.access`). Also keep **Exported VIs** at its default or allow `*`, and `server.vi.callsEnabled`/`server.vi.propertiesEnabled` on (the defaults of a build).
+
+What this exposes: VI Server is remote control of the whole application instance - whoever can connect to its port can open, run, abort and change any VI of the application, read and write front panel values, and load VIs from disk into it (that is how RemoteVI loads its hooks). LabVIEW's VI Server has no authentication beyond the machine access list, and it listens on **every** interface (measured: `0.0.0.0:<port>`), not only on 127.0.0.1. So: restrict the machine access list to 127.0.0.1, block the port in the Windows firewall for other computers, and enable VI Server only in applications you intend to share this way. RemoteVI itself only ever connects to 127.0.0.1 unless given another `host:port`. Without VI Server the share still works, window only.
 
 ## HTTP surface
 

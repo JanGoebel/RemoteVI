@@ -16,7 +16,7 @@ RemoteVI Start.vi   (VI: unwired = this VI, port = 8088, whole network? = F, tok
 RemoteVI Stop.vi    (port)
 ```
 
-The share also stops by itself when the VI stops. Several shares can run side by side, one per port. `RemoteVI Start Window.vi` shares a window of any process by its handle instead. `RemoteVI Status.vi` tells what is shared, with the links, clients, frame and data rate; `RemoteVI Show Status.vi` opens a status window, and `RemoteVI Status Panel.vi` fits into a subpanel of your UI. Try `examples/RemoteVI Demo.vi` (port 8088; its URL indicator shows the link). It works the same in a built application (build specification `RemoteVI Demo` in `RemoteVI.lvproj`).
+The share also stops by itself when the VI stops. Several shares can run side by side, one per port. `RemoteVI Start Window.vi` shares a window of any process by its handle instead - with full features when it belongs to a LabVIEW-built application that runs VI Server (below). `RemoteVI Status.vi` tells what is shared, with the links, clients, frame and data rate; `RemoteVI Show Status.vi` opens a status window, and `RemoteVI Status Panel.vi` fits into a subpanel of your UI. Try `examples/RemoteVI Demo.vi` (port 8088; its URL indicator shows the link). It works the same in a built application (build specification `RemoteVI Demo` in `RemoteVI.lvproj`).
 
 **2. From the Tools menu**, no code: **Tools » RemoteVI » Share in Browser** (installed by the VI package into `<LabVIEW>\project\RemoteVI`; from the repository, run `tools-menu/RemoteVI/Share in Browser.vi` or `source/App/RemoteVI Server.vi`). Pick a window on the left - LabVIEW's own first, then LabVIEW-built applications, then other programs - choose port, *Whole network* and *View only*, press **Share selected window**. On the right the shares with their clients, live; select one for Stop sharing, Copy link or Open in browser. Closing the window keeps the shares running; open it again to stop them.
 
@@ -29,6 +29,17 @@ The share also stops by itself when the VI stops. Several shares can run side by
 `--share` shares the window with that title at start; `--landing-port 0` runs no landing page.
 
 > Ports: 8088 for the demo and the landing page, 8100 and up for RemoteVI Server's shares. Not 8080: on many NI machines port 8080 is taken by NI's Application Web Server.
+
+### Full features for a LabVIEW-built application (VI Server)
+
+A window of another process is shared through Win32: picture, clicks, keys, menus, dialogs and other windows. Shift, Ctrl and Alt, tip strips and splitter bars need code running inside that process. When the application is a LabVIEW-built executable (LabVIEW 2025 run-time) that runs VI Server, RemoteVI does exactly that: it connects over VI Server and runs its small hooks VI inside the application, so modifiers, tip strips and splitters work as for a panel of its own LabVIEW. Enable it in the application's INI file (next to the `.exe`, in its section):
+
+```
+server.tcp.enabled=True
+server.tcp.port=3363
+```
+
+and allow only `127.0.0.1` in the machine access list (project: My Computer » Properties » VI Server » Machine Access; the build writes it as `server.tcp.acl`). VI Server gives full control of the application to whoever can reach that port - read docs/security.md first. RemoteVI finds the port in the INI file by itself; `RemoteVI Start Window.vi` also takes `VI Server` = `host:port` or `off`. It needs the packed library `builds/RemoteVI Hooks/RemoteVI Hooks.lvlibp` (build specification `RemoteVI Hooks` in `RemoteVI.lvproj`; a built application can only load compiled code). `RemoteVI Status.vi` shows each share's mode: kind `VI Server` (full features) or `Window` (window only).
 
 ## In the browser
 
@@ -60,7 +71,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | RemoteVI Server (`source/App`), Tools menu entry, RemoteVI Server.exe | ✅ window list grouped LabVIEW first, share/stop/copy/open, landing page, command line; tested in LabVIEW and as the built application |
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ frames copied from the window's composited surface (2-5 ms), every 16 ms right after a click or key; click-to-photon about 60 ms on the demo with LabVIEW in the background (`tools/perf.mjs`); idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
-| Tests | ✅ `npm test` (22), LabVIEW integration suites `tests/lv`: the fixture (24 of 24), a complex application UI (20 of 20, 1 skipped; see Known limits), two shares at once (3 of 3); the same suites against the fixtures built as executables and shared as windows from another process (20 of 24, 15 of 20: the differences are listed in docs/testing.md); LabVIEW in the background |
+| Tests | ✅ `npm test` (22), LabVIEW integration suites `tests/lv`: the fixture (24 of 24), a complex application UI (20 of 20, 1 skipped; see Known limits), two shares at once (3 of 3); the same suites against the fixtures built as executables in another process: over VI Server 24 of 24 and 17 of 20, window only 20 of 24 and 16 of 20 (docs/testing.md); LabVIEW in the background |
 | Caraya unit tests | ✅ 161 assertions over 20 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
 | Complex panels: splitter panes, tab pages, clusters, subpanels (also swapped at run time), tree, table, slide, knob, graph cursors, path browse dialog, scrolling panes, floating windows | ✅ operated like locally (`tests/lv/complex.test.mjs`); tip strips of controls on tab pages, in clusters and in subpanel VIs |
 | Splitter dragging | ✅ the browser drags the bar itself and the server sets the splitter position through VI Server (`splitters` message, `s <id> <pos>`) |
@@ -73,7 +84,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 * **Tip strips are shown by the browser.** LabVIEW shows tip strips only while it is the foreground application, so the server sends the texts and bounds of the panel's top-level controls (`tips` message) and the browser shows them after a 500 ms hover. Covered are the controls of every pane, of the selected tab page, cluster elements (two levels deep) and the controls of a VI shown in a subpanel; deeper nesting (a cluster in a cluster on a tab page) and arrays' elements are not. A LabVIEW tip strip the remote pointer raises while LabVIEW is in front still shows on the host for a moment before it is hidden.
 * **Ctrl+letter.** Ctrl+A sent as a character reaches LabVIEW, but the letter produces no Key Down event of its own.
 * **One share per port.** A port this LabVIEW shares already returns error 5001, a port another program uses the listener's error (60). The shares of one LabVIEW take turns in their shared subVIs, and only one splitter move waits at a time.
-* **Window targets (another process) work through Win32 only.** No tip strips, no splitter dragging, no panel origin, and a non-modal panel the other application opens (FP.Open) is listed only when the shared window owns it or is disabled. Shift, Ctrl and Alt reach another process only in the mouse messages' flags, which LabVIEW ignores: a Shift-click or Ctrl+key arrives without the modifier. Attaching to the other process's input queue (`AttachThreadInput`) would carry them, but could not be shown to leave the host's keyboard state alone, so it is not done.
+* **Window targets (another process) without VI Server work through Win32 only.** No tip strips, no splitter dragging, no panel origin. Shift, Ctrl and Alt reach another process only in the mouse messages' flags, which LabVIEW ignores: a Shift-click or Ctrl+key arrives without the modifier. Every visible window of that process is listed (dialogs, file dialogs, floating windows). A LabVIEW-built application with VI Server gets full features (above); there, dragging splitter bars and the tip strips of a VI in a subpanel do not work yet (docs/testing.md). The shared VI is found by the window title, so a panel with a custom window title stays window only.
 * **The token is in the URL.** It can end up in browser history and, over plain HTTP, on the network; use a TLS reverse proxy beyond a trusted network (docs/security.md).
 * **RemoteVI Server's look.** AIXML cannot draw a panel, so the window is laid out at run time from the generic controls the composer has (round push buttons). Window titles with characters outside the system code page show `?`.
 * **Modifiers are shared.** Several clients holding Shift/Ctrl at the same time share LabVIEW's single key state.

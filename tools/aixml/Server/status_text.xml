@@ -1,0 +1,89 @@
+<VI _name="RemoteVI Status Text.vi" description="Writes the status RemoteVI Status.vi returns as text\2C one block per share\2C lines joined with a line feed\3A Port 8088\3A RemoteVI Demo.vi (VI)\2C running for 1 min 5 s\2C this computer only (\2C view only)\3B the link\3B clients\2C fps\2C kB/s\2C frames and the input-to-frame latency\3B one line per client (address\2C connected for\2C last input)\3B the last error if there is one. No share\3A No RemoteVI share is running. Numbers are written with a decimal point whatever the system's locale. Pure function\2C cannot fail. Reference\3A statusText() in tools\5Clib\5Cstatus.mjs\2C vectors tests\5Cvectors\5Cstatus.json (texts).">
+  <Control _name="status" conIdx="0" connection="required" description="The status (RemoteVI Status Convert.vi)." outputs="value:st.value" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="st" uid_parent="root" value="[]"/>
+  <Constant outputs="value:lf.value" type="string" uid="lf" uid_parent="root" value="\0A"/>
+  <Constant outputs="value:f1.value" type="string" uid="f1" uid_parent="root" value="Port %d\3A %s (%s)\2C %s\2C %s%s"/>
+  <Constant outputs="value:f3.value" type="string" uid="f3" uid_parent="root" value="%.;  %d %s\2C %.1f fps\2C %.0f kB/s\2C %d frames\2C input to frame %.0f ms"/>
+  <Constant outputs="value:f4.value" type="string" uid="f4" uid_parent="root" value="  %s\2C connected %s\2C %s"/>
+  <Constant outputs="value:kRun.value" type="string" uid="kRun" uid_parent="root" value="running for "/>
+  <Constant outputs="value:kStop.value" type="string" uid="kStop" uid_parent="root" value="stopped"/>
+  <Constant outputs="value:kWhole.value" type="string" uid="kWhole" uid_parent="root" value="whole network"/>
+  <Constant outputs="value:kLocal.value" type="string" uid="kLocal" uid_parent="root" value="this computer only"/>
+  <Constant outputs="value:kVo.value" type="string" uid="kVo" uid_parent="root" value="\2C view only"/>
+  <Constant outputs="value:kEmpty.value" type="string" uid="kEmpty" uid_parent="root" value=""/>
+  <Constant outputs="value:kInd.value" type="string" uid="kInd" uid_parent="root" value="  "/>
+  <Constant outputs="value:kOne.value" type="string" uid="kOne" uid_parent="root" value="client"/>
+  <Constant outputs="value:kMany.value" type="string" uid="kMany" uid_parent="root" value="clients"/>
+  <Constant outputs="value:kNoIn.value" type="string" uid="kNoIn" uid_parent="root" value="no input yet"/>
+  <Constant outputs="value:kLast.value" type="string" uid="kLast" uid_parent="root" value="last input "/>
+  <Constant outputs="value:kAgo.value" type="string" uid="kAgo" uid_parent="root" value=" ago"/>
+  <Constant outputs="value:kErr.value" type="string" uid="kErr" uid_parent="root" value="  last error\3A "/>
+  <Constant outputs="value:kNone.value" type="string" uid="kNone" uid_parent="root" value="No RemoteVI share is running."/>
+  <Constant outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
+  <Constant outputs="value:d0.value" type="double" uid="d0" uid_parent="root" value="0"/>
+  <Structure _name="For Loop" count="" label="One block of lines per share" maxin="" maxout="" uid="fs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:st.value" mode="index" outputs="value:s.value" uid="s" uid_parent="fs"/>
+    <Tunnel _id="In2" inputs="value:f1.value" outputs="value:t_f1.value" uid="t_f1" uid_parent="fs"/>
+    <Tunnel _id="In3" inputs="value:f3.value" outputs="value:t_f3.value" uid="t_f3" uid_parent="fs"/>
+    <Tunnel _id="In4" inputs="value:f4.value" outputs="value:t_f4.value" uid="t_f4" uid_parent="fs"/>
+    <Tunnel _id="In5" inputs="value:kRun.value" outputs="value:t_run.value" uid="t_run" uid_parent="fs"/>
+    <Tunnel _id="In6" inputs="value:kStop.value" outputs="value:t_stop.value" uid="t_stop" uid_parent="fs"/>
+    <Tunnel _id="In7" inputs="value:kWhole.value" outputs="value:t_whole.value" uid="t_whole" uid_parent="fs"/>
+    <Tunnel _id="In8" inputs="value:kLocal.value" outputs="value:t_local.value" uid="t_local" uid_parent="fs"/>
+    <Tunnel _id="In9" inputs="value:kVo.value" outputs="value:t_vo.value" uid="t_vo" uid_parent="fs"/>
+    <Tunnel _id="In10" inputs="value:kEmpty.value" outputs="value:t_empty.value" uid="t_empty" uid_parent="fs"/>
+    <Tunnel _id="In11" inputs="value:kInd.value" outputs="value:t_ind.value" uid="t_ind" uid_parent="fs"/>
+    <Tunnel _id="In12" inputs="value:kOne.value" outputs="value:t_one.value" uid="t_one" uid_parent="fs"/>
+    <Tunnel _id="In13" inputs="value:kMany.value" outputs="value:t_many.value" uid="t_many" uid_parent="fs"/>
+    <Tunnel _id="In14" inputs="value:kNoIn.value" outputs="value:t_noin.value" uid="t_noin" uid_parent="fs"/>
+    <Tunnel _id="In15" inputs="value:kLast.value" outputs="value:t_last.value" uid="t_last" uid_parent="fs"/>
+    <Tunnel _id="In16" inputs="value:kAgo.value" outputs="value:t_ago.value" uid="t_ago" uid_parent="fs"/>
+    <Tunnel _id="In17" inputs="value:kErr.value" outputs="value:t_err.value" uid="t_err" uid_parent="fs"/>
+    <Tunnel _id="In18" inputs="value:i1.value" outputs="value:t_i1.value" uid="t_i1" uid_parent="fs"/>
+    <Tunnel _id="In19" inputs="value:d0.value" outputs="value:t_d0.value" uid="t_d0" uid_parent="fs"/>
+    <Node _name="Unbundle By Name" fields="port,url,target,kind,whole network,running,uptime s,clients,fps,kB per s,frames,latency ms,view only,last error" inputs="input cluster:s.value" outputs="port:u.port,url:u.url,target:u.target,kind:u.kind,whole network:u.wn,running:u.run,uptime s:u.up,clients:u.clients,fps:u.fps,kB per s:u.kbs,frames:u.frames,latency ms:u.lat,view only:u.vo,last error:u.err" uid="u" uid_parent="fs"/>
+    <Call inputs="seconds:u.up" outputs="text:dup.text" target="RemoteVI Format Duration.vi" uid="dup" uid_parent="fs"/>
+    <Node _name="Concatenate Strings" inputs="string:t_run.value,string:dup.text" outputs="concatenated string:rf.v" uid="rf" uid_parent="fs"/>
+    <Node _name="Select" inputs="t:rf.v,s:u.run,f:t_stop.value" outputs="s? t\3Af:rt.v" uid="rt" uid_parent="fs"/>
+    <Node _name="Select" inputs="t:t_whole.value,s:u.wn,f:t_local.value" outputs="s? t\3Af:nt.v" uid="nt" uid_parent="fs"/>
+    <Node _name="Select" inputs="t:t_vo.value,s:u.vo,f:t_empty.value" outputs="s? t\3Af:vt.v" uid="vt" uid_parent="fs"/>
+    <Node _name="Format Into String" inputs="format string:t_f1.value,input 1:u.port,input 2:u.target,input 3:u.kind,input 4:rt.v,input 5:nt.v,input 6:vt.v" outputs="resulting string:l1.v" uid="l1" uid_parent="fs"/>
+    <Node _name="Concatenate Strings" inputs="string:t_ind.value,string:u.url" outputs="concatenated string:l2.v" uid="l2" uid_parent="fs"/>
+    <Node _name="Array Size" inputs="array:u.clients" outputs="size(s):nc.v" uid="nc" uid_parent="fs"/>
+    <Node _name="Equal?" inputs="x:nc.v,y:t_i1.value" outputs="x = y?:single.v" uid="single" uid_parent="fs"/>
+    <Node _name="Select" inputs="t:t_one.value,s:single.v,f:t_many.value" outputs="s? t\3Af:cw.v" uid="cw" uid_parent="fs"/>
+    <Node _name="Format Into String" inputs="format string:t_f3.value,input 1:nc.v,input 2:cw.v,input 3:u.fps,input 4:u.kbs,input 5:u.frames,input 6:u.lat" outputs="resulting string:l3.v" uid="l3" uid_parent="fs"/>
+    <Structure _name="For Loop" count="" label="One line per client" maxin="" maxout="" uid="fc" uid_parent="fs">
+      <Tunnel _id="In1" inputs="value:u.clients" mode="index" outputs="value:c.value" uid="c" uid_parent="fc"/>
+      <Tunnel _id="In2" inputs="value:t_f4.value" outputs="value:c_f4.value" uid="c_f4" uid_parent="fc"/>
+      <Tunnel _id="In3" inputs="value:t_noin.value" outputs="value:c_noin.value" uid="c_noin" uid_parent="fc"/>
+      <Tunnel _id="In4" inputs="value:t_last.value" outputs="value:c_last.value" uid="c_last" uid_parent="fc"/>
+      <Tunnel _id="In5" inputs="value:t_ago.value" outputs="value:c_ago.value" uid="c_ago" uid_parent="fc"/>
+      <Tunnel _id="In6" inputs="value:t_d0.value" outputs="value:c_d0.value" uid="c_d0" uid_parent="fc"/>
+      <Node _name="Unbundle By Name" fields="address,connected s,idle s" inputs="input cluster:c.value" outputs="address:cu.addr,connected s:cu.con,idle s:cu.idle" uid="cu" uid_parent="fc"/>
+      <Call inputs="seconds:cu.con" outputs="text:dco.text" target="RemoteVI Format Duration.vi" uid="dco" uid_parent="fc"/>
+      <Call inputs="seconds:cu.idle" outputs="text:did.text" target="RemoteVI Format Duration.vi" uid="did" uid_parent="fc"/>
+      <Node _name="Concatenate Strings" inputs="string:c_last.value,string:did.text,string:c_ago.value" outputs="concatenated string:li.v" uid="li" uid_parent="fc"/>
+      <Node _name="Less?" inputs="x:cu.idle,y:c_d0.value" outputs="x &lt; y?:never.v" uid="never" uid_parent="fc"/>
+      <Node _name="Select" inputs="t:c_noin.value,s:never.v,f:li.v" outputs="s? t\3Af:it.v" uid="it" uid_parent="fc"/>
+      <Node _name="Format Into String" inputs="format string:c_f4.value,input 1:cu.addr,input 2:dco.text,input 3:it.v" outputs="resulting string:cl.v" uid="cl" uid_parent="fc"/>
+      <Tunnel _id="Out1" inputs="value:cl.v" mode="index" outputs="value:clines.value" uid="clines" uid_parent="fc"/>
+    </Structure>
+    <Node _name="Build Array" inputs="element:l1.v,element:l2.v,element:l3.v,array:clines.value" outputs="appended array:lines.v" uid="lines" uid_parent="fs"/>
+    <Node _name="Concatenate Strings" inputs="string:t_err.value,string:u.err" outputs="concatenated string:el.v" uid="el" uid_parent="fs"/>
+    <Node _name="Build Array" inputs="array:lines.v,element:el.v" outputs="appended array:lines2.v" uid="lines2" uid_parent="fs"/>
+    <Node _name="Empty String/Path?" inputs="string/path:u.err" outputs="empty?:noerr.v" uid="noerr" uid_parent="fs"/>
+    <Node _name="Select" inputs="t:lines.v,s:noerr.v,f:lines2.v" outputs="s? t\3Af:bl.v" uid="bl" uid_parent="fs"/>
+    <Tunnel _id="Out1" inputs="value:bl.v" mode="concat" outputs="value:all.value" uid="all" uid_parent="fs"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Line feed before every line" maxin="" maxout="" uid="fj" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:all.value" mode="index" outputs="value:ln.value" uid="ln" uid_parent="fj"/>
+    <Tunnel _id="In2" inputs="value:lf.value" outputs="value:j_lf.value" uid="j_lf" uid_parent="fj"/>
+    <Node _name="Concatenate Strings" inputs="string:j_lf.value,string:ln.value" outputs="concatenated string:jl.v" uid="jl" uid_parent="fj"/>
+    <Tunnel _id="Out1" inputs="value:jl.v" mode="index" outputs="value:jls.value" uid="jls" uid_parent="fj"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:jls.value" outputs="concatenated string:joined.v" uid="joined" uid_parent="root"/>
+  <Node _name="String Subset" inputs="string:joined.v,offset (0):i1.value" outputs="substring:body.v" uid="body" uid_parent="root"/>
+  <Node _name="Empty Array?" inputs="array:st.value" outputs="empty?:none.v" uid="none" uid_parent="root"/>
+  <Node _name="Select" inputs="t:kNone.value,s:none.v,f:body.v" outputs="s? t\3Af:txt.v" uid="txt" uid_parent="root"/>
+  <Indicator _name="text" conIdx="4" connection="recommended" description="The status as text\2C lines joined with a line feed." inputs="value:txt.v" type="string" uid="o_t" uid_parent="root" value=""/>
+</VI>

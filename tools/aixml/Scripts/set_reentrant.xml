@@ -1,0 +1,16 @@
+<VI _name="Set Reentrant.vi" description="Build step after composing sourceServerRemoteVI Server Loop.vi (AIXML has no reentrancy): makes the VI at path reentrant (Exec.IsReentrant TRUE) and saves it; reports the reentrancy type before and after.">
+  <Control _name="path" outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
+  <Node _name="Open VI Reference" inputs="vi path:p.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Exec.ReentrancyType" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="Exec.ReentrancyType:r0.t,reference out:,error out:r0.error out" type="{LV.VI}" uid="r0" uid_parent="root"/>
+  <Constant outputs="value:t.value" type="bool" uid="t" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Exec.IsReentrant" inputs="reference:ov.vi reference,error in (no error):r0.error out,Exec.IsReentrant:t.value" outputs="reference out:,error out:w.error out" type="{LV.VI}" uid="w" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Exec.ReentrancyType" inputs="reference:ov.vi reference,error in (no error):w.error out" outputs="Exec.ReentrancyType:r1.t,reference out:,error out:r1.error out" type="{LV.VI}" uid="r1" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):r1.error out" outputs="reference out:,error out:sv.error out" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:r0.t" outputs="32bit integer:i0.v" uid="i0" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:r1.t" outputs="32bit integer:i1.v" uid="i1" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.error out" outputs="code:u.code" uid="u" uid_parent="root"/>
+  <Constant outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="before=%d after=%d err=%d"/>
+  <Node _name="Format Into String" inputs="format string:fmt.value,input 1:i0.v,input 2:i1.v,input 3:u.code" outputs="resulting string:fs.s" uid="fs" uid_parent="root"/>
+  <Indicator _name="summary" inputs="value:fs.s" type="string" uid="o_s" uid_parent="root" value=""/>
+</VI>

@@ -1,12 +1,13 @@
-<VI _name="RemoteVI Server Setup.vi" description="What the server loop needs before its first iteration\3A hello (the greeting frames with the name of VI\2C RemoteVI Greeting.vi)\2C html (the web client\2C RemoteVI Index HTML.vi)\2C the panel geometry\2C window handle and origin of the panel inside the frame (RemoteVI Get Panel Geometry.vi) and period = 1000 / fps ms. error out carries error in and the error of reading the VI name.">
+<VI _name="RemoteVI Server Setup.vi" description="(VI\2C or a window of any process when window is not 0.) What the server loop needs before its first iteration\3A hello (the greeting frames with the name of VI\2C RemoteVI Greeting.vi)\2C html (the web client\2C RemoteVI Index HTML.vi)\2C the panel geometry\2C window handle and origin of the panel inside the frame (RemoteVI Get Panel Geometry.vi) and period = 1000 / fps ms. error out carries error in and the error of reading the VI name.">
   <Control _name="VI" conIdx="0" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="fps" conIdx="5" connection="recommended" description="Most captures per second." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
   <Control _name="view only?" conIdx="1" connection="recommended" description="TRUE\3A the greeting says viewonly 1." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
+  <Control _name="window" conIdx="9" connection="recommended" description="The shared window of a window target (any process)\3B 0 = the front panel window of VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
-  <Node _name="Property Node" fields="read+VI Name" inputs="reference:vi.value,error in (no error):ei.value" outputs="error out:pn.error out,VI Name:pn.VI Name" type="{LV.VI}" uid="pn" uid_parent="root"/>
+  <Call inputs="VI:vi.value,window:win.value,error in:ei.value" outputs="name:pn.VI Name,error out:pn.error out" target="RemoteVI Target Name.vi" uid="pn" uid_parent="root"/>
   <Call inputs="VI name:pn.VI Name,view only?:vo.value" outputs="hello:gr.hello" target="RemoteVI Greeting.vi" uid="gr" uid_parent="root"/>
   <Call inputs="" outputs="html:ih.html" target="RemoteVI Index HTML.vi" uid="ih" uid_parent="root"/>
-  <Call inputs="VI:vi.value" outputs="geo:gg0.geo,hWnd:gg0.hWnd,origin:gg0.origin,error out:" target="RemoteVI Get Panel Geometry.vi" uid="gg0" uid_parent="root"/>
+  <Call inputs="VI:vi.value,window:win.value" outputs="geo:gg0.geo,hWnd:gg0.hWnd,origin:gg0.origin,error out:" target="RemoteVI Target Geometry.vi" uid="gg0" uid_parent="root"/>
   <Constant outputs="value:k1000.value" type="double" uid="k1000" uid_parent="root" value="1000"/>
   <Node _name="Divide" inputs="x:k1000.value,y:fps.value" outputs="x/y:period.x/y" uid="period" uid_parent="root"/>
   <Indicator _name="hello" conIdx="4" connection="recommended" description="The greeting frames for a new client." inputs="value:gr.hello" type="string" uid="o_h" uid_parent="root" value=""/>

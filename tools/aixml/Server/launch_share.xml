@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Launch Share.vi" description="Starts one share (RemoteVI Start.vi and RemoteVI Start Window.vi call it)\3A makes the access token (the given one or RemoteVI New Token.vi)\2C the link (http\3A//127.0.0.1\3A&lt;port&gt;/?t=... - or this computer's IP address with whole network?)\2C refuses a port this application instance shares already (error 5001\2C RemoteVI Share Running.vi)\2C opens a new clone of the reentrant RemoteVI Server Loop.vi\2C sets its controls and runs it (RemoteVI Launch Server Loop.vi)\2C and waits until it listens (its listener error\2C e.g. 60\3B 5002 after 2 s). window not 0 shares that window of any process instead of VI (a window target).">
+<VI _name="RemoteVI Launch Share.vi" description="Starts one share (RemoteVI Start.vi and RemoteVI Start Window.vi call it)\3A makes the access token (the given one or RemoteVI New Token.vi)\2C the link (http\3A//127.0.0.1\3A&lt;port&gt;/?t=... - or this computer's IP address with whole network?)\2C refuses a port this application instance shares already (error 5001\2C RemoteVI Share Running.vi)\2C opens a new clone of the reentrant RemoteVI Server Loop.vi\2C sets its controls and runs it (RemoteVI Launch Server Loop.vi)\2C and waits until it listens (its listener error\2C e.g. 60\3B 5002 after 2 s). window not 0 shares that window of any process instead of VI (a window target). loop VI (not empty) runs that VI instead of the Server Loop (RemoteVI Start Landing Page.vi\3A the landing page).">
   <FreeLabel comment="Token\2C address\2C link\3B then launch a server loop clone" uid="lbl" uid_parent="root"/>
   <Control _name="VI" conIdx="0" connection="recommended" description="The VI to share (ignored when window is not 0)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="port" conIdx="5" connection="recommended" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
@@ -7,6 +7,7 @@
   <Control _name="token" conIdx="2" connection="optional" description="The access token the link carries. Empty (default)\3A a new random token." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
   <Control _name="view only?" conIdx="3" connection="optional" description="TRUE\3A the browsers see the panel but cannot operate it." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
   <Control _name="window" conIdx="9" connection="recommended" description="A window of any process to share instead of VI's front panel (a window target)\3B 0 = VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Control _name="loop VI" conIdx="10" connection="optional" description="Another reentrant loop VI with the Server Loop's controls\3B empty (default)\3A RemoteVI Server Loop.vi." outputs="value:lvp.value" type="path" uid="lvp" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is started on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
 
@@ -48,6 +49,7 @@
     <Tunnel _id="In4" inputs="value:fps.value" uid="cl_i4" uid_parent="cl"/>
     <Tunnel _id="In5" inputs="value:nn.concatenated string" uid="cl_i5" uid_parent="cl"/>
     <Tunnel _id="In6" inputs="value:share.v" uid="cl_i6" uid_parent="cl"/>
+    <Tunnel _id="In7" inputs="value:lvp.value" uid="cl_i7" uid_parent="cl"/>
     <CaseFrame label="This port is shared here already\3A error 5001\2C launch nothing" selector="True" selectout="" uid="clt" uid_parent="cl">
       <Tunnel _id="In1" outputs="value:b_ei.value" uid="b_ei" uid_parent="clt"/>
       <Tunnel _id="In2" outputs="value:" uid="b_vi" uid_parent="clt"/>
@@ -55,6 +57,7 @@
       <Tunnel _id="In4" outputs="value:" uid="b_fps" uid_parent="clt"/>
       <Tunnel _id="In5" outputs="value:" uid="b_nn" uid_parent="clt"/>
       <Tunnel _id="In6" outputs="value:" uid="b_sh" uid_parent="clt"/>
+      <Tunnel _id="In7" outputs="value:" uid="b_lvp" uid_parent="clt"/>
       <Constant _name="already shared" outputs="value:e5001.value" type="cluster{bool.status,int32.code,string.source}" uid="e5001" uid_parent="clt" value="[true,5001,]"/>
       <Constant _name="message" outputs="value:m5001.value" type="string" uid="m5001" uid_parent="clt" value="RemoteVI Start.vi\0A&lt;APPEND&gt;\0AThis port is already shared by RemoteVI in this LabVIEW application instance. Stop that share with RemoteVI Stop.vi first\2C or use another port."/>
       <Node _name="Bundle By Name" fields="source" inputs="source:m5001.value,input cluster:e5001.value" outputs="output cluster:b5001.output cluster" uid="b5001" uid_parent="clt"/>
@@ -68,7 +71,8 @@
       <Tunnel _id="In4" outputs="value:l_fps.value" uid="l_fps" uid_parent="clf"/>
       <Tunnel _id="In5" outputs="value:l_nn.value" uid="l_nn" uid_parent="clf"/>
       <Tunnel _id="In6" outputs="value:l_sh.value" uid="l_sh" uid_parent="clf"/>
-      <Call inputs="error in:l_ei.value" outputs="Server Loop:osl.Server Loop,error out:osl.error out" target="RemoteVI Open Server Loop.vi" uid="osl" uid_parent="clf"/>
+      <Tunnel _id="In7" outputs="value:l_lvp.value" uid="l_lvp" uid_parent="clf"/>
+      <Call inputs="loop VI:l_lvp.value,error in:l_ei.value" outputs="Server Loop:osl.Server Loop,error out:osl.error out" target="RemoteVI Open Server Loop.vi" uid="osl" uid_parent="clf"/>
       <Call inputs="Server Loop:osl.Server Loop,VI:l_vi.value,port:l_port.value,fps:l_fps.value,stop notifier name:l_nn.value,share:l_sh.value,error in:osl.error out" outputs="error out:lsl.error out" target="RemoteVI Launch Server Loop.vi" uid="lsl" uid_parent="clf"/>
       <Tunnel _id="Out1" inputs="value:lsl.error out" uid="l_o1" uid_parent="clf"/>
     </CaseFrame>

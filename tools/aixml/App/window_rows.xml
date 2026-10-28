@@ -1,0 +1,85 @@
+<VI _name="RemoteVI Window Rows.vi" description="The windows RemoteVI Server offers to share\2C grouped and sorted\2C from the top-level windows RemoteVI List Top Windows.vi read. Kept\3A visible\2C at least 100 x 50 pixels\2C with a caption\2C not a tool window (WS_EX_TOOLWINDOW) nor one that cannot be activated (WS_EX_NOACTIVATE)\2C not a shell window (classes Windows.UI.Core.CoreWindow\2C Windows.Internal.Shell.TabProxyWindow\2C Progman\2C LockScreenBackstopFrame)\3B a LabVIEW window (class LVDChild) also when it is owned (LabVIEW's panels are owned by its hidden frame window)\2C other windows only when they are not owned (no dialogs)\3B no LabVIEW window whose caption names a Block Diagram or Project Explorer\3B not the window skip (the app's own). group 0 = LabVIEW (the development environment\2C LabVIEW.exe)\2C 1 = a LabVIEW-built application (a LabVIEW window of another program)\2C 2 = other programs\3B labview only? keeps groups 0 and 1. Sorted by group\2C program name (case-insensitive) and caption. Pure function\2C cannot fail. Reference\3A windowRows() in tools\5Clib\5Cserver-app.mjs\2C vectors tests\5Cvectors\5Cserver-app.json.">
+  <Control _name="raw" conIdx="0" connection="required" description="Top-level windows\3A handle\2C process\2C program path\2C class\2C caption\2C visible\2C owned\2C extended style\2C width\2C height." outputs="value:raw.value" type="array{cluster{uint64.hWnd,uint32.pid,string.path,string.class,string.title,bool.visible,bool.owned,uint32.ex style,int32.w,int32.h}}" uid="raw" uid_parent="root" value="[]"/>
+  <Control _name="labview only?" conIdx="1" connection="recommended" description="TRUE keeps LabVIEW and LabVIEW-built applications only." outputs="value:lvo.value" type="bool" uid="lvo" uid_parent="root" value="false"/>
+  <Control _name="skip" conIdx="2" connection="recommended" description="A window never listed (the app's own)." outputs="value:skip.value" type="uint64" uid="skip" uid_parent="root" value="0"/>
+  <Constant outputs="value:klv.value" type="string" uid="klv" uid_parent="root" value="LVDChild"/>
+  <Constant outputs="value:kbd.value" type="string" uid="kbd" uid_parent="root" value="Block Diagram"/>
+  <Constant outputs="value:kpe.value" type="string" uid="kpe" uid_parent="root" value="Project Explorer"/>
+  <Constant outputs="value:kexe.value" type="string" uid="kexe" uid_parent="root" value="labview.exe"/>
+  <Constant _name="WS_EX_TOOLWINDOW or WS_EX_NOACTIVATE" outputs="value:ktw.value" type="uint32" uid="ktw" uid_parent="root" value="134217856"/>
+  <Constant _name="shell windows" outputs="value:kex.value" type="array{string}" uid="kex" uid_parent="root" value="[Windows.UI.Core.CoreWindow,Windows.Internal.Shell.TabProxyWindow,Progman,LockScreenBackstopFrame]"/>
+  <Constant outputs="value:kmw.value" type="int32" uid="kmw" uid_parent="root" value="100"/>
+  <Constant outputs="value:kmh.value" type="int32" uid="kmh" uid_parent="root" value="50"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="root" value="1"/>
+  <Constant outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Constant outputs="value:u0.value" type="uint32" uid="u0" uid_parent="root" value="0"/>
+  <Constant _name="sort key" outputs="value:sk0.value" type="cluster{int32.group,string.key,string.title,string.program,uint32.pid,uint64.hWnd}" uid="sk0" uid_parent="root" value="[0,,,,0,0]"/>
+  <Structure _name="For Loop" count="" label="Keep\2C group and key each window" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:raw.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:lvo.value" outputs="value:l_lvo.value" uid="l_lvo" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:skip.value" outputs="value:l_skip.value" uid="l_skip" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:klv.value" outputs="value:l_klv.value" uid="l_klv" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:kbd.value" outputs="value:l_kbd.value" uid="l_kbd" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:kpe.value" outputs="value:l_kpe.value" uid="l_kpe" uid_parent="fl"/>
+    <Tunnel _id="In7" inputs="value:kexe.value" outputs="value:l_kexe.value" uid="l_kexe" uid_parent="fl"/>
+    <Tunnel _id="In8" inputs="value:ktw.value" outputs="value:l_ktw.value" uid="l_ktw" uid_parent="fl"/>
+    <Tunnel _id="In9" inputs="value:k0.value" outputs="value:l_k0.value" uid="l_k0" uid_parent="fl"/>
+    <Tunnel _id="In10" inputs="value:k1.value" outputs="value:l_k1.value" uid="l_k1" uid_parent="fl"/>
+    <Tunnel _id="In11" inputs="value:k2.value" outputs="value:l_k2.value" uid="l_k2" uid_parent="fl"/>
+    <Tunnel _id="In12" inputs="value:u0.value" outputs="value:l_u0.value" uid="l_u0" uid_parent="fl"/>
+    <Tunnel _id="In13" inputs="value:sk0.value" outputs="value:l_sk0.value" uid="l_sk0" uid_parent="fl"/>
+    <Tunnel _id="In14" inputs="value:kex.value" outputs="value:l_kex.value" uid="l_kex" uid_parent="fl"/>
+    <Tunnel _id="In15" inputs="value:kmw.value" outputs="value:l_kmw.value" uid="l_kmw" uid_parent="fl"/>
+    <Tunnel _id="In16" inputs="value:kmh.value" outputs="value:l_kmh.value" uid="l_kmh" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="hWnd,pid,path,class,title,visible,owned,ex style,w,h" inputs="input cluster:w.value" outputs="hWnd:u.hwnd,pid:u.pid,path:u.path,class:u.cls,title:u.title,visible:u.vis,owned:u.own,ex style:u.ex,w:u.w,h:u.h" uid="u" uid_parent="fl"/>
+    <Node _name="Greater Or Equal?" inputs="x:u.w,y:l_kmw.value" outputs="x &gt;= y?:hw0.v" uid="hw0" uid_parent="fl"/>
+    <Node _name="Greater Or Equal?" inputs="x:u.h,y:l_kmh.value" outputs="x &gt;= y?:hh0.v" uid="hh0" uid_parent="fl"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_kex.value,element:u.cls" outputs="index of element:xc.v" uid="xc" uid_parent="fl"/>
+    <Node _name="Less Than 0?" inputs="x:xc.v" outputs="x &lt; 0?:notshell.v" uid="notshell" uid_parent="fl"/>
+    <Node _name="Empty String/Path?" inputs="string/path:u.title" outputs="empty?:te.v" uid="te" uid_parent="fl"/>
+    <Node _name="Not" inputs="x:te.v" outputs=".not. x?:hast.v" uid="hast" uid_parent="fl"/>
+    <Node _name="And" inputs="x:u.ex,y:l_ktw.value" outputs="x .and. y?:tw.v" uid="tw" uid_parent="fl"/>
+    <Node _name="Equal?" inputs="x:tw.v,y:l_u0.value" outputs="x = y?:notool.v" uid="notool" uid_parent="fl"/>
+    <Node _name="Not Equal?" inputs="x:u.hwnd,y:l_skip.value" outputs="x != y?:notskip.v" uid="notskip" uid_parent="fl"/>
+    <Node _name="Equal?" inputs="x:u.cls,y:l_klv.value" outputs="x = y?:lv.v" uid="lv" uid_parent="fl"/>
+    <Node _name="Not" inputs="x:u.own" outputs=".not. x?:unowned.v" uid="unowned" uid_parent="fl"/>
+    <Node _name="Or" inputs="x:lv.v,y:unowned.v" outputs="x .or. y?:ownok.v" uid="ownok" uid_parent="fl"/>
+    <Node _name="Search/Split String" inputs="string:u.title,search string/char (-):l_kbd.value" outputs="substring before match:,match + rest of string:,offset of match:sbd.off" uid="sbd" uid_parent="fl"/>
+    <Node _name="Search/Split String" inputs="string:u.title,search string/char (-):l_kpe.value" outputs="substring before match:,match + rest of string:,offset of match:spe.off" uid="spe" uid_parent="fl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:sbd.off" outputs="x &gt;= 0?:isbd.v" uid="isbd" uid_parent="fl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:spe.off" outputs="x &gt;= 0?:ispe.v" uid="ispe" uid_parent="fl"/>
+    <Node _name="Or" inputs="x:isbd.v,y:ispe.v" outputs="x .or. y?:ide.v" uid="ide" uid_parent="fl"/>
+    <Node _name="And" inputs="x:lv.v,y:ide.v" outputs="x .and. y?:lvide.v" uid="lvide" uid_parent="fl"/>
+    <Node _name="Not" inputs="x:lvide.v" outputs=".not. x?:notide.v" uid="notide" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:u.path" outputs="path:pp.v" uid="pp" uid_parent="fl"/>
+    <Node _name="Strip Path" inputs="path:pp.v" outputs="stripped path:,name:prog.v" uid="prog" uid_parent="fl"/>
+    <Node _name="To Lower Case" inputs="string:prog.v" outputs="all lower case string:low.v" uid="low" uid_parent="fl"/>
+    <Node _name="Equal?" inputs="x:low.v,y:l_kexe.value" outputs="x = y?:isexe.v" uid="isexe" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:l_k0.value,s:isexe.v,f:l_k1.value" outputs="s? t\3Af:glv.v" uid="glv" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:glv.v,s:lv.v,f:l_k2.value" outputs="s? t\3Af:grp.v" uid="grp" uid_parent="fl"/>
+    <Node _name="Not" inputs="x:l_lvo.value" outputs=".not. x?:all.v" uid="all" uid_parent="fl"/>
+    <Node _name="Or" inputs="x:all.v,y:lv.v" outputs="x .or. y?:grpok.v" uid="grpok" uid_parent="fl"/>
+    <Node _name="And" inputs="x:u.vis,y:hw0.v" outputs="x .and. y?:c1.v" uid="c1" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c1.v,y:hh0.v" outputs="x .and. y?:c2.v" uid="c2" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c2.v,y:hast.v" outputs="x .and. y?:c3.v" uid="c3" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c3.v,y:notool.v" outputs="x .and. y?:c4.v" uid="c4" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c4.v,y:notskip.v" outputs="x .and. y?:c5.v" uid="c5" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c5.v,y:ownok.v" outputs="x .and. y?:c6.v" uid="c6" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c6.v,y:notide.v" outputs="x .and. y?:c7.v" uid="c7" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c7.v,y:grpok.v" outputs="x .and. y?:c8.v" uid="c8" uid_parent="fl"/>
+    <Node _name="And" inputs="x:c8.v,y:notshell.v" outputs="x .and. y?:keep.v" uid="keep" uid_parent="fl"/>
+    <Node _name="Bundle By Name" fields="group,key,title,program,pid,hWnd" inputs="input cluster:l_sk0.value,group:grp.v,key:low.v,title:u.title,program:prog.v,pid:u.pid,hWnd:u.hwnd" outputs="output cluster:kb.v" uid="kb" uid_parent="fl"/>
+    <Tunnel _id="Out1" cond="keep.v" inputs="value:kb.v" mode="index" outputs="value:keyed.value" uid="keyed" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Sort 1D Array" inputs="array:keyed.value" outputs="sorted array:sorted.v" uid="sorted" uid_parent="root"/>
+  <Constant _name="row0" outputs="value:r0.value" type="cluster{int32.group,string.program,string.title,uint32.pid,uint64.hWnd}" uid="r0" uid_parent="root" value="[0,,,0,0]"/>
+  <Structure _name="For Loop" count="" label="Rows" maxin="" maxout="" uid="fr" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:sorted.v" mode="index" outputs="value:s.value" uid="s" uid_parent="fr"/>
+    <Tunnel _id="In2" inputs="value:r0.value" outputs="value:l_r0.value" uid="l_r0" uid_parent="fr"/>
+    <Node _name="Unbundle By Name" fields="group,title,program,pid,hWnd" inputs="input cluster:s.value" outputs="group:su.g,title:su.t,program:su.p,pid:su.pid,hWnd:su.h" uid="su" uid_parent="fr"/>
+    <Node _name="Bundle By Name" fields="group,program,title,pid,hWnd" inputs="input cluster:l_r0.value,group:su.g,program:su.p,title:su.t,pid:su.pid,hWnd:su.h" outputs="output cluster:rb.v" uid="rb" uid_parent="fr"/>
+    <Tunnel _id="Out1" inputs="value:rb.v" mode="index" outputs="value:rows.value" uid="rows" uid_parent="fr"/>
+  </Structure>
+  <Indicator _name="rows" conIdx="4" connection="recommended" description="One row per shareable window\3A group\2C program name\2C caption\2C process and handle." inputs="value:rows.value" type="array{cluster{int32.group,string.program,string.title,uint32.pid,uint64.hWnd}}" uid="o_r" uid_parent="root" value="[]"/>
+</VI>

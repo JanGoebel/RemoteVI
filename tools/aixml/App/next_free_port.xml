@@ -1,0 +1,23 @@
+<VI _name="RemoteVI Next Free Port.vi" description="The first port from start up that none of used has (RemoteVI Server suggests it for the next share\2C used being the ports of RemoteVI Status.vi). Pure. Reference\3A nextFreePort() in tools\5Clib\5Cserver-app.mjs.">
+  <Control _name="used" conIdx="0" connection="required" description="Ports already shared." outputs="value:used.value" type="array{uint16}" uid="used" uid_parent="root" value="[]"/>
+  <Control _name="start" conIdx="1" connection="recommended" description="First port to try." outputs="value:st.value" type="uint16" uid="st" uid_parent="root" value="8100"/>
+  <Constant outputs="value:one.value" type="uint16" uid="one" uid_parent="root" value="1"/>
+  <Constant outputs="value:max.value" type="uint16" uid="max" uid_parent="root" value="65535"/>
+  <Structure _name="While Loop" count="" label="Up while the port is used" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:used.value" outputs="value:l_used.value" uid="l_used" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:one.value" outputs="value:l_one.value" uid="l_one" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:max.value" outputs="value:l_max.value" uid="l_max" uid_parent="wl"/>
+    <ShiftReg uid="srp" uid_parent="wl">
+      <Left inputs="value:st.value" outputs="value:p.value" uid="srpl" uid_parent="srp"/>
+      <Right inputs="value:np.v" outputs="value:" uid="srpr" uid_parent="srp"/>
+    </ShiftReg>
+    <Node _name="Search 1D Array" inputs="1D array:l_used.value,element:p.value" outputs="index of element:ix.v" uid="ix" uid_parent="wl"/>
+    <Node _name="Less Than 0?" inputs="x:ix.v" outputs="x &lt; 0?:free.v" uid="free" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:p.value,y:l_max.value" outputs="x &gt;= y?:top.v" uid="top" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:free.v,y:top.v" outputs="x .or. y?:stop.v" uid="stop" uid_parent="wl"/>
+    <Node _name="Add" inputs="x:p.value,y:l_one.value" outputs="x+y:np.v" uid="np" uid_parent="wl"/>
+    <Tunnel _id="Out1" inputs="value:p.value" outputs="value:res.value" uid="res" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Indicator _name="port" conIdx="4" connection="recommended" description="The first free port." inputs="value:res.value" type="uint16" uid="o_p" uid_parent="root" value="0"/>
+</VI>

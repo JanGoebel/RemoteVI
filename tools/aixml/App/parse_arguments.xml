@@ -1,0 +1,69 @@
+<VI _name="RemoteVI Parse Arguments.vi" description="RemoteVI Server.exe's command line (the arguments after --\2C as Application\3ACommand Line Arguments returns them without the program)\3A --share &lt;window title&gt; shares that window at start\3B --port N its port (default 8100)\3B --token T its token (default\3A random)\3B --whole-network and --view-only as the check boxes\3B --landing-port P the landing page's port (default 8088\2C 0 = no landing page). Unknown arguments and a last flag without its value are ignored\3B a value that is not a number from 0 to 65535 keeps the default. Pure. Reference\3A parseArgs() in tools\5Clib\5Cserver-app.mjs.">
+  <Control _name="args" conIdx="0" connection="required" description="The arguments." outputs="value:args.value" type="array{string}" uid="args" uid_parent="root" value="[]"/>
+  <Constant _name="defaults" outputs="value:d0.value" type="cluster{string.share,uint16.port,string.token,bool.whole network,bool.view only,uint16.landing port}" uid="d0" uid_parent="root" value="[,8100,,false,false,8088]"/>
+  <Constant _name="flags" outputs="value:flags.value" type="array{string}" uid="flags" uid_parent="root" value="[--whole-network,--view-only,--share,--port,--token,--landing-port]"/>
+  <Node _name="Array Size" inputs="array:args.value" outputs="size(s):n.v" uid="n" uid_parent="root"/>
+  <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Structure _name="While Loop" count="" label="One argument (and its value) per iteration" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:args.value" outputs="value:l_args.value" uid="l_args" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:flags.value" outputs="value:l_flags.value" uid="l_flags" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:n.v" outputs="value:l_n.value" uid="l_n" uid_parent="wl"/>
+    <ShiftReg uid="sri" uid_parent="wl">
+      <Left inputs="value:i0.value" outputs="value:i.value" uid="sril" uid_parent="sri"/>
+      <Right inputs="value:ni.v" outputs="value:" uid="srir" uid_parent="sri"/>
+    </ShiftReg>
+    <ShiftReg uid="sro" uid_parent="wl">
+      <Left inputs="value:d0.value" outputs="value:o.value" uid="srol" uid_parent="sro"/>
+      <Right inputs="value:nb.v" outputs="value:out.value" uid="sror" uid_parent="sro"/>
+    </ShiftReg>
+    <Constant outputs="value:k1.value" type="int32" uid="k1" uid_parent="wl" value="1"/>
+    <Constant outputs="value:k2.value" type="int32" uid="k2" uid_parent="wl" value="2"/>
+    <Constant outputs="value:k3.value" type="int32" uid="k3" uid_parent="wl" value="3"/>
+    <Constant outputs="value:k4.value" type="int32" uid="k4" uid_parent="wl" value="4"/>
+    <Constant outputs="value:k5.value" type="int32" uid="k5" uid_parent="wl" value="5"/>
+    <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="wl" value="0"/>
+    <Node _name="Index Array" inputs="array:l_args.value,index:i.value" outputs="element:a.v" uid="a" uid_parent="wl"/>
+    <Node _name="Add" inputs="x:i.value,y:k1.value" outputs="x+y:i1.v" uid="i1" uid_parent="wl"/>
+    <Node _name="Index Array" inputs="array:l_args.value,index:i1.v" outputs="element:v.v" uid="v" uid_parent="wl"/>
+    <Node _name="Less?" inputs="x:i1.v,y:l_n.value" outputs="x &lt; y?:has.v" uid="has" uid_parent="wl"/>
+    <Node _name="Search 1D Array" inputs="1D array:l_flags.value,element:a.v" outputs="index of element:k.v" uid="k" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k0.value" outputs="x = y?:isw.v" uid="isw" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k1.value" outputs="x = y?:isv.v" uid="isv" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:k.v,y:k2.value" outputs="x &gt;= y?:valf.v" uid="valf" uid_parent="wl"/>
+    <Node _name="And" inputs="x:valf.v,y:has.v" outputs="x .and. y?:take.v" uid="take" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k2.value" outputs="x = y?:iss.v" uid="iss" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k3.value" outputs="x = y?:isp.v" uid="isp" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k4.value" outputs="x = y?:ist.v" uid="ist" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:k.v,y:k5.value" outputs="x = y?:isl.v" uid="isl" uid_parent="wl"/>
+    <Node _name="And" inputs="x:take.v,y:iss.v" outputs="x .and. y?:ts.v" uid="ts" uid_parent="wl"/>
+    <Node _name="And" inputs="x:take.v,y:isp.v" outputs="x .and. y?:tp.v" uid="tp" uid_parent="wl"/>
+    <Node _name="And" inputs="x:take.v,y:ist.v" outputs="x .and. y?:tt.v" uid="tt" uid_parent="wl"/>
+    <Node _name="And" inputs="x:take.v,y:isl.v" outputs="x .and. y?:tl.v" uid="tl" uid_parent="wl"/>
+    <Constant _name="not a number" outputs="value:bad.value" type="int32" uid="bad" uid_parent="wl" value="-1"/>
+    <Node _name="Decimal String To Number" inputs="string:v.v,?parm3:k0.value,?parm2:bad.value" outputs="?parm1:dn.off,number:dn.num" uid="dn" uid_parent="wl"/>
+    <Node _name="String Length" inputs="string:v.v" outputs="length:vl.v" uid="vl" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:dn.off,y:vl.v" outputs="x = y?:whole.v" uid="whole" uid_parent="wl"/>
+    <Node _name="Greater?" inputs="x:vl.v,y:k0.value" outputs="x &gt; y?:some.v" uid="some" uid_parent="wl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:dn.num" outputs="x &gt;= 0?:pos.v" uid="pos" uid_parent="wl"/>
+    <Constant outputs="value:kmax.value" type="int32" uid="kmax" uid_parent="wl" value="65535"/>
+    <Node _name="Less Or Equal?" inputs="x:dn.num,y:kmax.value" outputs="x &lt;= y?:small.v" uid="small" uid_parent="wl"/>
+    <Node _name="Build Array" inputs="element:whole.v,element:some.v,element:pos.v,element:small.v" outputs="appended array:nb4.v" uid="nb4" uid_parent="wl"/>
+    <Node _name="And Array Elements" inputs="Boolean array:nb4.v" outputs="logical AND:isnum.v" uid="isnum" uid_parent="wl"/>
+    <Node _name="To Unsigned Word Integer" inputs="number:dn.num" outputs="unsigned 16bit integer:u16.v" uid="u16" uid_parent="wl"/>
+    <Node _name="And" inputs="x:tp.v,y:isnum.v" outputs="x .and. y?:setp.v" uid="setp" uid_parent="wl"/>
+    <Node _name="And" inputs="x:tl.v,y:isnum.v" outputs="x .and. y?:setl.v" uid="setl" uid_parent="wl"/>
+    <Node _name="Unbundle By Name" fields="share,port,token,whole network,view only,landing port" inputs="input cluster:o.value" outputs="share:ou.share,port:ou.port,token:ou.token,whole network:ou.wn,view only:ou.vo,landing port:ou.lp" uid="ou" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:v.v,s:ts.v,f:ou.share" outputs="s? t\3Af:nshare.v" uid="nshare" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:v.v,s:tt.v,f:ou.token" outputs="s? t\3Af:ntok.v" uid="ntok" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:u16.v,s:setp.v,f:ou.port" outputs="s? t\3Af:nport.v" uid="nport" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:u16.v,s:setl.v,f:ou.lp" outputs="s? t\3Af:nlp.v" uid="nlp" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:ou.wn,y:isw.v" outputs="x .or. y?:nwn.v" uid="nwn" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:ou.vo,y:isv.v" outputs="x .or. y?:nvo.v" uid="nvo" uid_parent="wl"/>
+    <Node _name="Bundle By Name" fields="share,port,token,whole network,view only,landing port" inputs="input cluster:o.value,share:nshare.v,port:nport.v,token:ntok.v,whole network:nwn.v,view only:nvo.v,landing port:nlp.v" outputs="output cluster:nb.v" uid="nb" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:k2.value,s:take.v,f:k1.value" outputs="s? t\3Af:step.v" uid="step" uid_parent="wl"/>
+    <Node _name="Add" inputs="x:i.value,y:step.v" outputs="x+y:ni.v" uid="ni" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:ni.v,y:l_n.value" outputs="x &gt;= y?:stop.v" uid="stop" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Indicator _name="options" conIdx="4" connection="recommended" description="share (window title\2C empty\3A none)\2C port\2C token\2C whole network\2C view only\2C landing port (0\3A none)." inputs="value:out.value" type="cluster{string.share,uint16.port,string.token,bool.whole network,bool.view only,uint16.landing port}" uid="o_o" uid_parent="root" value="[,8100,,false,false,8088]"/>
+</VI>

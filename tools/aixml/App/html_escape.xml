@@ -1,0 +1,17 @@
+<VI _name="RemoteVI HTML Escape.vi" description="Text for HTML\3A &amp; &lt; &gt; and &quot; written as their character references (the ampersand first). Pure function\2C cannot fail. Reference\3A htmlEscape() in tools\5Clib\5Cserver-app.mjs.">
+  <Control _name="text" conIdx="0" connection="required" description="Any text." outputs="value:tx.value" type="string" uid="tx" uid_parent="root" value=""/>
+  <Constant outputs="value:t.value" type="bool" uid="t" uid_parent="root" value="true"/>
+  <Constant outputs="value:a1.value" type="string" uid="a1" uid_parent="root" value="&amp;"/>
+  <Constant outputs="value:a2.value" type="string" uid="a2" uid_parent="root" value="&amp;amp;"/>
+  <Constant outputs="value:b1.value" type="string" uid="b1" uid_parent="root" value="&lt;"/>
+  <Constant outputs="value:b2.value" type="string" uid="b2" uid_parent="root" value="&amp;lt;"/>
+  <Constant outputs="value:c1.value" type="string" uid="c1" uid_parent="root" value="&gt;"/>
+  <Constant outputs="value:c2.value" type="string" uid="c2" uid_parent="root" value="&amp;gt;"/>
+  <Constant outputs="value:d1.value" type="string" uid="d1" uid_parent="root" value="&quot;"/>
+  <Constant outputs="value:d2.value" type="string" uid="d2" uid_parent="root" value="&amp;quot;"/>
+  <Node _name="Search and Replace String" inputs="input string:tx.value,search string:a1.value,replace string:a2.value,replace all?:t.value" outputs="result string:ra.v" uid="ra" uid_parent="root"/>
+  <Node _name="Search and Replace String" inputs="input string:ra.v,search string:b1.value,replace string:b2.value,replace all?:t.value" outputs="result string:rb.v" uid="rb" uid_parent="root"/>
+  <Node _name="Search and Replace String" inputs="input string:rb.v,search string:c1.value,replace string:c2.value,replace all?:t.value" outputs="result string:rc.v" uid="rc" uid_parent="root"/>
+  <Node _name="Search and Replace String" inputs="input string:rc.v,search string:d1.value,replace string:d2.value,replace all?:t.value" outputs="result string:rd.v" uid="rd" uid_parent="root"/>
+  <Indicator _name="html" conIdx="4" connection="recommended" description="text with the four characters escaped." inputs="value:rd.v" type="string" uid="o_h" uid_parent="root" value=""/>
+</VI>

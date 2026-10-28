@@ -1,0 +1,32 @@
+<VI _name="RemoteVI Landing Page.vi" description="The landing page of RemoteVI Server (served on its own port with its own access token)\3A every RUNNING share of status (RemoteVI Status.vi) as a link with its token\2C the target's name\2C kind\2C port and whether it is reachable from the whole network or view only\3B Nothing is shared right now. when none runs. Names and links are HTML-escaped (RemoteVI HTML Escape.vi). Pure function\2C cannot fail. Reference\3A landingPage() in tools\5Clib\5Cserver-app.mjs\2C vectors tests\5Cvectors\5Cserver-app.json (landing).">
+  <Control _name="status" conIdx="0" connection="required" description="The shares (RemoteVI Status.vi)." outputs="value:st.value" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}}" uid="st" uid_parent="root" value="[]"/>
+  <Constant outputs="value:head.value" type="string" uid="head" uid_parent="root" value="\3C\21doctype\20html\3E\3Chtml\3E\3Chead\3E\3Cmeta\20charset\3D\22windows\2D1252\22\3E\3Cmeta\20name\3D\22viewport\22\20content\3D\22width\3Ddevice\2Dwidth\22\3E\3Ctitle\3ERemoteVI\20Server\3C\2Ftitle\3E\3Cstyle\3Ebody\7Bfont\3A15px\20Segoe\20UI\2CArial\2Csans\2Dserif\3Bmargin\3A32px\3Bcolor\3A\23222\7Dh1\7Bfont\2Dsize\3A22px\7Dul\7Blist\2Dstyle\3Anone\3Bpadding\3A0\7Dli\7Bmargin\3A10px\200\3Bpadding\3A12px\2016px\3Bborder\3A1px\20solid\20\23ccd\3Bborder\2Dradius\3A8px\7Da\7Bfont\2Dweight\3A600\3Bcolor\3A\230b57d0\3Btext\2Ddecoration\3Anone\7Dspan\7Bdisplay\3Ablock\3Bcolor\3A\23666\3Bfont\2Dsize\3A13px\7D\3C\2Fstyle\3E\3C\2Fhead\3E\3Cbody\3E\3Ch1\3ERemoteVI\20Server\3C\2Fh1\3E"/>
+  <Constant outputs="value:tail.value" type="string" uid="tail" uid_parent="root" value="\3C\2Fbody\3E\3C\2Fhtml\3E"/>
+  <Constant outputs="value:ul1.value" type="string" uid="ul1" uid_parent="root" value="\3Cul\3E"/>
+  <Constant outputs="value:ul2.value" type="string" uid="ul2" uid_parent="root" value="\3C\2Ful\3E"/>
+  <Constant outputs="value:none.value" type="string" uid="none" uid_parent="root" value="\3Cp\3ENothing\20is\20shared\20right\20now\2E\3C\2Fp\3E"/>
+  <Constant outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="\3Cli\3E\3Ca\20href\3D\22\25s\22\3E\25s\3C\2Fa\3E\3Cspan\3E\25s\20\2D\20port\20\25d\25s\25s\3C\2Fspan\3E\3C\2Fli\3E"/>
+  <Constant outputs="value:kwn.value" type="string" uid="kwn" uid_parent="root" value="\2C\20whole\20network"/>
+  <Constant outputs="value:kvo.value" type="string" uid="kvo" uid_parent="root" value="\2C\20view\20only"/>
+  <Constant outputs="value:kno.value" type="string" uid="kno" uid_parent="root" value=""/>
+  <Structure _name="For Loop" count="" label="One item per running share" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:st.value" mode="index" outputs="value:s.value" uid="s" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:fmt.value" outputs="value:l_fmt.value" uid="l_fmt" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:kwn.value" outputs="value:l_wn.value" uid="l_wn" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:kvo.value" outputs="value:l_vo.value" uid="l_vo" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:kno.value" outputs="value:l_no.value" uid="l_no" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="port,url,target,kind,whole network,running,view only" inputs="input cluster:s.value" outputs="port:u.port,url:u.url,target:u.target,kind:u.kind,whole network:u.wn,running:u.run,view only:u.vo" uid="u" uid_parent="fl"/>
+    <Call inputs="text:u.url" outputs="html:eu.html" target="RemoteVI HTML Escape.vi" uid="eu" uid_parent="fl"/>
+    <Call inputs="text:u.target" outputs="html:et.html" target="RemoteVI HTML Escape.vi" uid="et" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:l_wn.value,s:u.wn,f:l_no.value" outputs="s? t\3Af:wn.v" uid="wn" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:l_vo.value,s:u.vo,f:l_no.value" outputs="s? t\3Af:vo.v" uid="vo" uid_parent="fl"/>
+    <Node _name="Format Into String" inputs="format string:l_fmt.value,input 1:eu.html,input 2:et.html,input 3:u.kind,input 4:u.port,input 5:wn.v,input 6:vo.v" outputs="resulting string:li.v" uid="li" uid_parent="fl"/>
+    <Tunnel _id="Out1" cond="u.run" inputs="value:li.v" mode="index" outputs="value:items.value" uid="items" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:items.value" outputs="concatenated string:all.v" uid="all" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:ul1.value,string:all.v,string:ul2.value" outputs="concatenated string:lst.v" uid="lst" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:all.v" outputs="empty?:emp.v" uid="emp" uid_parent="root"/>
+  <Node _name="Select" inputs="t:none.value,s:emp.v,f:lst.v" outputs="s? t\3Af:body.v" uid="body" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:head.value,string:body.v,string:tail.value" outputs="concatenated string:page.v" uid="page" uid_parent="root"/>
+  <Indicator _name="html" conIdx="4" connection="recommended" description="The page." inputs="value:page.v" type="string" uid="o_h" uid_parent="root" value=""/>
+</VI>

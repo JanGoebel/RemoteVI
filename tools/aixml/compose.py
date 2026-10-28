@@ -70,7 +70,8 @@ def main(argv):
         f.write(text)
     env = dict(os.environ)
     env["AIXML2VI_TRY_WIRES"] = "Refnum.TCPNetConn"
-    cmd = [PYTHON, COMPOSER, "--lv-version", "25", tmp, out_vi] + sum((["--search", d] for d in argv[2:]), [])
+    # pane_parts.py: the composer plus the VI Server classes Pane and Splitter (Read Tips converts pane coordinates)
+    cmd = [PYTHON, os.path.join(os.path.dirname(os.path.abspath(__file__)), "pane_parts.py"), "compose", "--lv-version", "25", tmp, out_vi] + sum((["--search", d] for d in argv[2:]), [])
     rc = subprocess.call(cmd, env=env)
     if rc == 0:
         os.remove(tmp)

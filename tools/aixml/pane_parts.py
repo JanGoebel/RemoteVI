@@ -7,20 +7,21 @@ module patches both tools in memory, without touching the plugin's files:
 * LV.Pane is CtlFlags 0x004B (the type of {LV.Panel} Panes[] and {LV.Control} OwningPane in the
   harvested table), LV.Splitter 0x004C (read off NI's Slide Splitter.vi, see harvest below);
 * parts are looked up in the plugin's parts directory first, then in EXTRA (this folder's
-  `parts`), and the VI Server table of EXTRA is merged into the plugin's.
+  `pane_parts_harvest`), and the VI Server table of EXTRA is merged into the plugin's.
 
 The parts in EXTRA are harvested from NI's own VIs with
 
-    <labview-mcp>\\bin\\pylabview\\python.exe pane_parts.py harvest
+    <labview-mcp>\\bin\\pylabview\\python.exe tools\\aixml\\pane_parts.py harvest
 
-so nothing in them is hand-made.
+so nothing in them is hand-made. tools/aixml/compose.py composes every source VI through
+`pane_parts.py compose <aixml2vi args>`, the fixtures through tests/fixtures/aixml/complex_composer.py.
 """
 import json
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-EXTRA = os.path.join(HERE, "parts")
+EXTRA = os.path.join(HERE, "pane_parts_harvest")
 CLASSES = {"LV.Pane": "0x004B", "LV.Splitter": "0x004C"}
 
 # NI VIs that carry Pane and Splitter nodes (read with the harvester; LabVIEW 2025)
@@ -28,6 +29,10 @@ LV = r"C:\Program Files\National Instruments\LabVIEW 2025"
 DONORS = [
     LV + r"\vi.lib\MGI\Panel Manager\Panel\Window Position\Reference Position\Ref Ctrl\Reference Rectangle.vi",
     LV + r"\vi.lib\MGI\Monitored Actor\Classic Monitor\Logger\Classic Logger Actor\Slide Splitter.vi",
+    # Pane VertScrollbarVisibility, HorizScrollbarVisibility, Origin, ContentBnds
+    LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Read Vertical Scroll.vi",
+    LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Write Vertical Scroll.vi",
+    LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Read Origin.vi",
 ]
 
 
@@ -84,6 +89,22 @@ def harvest(plugin_scripts):
     os.makedirs(EXTRA, exist_ok=True)
     harvest_parts.main(["--props", EXTRA] + DONORS)
 
+
+def compose(argv):
+    """Run the plugin composer (aixml2vi.py next to the harvester) with this patch: argv as for aixml2vi."""
+    scripts = os.environ.get("AIXML2VI_SCRIPTS", os.path.join(os.path.dirname(os.path.dirname(sys.executable)), "scripts", "aixml-pylabview"))
+    import importlib.util
+    sys.path.insert(0, scripts)
+    spec = importlib.util.spec_from_file_location("aixml2vi", os.path.join(scripts, "aixml2vi.py"))
+    a2v = importlib.util.module_from_spec(spec)
+    sys.modules["aixml2vi"] = a2v
+    spec.loader.exec_module(a2v)
+    patch_composer(a2v)
+    return a2v.main(argv)
+
+
+if __name__ == "__main__" and sys.argv[1:2] == ["compose"]:
+    sys.exit(compose(sys.argv[2:]))
 
 if __name__ == "__main__" and sys.argv[1:2] == ["harvest"]:
     harvest(sys.argv[2] if len(sys.argv) > 2 else os.path.expandvars(

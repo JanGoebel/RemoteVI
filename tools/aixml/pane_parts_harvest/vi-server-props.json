@@ -16,6 +16,10 @@
    "nodeName": "IntGraph (strict)",
    "oMId": "000B"
   },
+  "LV.Pane": {
+   "nodeName": "Pane",
+   "oMId": "0005"
+  },
   "LV.Panel": {
    "nodeName": "Pnl",
    "oMId": "0007"
@@ -208,6 +212,24 @@
     "label": "Width",
     "source": "<labview>\\vi.lib\\Math Plots\\3D Math Plots\\3D Plot\\3D Plot\\Public\\Environment\\Panel Resize.vi",
     "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   }
+  },
+  "LV.Pane": {
+   "Origin": {
+    "access": "r",
+    "code": 404121605,
+    "declaredBy": "LV.Pane",
+    "label": "",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Pane\\Read Origin.vi",
+    "type": "<TypeDesc Type=\"TypeDef\" Flag1=\"0x0\" Format=\"inline\"><TypeDesc Type=\"Cluster\" Nested=\"True\" Format=\"inline\" Label=\"Origin\"><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Horizontal\" /><TypeDesc Type=\"NumInt16\" Prop1=\"0\" Format=\"inline\" Label=\"Vertical\" /></TypeDesc><Label Text=\"LVPointTypeDef.ctl\" />\n        </TypeDesc>"
+   },
+   "VertScrollbarVisibility": {
+    "access": "rw",
+    "code": 404121607,
+    "declaredBy": "LV.Pane",
+    "label": "VertScrollbarVisibility",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Pane\\Read Vertical Scroll.vi",
+    "type": "<TypeDesc Type=\"UnitUInt16\" Prop1=\"0\" Format=\"inline\"><EnumLabel>Always On</EnumLabel>\n        <EnumLabel>Always Off</EnumLabel>\n        <EnumLabel>Off While Running</EnumLabel>\n        </TypeDesc>"
    }
   },
   "LV.Panel": {

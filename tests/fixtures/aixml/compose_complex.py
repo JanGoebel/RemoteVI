@@ -79,7 +79,7 @@ for name, out in ORDER:
     tmp = os.path.join(os.environ.get("TEMP", here), name + ".compose.xml")
     open(tmp, "w", encoding="utf-8", newline="\n").write(text)
     r = subprocess.run([py, os.path.join(here, "complex_composer.py"), composer, "--lv-version", "25",
-                        "--search", fixtures, "--search", os.path.join(repo, "source", "API"), tmp, vi],
+                        "--search", fixtures, "--search", os.path.join(repo, "source", "API"), "--search", os.path.join(repo, "source", "Server"), "--search", os.path.join(repo, "source", "Win32"), tmp, vi],
                        capture_output=True, text=True)
     last = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
     print(name, "->", last if not r.returncode else "FAILED\n" + (r.stderr or r.stdout)[-2000:])

@@ -1,0 +1,64 @@
+<VI _name="RemoteVI Status Panel.vi" description="A small window that shows what RemoteVI shares in this LabVIEW application instance (the text of RemoteVI Status.vi\3A per share its link\2C target\2C clients\2C frame rate\2C data rate and last error)\2C refreshed every 500 ms. RemoteVI Show Status.vi opens it\3B you can also run it yourself\2C or insert it into a subpanel of your own UI (Insert VI\2C then Run VI without waiting). It ends when its window is closed\2C on Close\2C or when stop is set TRUE (Control Value.Set by name - the way to end it in a subpanel). It only reads the status\3B closing it stops no share.">
+  <Control _name="stop" conIdx="0" connection="optional" description="TRUE ends the panel (checked every 500 ms). Hidden\3B for a host that shows this VI in a subpanel." outputs="value:" type="bool" uid="stp" uid_parent="root" value="false"/>
+  <Node _name="VI Server Reference" type="{LV.VI}" outputs="This VI:tv.This VI" uid="tv" uid_parent="root"/>
+  <Constant _name="layout" outputs="value:lay.value" type="array{cluster{string.label,int32.left,int32.top,int32.width,int32.height}}" uid="lay" uid_parent="root" value="[[Shares,16,28,600,300],[Close,516,342,100,28],[stop,0,0,-1,0],[tick,0,0,-1,0]]"/>
+  <Constant _name="panel size" outputs="value:psz.value" type="cluster{int32.width,int32.height}" uid="psz" uid_parent="root" value="[632,386]"/>
+  <Constant _name="title" outputs="value:ttl.value" type="string" uid="ttl" uid_parent="root" value="RemoteVI Status"/>
+  <Call inputs="VI:tv.This VI,layout:lay.value,panel size:psz.value,title:ttl.value" outputs="" target="RemoteVI Arrange Controls.vi" uid="arr" uid_parent="root"/>
+  <Call inputs="" outputs="servers:,text:st0.text" target="RemoteVI Status.vi" uid="st0" uid_parent="root"/>
+  <Constant outputs="value:ntype.value" type="bool" uid="ntype" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="notification data type:ntype.value" outputs="notifier out:on.notifier out,error out:" uid="on" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Tick every 500 ms until the event loop ends" uid="tl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:t_not.value" uid="t_not" uid_parent="tl"/>
+    <Constant outputs="value:k500.value" type="int32" uid="k500" uid_parent="tl" value="500"/>
+    <Node _name="Wait on Notification" inputs="notifier:t_not.value,timeout in ms (-1):k500.value" outputs="timed out?:wn.timed out?" uid="wn" uid_parent="tl"/>
+    <Structure _name="Case Structure" selectin="wn.timed out?" uid="tc" uid_parent="tl">
+      <CaseFrame label="Tick\3A signal the hidden tick control" selector="True" selectout="" uid="tct" uid_parent="tc">
+        <Node _name="VI Server Reference" element="tick" outputs="tick:tr.tick" uid="tr" uid_parent="tct"/>
+        <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="tct" value="true"/>
+        <Node _name="Property Node" fields="write+Value (Signaling)" inputs="reference:tr.tick,Value (Signaling):tru.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="sig" uid_parent="tct"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="tcf" uid_parent="tc"/>
+    </Structure>
+    <Node _name="Not" inputs="x:wn.timed out?" outputs=".not. x?:tstop.v" uid="tstop" uid_parent="tl"/>
+    <Condition inputs="value:tstop.v" uid="tlc" uid_parent="tl" value="stop"/>
+  </Structure>
+  <Structure _name="While Loop" count="" label="Event loop" uid="evl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:e_not.value" uid="e_not" uid_parent="evl"/>
+    <ShiftReg uid="srt" uid_parent="evl">
+      <Left inputs="value:st0.text" outputs="value:txt.value" uid="srtl" uid_parent="srt"/>
+      <Right inputs="value:ev_txt.value" outputs="value:txt_end.value" uid="srtr" uid_parent="srt"/>
+    </ShiftReg>
+    <Structure _name="Event Structure" uid="ev" uid_parent="evl">
+      <Tunnel _id="In1" inputs="value:txt.value" uid="evI1" uid_parent="ev"/>
+      <CaseFrame selector=" &quot;tick&quot;\3A Value Change " uid="ftk" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="ftkI1" uid_parent="ftk"/>
+        <Control _name="tick" description="Hidden\3B signalled every 500 ms by the tick loop." outputs="value:" type="bool" uid="tick" uid_parent="ftk" value="false"/>
+        <Call inputs="" outputs="servers:,text:st.text" target="RemoteVI Status.vi" uid="st" uid_parent="ftk"/>
+        <Node _name="Local Variable" element="stop" outputs="stop:sl.value" uid="sl" uid_parent="ftk"/>
+        <Tunnel _id="Out1" inputs="value:sl.value" uid="ftkO1" uid_parent="ftk"/>
+        <Tunnel _id="Out2" inputs="value:st.text" uid="ftkO2" uid_parent="ftk"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;Close&quot;\3A Value Change " uid="fcl" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fclT.value" uid="fclI1" uid_parent="fcl"/>
+        <Control _name="Close" description="Closes this window." outputs="value:cl.value" style="latched" type="bool" uid="cl" uid_parent="fcl" value="false"/>
+        <Tunnel _id="Out1" inputs="value:cl.value" uid="fclO1" uid_parent="fcl"/>
+        <Tunnel _id="Out2" inputs="value:fclT.value" uid="fclO2" uid_parent="fcl"/>
+      </CaseFrame>
+      <CaseFrame selector=" Panel Close? " uid="fpc" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fpcT.value" uid="fpcI1" uid_parent="fpc"/>
+        <Constant outputs="value:pct.value" type="bool" uid="pct" uid_parent="fpc" value="true"/>
+        <Tunnel _id="Out1" inputs="value:pct.value" uid="fpcO1" uid_parent="fpc"/>
+        <Tunnel _id="Out2" inputs="value:fpcT.value" uid="fpcO2" uid_parent="fpc"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:evStop.value" uid="evStop" uid_parent="ev"/>
+      <Tunnel _id="Out2" outputs="value:ev_txt.value" uid="ev_txt" uid_parent="ev"/>
+    </Structure>
+    <Indicator _name="Shares" description="RemoteVI Status.vi's text." inputs="value:ev_txt.value" type="string" uid="o_t" uid_parent="evl" value=""/>
+    <Tunnel _id="Out1" inputs="value:e_not.value" outputs="value:not_end.value" uid="not_end" uid_parent="evl"/>
+    <Condition inputs="value:evStop.value" uid="evlc" uid_parent="evl" value="stop"/>
+  </Structure>
+  <Constant outputs="value:fin.value" type="bool" uid="fin" uid_parent="root" value="true"/>
+  <Node _name="Send Notification" inputs="notifier:not_end.value,notification:fin.value" outputs="notifier out:sn.notifier out" uid="sn" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:sn.notifier out" outputs="" uid="rn" uid_parent="root"/>
+</VI>

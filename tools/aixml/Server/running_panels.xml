@@ -1,0 +1,28 @@
+<VI _name="RemoteVI Running Panels.vi" description="Which of hWnds are front panel windows of VIs that are running - an application's own windows (a subVI panel opened with FP.Open or Show front panel when called\2C a second non-modal window) as opposed to IDE windows (Project Explorer\2C block diagrams\2C panels of VIs being edited)\2C which Win32 cannot tell apart (all are LVDChild windows owned by LabVIEW's hidden frame window\2C measured on LabVIEW 2025). For every VI in memory of this application instance (Application\3AAll VIs In Memory) whose Execution\3AState is running (Run Top Level or Running) and whose front panel is open\2C Front Panel Window\3AOS Window is compared with hWnds. A VI Server call\3A RemoteVI Track Windows.vi calls it only for windows that just appeared and only while no modal window is listed (about 60 ms for 400 VIs in memory\2C measured). The names are wired to Open VI Reference as strings\3B converted to paths\2C library members answered error 7 and the others error 1445 (measured). Errors of single VIs are skipped.">
+  <FreeLabel comment="Panels of running VIs among hWnds" uid="lbl" uid_parent="root"/>
+  <Control _name="hWnds" conIdx="0" connection="required" description="Window handles to check." outputs="value:hw.value" type="array{uint64}" uid="hw" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Nothing is checked when this carries an error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Application\3AAll VIs In Memory" inputs="reference:,error in (no error):ei.value" outputs="Application\3AAll VIs In Memory:ap.vis,reference out:,error out:ap.error out" type="{LV.Application}" uid="ap" uid_parent="root"/>
+  <Constant _name="running top level" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Structure _name="For Loop" count="" label="Each VI in memory" maxin="" maxout="" uid="fv" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ap.vis" mode="index" outputs="value:vn.value" uid="vn" uid_parent="fv"/>
+    <Tunnel _id="In2" inputs="value:hw.value" outputs="value:vh.value" uid="vh" uid_parent="fv"/>
+    <Tunnel _id="In3" inputs="value:k2.value" outputs="value:vk.value" uid="vk" uid_parent="fv"/>
+
+    <Node _name="Open VI Reference" inputs="vi path:vn.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fv"/>
+    <Node _name="Property Node" fields="read+Execution\3AState,read+Front Panel Window\3AOpen,read+Front Panel Window\3AOS Window" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="Execution\3AState:pv.state,Front Panel Window\3AOpen:pv.open,Front Panel Window\3AOS Window:pv.os,reference out:,error out:pv.error out" type="{LV.VI}" uid="pv" uid_parent="fv"/>
+    <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):pv.error out" outputs="error out:" uid="cr" uid_parent="fv"/>
+    <Node _name="To Long Integer" inputs="number:pv.state" outputs="32bit integer:st.i" uid="st" uid_parent="fv"/>
+    <Node _name="Greater Or Equal?" inputs="x:st.i,y:vk.value" outputs="x &gt;= y?:run.v" uid="run" uid_parent="fv"/>
+    <Node _name="To Unsigned Quad Integer" inputs="number:pv.os" outputs="unsigned 64bit integer:oq.u" uid="oq" uid_parent="fv"/>
+    <Node _name="Search 1D Array" inputs="1D array:vh.value,element:oq.u" outputs="index of element:fi.v" uid="fi" uid_parent="fv"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:fi.v" outputs="x &gt;= 0?:hit.v" uid="hit" uid_parent="fv"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pv.error out" outputs="status:es.status" uid="es" uid_parent="fv"/>
+    <Node _name="Not" inputs="x:es.status" outputs=".not. x?:ok.v" uid="ok" uid_parent="fv"/>
+    <Node _name="Build Array" inputs="element:run.v,element:pv.open,element:hit.v,element:ok.v" outputs="appended array:b4.v" uid="b4" uid_parent="fv"/>
+    <Node _name="And Array Elements" inputs="Boolean array:b4.v" outputs="logical AND:keep.v" uid="keep" uid_parent="fv"/>
+    <Tunnel _id="Out1" cond="keep.v" inputs="value:oq.u" mode="index" outputs="value:found.value" uid="found" uid_parent="fv"/>
+  </Structure>
+  <Indicator _name="running panels" conIdx="4" connection="recommended" description="The hWnds that are open front panels of running VIs." inputs="value:found.value" type="array{uint64}" uid="o_r" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C or the error of reading the VIs in memory." inputs="value:ap.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

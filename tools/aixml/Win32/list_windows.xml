@@ -163,6 +163,7 @@
 
   <Indicator _name="windows" conIdx="4" connection="recommended" description="The listed windows\2C front-most first (RemoteVI Window Info.vi)." inputs="value:wins.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="o_w" uid_parent="root" value="[]"/>
   <Indicator _name="modal?" conIdx="6" connection="recommended" description="TRUE when a window is listed and the published panel is disabled\3A a modal dialog is up." inputs="value:modal.v" type="bool" uid="o_m" uid_parent="root" value="false"/>
+  <Indicator _name="candidates" conIdx="10" connection="recommended" description="Every candidate of this call\2C listed or not\2C front-most first (for RemoteVI Track Windows.vi\2C which asks RemoteVI Running Panels.vi about new ones)." inputs="value:cands.value" type="array{uint64}" uid="o_c" uid_parent="root" value="[]"/>
   <Indicator _name="state out" conIdx="8" connection="recommended" description="For the next call." inputs="value:sto.v" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="o_st" uid_parent="root" value="[false,[],[],[]]"/>
   <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or the first DLL call error of the enumeration." inputs="value:tw.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Track Windows.vi" description="The windows part of one server loop iteration (docs\5Cprotocol.md section 7). When look? is TRUE (a client is connected\2C the geometry is due or a popup was open) or a modal window was listed last time\2C and at least 200 ms after the last listing (last list - listing walks every top-level window of the desktop\2C about 12 ms in the IDE\2C measured\3B every iteration would make each iteration a frame iteration\2C and the OVERLAY\2C which goes out in the iterations between frames\2C would starve)\2C the application's other windows are listed (RemoteVI List Windows.vi - Win32 only\2C so it runs while a dialog holds LabVIEW's UI thread)\3B otherwise the previous list is kept. message is the text message windows [...] of the list (RemoteVI Windows Message.vi)\2C modal? is TRUE while a listed window is modal - LabVIEW's UI thread then runs a dialog's modal loop and every VI Server UI call would block until it closes (measured on LabVIEW 2025 with a Two Button Dialog)\2C so the server loop makes none.">
+<VI _name="RemoteVI Track Windows.vi" description="The windows part of one server loop iteration (docs\5Cprotocol.md section 7). When look? is TRUE (a client is connected\2C the geometry is due or a popup was open) or a modal window was listed last time\2C and at least 200 ms after the last listing (last list - listing walks every top-level window of the desktop\2C about 12 ms in the IDE\2C measured\3B every iteration would make each iteration a frame iteration\2C and the OVERLAY\2C which goes out in the iterations between frames\2C would starve)\2C the application's other windows are listed (RemoteVI List Windows.vi - Win32 only\2C so it runs while a dialog holds LabVIEW's UI thread)\3B otherwise the previous list is kept. Candidates that just appeared and are not listed are passed to RemoteVI Running Panels.vi (VI Server\2C so only while no modal window is listed)\3B those that are open front panels of running VIs - the application's own non-modal windows\2C such as a subVI panel opened with FP.Open - are added to the listed set of state out and so listed from the next listing on\2C while IDE windows stay unlisted. message is the text message windows [...] of the list (RemoteVI Windows Message.vi)\2C modal? is TRUE while a listed window is modal - LabVIEW's UI thread then runs a dialog's modal loop and every VI Server UI call would block until it closes (measured on LabVIEW 2025 with a Two Button Dialog)\2C so the server loop makes none.">
   <Control _name="look?" conIdx="0" connection="required" description="TRUE lists the windows." outputs="value:look.value" type="bool" uid="look" uid_parent="root" value="false"/>
   <Control _name="panel hWnd" conIdx="5" connection="required" description="The published front panel window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="state" conIdx="7" connection="recommended" description="RemoteVI List Windows.vi state from the previous iteration." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
@@ -25,9 +25,48 @@
       <Tunnel _id="In1" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_st.value" uid="t_st" uid_parent="cst"/>
       <Tunnel _id="In3" outputs="value:" uid="t_pw" uid_parent="cst"/>
-      <Call inputs="panel hWnd:t_hw.value,state:t_st.value" outputs="windows:lw.windows,modal?:,state out:lw.state out,error out:" target="RemoteVI List Windows.vi" uid="lw" uid_parent="cst"/>
+      <Call inputs="panel hWnd:t_hw.value,state:t_st.value" outputs="windows:lw.windows,modal?:lw.modal?,candidates:lw.candidates,state out:lw.state out,error out:" target="RemoteVI List Windows.vi" uid="lw" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="initialised,previous" inputs="input cluster:t_st.value" outputs="initialised:ust.init,previous:ust.prev" uid="ust" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="listed" inputs="input cluster:lw.state out" outputs="listed:usl.listed" uid="usl" uid_parent="cst"/>
+      <Structure _name="For Loop" count="" label="Candidates that just appeared and are not listed" maxin="" maxout="" uid="fn" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:lw.candidates" mode="index" outputs="value:nc.value" uid="nc" uid_parent="fn"/>
+        <Tunnel _id="In2" inputs="value:ust.prev" outputs="value:npv.value" uid="npv" uid_parent="fn"/>
+        <Tunnel _id="In3" inputs="value:usl.listed" outputs="value:nls.value" uid="nls" uid_parent="fn"/>
+        <Tunnel _id="In4" inputs="value:ust.init" outputs="value:nin.value" uid="nin" uid_parent="fn"/>
+        <Node _name="Search 1D Array" inputs="1D array:npv.value,element:nc.value" outputs="index of element:ip.v" uid="ip" uid_parent="fn"/>
+        <Node _name="Less Than 0?" inputs="x:ip.v" outputs="x &lt; 0?:np.v" uid="np" uid_parent="fn"/>
+        <Node _name="Not" inputs="x:nin.value" outputs=".not. x?:first.v" uid="first" uid_parent="fn"/>
+        <Node _name="Or" inputs="x:np.v,y:first.v" outputs="x .or. y?:isnew.v" uid="isnew" uid_parent="fn"/>
+        <Node _name="Search 1D Array" inputs="1D array:nls.value,element:nc.value" outputs="index of element:il.v" uid="il" uid_parent="fn"/>
+        <Node _name="Less Than 0?" inputs="x:il.v" outputs="x &lt; 0?:nl.v" uid="nl" uid_parent="fn"/>
+        <Node _name="And" inputs="x:isnew.v,y:nl.v" outputs="x .and. y?:ask.v" uid="ask" uid_parent="fn"/>
+        <Tunnel _id="Out1" cond="ask.v" inputs="value:nc.value" mode="index" outputs="value:fresh.value" uid="fresh" uid_parent="fn"/>
+      </Structure>
+      <Node _name="Empty Array?" inputs="array:fresh.value" outputs="empty?:fe.v" uid="fe" uid_parent="cst"/>
+      <Node _name="Or" inputs="x:fe.v,y:lw.modal?" outputs="x .or. y?:skip.v" uid="skip" uid_parent="cst"/>
+      <Structure _name="Case Structure" selectin="skip.v" uid="crp" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:fresh.value" uid="crp_i1" uid_parent="crp"/>
+        <Tunnel _id="In2" inputs="value:lw.state out" uid="crp_i2" uid_parent="crp"/>
+        <Tunnel _id="In3" inputs="value:usl.listed" uid="crp_i3" uid_parent="crp"/>
+        <CaseFrame label="New windows\3A list those that are panels of running VIs (VI Server\2C no modal window is up)" selector="False" selectout="" uid="crpf" uid_parent="crp">
+          <Tunnel _id="In1" outputs="value:rf1.value" uid="rf1" uid_parent="crpf"/>
+          <Tunnel _id="In2" outputs="value:rf2.value" uid="rf2" uid_parent="crpf"/>
+          <Tunnel _id="In3" outputs="value:rf3.value" uid="rf3" uid_parent="crpf"/>
+          <Call inputs="hWnds:rf1.value" outputs="running panels:rp.running panels,error out:" target="RemoteVI Running Panels.vi" uid="rp" uid_parent="crpf"/>
+          <Node _name="Build Array" concat="true" inputs="array:rf3.value,array:rp.running panels" outputs="appended array:rl.appended array" uid="rl" uid_parent="crpf"/>
+          <Node _name="Bundle By Name" fields="listed" inputs="input cluster:rf2.value,listed:rl.appended array" outputs="output cluster:rb.output cluster" uid="rb" uid_parent="crpf"/>
+          <Tunnel _id="Out1" inputs="value:rb.output cluster" uid="rfo1" uid_parent="crpf"/>
+        </CaseFrame>
+        <CaseFrame label="Nothing new\2C or a modal window is up" selector="True" selectout="" uid="crpt" uid_parent="crp">
+          <Tunnel _id="In1" outputs="value:" uid="rt1" uid_parent="crpt"/>
+          <Tunnel _id="In2" outputs="value:rt2.value" uid="rt2" uid_parent="crpt"/>
+          <Tunnel _id="In3" outputs="value:" uid="rt3" uid_parent="crpt"/>
+          <Tunnel _id="Out1" inputs="value:rt2.value" uid="rto1" uid_parent="crpt"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:crp.state" uid="crpo1" uid_parent="crp"/>
+      </Structure>
       <Tunnel _id="Out1" inputs="value:lw.windows" uid="t_o1" uid_parent="cst"/>
-      <Tunnel _id="Out2" inputs="value:lw.state out" uid="t_o2" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:crp.state" uid="t_o2" uid_parent="cst"/>
     </CaseFrame>
     <CaseFrame label="Keep the previous list" selector="False" selectout="" uid="csf" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:" uid="f_hw" uid_parent="csf"/>

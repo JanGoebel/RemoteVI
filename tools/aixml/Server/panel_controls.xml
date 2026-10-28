@@ -1,0 +1,46 @@
+<VI _name="RemoteVI Panel Controls.vi" description="The controls of Panel a user can see now\2C with the pane each one's coordinates refer to\3A the top-level controls of every pane (Front Panel\3AControls[] with their OwningPane)\2C then two levels inside them (RemoteVI Control Children.vi\3A the selected page of a tab control\2C cluster elements)\2C each with the pane of the top-level control it belongs to - a cluster element's own OwningPane can name another pane (measured on a cluster moved between panes). Inner controls come first\3A the second level\2C the first\2C then the top level. For RemoteVI Read Tips.vi. Errors of the property reads go to error out.">
+  <FreeLabel comment="Top level plus two levels inside\2C inner first" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel of the VI." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:pa.value,error in (no error):ei.value" outputs="Controls[]:pcs.c,reference out:,error out:pcs.error out" type="{LV.Panel}" uid="pcs" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Level 0\3A each control's pane" maxin="" maxout="" uid="f0" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pcs.c" mode="index" outputs="value:c0.value" uid="c0" uid_parent="f0"/>
+    <ShiftReg uid="sr0" uid_parent="f0">
+      <Left inputs="value:pcs.error out" outputs="value:e0.value" uid="sr0l" uid_parent="sr0"/>
+      <Right inputs="value:op.error out" outputs="value:err0.value" uid="sr0r" uid_parent="sr0"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+OwningPane" inputs="reference:c0.value,error in (no error):e0.value" outputs="OwningPane:op.pane,reference out:,error out:op.error out" type="{LV.Control}" uid="op" uid_parent="f0"/>
+    <Tunnel _id="Out1" inputs="value:op.pane" mode="index" outputs="value:panes0.value" uid="panes0" uid_parent="f0"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Level 1" maxin="" maxout="" uid="f1" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pcs.c" mode="index" outputs="value:c1.value" uid="c1" uid_parent="f1"/>
+    <Tunnel _id="In2" inputs="value:panes0.value" mode="index" outputs="value:p1.value" uid="p1" uid_parent="f1"/>
+    <ShiftReg uid="sr1" uid_parent="f1">
+      <Left inputs="value:err0.value" outputs="value:e1.value" uid="sr1l" uid_parent="sr1"/>
+      <Right inputs="value:k1.error out" outputs="value:err1.value" uid="sr1r" uid_parent="sr1"/>
+    </ShiftReg>
+    <Call target="RemoteVI Control Children.vi" inputs="Control:c1.value,error in:e1.value" outputs="Children:k1.Children,error out:k1.error out" uid="k1" uid_parent="f1"/>
+    <Node _name="Array Size" inputs="array:k1.Children" outputs="size(s):n1.size" uid="n1" uid_parent="f1"/>
+    <Node _name="Initialize Array" inputs="element:p1.value,dimension size:n1.size" outputs="initialized array:ip1.initialized array" uid="ip1" uid_parent="f1"/>
+    <Tunnel _id="Out1" inputs="value:k1.Children" mode="concat" outputs="value:lvl1.value" uid="lvl1" uid_parent="f1"/>
+    <Tunnel _id="Out2" inputs="value:ip1.initialized array" mode="concat" outputs="value:panes1.value" uid="panes1" uid_parent="f1"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Level 2" maxin="" maxout="" uid="f2" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:lvl1.value" mode="index" outputs="value:c2.value" uid="c2" uid_parent="f2"/>
+    <Tunnel _id="In2" inputs="value:panes1.value" mode="index" outputs="value:p2.value" uid="p2" uid_parent="f2"/>
+    <ShiftReg uid="sr2" uid_parent="f2">
+      <Left inputs="value:err1.value" outputs="value:e2.value" uid="sr2l" uid_parent="sr2"/>
+      <Right inputs="value:k2.error out" outputs="value:err2.value" uid="sr2r" uid_parent="sr2"/>
+    </ShiftReg>
+    <Call target="RemoteVI Control Children.vi" inputs="Control:c2.value,error in:e2.value" outputs="Children:k2.Children,error out:k2.error out" uid="k2" uid_parent="f2"/>
+    <Node _name="Array Size" inputs="array:k2.Children" outputs="size(s):n2.size" uid="n2" uid_parent="f2"/>
+    <Node _name="Initialize Array" inputs="element:p2.value,dimension size:n2.size" outputs="initialized array:ip2.initialized array" uid="ip2" uid_parent="f2"/>
+    <Tunnel _id="Out1" inputs="value:k2.Children" mode="concat" outputs="value:lvl2.value" uid="lvl2" uid_parent="f2"/>
+    <Tunnel _id="Out2" inputs="value:ip2.initialized array" mode="concat" outputs="value:panes2.value" uid="panes2" uid_parent="f2"/>
+  </Structure>
+  <Node _name="Build Array" concat="true" inputs="array:lvl2.value,array:lvl1.value,array:pcs.c" outputs="appended array:bc.appended array" uid="bc" uid_parent="root"/>
+  <Node _name="Build Array" concat="true" inputs="array:panes2.value,array:panes1.value,array:panes0.value" outputs="appended array:bp.appended array" uid="bp" uid_parent="root"/>
+  <Indicator _name="Controls" conIdx="4" connection="recommended" description="The controls\2C inner ones first." inputs="value:bc.appended array" type="array{ref{LV.Control}}" uid="co" uid_parent="root" value="[]"/>
+  <Indicator _name="Panes" conIdx="5" connection="recommended" description="The pane of each control's top-level control\2C index by index." inputs="value:bp.appended array" type="array{ref{LV.Pane}}" uid="po" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:err2.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -68,6 +68,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Click State.vi" Type="VI" URL="../Server/RemoteVI Click State.vi"/>
 		<Item Name="RemoteVI Client Panel.vi" Type="VI" URL="../Server/RemoteVI Client Panel.vi"/>
 		<Item Name="RemoteVI Close Clients.vi" Type="VI" URL="../Server/RemoteVI Close Clients.vi"/>
+		<Item Name="RemoteVI Control Children.vi" Type="VI" URL="../Server/RemoteVI Control Children.vi"/>
 		<Item Name="RemoteVI Cross Origin.vi" Type="VI" URL="../Server/RemoteVI Cross Origin.vi"/>
 		<Item Name="RemoteVI Drop Closed Clients.vi" Type="VI" URL="../Server/RemoteVI Drop Closed Clients.vi"/>
 		<Item Name="RemoteVI Encode Popups.vi" Type="VI" URL="../Server/RemoteVI Encode Popups.vi"/>
@@ -83,6 +84,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
 		<Item Name="RemoteVI Origin Message.vi" Type="VI" URL="../Server/RemoteVI Origin Message.vi"/>
+		<Item Name="RemoteVI Panel Controls.vi" Type="VI" URL="../Server/RemoteVI Panel Controls.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
@@ -90,6 +92,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
 		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
+		<Item Name="RemoteVI Running Panels.vi" Type="VI" URL="../Server/RemoteVI Running Panels.vi"/>
 		<Item Name="RemoteVI Send Client Windows.vi" Type="VI" URL="../Server/RemoteVI Send Client Windows.vi"/>
 		<Item Name="RemoteVI Send Frame.vi" Type="VI" URL="../Server/RemoteVI Send Frame.vi"/>
 		<Item Name="RemoteVI Send Origin.vi" Type="VI" URL="../Server/RemoteVI Send Origin.vi"/>

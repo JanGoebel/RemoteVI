@@ -1,4 +1,5 @@
-<VI _name="RemoteVI Read Tips.vi" description="Reads the tip strips of the published panel for the tips message (docs\5Cprotocol.md 3.3) - LabVIEW shows its own tip strips only while it is the foreground application\2C so the browser shows them itself. When refresh? is TRUE (the server loop just refreshed the geometry\3A every 500 ms\2C never while a popup or a modal window is open\2C because this is a VI Server call that would block in their modal loop)\2C every control of the front panel (Front Panel\3AControls[]\2C top level) that is visible and has a tip strip gives one entry\3A its bounds (Position and Bounds\2C the label included) in frame coordinates - panel coordinates minus Front Panel Window\3AOrigin (the panel's scroll position) plus origin (where the panel starts inside the frame) - and its Tip Strip text\3B RemoteVI Tips Message.vi builds message out from them. Controls inside tab pages and clusters are not read. Otherwise\2C or on an error\2C message out is message in.">
+<VI _name="RemoteVI Read Tips.vi" description="Reads the tip strips of the published panel for the tips message (docs\5Cprotocol.md 3.3) - LabVIEW shows its own tip strips only while it is the foreground application\2C so the browser shows them itself. When refresh? is TRUE (the server loop just refreshed the geometry\3A every 500 ms\2C never while a popup or a modal window is open\2C because this is a VI Server call that would block in their modal loop)\2C every visible control with a tip strip gives one entry\3A the controls RemoteVI Panel Controls.vi finds (top level of every pane\2C the selected page of a tab control\2C cluster elements\2C two levels deep) and those of a VI shown in a subpanel among them. An entry's bounds are the control's Position and Bounds (the label included) converted from its pane's coordinates to panel coordinates ({LV.Pane} CvtPaneToPanelCoords on the pane RemoteVI Panel Controls.vi gives\3B a subpanel VI's panes convert into the host panel)\2C then to screen coordinates (CvtPanelToScreenCoords of the published panel)\2C then to frame coordinates (minus the top-left of Front Panel Window\3APanel Bounds\2C plus origin). Inner controls come first (subpanel VIs\2C then deeper levels)\2C so the browser\2C which shows the first entry under the pointer\2C shows a cluster element's tip strip rather than its cluster's. RemoteVI Tips Message.vi builds message out from them. Otherwise\2C or on an error\2C message out is message in.">
+  <FreeLabel comment="Tip strips of nested controls and subpanel VIs too" uid="lbl" uid_parent="root"/>
   <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel is published." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="refresh?" conIdx="1" connection="required" description="TRUE reads the tip strips now." outputs="value:rf.value" type="bool" uid="rf" uid_parent="root" value="false"/>
   <Control _name="origin" conIdx="2" connection="required" description="Where the panel area starts inside the frame (RemoteVI Get Panel Geometry.vi)." outputs="value:og.value" type="cluster{int32.x,int32.y}" uid="og" uid_parent="root" value="[0,0]"/>
@@ -11,27 +12,44 @@
       <Tunnel _id="In1" outputs="value:t_vi.value" uid="t_vi" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_og.value" uid="t_og" uid_parent="cst"/>
       <Tunnel _id="In3" outputs="value:t_mi.value" uid="t_mi" uid_parent="cst"/>
-      <Node _name="Property Node" fields="read+Front Panel,read+Front Panel Window\3AOrigin" inputs="reference:t_vi.value,error in (no error):" outputs="Front Panel:vp.fp,Front Panel Window\3AOrigin:vp.org,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="cst"/>
-      <Node _name="Property Node" fields="read+Controls[]" inputs="reference:vp.fp,error in (no error):vp.error out" outputs="Controls[]:pc.c,reference out:,error out:pc.error out" type="{LV.Panel}" uid="pc" uid_parent="cst"/>
-      <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:vp.org" outputs="Horizontal:uo.h,Vertical:uo.v" uid="uo" uid_parent="cst"/>
+      <Node _name="Property Node" fields="read+Front Panel,read+Front Panel Window\3APanel Bounds" inputs="reference:t_vi.value,error in (no error):" outputs="Front Panel:vp.fp,Front Panel Window\3APanel Bounds:vp.pb,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:vp.pb" outputs="left:ub0.l,top:ub0.t" uid="ub0" uid_parent="cst"/>
       <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:t_og.value" outputs="x:ug.x,y:ug.y" uid="ug" uid_parent="cst"/>
-      <Node _name="Subtract" inputs="x:ug.x,y:uo.h" outputs="x-y:dx.x-y" uid="dx" uid_parent="cst"/>
-      <Node _name="Subtract" inputs="x:ug.y,y:uo.v" outputs="x-y:dy.x-y" uid="dy" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.x,y:ub0.l" outputs="x-y:dx.x-y" uid="dx" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:ug.y,y:ub0.t" outputs="x-y:dy.x-y" uid="dy" uid_parent="cst"/>
+      <Call target="RemoteVI Panel Controls.vi" inputs="Panel:vp.fp,error in:vp.error out" outputs="Controls:pc.Controls,Panes:pc.Panes,error out:pc.error out" uid="pc" uid_parent="cst"/>
+      <Constant _name="subpanel class" outputs="value:csp.value" type="ref{LV.SubPanel}" uid="csp" uid_parent="cst" value=""/>
+      <Structure _name="For Loop" count="" label="The controls of a VI shown in a subpanel" maxin="" maxout="" uid="fs" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:pc.Controls" mode="index" outputs="value:s_c.value" uid="s_c" uid_parent="fs"/>
+        <Tunnel _id="In2" inputs="value:csp.value" outputs="value:s_k.value" uid="s_k" uid_parent="fs"/>
+        <Node _name="To More Specific Class" inputs="target class:s_k.value,reference:s_c.value" outputs="specific class reference:s_t.ref,error out:s_t.error out" uid="s_t" uid_parent="fs"/>
+        <Node _name="Property Node" fields="read+InsertedVI" inputs="reference:s_t.ref,error in (no error):s_t.error out" outputs="reference out:,error out:s_i.error out,InsertedVI:s_i.vi" type="{LV.SubPanel}" uid="s_i" uid_parent="fs"/>
+        <Node _name="Property Node" fields="read+Front Panel" inputs="reference:s_i.vi,error in (no error):s_i.error out" outputs="reference out:,error out:s_f.error out,Front Panel:s_f.fp" type="{LV.VI}" uid="s_f" uid_parent="fs"/>
+        <Call target="RemoteVI Panel Controls.vi" inputs="Panel:s_f.fp,error in:s_f.error out" outputs="Controls:s_p.Controls,Panes:s_p.Panes,error out:" uid="s_p" uid_parent="fs"/>
+        <Tunnel _id="Out1" inputs="value:s_p.Controls" mode="concat" outputs="value:subCtls.value" uid="subCtls" uid_parent="fs"/>
+        <Tunnel _id="Out2" inputs="value:s_p.Panes" mode="concat" outputs="value:subPanes.value" uid="subPanes" uid_parent="fs"/>
+      </Structure>
+      <Node _name="Build Array" concat="true" inputs="array:subCtls.value,array:pc.Controls" outputs="appended array:allc.appended array" uid="allc" uid_parent="cst"/>
+      <Node _name="Build Array" concat="true" inputs="array:subPanes.value,array:pc.Panes" outputs="appended array:allp.appended array" uid="allp" uid_parent="cst"/>
       <Constant _name="tip0" outputs="value:t0.value" type="cluster{int32.x,int32.y,int32.w,int32.h,string.text}" uid="t0" uid_parent="cst" value="[0,0,0,0,]"/>
       <Structure _name="For Loop" count="" label="One entry per visible control" maxin="" maxout="" uid="fl" uid_parent="cst">
-        <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
-        <Tunnel _id="In2" inputs="value:dx.x-y" outputs="value:l_dx.value" uid="l_dx" uid_parent="fl"/>
-        <Tunnel _id="In3" inputs="value:dy.x-y" outputs="value:l_dy.value" uid="l_dy" uid_parent="fl"/>
-        <Tunnel _id="In4" inputs="value:t0.value" outputs="value:l_t0.value" uid="l_t0" uid_parent="fl"/>
+        <Tunnel _id="In1" inputs="value:allc.appended array" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+        <Tunnel _id="In2" inputs="value:allp.appended array" mode="index" outputs="value:p.value" uid="p" uid_parent="fl"/>
+        <Tunnel _id="In3" inputs="value:dx.x-y" outputs="value:l_dx.value" uid="l_dx" uid_parent="fl"/>
+        <Tunnel _id="In4" inputs="value:dy.x-y" outputs="value:l_dy.value" uid="l_dy" uid_parent="fl"/>
+        <Tunnel _id="In5" inputs="value:t0.value" outputs="value:l_t0.value" uid="l_t0" uid_parent="fl"/>
+        <Tunnel _id="In6" inputs="value:vp.fp" outputs="value:l_fp.value" uid="l_fp" uid_parent="fl"/>
         <ShiftReg uid="sre" uid_parent="fl">
           <Left inputs="value:pc.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
-          <Right inputs="value:pn.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+          <Right inputs="value:sc.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
         </ShiftReg>
         <Node _name="Property Node" fields="read+Visible,read+Tip Strip,read+Position,read+Bounds" inputs="reference:c.value,error in (no error):le.value" outputs="Visible:pn.vis,Tip Strip:pn.tip,Position:pn.pos,Bounds:pn.bnd,reference out:,error out:pn.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
-        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:pn.pos" outputs="Left:up.l,Top:up.t" uid="up" uid_parent="fl"/>
+        <Node _name="Invoke Node" target="CvtPaneToPanelCoords" type="{LV.Pane}" inputs="reference:p.value,error in (no error):pn.error out,PaneCoords:pn.pos" outputs="reference out:,error out:cv.error out,PanelCoords:cv.pc" uid="cv" uid_parent="fl"/>
+        <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:l_fp.value,error in (no error):cv.error out,PanelCoords:cv.pc" outputs="reference out:,error out:sc.error out,ScreenCoords:sc.sc" uid="sc" uid_parent="fl"/>
+        <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:sc.sc" outputs="Horizontal:us.h,Vertical:us.v" uid="us" uid_parent="fl"/>
         <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:pn.bnd" outputs="Width:ub.w,Height:ub.h" uid="ub" uid_parent="fl"/>
-        <Node _name="Add" inputs="x:up.l,y:l_dx.value" outputs="x+y:fx.x+y" uid="fx" uid_parent="fl"/>
-        <Node _name="Add" inputs="x:up.t,y:l_dy.value" outputs="x+y:fy.x+y" uid="fy" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:us.h,y:l_dx.value" outputs="x+y:fx.x+y" uid="fx" uid_parent="fl"/>
+        <Node _name="Add" inputs="x:us.v,y:l_dy.value" outputs="x+y:fy.x+y" uid="fy" uid_parent="fl"/>
         <Node _name="Bundle By Name" fields="x,y,w,h,text" inputs="x:fx.x+y,y:fy.x+y,w:ub.w,h:ub.h,text:pn.tip,input cluster:l_t0.value" outputs="output cluster:bt.output cluster" uid="bt" uid_parent="fl"/>
         <Tunnel _id="Out1" inputs="value:bt.output cluster" mode="index" cond="pn.vis" outputs="value:tips.value" uid="tips" uid_parent="fl"/>
       </Structure>

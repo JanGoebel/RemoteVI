@@ -73,7 +73,8 @@ const stats = (a) => {
 
 // --- client ----------------------------------------------------------------------
 
-const ws = new WebSocket(`${opt.url.replace(/^http/, 'ws')}/ws`);
+const target = new URL(opt.url);
+const ws = new WebSocket(`ws://${target.host}/ws?t=${encodeURIComponent(target.searchParams.get('t') ?? '')}`);
 ws.binaryType = 'arraybuffer';
 const st = { width: 0, height: 0, img: null, frames: [], waiters: [], log: false };
 ws.onmessage = (ev) => {

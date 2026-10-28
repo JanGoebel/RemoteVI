@@ -4,7 +4,7 @@
   <Control _name="state" conIdx="5" connection="recommended" description="From the previous call (state out)\3A initialised\2C baseline\2C previous candidates\2C listed." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="When this carries an error nothing is listed." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
-  <Call inputs="error in:ei.value" outputs="process ID:pid.process ID,error out:pid.error out" target="kernel32 GetCurrentProcessId.vi" uid="pid" uid_parent="root"/>
+  <Call inputs="hWnd:panel.value,error in:ei.value" outputs="process ID:pid.process ID,thread ID:,error out:pid.error out" target="user32 GetWindowThreadProcessId.vi" uid="pid" uid_parent="root"/>
   <Constant _name="first" outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
   <Constant _name="GW_OWNER" outputs="value:kow0.value" type="uint32" uid="kow0" uid_parent="root" value="4"/>
   <Call inputs="hWnd:panel.value,uCmd:kow0.value,error in:pid.error out" outputs="window:own.window,error out:own.error out" target="user32 GetWindow.vi" uid="own" uid_parent="root"/>

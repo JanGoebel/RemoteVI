@@ -1,0 +1,25 @@
+<VI _name="RemoteVI Status Registry.vi" description="Keeps the status of every RemoteVI share of this LabVIEW application instance - a functional global (a Feedback Node outside any loop\2C initialized on the first call only\2C so the list survives between calls of this non-reentrant VI). Each server loop publishes its entry every 500 ms (publish? TRUE\2C RemoteVI Publish Status.vi) - the entry of the same port is replaced\2C a new port is appended - and removes it when it stops (remove? TRUE\2C entry of status's port). Neither\3A servers is the list as it is (RemoteVI Status.vi\2C RemoteVI Start.vi). Times are seconds since the LabVIEW epoch (Get Date/Time In Seconds). An entry whose server loop was aborted stays\2C but stops being updated\2C so RemoteVI Status.vi reports it as stopped after 2 s. Pure G\2C no I/O.">
+  <Control _name="publish?" conIdx="0" connection="recommended" description="TRUE stores status (replacing the entry of its port)." outputs="value:pub.value" type="bool" uid="pub" uid_parent="root" value="false"/>
+  <Control _name="remove?" conIdx="1" connection="recommended" description="TRUE removes the entry of status's port." outputs="value:rem.value" type="bool" uid="rem" uid_parent="root" value="false"/>
+  <Control _name="status" conIdx="2" connection="recommended" description="One share's entry." outputs="value:st.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}" uid="st" uid_parent="root" value="[0,,,,false,0,0,[],0,0,0,0,false,]"/>
+  <Control _name="nothing yet" connection="optional" description="Not on the connector pane\3A the initial value of the list (a diagram constant of this type is drawn many elements wide)." outputs="value:init.value" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="init" uid_parent="root" value="[]"/>
+  <Node _name="Feedback Node" inputs="initializer:init.value,next value:nx.v" outputs="previous value:fb.previous value" uid="fb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="port" inputs="input cluster:st.value" outputs="port:sp.port" uid="sp" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Ports of the entries" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:fb.previous value" mode="index" outputs="value:e.value" uid="e" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="port" inputs="input cluster:e.value" outputs="port:ep.port" uid="ep" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ep.port" mode="index" outputs="value:ports.value" uid="ports" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:ports.value,element:sp.port" outputs="index of element:ix.v" uid="ix" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Greater Or Equal?" inputs="x:ix.v,y:k0.value" outputs="x &gt;= y?:has.v" uid="has" uid_parent="root"/>
+  <Node _name="Replace Array Subset" inputs="array:fb.previous value,index:ix.v,new element/subarray:st.value" outputs="output array:rp.v" uid="rp" uid_parent="root"/>
+  <Node _name="Build Array" inputs="array:fb.previous value,element:st.value" outputs="appended array:ap.v" uid="ap" uid_parent="root"/>
+  <Node _name="Select" inputs="t:rp.v,s:has.v,f:ap.v" outputs="s? t\3Af:pubd.v" uid="pubd" uid_parent="root"/>
+  <Node _name="Delete From Array" inputs="array:fb.previous value,index:ix.v" outputs="array w/ subset deleted:dl.v" uid="dl" uid_parent="root"/>
+  <Node _name="Select" inputs="t:dl.v,s:has.v,f:fb.previous value" outputs="s? t\3Af:remd.v" uid="remd" uid_parent="root"/>
+  <Node _name="Select" inputs="t:remd.v,s:rem.value,f:fb.previous value" outputs="s? t\3Af:r1.v" uid="r1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:pubd.v,s:pub.value,f:r1.v" outputs="s? t\3Af:nx.v" uid="nx" uid_parent="root"/>
+  <FreeLabel comment="The shares of this application instance" uid="lbl" uid_parent="root"/>
+  <Indicator _name="servers" conIdx="4" connection="recommended" description="Every share's entry (after this call's change)." inputs="value:nx.v" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="o_s" uid_parent="root" value="[]"/>
+</VI>

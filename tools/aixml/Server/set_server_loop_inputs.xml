@@ -1,9 +1,10 @@
-<VI _name="RemoteVI Set Server Loop Inputs.vi" description="Sets the controls VI\2C port\2C fps and stop notifier name of the Server Loop that Server Loop references (Set Control Value [Variant]\2C one after the other) before RemoteVI Start.vi runs it. Nothing is set on an incoming error.">
+<VI _name="RemoteVI Set Server Loop Inputs.vi" description="Sets the controls VI\2C port\2C fps\2C stop notifier name and share of the Server Loop that Server Loop references (Set Control Value [Variant]\2C one after the other) before RemoteVI Start.vi runs it. Nothing is set on an incoming error.">
   <Control _name="Server Loop" conIdx="0" connection="required" description="Reference to RemoteVI Server Loop.vi." outputs="value:sl.value" type="ref{LV.VI}" uid="sl" uid_parent="root" value=""/>
   <Control _name="VI" conIdx="5" connection="required" description="The VI to publish." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="port" conIdx="7" connection="required" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
   <Control _name="fps" conIdx="9" connection="required" description="Most frames per second." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
   <Control _name="stop notifier name" conIdx="1" connection="required" description="RemoteVI\3A&lt;port&gt;." outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value=""/>
+  <Control _name="share" conIdx="2" connection="required" description="Token\2C net address\2C link\2C view only\2C whole network and window (RemoteVI Server Loop.vi)." outputs="value:sh.value" type="cluster{string.token,uint32.net address,string.url,bool.view only,bool.whole network,uint64.window}" uid="sh" uid_parent="root" value="[,0,,false,false,0]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
   <Constant outputs="value:nVI.value" type="string" uid="nVI" uid_parent="root" value="VI"/>
   <Constant outputs="value:nport.value" type="string" uid="nport" uid_parent="root" value="port"/>
@@ -13,10 +14,13 @@
   <Node _name="To Variant" inputs="anything:port.value" outputs="Variant:v2.Variant" uid="v2" uid_parent="root"/>
   <Node _name="To Variant" inputs="anything:fps.value" outputs="Variant:v3.Variant" uid="v3" uid_parent="root"/>
   <Node _name="To Variant" inputs="anything:nn.value" outputs="Variant:v4.Variant" uid="v4" uid_parent="root"/>
+  <Constant outputs="value:nsh.value" type="string" uid="nsh" uid_parent="root" value="share"/>
+  <Node _name="To Variant" inputs="anything:sh.value" outputs="Variant:v5.Variant" uid="v5" uid_parent="root"/>
   <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:sl.value,error in (no error):ei.value,Control Name:nVI.value,Value:v1.Variant" outputs="reference out:s1.reference out,error out:s1.error out" uid="s1" uid_parent="root"/>
   <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s1.reference out,error in (no error):s1.error out,Control Name:nport.value,Value:v2.Variant" outputs="reference out:s2.reference out,error out:s2.error out" uid="s2" uid_parent="root"/>
   <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s2.reference out,error in (no error):s2.error out,Control Name:nfps.value,Value:v3.Variant" outputs="reference out:s3.reference out,error out:s3.error out" uid="s3" uid_parent="root"/>
   <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s3.reference out,error in (no error):s3.error out,Control Name:nname.value,Value:v4.Variant" outputs="reference out:s4.reference out,error out:s4.error out" uid="s4" uid_parent="root"/>
-  <Indicator _name="Server Loop out" conIdx="4" connection="recommended" description="Server Loop\2C passed through." inputs="value:s4.reference out" type="ref{LV.VI}" uid="o_sl" uid_parent="root" value=""/>
-  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or an error setting a control." inputs="value:s4.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Invoke Node" target="Set Control Value [Variant]" type="{LV.VI}" inputs="reference:s4.reference out,error in (no error):s4.error out,Control Name:nsh.value,Value:v5.Variant" outputs="reference out:s5.reference out,error out:s5.error out" uid="s5" uid_parent="root"/>
+  <Indicator _name="Server Loop out" conIdx="4" connection="recommended" description="Server Loop\2C passed through." inputs="value:s5.reference out" type="ref{LV.VI}" uid="o_sl" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in or an error setting a control." inputs="value:s5.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

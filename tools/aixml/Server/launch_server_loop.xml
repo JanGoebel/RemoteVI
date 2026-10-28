@@ -4,8 +4,9 @@
   <Control _name="port" conIdx="7" connection="required" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
   <Control _name="fps" conIdx="9" connection="required" description="Most frames per second." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
   <Control _name="stop notifier name" conIdx="1" connection="required" description="RemoteVI\3A&lt;port&gt;." outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value=""/>
+  <Control _name="share" conIdx="2" connection="required" description="Token\2C net address\2C link\2C view only\2C whole network and window (RemoteVI Server Loop.vi)." outputs="value:sh.value" type="cluster{string.token,uint32.net address,string.url,bool.view only,bool.whole network,uint64.window}" uid="sh" uid_parent="root" value="[,0,,false,false,0]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is launched on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
-  <Call inputs="Server Loop:sl.value,VI:vi.value,port:port.value,fps:fps.value,stop notifier name:nn.value,error in:ei.value" outputs="Server Loop out:si.Server Loop out,error out:si.error out" target="RemoteVI Set Server Loop Inputs.vi" uid="si" uid_parent="root"/>
+  <Call inputs="Server Loop:sl.value,VI:vi.value,port:port.value,fps:fps.value,stop notifier name:nn.value,share:sh.value,error in:ei.value" outputs="Server Loop out:si.Server Loop out,error out:si.error out" target="RemoteVI Set Server Loop Inputs.vi" uid="si" uid_parent="root"/>
   <Constant outputs="value:sfx.value" type="string" uid="sfx" uid_parent="root" value="\3Astarted"/>
   <Node _name="Concatenate Strings" inputs="string:nn.value,string:sfx.value" outputs="concatenated string:snn.concatenated string" uid="snn" uid_parent="root"/>
   <Constant _name="listener result" outputs="value:ety.value" type="cluster{bool.status,int32.code,string.source}" uid="ety" uid_parent="root" value="[false,0,]"/>

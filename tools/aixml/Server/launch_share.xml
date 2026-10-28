@@ -1,0 +1,80 @@
+<VI _name="RemoteVI Launch Share.vi" description="Starts one share (RemoteVI Start.vi and RemoteVI Start Window.vi call it)\3A makes the access token (the given one or RemoteVI New Token.vi)\2C the link (http\3A//127.0.0.1\3A&lt;port&gt;/?t=... - or this computer's IP address with whole network?)\2C refuses a port this application instance shares already (error 5001\2C RemoteVI Share Running.vi)\2C opens a new clone of the reentrant RemoteVI Server Loop.vi\2C sets its controls and runs it (RemoteVI Launch Server Loop.vi)\2C and waits until it listens (its listener error\2C e.g. 60\3B 5002 after 2 s). window not 0 shares that window of any process instead of VI (a window target).">
+  <FreeLabel comment="Token\2C address\2C link\3B then launch a server loop clone" uid="lbl" uid_parent="root"/>
+  <Control _name="VI" conIdx="0" connection="recommended" description="The VI to share (ignored when window is not 0)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="port" conIdx="5" connection="recommended" description="TCP port." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Control _name="fps" conIdx="7" connection="recommended" description="Most frames per second sent to a client." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
+  <Control _name="whole network?" conIdx="1" connection="recommended" description="FALSE (default)\3A reachable from this computer only (listens on 127.0.0.1). TRUE\3A listens on every interface - reachable by everyone who can reach this computer and has the link." outputs="value:wn.value" type="bool" uid="wn" uid_parent="root" value="false"/>
+  <Control _name="token" conIdx="2" connection="optional" description="The access token the link carries. Empty (default)\3A a new random token." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
+  <Control _name="view only?" conIdx="3" connection="optional" description="TRUE\3A the browsers see the panel but cannot operate it." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
+  <Control _name="window" conIdx="9" connection="recommended" description="A window of any process to share instead of VI's front panel (a window target)\3B 0 = VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is started on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+
+
+  <FreeLabel comment="Access token\3A the given one or a new random one" uid="lbl2" uid_parent="root"/>
+  <Call inputs="error in:ei.value" outputs="token:nt.token,error out:nt.error out" target="RemoteVI New Token.vi" uid="nt" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:tk.value" outputs="empty?:tke.v" uid="tke" uid_parent="root"/>
+  <Node _name="Select" inputs="t:nt.token,s:tke.v,f:tk.value" outputs="s? t\3Af:tok.v" uid="tok" uid_parent="root"/>
+  <Node _name="Select" inputs="t:nt.error out,s:tke.v,f:ei.value" outputs="s? t\3Af:e2.v" uid="e2" uid_parent="root"/>
+
+  <Constant outputs="value:anyif.value" type="string" uid="anyif" uid_parent="root" value=""/>
+  <Node _name="String To IP" inputs="name:anyif.value" outputs="net address:lip.net address" uid="lip" uid_parent="root"/>
+  <Constant outputs="value:k24.value" type="uint32" uid="k24" uid_parent="root" value="16777216"/>
+  <Constant outputs="value:k16.value" type="uint32" uid="k16" uid_parent="root" value="65536"/>
+  <Constant outputs="value:k8.value" type="uint32" uid="k8" uid_parent="root" value="256"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:lip.net address,y:k24.value" outputs="x-y*floor(x/y):q1.rem,floor(x/y):q1.quo" uid="q1" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:q1.rem,y:k16.value" outputs="x-y*floor(x/y):q2.rem,floor(x/y):q2.quo" uid="q2" uid_parent="root"/>
+  <Node _name="Quotient &amp; Remainder" inputs="x:q2.rem,y:k8.value" outputs="x-y*floor(x/y):q3.rem,floor(x/y):q3.quo" uid="q3" uid_parent="root"/>
+  <Constant _name="dotted" outputs="value:dfmt.value" type="string" uid="dfmt" uid_parent="root" value="%d.%d.%d.%d"/>
+  <Node _name="Format Into String" inputs="format string:dfmt.value,input 1:q1.quo,input 2:q2.quo,input 3:q3.quo,input 4:q3.rem" outputs="resulting string:lips.name" uid="lips" uid_parent="root"/>
+  <Constant outputs="value:loop.value" type="string" uid="loop" uid_parent="root" value="127.0.0.1"/>
+  <Node _name="Select" inputs="t:lips.name,s:wn.value,f:loop.value" outputs="s? t\3Af:host.v" uid="host" uid_parent="root"/>
+  <Constant _name="every interface" outputs="value:any4.value" type="uint32" uid="any4" uid_parent="root" value="0"/>
+  <Constant _name="127.0.0.1" outputs="value:lo4.value" type="uint32" uid="lo4" uid_parent="root" value="2130706433"/>
+  <Node _name="Select" inputs="t:any4.value,s:wn.value,f:lo4.value" outputs="s? t\3Af:net.v" uid="net" uid_parent="root"/>
+  <Constant outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="http\3A//%s\3A%d/?t=%s"/>
+  <Node _name="Format Into String" inputs="format string:fmt.value,input 1:host.v,input 2:port.value,input 3:tok.v" outputs="resulting string:url.v" uid="url" uid_parent="root"/>
+  <Constant _name="share0" outputs="value:sh0.value" type="cluster{string.token,uint32.net address,string.url,bool.view only,bool.whole network,uint64.window}" uid="sh0" uid_parent="root" value="[,0,,false,false,0]"/>
+  <Node _name="Bundle By Name" fields="token,net address,url,view only,whole network,window" inputs="window:win.value,input cluster:sh0.value,token:tok.v,net address:net.v,url:url.v,view only:vo.value,whole network:wn.value" outputs="output cluster:share.v" uid="share" uid_parent="root"/>
+
+  <Call inputs="port:port.value" outputs="running?:sr.running?" target="RemoteVI Share Running.vi" uid="sr" uid_parent="root"/>
+  <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>
+  <Node _name="Number To Decimal String" inputs="number:port.value" outputs="decimal integer string:ps.decimal integer string" uid="ps" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
+
+  <Structure _name="Case Structure" selectin="sr.running?" uid="cl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:e2.v" uid="cl_i1" uid_parent="cl"/>
+    <Tunnel _id="In2" inputs="value:vi.value" uid="cl_i2" uid_parent="cl"/>
+    <Tunnel _id="In3" inputs="value:port.value" uid="cl_i3" uid_parent="cl"/>
+    <Tunnel _id="In4" inputs="value:fps.value" uid="cl_i4" uid_parent="cl"/>
+    <Tunnel _id="In5" inputs="value:nn.concatenated string" uid="cl_i5" uid_parent="cl"/>
+    <Tunnel _id="In6" inputs="value:share.v" uid="cl_i6" uid_parent="cl"/>
+    <CaseFrame label="This port is shared here already\3A error 5001\2C launch nothing" selector="True" selectout="" uid="clt" uid_parent="cl">
+      <Tunnel _id="In1" outputs="value:b_ei.value" uid="b_ei" uid_parent="clt"/>
+      <Tunnel _id="In2" outputs="value:" uid="b_vi" uid_parent="clt"/>
+      <Tunnel _id="In3" outputs="value:" uid="b_port" uid_parent="clt"/>
+      <Tunnel _id="In4" outputs="value:" uid="b_fps" uid_parent="clt"/>
+      <Tunnel _id="In5" outputs="value:" uid="b_nn" uid_parent="clt"/>
+      <Tunnel _id="In6" outputs="value:" uid="b_sh" uid_parent="clt"/>
+      <Constant _name="already shared" outputs="value:e5001.value" type="cluster{bool.status,int32.code,string.source}" uid="e5001" uid_parent="clt" value="[true,5001,]"/>
+      <Constant _name="message" outputs="value:m5001.value" type="string" uid="m5001" uid_parent="clt" value="RemoteVI Start.vi\0A&lt;APPEND&gt;\0AThis port is already shared by RemoteVI in this LabVIEW application instance. Stop that share with RemoteVI Stop.vi first\2C or use another port."/>
+      <Node _name="Bundle By Name" fields="source" inputs="source:m5001.value,input cluster:e5001.value" outputs="output cluster:b5001.output cluster" uid="b5001" uid_parent="clt"/>
+      <Node _name="Merge Errors" inputs="error in:b_ei.value,error in:b5001.output cluster" outputs="error out:bme.error out" uid="bme" uid_parent="clt"/>
+      <Tunnel _id="Out1" inputs="value:bme.error out" uid="b_o1" uid_parent="clt"/>
+    </CaseFrame>
+    <CaseFrame label="Open a server loop clone\2C launch it\2C wait until it listens" selector="False" selectout="" uid="clf" uid_parent="cl">
+      <Tunnel _id="In1" outputs="value:l_ei.value" uid="l_ei" uid_parent="clf"/>
+      <Tunnel _id="In2" outputs="value:l_vi.value" uid="l_vi" uid_parent="clf"/>
+      <Tunnel _id="In3" outputs="value:l_port.value" uid="l_port" uid_parent="clf"/>
+      <Tunnel _id="In4" outputs="value:l_fps.value" uid="l_fps" uid_parent="clf"/>
+      <Tunnel _id="In5" outputs="value:l_nn.value" uid="l_nn" uid_parent="clf"/>
+      <Tunnel _id="In6" outputs="value:l_sh.value" uid="l_sh" uid_parent="clf"/>
+      <Call inputs="error in:l_ei.value" outputs="Server Loop:osl.Server Loop,error out:osl.error out" target="RemoteVI Open Server Loop.vi" uid="osl" uid_parent="clf"/>
+      <Call inputs="Server Loop:osl.Server Loop,VI:l_vi.value,port:l_port.value,fps:l_fps.value,stop notifier name:l_nn.value,share:l_sh.value,error in:osl.error out" outputs="error out:lsl.error out" target="RemoteVI Launch Server Loop.vi" uid="lsl" uid_parent="clf"/>
+      <Tunnel _id="Out1" inputs="value:lsl.error out" uid="l_o1" uid_parent="clf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cl_o1.value" uid="cl_o1" uid_parent="cl"/>
+  </Structure>
+
+  <Indicator _name="URL" conIdx="4" connection="recommended" description="The share's link with its access token\3A http\3A//127.0.0.1\3A&lt;port&gt;/?t=&lt;token&gt;\2C or with this computer's IP address when whole network? is TRUE. Give it only to who should operate the panel. (The computer's name is not looked up\3A reverse DNS took 5 s on a test machine.)" inputs="value:url.v" type="string" uid="o_url" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors opening the caller or the Server Loop\2C making the token (5003)\2C setting the Server Loop's controls or running it\3B 5001 when this port is already shared in this LabVIEW application instance\3B the listener error of the Server Loop (e.g. 60 when the port is in use)\3B 5002 when the Server Loop did not report a listener within 2 s." inputs="value:cl_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

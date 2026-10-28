@@ -1,0 +1,126 @@
+<VI _name="RemoteVI Publish Status.vi" description="Keeps the server loop's statistics and publishes its status (RemoteVI Status Registry.vi) every 500 ms\3A frames counts the frames made (captured?)\3B fps and bytes per s are the frames made and the bytes sent to all clients (the clients' bytes) per second since the last publication\3B latency ms is the time from the iteration of the last remote click or key (clicked?) to the next frame made after it. The entry carries info (port\2C link with token\2C target\2C kind\2C whole network\2C view only)\2C started\2C the time of this publication (updated)\2C every client's address\2C connected since and last input\2C and the source of error when it carries one. With stop? TRUE the entry is removed instead (the server loop ends). Times are seconds since the LabVIEW epoch. No VI Server call.">
+  <Control _name="info" conIdx="0" connection="required" description="What the share is." outputs="value:inf.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.view only}" uid="inf" uid_parent="root" value="[0,,,,false,false]"/>
+  <Control _name="started" conIdx="1" connection="required" description="When the server loop started (seconds since the LabVIEW epoch)." outputs="value:sta.value" type="double" uid="sta" uid_parent="root" value="0"/>
+  <Control _name="clients" conIdx="2" connection="required" description="The connected clients." outputs="value:cl.value" type="array{cluster{uint32.connection,string.rx buffer,uint32.seq,uint32.acked,array.2{uint32}.last sent,bool.tracking,bool.closed,uint8.mods,uint8.mods set,uint32.popup since,string.windows sent,array{cluster{uint64.id,array.2{uint32}.pixels}}.window frames,uint64.key window,string.address,double.since,double.last input,double.bytes,bool.view only}}" uid="cl" uid_parent="root" value="[]"/>
+  <Control _name="captured?" conIdx="3" connection="recommended" description="TRUE when this iteration made a frame." outputs="value:cap.value" type="bool" uid="cap" uid_parent="root" value="false"/>
+  <Control _name="clicked?" conIdx="5" connection="recommended" description="TRUE when a client posted a click or key in this iteration." outputs="value:clk.value" type="bool" uid="clk" uid_parent="root" value="false"/>
+  <Control _name="error" conIdx="7" connection="recommended" description="The server loop's error\3B its source becomes last error." outputs="value:err.value" type="cluster{bool.status,int32.code,string.source}" uid="err" uid_parent="root" value="[false,0,]"/>
+  <Control _name="stop?" conIdx="8" connection="recommended" description="TRUE removes the entry (the server loop ends)." outputs="value:stp.value" type="bool" uid="stp" uid_parent="root" value="false"/>
+  <Control _name="state" conIdx="9" connection="required" description="The statistics of the last call (a shift register in the server loop\3B all 0 at first)." outputs="value:si.value" type="cluster{double.last,uint32.frames,uint32.frames last,double.bytes last,double.click at,double.latency,double.fps,double.rate}" uid="si" uid_parent="root" value="[0,0,0,0,0,0,0,0]"/>
+
+  <Node _name="Get Date/Time In Seconds" outputs="seconds since 1Jan1904:now0.t" uid="now0" uid_parent="root"/>
+  <Node _name="To Double Precision Float" inputs="number:now0.t" outputs="double precision float:now.v" uid="now" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="last,frames,frames last,bytes last,click at,latency,fps,rate" inputs="input cluster:si.value" outputs="last:s.last,frames:s.frames,frames last:s.flast,bytes last:s.blast,click at:s.click,latency:s.lat,fps:s.fps,rate:s.rate" uid="s" uid_parent="root"/>
+  <Constant outputs="value:u1.value" type="uint32" uid="u1" uid_parent="root" value="1"/>
+  <Constant outputs="value:u0.value" type="uint32" uid="u0" uid_parent="root" value="0"/>
+  <Constant outputs="value:dz.value" type="double" uid="dz" uid_parent="root" value="0"/>
+  <Constant outputs="value:k1000.value" type="double" uid="k1000" uid_parent="root" value="1000"/>
+  <Constant outputs="value:half.value" type="double" uid="half" uid_parent="root" value="0.5"/>
+  <Node _name="Select" inputs="t:u1.value,s:cap.value,f:u0.value" outputs="s? t\3Af:inc.v" uid="inc" uid_parent="root"/>
+  <Node _name="Add" inputs="x:s.frames,y:inc.v" outputs="x+y:frames.v" uid="frames" uid_parent="root"/>
+  <FreeLabel comment="Latency\3A from the click's iteration to the next frame" uid="lbl" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:s.click,y:dz.value" outputs="x = y?:noclick.v" uid="noclick" uid_parent="root"/>
+  <Node _name="And" inputs="x:clk.value,y:noclick.v" outputs="x .and. y?:newclk.v" uid="newclk" uid_parent="root"/>
+  <Node _name="Select" inputs="t:now.v,s:newclk.v,f:s.click" outputs="s? t\3Af:clk1.v" uid="clk1" uid_parent="root"/>
+  <Node _name="Greater?" inputs="x:clk1.v,y:dz.value" outputs="x &gt; y?:pend.v" uid="pend" uid_parent="root"/>
+  <Node _name="And" inputs="x:cap.value,y:pend.v" outputs="x .and. y?:seen.v" uid="seen" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.v,y:clk1.v" outputs="x-y:dl.v" uid="dl" uid_parent="root"/>
+  <Node _name="Multiply" inputs="x:dl.v,y:k1000.value" outputs="x*y:dlms.v" uid="dlms" uid_parent="root"/>
+  <Node _name="Select" inputs="t:dlms.v,s:seen.v,f:s.lat" outputs="s? t\3Af:lat.v" uid="lat" uid_parent="root"/>
+  <Node _name="Select" inputs="t:dz.value,s:seen.v,f:clk1.v" outputs="s? t\3Af:clk2.v" uid="clk2" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Bytes sent and the clients' entries" maxin="" maxout="" uid="fc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cl.value" mode="index" outputs="value:c.value" uid="c" uid_parent="fc"/>
+    <Constant _name="client0" outputs="value:c0.value" type="cluster{string.address,double.since,double.last input}" uid="c0" uid_parent="fc" value="[,0,0]"/>
+    <Node _name="Unbundle By Name" fields="address,since,last input,bytes" inputs="input cluster:c.value" outputs="address:cu.addr,since:cu.since,last input:cu.last,bytes:cu.bytes" uid="cu" uid_parent="fc"/>
+    <Node _name="Bundle By Name" fields="address,since,last input" inputs="input cluster:c0.value,address:cu.addr,since:cu.since,last input:cu.last" outputs="output cluster:cb.v" uid="cb" uid_parent="fc"/>
+    <Tunnel _id="Out1" inputs="value:cb.v" mode="index" outputs="value:entries.value" uid="entries" uid_parent="fc"/>
+    <Tunnel _id="Out2" inputs="value:cu.bytes" mode="index" outputs="value:bytes.value" uid="bytes" uid_parent="fc"/>
+  </Structure>
+  <Node _name="Add Array Elements" inputs="numeric array:bytes.value" outputs="sum:btot.v" uid="btot" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:now.v,y:s.last" outputs="x-y:dt.v" uid="dt" uid_parent="root"/>
+  <Node _name="Greater Or Equal?" inputs="x:dt.v,y:half.value" outputs="x &gt;= y?:due.v" uid="due" uid_parent="root"/>
+  <Node _name="Or" inputs="x:due.v,y:stp.value" outputs="x .or. y?:act.v" uid="act" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="act.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:inf.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:sta.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:now.v" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:dt.v" uid="cs_i4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:frames.v" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:s.flast" uid="cs_i6" uid_parent="cs"/>
+    <Tunnel _id="In7" inputs="value:btot.v" uid="cs_i7" uid_parent="cs"/>
+    <Tunnel _id="In8" inputs="value:s.blast" uid="cs_i8" uid_parent="cs"/>
+    <Tunnel _id="In9" inputs="value:entries.value" uid="cs_i9" uid_parent="cs"/>
+    <Tunnel _id="In10" inputs="value:lat.v" uid="cs_i10" uid_parent="cs"/>
+    <Tunnel _id="In11" inputs="value:err.value" uid="cs_i11" uid_parent="cs"/>
+    <Tunnel _id="In12" inputs="value:stp.value" uid="cs_i12" uid_parent="cs"/>
+    <Tunnel _id="In13" inputs="value:s.last" uid="cs_i13" uid_parent="cs"/>
+    <Tunnel _id="In14" inputs="value:s.fps" uid="cs_i14" uid_parent="cs"/>
+    <Tunnel _id="In15" inputs="value:s.rate" uid="cs_i15" uid_parent="cs"/>
+    <CaseFrame label="Due\3A publish (or remove)" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:p_inf.value" uid="p_inf" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:p_sta.value" uid="p_sta" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:p_now.value" uid="p_now" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:p_dt.value" uid="p_dt" uid_parent="cst"/>
+      <Tunnel _id="In5" outputs="value:p_fr.value" uid="p_fr" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:p_fl.value" uid="p_fl" uid_parent="cst"/>
+      <Tunnel _id="In7" outputs="value:p_bt.value" uid="p_bt" uid_parent="cst"/>
+      <Tunnel _id="In8" outputs="value:p_bl.value" uid="p_bl" uid_parent="cst"/>
+      <Tunnel _id="In9" outputs="value:p_en.value" uid="p_en" uid_parent="cst"/>
+      <Tunnel _id="In10" outputs="value:p_lat.value" uid="p_lat" uid_parent="cst"/>
+      <Tunnel _id="In11" outputs="value:p_err.value" uid="p_err" uid_parent="cst"/>
+      <Tunnel _id="In12" outputs="value:p_stp.value" uid="p_stp" uid_parent="cst"/>
+      <Tunnel _id="In13" outputs="value:" uid="p_last" uid_parent="cst"/>
+      <Tunnel _id="In14" outputs="value:" uid="p_fps0" uid_parent="cst"/>
+      <Tunnel _id="In15" outputs="value:" uid="p_rate0" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:p_fr.value,y:p_fl.value" outputs="x-y:df.v" uid="df" uid_parent="cst"/>
+      <Node _name="To Double Precision Float" inputs="number:df.v" outputs="double precision float:dfd.v" uid="dfd" uid_parent="cst"/>
+      <Node _name="Divide" inputs="x:dfd.v,y:p_dt.value" outputs="x/y:fps.v" uid="fps" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:p_bt.value,y:p_bl.value" outputs="x-y:db.v" uid="db" uid_parent="cst"/>
+      <Node _name="Divide" inputs="x:db.v,y:p_dt.value" outputs="x/y:rate0.v" uid="rate0" uid_parent="cst"/>
+      <Constant outputs="value:pz.value" type="double" uid="pz" uid_parent="cst" value="0"/>
+      <Node _name="Max &amp; Min" inputs="x:rate0.v,y:pz.value" outputs="max(x\2Cy):rate.v" uid="rate" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="port,url,target,kind,whole network,view only" inputs="input cluster:p_inf.value" outputs="port:pi.port,url:pi.url,target:pi.target,kind:pi.kind,whole network:pi.wn,view only:pi.vo" uid="pi" uid_parent="cst"/>
+      <Node _name="Unbundle By Name" fields="status,source" inputs="input cluster:p_err.value" outputs="status:pe.status,source:pe.source" uid="pe" uid_parent="cst"/>
+      <Constant outputs="value:noerr.value" type="string" uid="noerr" uid_parent="cst" value=""/>
+      <Node _name="Select" inputs="t:pe.source,s:pe.status,f:noerr.value" outputs="s? t\3Af:le.v" uid="le" uid_parent="cst"/>
+      <Constant _name="entry0" outputs="value:e0.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}" uid="e0" uid_parent="cst" value="[0,,,,false,0,0,[],0,0,0,0,false,]"/>
+      <Node _name="Bundle By Name" fields="port,url,target,kind,whole network,started,updated,clients,fps,bytes per s,frames,latency ms,view only,last error" inputs="input cluster:e0.value,port:pi.port,url:pi.url,target:pi.target,kind:pi.kind,whole network:pi.wn,started:p_sta.value,updated:p_now.value,clients:p_en.value,fps:fps.v,bytes per s:rate.v,frames:p_fr.value,latency ms:p_lat.value,view only:pi.vo,last error:le.v" outputs="output cluster:ent.v" uid="ent" uid_parent="cst"/>
+      <Node _name="Not" inputs="x:p_stp.value" outputs=".not. x?:pub.v" uid="pub" uid_parent="cst"/>
+      <Call inputs="publish?:pub.v,remove?:p_stp.value,status:ent.v" outputs="servers:" target="RemoteVI Status Registry.vi" uid="reg" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:p_now.value" uid="p_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:p_fr.value" uid="p_o2" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:p_bt.value" uid="p_o3" uid_parent="cst"/>
+      <Tunnel _id="Out4" inputs="value:fps.v" uid="p_o4" uid_parent="cst"/>
+      <Tunnel _id="Out5" inputs="value:rate.v" uid="p_o5" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Not yet" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="q_inf" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="q_sta" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="q_now" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:" uid="q_dt" uid_parent="csf"/>
+      <Tunnel _id="In5" outputs="value:" uid="q_fr" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:q_fl.value" uid="q_fl" uid_parent="csf"/>
+      <Tunnel _id="In7" outputs="value:" uid="q_bt" uid_parent="csf"/>
+      <Tunnel _id="In8" outputs="value:q_bl.value" uid="q_bl" uid_parent="csf"/>
+      <Tunnel _id="In9" outputs="value:" uid="q_en" uid_parent="csf"/>
+      <Tunnel _id="In10" outputs="value:" uid="q_lat" uid_parent="csf"/>
+      <Tunnel _id="In11" outputs="value:" uid="q_err" uid_parent="csf"/>
+      <Tunnel _id="In12" outputs="value:" uid="q_stp" uid_parent="csf"/>
+      <Tunnel _id="In13" outputs="value:q_last.value" uid="q_last" uid_parent="csf"/>
+      <Tunnel _id="In14" outputs="value:q_fps.value" uid="q_fps" uid_parent="csf"/>
+      <Tunnel _id="In15" outputs="value:q_rate.value" uid="q_rate" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:q_last.value" uid="q_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:q_fl.value" uid="q_o2" uid_parent="csf"/>
+      <Tunnel _id="Out3" inputs="value:q_bl.value" uid="q_o3" uid_parent="csf"/>
+      <Tunnel _id="Out4" inputs="value:q_fps.value" uid="q_o4" uid_parent="csf"/>
+      <Tunnel _id="Out5" inputs="value:q_rate.value" uid="q_o5" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:o_last.value" uid="o_last" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:o_fl.value" uid="o_fl" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:o_bl.value" uid="o_bl" uid_parent="cs"/>
+    <Tunnel _id="Out4" outputs="value:o_fps.value" uid="o_fps" uid_parent="cs"/>
+    <Tunnel _id="Out5" outputs="value:o_rate.value" uid="o_rate" uid_parent="cs"/>
+  </Structure>
+  <Node _name="Bundle By Name" fields="last,frames,frames last,bytes last,click at,latency,fps,rate" inputs="input cluster:si.value,last:o_last.value,frames:frames.v,frames last:o_fl.value,bytes last:o_bl.value,click at:clk2.v,latency:lat.v,fps:o_fps.value,rate:o_rate.value" outputs="output cluster:so.v" uid="so" uid_parent="root"/>
+  <Indicator _name="state out" conIdx="4" connection="recommended" description="The statistics for the next call." inputs="value:so.v" type="cluster{double.last,uint32.frames,uint32.frames last,double.bytes last,double.click at,double.latency,double.fps,double.rate}" uid="o_so" uid_parent="root" value="[0,0,0,0,0,0,0,0]"/>
+</VI>

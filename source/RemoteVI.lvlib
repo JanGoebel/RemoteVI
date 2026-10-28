@@ -8,6 +8,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 	<Property Name="NI.Lib.Version" Type="Str">1.0.0.0</Property>
 	<Property Name="NI.LV.All.SourceOnly" Type="Bool">true</Property>
 	<Item Name="API" Type="Folder">
+		<Item Name="RemoteVI Open Server.vi" Type="VI" URL="../API/RemoteVI Open Server.vi"/>
 		<Item Name="RemoteVI Show Status.vi" Type="VI" URL="../API/RemoteVI Show Status.vi"/>
 		<Item Name="RemoteVI Start Window.vi" Type="VI" URL="../API/RemoteVI Start Window.vi"/>
 		<Item Name="RemoteVI Start.vi" Type="VI" URL="../API/RemoteVI Start.vi"/>

@@ -1,0 +1,42 @@
+<VI _name="RemoteVI Open Server.vi" description="Opens RemoteVI Server (..\5CApp\5CRemoteVI Server.vi\2C the window that shares any window in a browser without code) and returns at once\3A if it is already open it is brought to the front\2C else it is opened and run. The Tools menu entry Tools &gt; RemoteVI &gt; Share in Browser calls it. Closing RemoteVI Server's window in LabVIEW keeps its shares running\3B open it again to see or stop them.">
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):ei.value" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:dir.stripped path" uid="dir" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:dir.stripped path" outputs="stripped path:up.stripped path" uid="up" uid_parent="root"/>
+  <Constant outputs="value:app.value" type="string" uid="app" uid_parent="root" value="App"/>
+  <Node _name="Build Path" inputs="base path:up.stripped path,name or relative path:app.value" outputs="appended path:appd.appended path" uid="appd" uid_parent="root"/>
+  <Constant outputs="value:spn.value" type="string" uid="spn" uid_parent="root" value="RemoteVI Server.vi"/>
+  <Node _name="Build Path" inputs="base path:appd.appended path,name or relative path:spn.value" outputs="appended path:spp.appended path" uid="spp" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:spp.appended path,error in (no error):me.error out" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Execution\3AState" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="Execution\3AState:es.state,reference out:,error out:es.error out" type="{LV.VI}" uid="es" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:es.state" outputs="32bit integer:esi.i" uid="esi" uid_parent="root"/>
+  <Constant _name="running top level" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Greater Or Equal?" inputs="x:esi.i,y:k2.value" outputs="x &gt;= y?:run.v" uid="run" uid_parent="root"/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Constant outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Node _name="Invoke Node" target="FP.Open" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):es.error out,Activate:tru.value,State:" outputs="reference out:,error out:fo.error out" uid="fo" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="run.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ov.vi reference" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:fo.error out" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:fls.value" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:tru.value" uid="cs_i4" uid_parent="cs"/>
+    <CaseFrame label="Already running\3A it is in front now" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_r.value" uid="t_r" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_e.value" uid="t_e" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:" uid="t_f" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:" uid="t_t" uid_parent="cst"/>
+      <Node _name="Close Reference" inputs="reference:t_r.value,error in (no error):t_e.value" outputs="error out:tc.error out" uid="tc" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:tc.error out" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Run it (the reference is closed when it ends)" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_r.value" uid="f_r" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:f_e.value" uid="f_e" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_f.value" uid="f_f" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:f_t.value" uid="f_t" uid_parent="csf"/>
+      <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:f_r.value,error in (no error):f_e.value,Wait until done:f_f.value,Auto Dispose Ref:f_t.value" outputs="reference out:,error out:rv.error out" uid="rv" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:rv.error out" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors opening or running RemoteVI Server." inputs="value:cs_o1.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

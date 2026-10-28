@@ -50,6 +50,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI JSON String.vi" Type="VI" URL="../Protocol/RemoteVI JSON String.vi"/>
 		<Item Name="RemoteVI Overlay Encode.vi" Type="VI" URL="../Protocol/RemoteVI Overlay Encode.vi"/>
 		<Item Name="RemoteVI Parse Input.vi" Type="VI" URL="../Protocol/RemoteVI Parse Input.vi"/>
+		<Item Name="RemoteVI Splitters Message.vi" Type="VI" URL="../Protocol/RemoteVI Splitters Message.vi"/>
 		<Item Name="RemoteVI Tips Message.vi" Type="VI" URL="../Protocol/RemoteVI Tips Message.vi"/>
 		<Item Name="RemoteVI Window Frame Encode.vi" Type="VI" URL="../Protocol/RemoteVI Window Frame Encode.vi"/>
 		<Item Name="RemoteVI Windows Message.vi" Type="VI" URL="../Protocol/RemoteVI Windows Message.vi"/>
@@ -61,6 +62,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Add Client.vi" Type="VI" URL="../Server/RemoteVI Add Client.vi"/>
 		<Item Name="RemoteVI Announce Listener.vi" Type="VI" URL="../Server/RemoteVI Announce Listener.vi"/>
 		<Item Name="RemoteVI Answer Control Frame.vi" Type="VI" URL="../Server/RemoteVI Answer Control Frame.vi"/>
+		<Item Name="RemoteVI Apply Splitter.vi" Type="VI" URL="../Server/RemoteVI Apply Splitter.vi"/>
 		<Item Name="RemoteVI Capture And Send.vi" Type="VI" URL="../Server/RemoteVI Capture And Send.vi"/>
 		<Item Name="RemoteVI Capture Frame.vi" Type="VI" URL="../Server/RemoteVI Capture Frame.vi"/>
 		<Item Name="RemoteVI Capture Windows.vi" Type="VI" URL="../Server/RemoteVI Capture Windows.vi"/>
@@ -88,6 +90,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
+		<Item Name="RemoteVI Read Splitters.vi" Type="VI" URL="../Server/RemoteVI Read Splitters.vi"/>
 		<Item Name="RemoteVI Read Tips.vi" Type="VI" URL="../Server/RemoteVI Read Tips.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
 		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
@@ -107,6 +110,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Service Client.vi" Type="VI" URL="../Server/RemoteVI Service Client.vi"/>
 		<Item Name="RemoteVI Service Clients.vi" Type="VI" URL="../Server/RemoteVI Service Clients.vi"/>
 		<Item Name="RemoteVI Set Server Loop Inputs.vi" Type="VI" URL="../Server/RemoteVI Set Server Loop Inputs.vi"/>
+		<Item Name="RemoteVI Splitter Request.vi" Type="VI" URL="../Server/RemoteVI Splitter Request.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>
 		<Item Name="RemoteVI VI Stopped.vi" Type="VI" URL="../Server/RemoteVI VI Stopped.vi"/>

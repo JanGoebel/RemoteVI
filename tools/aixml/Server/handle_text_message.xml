@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Handle Text Message.vi" description="Handles one text message of a client (docs\5Cprotocol.md section 5) after RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq of the ack) when that seq is not ahead of the client's seq\3B a mouse or key message goes to the window RemoteVI Route Input.vi picks (the front-most listed window under the pointer\2C for keys the front-most modal window\2C else the window last clicked\2C else the panel\3B docs\5Cprotocol.md section 7) and is posted to LabVIEW (RemoteVI Post Client Input.vi)\3B x id presses the close box of a listed closable window - WM_SYSCOMMAND SC_CLOSE (RemoteVI Close Window.vi)\3B anything else (invalid) is ignored. No VI Server call.">
+<VI _name="RemoteVI Handle Text Message.vi" description="Handles one text message of a client (docs\5Cprotocol.md section 5) after RemoteVI Parse Input.vi\3A an ack raises acked to max(acked\2C seq of the ack) when that seq is not ahead of the client's seq\3B a mouse or key message goes to the window RemoteVI Route Input.vi picks (the front-most listed window under the pointer\2C for keys the front-most modal window\2C else the window last clicked\2C else the panel\3B docs\5Cprotocol.md section 7) and is posted to LabVIEW (RemoteVI Post Client Input.vi)\3B x id presses the close box of a listed closable window - WM_SYSCOMMAND SC_CLOSE (RemoteVI Close Window.vi)\3B s id pos stores a splitter move for the server loop (RemoteVI Splitter Request.vi\2C applied by RemoteVI Apply Splitter.vi when no popup or modal window is open)\3B anything else (invalid) is ignored. No VI Server call.">
   <Control _name="text" conIdx="0" connection="required" description="The message payload." outputs="value:pl.value" type="string" uid="pl" uid_parent="root" value=""/>
   <Control _name="acked" conIdx="1" connection="required" description="Highest frame seq the client acknowledged." outputs="value:ack.value" type="uint32" uid="ack" uid_parent="root" value="0"/>
   <Control _name="tracking" conIdx="2" connection="recommended" description="Mouse tracking state (RemoteVI Translate Input.vi)." outputs="value:trk.value" type="bool" uid="trk" uid_parent="root" value="false"/>
@@ -15,6 +15,26 @@
   <Call inputs="text:pl.value" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq,id:pi.id" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="root"/>
   <Call inputs="kind:pi.kind,id:pi.id,windows:wl.value" outputs="closed?:,error out:" target="RemoteVI Close Window.vi" uid="xw" uid_parent="root"/>
   <Node _name="To Long Integer" inputs="number:pi.kind" outputs="32bit integer:kn.32bit integer" uid="kn" uid_parent="root"/>
+  <Constant _name="splitter" outputs="value:k5.value" type="int32" uid="k5" uid_parent="root" value="5"/>
+  <Node _name="Equal?" inputs="x:kn.32bit integer,y:k5.value" outputs="x = y?:isSp.v" uid="isSp" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hWnd" inputs="input cluster:pan.value" outputs="hWnd:phw.hWnd" uid="phw" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="isSp.v" uid="csp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:phw.hWnd" uid="csp_i1" uid_parent="csp"/>
+    <Tunnel _id="In2" inputs="value:pi.id" uid="csp_i2" uid_parent="csp"/>
+    <Tunnel _id="In3" inputs="value:pi.x" uid="csp_i3" uid_parent="csp"/>
+    <CaseFrame label="s id pos\3A store the move for the server loop" selector="True" selectout="" uid="cspt" uid_parent="csp">
+      <Tunnel _id="In1" outputs="value:sp_hw.value" uid="sp_hw" uid_parent="cspt"/>
+      <Tunnel _id="In2" outputs="value:sp_id.value" uid="sp_id" uid_parent="cspt"/>
+      <Tunnel _id="In3" outputs="value:sp_x.value" uid="sp_x" uid_parent="cspt"/>
+      <Constant outputs="value:spt.value" type="bool" uid="spt" uid_parent="cspt" value="true"/>
+      <Call inputs="put?:spt.value,hWnd:sp_hw.value,id:sp_id.value,pos:sp_x.value" outputs="pending?:,id out:,pos out:" target="RemoteVI Splitter Request.vi" uid="spr" uid_parent="cspt"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="cspf" uid_parent="csp">
+      <Tunnel _id="In1" outputs="value:" uid="sq_hw" uid_parent="cspf"/>
+      <Tunnel _id="In2" outputs="value:" uid="sq_id" uid_parent="cspf"/>
+      <Tunnel _id="In3" outputs="value:" uid="sq_x" uid_parent="cspf"/>
+    </CaseFrame>
+  </Structure>
   <Constant _name="ack" outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
   <Constant _name="mouse" outputs="value:k1c.value" type="int32" uid="k1c" uid_parent="root" value="1"/>
   <Constant _name="key" outputs="value:k2c.value" type="int32" uid="k2c" uid_parent="root" value="2"/>

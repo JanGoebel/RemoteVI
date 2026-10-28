@@ -1,0 +1,46 @@
+<VI _name="RemoteVI Target Geometry.vi" description="Where the shared window is on screen\2C for VI or for a window of any process. window 0\3A the front panel window of VI (RemoteVI Get Panel Geometry.vi\2C VI Server). Otherwise window is the shared window itself (a window target\2C e.g. a panel of another LabVIEW process or another program)\3A the frame is its client area\2C so geo.panelX/panelY and clientX/clientY are both the client-area origin on screen (-ScreenToClient(0\2C0)) and the panel starts at the frame's origin (origin 0\2C0)\3B no VI Server call.">
+  <Control _name="VI" conIdx="0" connection="required" description="The shared VI (ignored for a window target)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="window" conIdx="5" connection="recommended" description="The shared window\3B 0 = the front panel window of VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant outputs="value:z.value" type="uint64" uid="z" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:win.value,y:z.value" outputs="x != y?:isw.v" uid="isw" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="isw.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:win.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:ei.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="A window target\3A Win32 only" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_win.value" uid="t_win" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_ei.value" uid="t_ei" uid_parent="cst"/>
+      <Constant _name="zero" outputs="value:k0.value" type="int32" uid="k0" uid_parent="cst" value="0"/>
+      <Call inputs="hWnd:t_win.value,Screen X:k0.value,Screen Y:k0.value,error in (no error):t_ei.value" outputs="Client X:stc.Client X,Client Y:stc.Client Y,return value:,error out:stc.error out" target="user32 ScreenToClient.vi" uid="stc" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:k0.value,y:stc.Client X" outputs="x-y:ncx.v" uid="ncx" uid_parent="cst"/>
+      <Node _name="Subtract" inputs="x:k0.value,y:stc.Client Y" outputs="x-y:ncy.v" uid="ncy" uid_parent="cst"/>
+      <Constant _name="geo" outputs="value:gc.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="gc" uid_parent="cst" value="[0,0,0,0]"/>
+      <Node _name="Bundle By Name" fields="panelX,panelY,clientX,clientY" inputs="panelX:ncx.v,panelY:ncy.v,clientX:ncx.v,clientY:ncy.v,input cluster:gc.value" outputs="output cluster:bg.v" uid="bg" uid_parent="cst"/>
+      <Constant _name="origin0" outputs="value:oc.value" type="cluster{int32.x,int32.y}" uid="oc" uid_parent="cst" value="[0,0]"/>
+      <Tunnel _id="Out1" inputs="value:bg.v" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:t_win.value" uid="t_o2" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:oc.value" uid="t_o3" uid_parent="cst"/>
+      <Tunnel _id="Out4" inputs="value:stc.error out" uid="t_o4" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="The front panel window of VI" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_vi.value" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_win" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:f_ei.value" uid="f_ei" uid_parent="csf"/>
+      <Call inputs="VI:f_vi.value,error in:f_ei.value" outputs="geo:gg.geo,hWnd:gg.hWnd,origin:gg.origin,error out:gg.error out" target="RemoteVI Get Panel Geometry.vi" uid="gg" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:gg.geo" uid="f_o1" uid_parent="csf"/>
+      <Tunnel _id="Out2" inputs="value:gg.hWnd" uid="f_o2" uid_parent="csf"/>
+      <Tunnel _id="Out3" inputs="value:gg.origin" uid="f_o3" uid_parent="csf"/>
+      <Tunnel _id="Out4" inputs="value:gg.error out" uid="f_o4" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:o_geo.value" uid="o_geo" uid_parent="cs"/>
+    <Tunnel _id="Out2" outputs="value:o_hw.value" uid="o_hw" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:o_org.value" uid="o_org" uid_parent="cs"/>
+    <Tunnel _id="Out4" outputs="value:o_err.value" uid="o_err" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="geo" conIdx="4" connection="recommended" description="Frame origin (panelX\2C panelY) and client-area origin (clientX\2C clientY) in screen coordinates." inputs="value:o_geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="i_geo" uid_parent="root" value="[0,0,0,0]"/>
+  <Indicator _name="hWnd" conIdx="6" connection="recommended" description="Native handle of the shared window." inputs="value:o_hw.value" type="uint64" uid="i_hw" uid_parent="root" value="0"/>
+  <Indicator _name="origin" conIdx="8" connection="recommended" description="Where the panel area starts inside the frame (0\2C0 for a window target)." inputs="value:o_org.value" type="cluster{int32.x,int32.y}" uid="i_or" uid_parent="root" value="[0,0]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Standard error out." inputs="value:o_err.value" type="cluster{bool.status,int32.code,string.source}" uid="i_eo" uid_parent="root" value="[false,0,]"/>
+</VI>

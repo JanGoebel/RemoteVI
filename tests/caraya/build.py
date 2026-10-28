@@ -657,6 +657,79 @@ def check_status_convert():
     return d
 
 
+RAW_WIN_TYPE = ("array{cluster{uint64.hWnd,uint32.pid,string.path,string.class,string.title,bool.visible,bool.owned,"
+                "uint32.ex style,int32.w,int32.h}}")
+
+
+def check_window_rows():
+    vec = json.load(open(os.path.join(VEC, "server-app.json")))
+    raw = [(w["hWnd"], w["pid"], w["path"], w["cls"], w["title"], w["visible"], w["owned"], w["exStyle"], w["w"], w["h"])
+           for w in vec["raw"]]
+    cases = [(c["name"], raw, c["labviewOnly"], c["skip"], "".join(r + "\n" for r in c["rows"])) for c in vec["windowRows"]]
+    d = check_doc("Window Rows", "server-app.json (windowRows)", "raw, labview only? and skip as in the vector; "
+                  "each row is rendered group|program|title|pid|hWnd with a line feed after it.")
+    f = cases_loop(d, "string.name,%s.raw,bool.lvo,uint64.skip,string.expect" % RAW_WIN_TYPE, cases,
+                   ["name", "raw", "lvo", "skip", "expect"], "One vector")
+    d.call("sut", "RemoteVI Window Rows.vi", [("raw", f["raw"]), ("labview only?", f["lvo"]), ("skip", f["skip"])],
+           [("rows", "sut.v")], "L")
+    d.const("rf", "string", esc("%d|%s|%s|%d|%d\n"), "L")
+    d.loop_open("R", "One line per row", parent="L")
+    r = d.tunnel_in("tr", "R", "sut.v")
+    rf = d.tunnel_in("trf", "R", "rf.v", index=False)
+    d.node("ru", "Unbundle By Name", [("input cluster", r)], [(k, "ru." + k.replace(" ", "")) for k in
+           ("group", "program", "title", "pid", "hWnd")], "R", fields="group,program,title,pid,hWnd")
+    d.node("rl", "Format Into String", [("format string", rf), ("input 1", "ru.group"), ("input 2", "ru.program"),
+           ("input 3", "ru.title"), ("input 4", "ru.pid"), ("input 5", "ru.hWnd")], [("resulting string", "rl.v")], "R")
+    d.tunnel_out("lines", "R", "rl.v")
+    d.loop_close()
+    act = d.concat("all", ["lines.v"], "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], act))
+    return d
+
+
+def check_landing_page():
+    vec = json.load(open(os.path.join(VEC, "server-app.json")))
+    cases = [(c["name"], [out_tuple(st) for st in c["status"]], c["html"]) for c in vec["landing"]]
+    return check_string_out("Landing Page", "server-app.json (landing)", "the page is compared as the string it is.",
+                            OUT_TYPE + ".status", cases, ["status"], "html")
+
+
+def check_next_free_port():
+    vec = json.load(open(os.path.join(VEC, "server-app.json")))
+    cases = [("%s from %d" % (c["used"], c["start"]), c["used"], c["start"], str(c["port"])) for c in vec["nextFreePort"]]
+    d = check_doc("Next Free Port", "server-app.json (nextFreePort)", "used and start as in the vector; the port "
+                  "is rendered as a decimal number.")
+    f = cases_loop(d, "string.name,array{uint16}.used,uint16.start,string.expect", cases,
+                   ["name", "used", "start", "expect"], "One vector")
+    d.call("sut", "RemoteVI Next Free Port.vi", [("used", f["used"]), ("start", f["start"])], [("port", "sut.v")], "L")
+    act = d.dec("pd", "sut.v", "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], act))
+    return d
+
+
+def check_parse_arguments():
+    vec = json.load(open(os.path.join(VEC, "server-app.json")))
+    tf = lambda b: "T" if b else "F"
+    cases = [(" ".join(c["args"]) or "(none)", c["args"],
+              "%s|%d|%s|%s|%s|%d" % (c["share"], c["port"], c["token"], tf(c["wholeNetwork"]), tf(c["viewOnly"]),
+                                     c["landingPort"])) for c in vec["parseArgs"]]
+    d = check_doc("Parse Arguments", "server-app.json (parseArgs)", "args as in the vector; the options are "
+                  "rendered share|port|token|whole network|view only|landing port with T or F.")
+    f = cases_loop(d, "string.name,array{string}.args,string.expect", cases, ["name", "args", "expect"], "One vector")
+    d.call("sut", "RemoteVI Parse Arguments.vi", [("args", f["args"])], [("options", "sut.v")], "L")
+    d.node("ou", "Unbundle By Name", [("input cluster", "sut.v")], [("share", "ou.share"), ("port", "ou.port"),
+           ("token", "ou.token"), ("whole network", "ou.wn"), ("view only", "ou.vo"), ("landing port", "ou.lp")], "L",
+           fields="share,port,token,whole network,view only,landing port")
+    wn = d.tf("twn", "ou.wn", "L")
+    vo = d.tf("tvo", "ou.vo", "L")
+    d.const("of", "string", esc("%s|%d|%s|%s|%s|%d"), "L")
+    d.node("ol", "Format Into String", [("format string", "of.v"), ("input 1", "ou.share"), ("input 2", "ou.port"),
+           ("input 3", "ou.token"), ("input 4", wn), ("input 5", vo), ("input 6", "ou.lp")],
+           [("resulting string", "ol.v")], "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], "ol.v"))
+    return d
+
+
 # --------------------------------------------------------------------------- Caraya layer
 SUBJECTS = [  # (subject, area, vector source for the description)
     ("Frame Encode", "Protocol", "frame.json cases"),
@@ -675,6 +748,10 @@ SUBJECTS = [  # (subject, area, vector source for the description)
     ("Format Duration", "Server", "status.json durations"),
     ("Status Text", "Server", "status.json texts"),
     ("Status Convert", "Server", "status.json convert"),
+    ("Window Rows", "App", "server-app.json windowRows"),
+    ("Landing Page", "App", "server-app.json landing"),
+    ("Next Free Port", "App", "server-app.json nextFreePort"),
+    ("Parse Arguments", "App", "server-app.json parseArgs"),
 ]
 
 
@@ -758,6 +835,10 @@ def all_docs():
         "Format Duration": check_format_duration,
         "Status Text": check_status_text,
         "Status Convert": check_status_convert,
+        "Window Rows": check_window_rows,
+        "Landing Page": check_landing_page,
+        "Next Free Port": check_next_free_port,
+        "Parse Arguments": check_parse_arguments,
     }
     rel = []
     for subject, area, source in SUBJECTS:
@@ -805,7 +886,7 @@ def main():
         return 0
 
     car = caraya_dir(a.caraya_dir)
-    search = [os.path.join(ROOT, "source", s) for s in ("Protocol", "Capture", "Input")] + [SUPPORT]
+    search = [os.path.join(ROOT, "source", s) for s in ("Protocol", "Capture", "Input", "Server", "App")] + [SUPPORT]
     rc = 0
     for fname, d, vi, needs_caraya in docs:
         if a.only and a.only.lower() not in os.path.basename(vi).lower():

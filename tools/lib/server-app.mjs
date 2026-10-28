@@ -72,3 +72,34 @@ export function landingPage(status) {
     + 'a{font-weight:600;color:#0b57d0;text-decoration:none}span{display:block;color:#666;font-size:13px}</style></head>'
     + `<body><h1>RemoteVI Server</h1>${items.length ? `<ul>${items.join('')}</ul>` : '<p>Nothing is shared right now.</p>'}</body></html>`;
 }
+
+/** The first port from `start` up that no share in `used` has (RemoteVI Server suggests it for the next share). */
+export function nextFreePort(used, start = 8100) {
+  let p = start;
+  while (used.includes(p) && p < 65535) p++;
+  return p;
+}
+
+/**
+ * RemoteVI Server.exe's command line (the arguments after `--`, as LabVIEW passes them):
+ * --share <window title> shares that window at start; --port N its port (default 8100);
+ * --token T its token (default random); --whole-network and --view-only as the check boxes;
+ * --landing-port P the landing page's port (default 8088, 0 = no landing page).
+ * Unknown arguments and a flag without its value are ignored; a bad number keeps the default.
+ */
+export function parseArgs(args) {
+  const out = { share: '', port: 8100, token: '', wholeNetwork: false, viewOnly: false, landingPort: 8088 };
+  const num = (s, d) => (/^\d+$/.test(s) && +s <= 65535 ? +s : d);
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    const v = i + 1 < args.length ? args[i + 1] : null;
+    if (a === '--whole-network') out.wholeNetwork = true;
+    else if (a === '--view-only') out.viewOnly = true;
+    else if (v === null) continue;
+    else if (a === '--share') { out.share = v; i++; }
+    else if (a === '--port') { out.port = num(v, out.port); i++; }
+    else if (a === '--token') { out.token = v; i++; }
+    else if (a === '--landing-port') { out.landingPort = num(v, out.landingPort); i++; }
+  }
+  return out;
+}

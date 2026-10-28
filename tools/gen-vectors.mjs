@@ -18,7 +18,7 @@ import { dirtyRects } from './lib/rects.mjs';
 import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage, splittersMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { statusConvert, statusText, formatDuration } from './lib/status.mjs';
-import { windowRows, renderRow, landingPage } from './lib/server-app.mjs';
+import { windowRows, renderRow, landingPage, nextFreePort, parseArgs } from './lib/server-app.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS, tokenOk } from './lib/http.mjs';
 
@@ -365,6 +365,13 @@ function serverAppVectors() {
       { name: 'escaped title', status: [{ ...statusVec[0], target: 'a<b> & "c"', viewOnly: true, wholeNetwork: true }],
         html: landingPage([{ ...statusVec[0], target: 'a<b> & "c"', viewOnly: true, wholeNetwork: true }]) },
     ],
+    nextFreePort: [
+      { used: [], start: 8100 }, { used: [8100, 8101, 8103], start: 8100 }, { used: [8088, 8100], start: 8088 },
+    ].map((c) => ({ ...c, port: nextFreePort(c.used, c.start) })),
+    parseArgs: [
+      [], ['--share', 'Main.vi', '--port', '8123', '--token', 'abc', '--whole-network', '--view-only', '--landing-port', '0'],
+      ['--landing-port', 'x', '--port', '70000', '--bogus', '--share'], ['--view-only', '--share', 'My Window - Notepad'],
+    ].map((args) => ({ args, ...parseArgs(args) })),
   };
 }
 

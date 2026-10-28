@@ -103,6 +103,12 @@ def compose(argv):
     sys.modules["aixml2vi"] = a2v
     spec.loader.exec_module(a2v)
     patch_composer(a2v)
+    # style="Listbox" (a multicolumn listbox, RemoteVI Server's lists): the fixtures' composer patch
+    lb = os.path.join(os.path.dirname(os.path.dirname(HERE)), "tests", "fixtures", "aixml", "listbox_composer.py")
+    lspec = importlib.util.spec_from_file_location("listbox_composer", lb)
+    lmod = importlib.util.module_from_spec(lspec)
+    lspec.loader.exec_module(lmod)
+    lmod.patch(a2v)
     return a2v.main(argv)
 
 

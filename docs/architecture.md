@@ -37,6 +37,8 @@ The first version (protocol v1, see git history) modelled each control through V
  │   ├ Track Windows: dialogs, file dialogs, subVI panels (Win32 only)     │
  │   ├ Send Origin: `origin x y` to every client when it changed           │
  │   ├ Read Tips (after a geometry refresh) → Send Tips: `tips [...]`        │
+ │   ├ Apply Splitter (a dropped bar, never while busy) → Read Splitters     │
+ │   │    → `splitters [...]`                                                │
  │   └ every 1/fps (16 ms right after a click/key), if any client:         │
  │        Capture Frame (GetDC + BitBlt of the client area)                │
  │        per client with < 2 frames in flight:                            │
@@ -75,6 +77,10 @@ The first version (protocol v1, see git history) modelled each control through V
 * Printable characters go as `WM_CHAR`, so the host keyboard layout doesn't matter. Other keys get their scan code in `lParam` when the client sent none (LabVIEW lost the arrow of a scan-code-less Shift+Right, measured).
 * A double click arrives as `WM_LBUTTONDBLCLK` and is posted as a second `WM_LBUTTONDOWN`: LabVIEW's panel window class has no `CS_DBLCLKS`, so LabVIEW detects double clicks from two downs and ignores a posted DBLCLK (measured with a listbox Double Click event).
 * `WM_MOUSEWHEEL` with screen coordinates reaches the control under the posted point (measured: a numeric's Mouse Wheel event, positive delta for "away from the user").
+
+### Splitter bars
+
+LabVIEW moves a splitter bar only while it tracks the real mouse: a posted button-down on a bar starts no drag (no mouse capture), and neither a key state with `VK_LBUTTON` set nor `WM_SETCURSOR` changes that (measured on LabVIEW 2025). Since the host cursor is never moved, the browser drags the bars itself (docs/protocol.md 4.5). `RemoteVI Read Splitters.vi` reads `{LV.Panel} Splitters[]` with the tips: the area a splitter divides starts at its GObject Position (panel coordinates), the bar lies `{LV.Splitter} Position` pixels into it (right for `IsVertical?`, down otherwise) and is GObject Bounds wide and high (measured on the complex fixture: the vertical bar at area 0,0, Position 276, 9 x 760; the horizontal one at area 285,0, Position 36, 895 x 8); the corner goes to the frame like a tip's bounds. A dropped bar arrives as `s <id> <pos>`; `RemoteVI Handle Text Message.vi` stores it (`RemoteVI Splitter Request.vi`, one slot keyed by the panel's hWnd) and `RemoteVI Apply Splitter.vi` writes Position + (pos - edge) in the next loop iteration without a popup or modal window, after which the bars and tips are read again and frames come every 16 ms. The Panel and Splitter VI Server classes come to the composer through `tools/aixml/pane_parts.py`, harvested from NI's Pane Relief plugin.
 
 ### Popups (menus, dropdowns, graph palette, tip strips)
 

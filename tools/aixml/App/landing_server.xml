@@ -1,0 +1,80 @@
+<VI _name="RemoteVI Landing Server.vi" description="RemoteVI Server's landing page\3A a small HTTP server on port that answers GET / (and /index.html) with the list of the shares of this application instance as links (RemoteVI Landing Page.vi from RemoteVI Status.vi) - but only with share.token as t= in the query (RemoteVI Token Check.vi)\2C else 403\3B anything else 404\3B one request per connection\2C with the security headers (RemoteVI Send Static Response.vi). Listens at share's net address (127.0.0.1 = this computer only\2C 0 = every interface). Launched like a server loop (RemoteVI Launch Server Loop.vi sets the same controls - VI and fps are not used - and waits for the listener result on &lt;stop notifier name&gt;\3Astarted\2C RemoteVI Announce Listener.vi)\3B it ends when the notifier stop notifier name delivers anything (RemoteVI Stop.vi with the same port).">
+  <Control _name="VI" conIdx="0" connection="optional" description="Not used (same controls as RemoteVI Server Loop.vi)." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="port" conIdx="5" connection="recommended" description="TCP port of the landing page." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Control _name="fps" conIdx="7" connection="optional" description="Not used." outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="20"/>
+  <Control _name="stop notifier name" conIdx="9" connection="recommended" description="RemoteVI\3A&lt;port&gt;." outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value=""/>
+  <Control _name="share" conIdx="1" connection="recommended" description="token (required in every request) and net address (127.0.0.1 or 0)\3B the rest is not used." outputs="value:sh.value" type="cluster{string.token,uint32.net address,string.url,bool.view only,bool.whole network,uint64.window}" uid="sh" uid_parent="root" value="[,0,,false,false,0]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Unbundle By Name" fields="token,net address" inputs="input cluster:sh.value" outputs="token:shu.token,net address:shu.net" uid="shu" uid_parent="root"/>
+  <Node _name="TCP Create Listener" inputs="net address:shu.net,port:port.value,error in (no error):ei.value" outputs="listener ID:lis.listener ID,error out:lis.error out" uid="lis" uid_parent="root"/>
+  <Constant outputs="value:ntype.value" type="string" uid="ntype" uid_parent="root" value=""/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:ntype.value,error in (no error):lis.error out" outputs="notifier out:on.notifier out,error out:on.error out" uid="on" uid_parent="root"/>
+  <Call inputs="stop notifier name:nn.value,listener result:lis.error out" outputs="" target="RemoteVI Announce Listener.vi" uid="al" uid_parent="root"/>
+  <Constant outputs="value:paths.value" type="array{string}" uid="paths" uid_parent="root" value="[/,/index.html]"/>
+  <Structure _name="While Loop" count="" label="One request per connection until stopped" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:lis.listener ID" outputs="value:l_lis.value" uid="l_lis" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:on.notifier out" outputs="value:l_not.value" uid="l_not" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:shu.token" outputs="value:l_tok.value" uid="l_tok" uid_parent="wl"/>
+    <Tunnel _id="In4" inputs="value:paths.value" outputs="value:l_paths.value" uid="l_paths" uid_parent="wl"/>
+    <ShiftReg uid="sre" uid_parent="wl">
+      <Left inputs="value:on.error out" outputs="value:err.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:nerr.v" outputs="value:err_end.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Constant outputs="value:wto.value" type="int32" uid="wto" uid_parent="wl" value="200"/>
+    <Constant outputs="value:nores.value" type="bool" uid="nores" uid_parent="wl" value="false"/>
+    <Node _name="TCP Wait On Listener" inputs="listener ID in:l_lis.value,?parm9:wto.value,resolve remote address (T):nores.value" outputs="connection ID:wol.connection ID,error out:wol.error out" uid="wol" uid_parent="wl"/>
+    <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:wol.error out" outputs="status:we.status,code:we.code" uid="we" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:we.status" outputs=".not. x?:got.v" uid="got" uid_parent="wl"/>
+    <Constant outputs="value:c56.value" type="int32" uid="c56" uid_parent="wl" value="56"/>
+    <Node _name="Not Equal?" inputs="x:we.code,y:c56.value" outputs="x != y?:n56.v" uid="n56" uid_parent="wl"/>
+    <Node _name="And" inputs="x:we.status,y:n56.v" outputs="x .and. y?:lfail.v" uid="lfail" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:wol.error out,s:lfail.v,f:err.value" outputs="s? t\3Af:nerr.v" uid="nerr" uid_parent="wl"/>
+    <Structure _name="Case Structure" selectin="got.v" uid="cs" uid_parent="wl">
+      <Tunnel _id="In1" inputs="value:wol.connection ID" uid="cs_i1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:l_tok.value" uid="cs_i2" uid_parent="cs"/>
+      <Tunnel _id="In3" inputs="value:l_paths.value" uid="cs_i3" uid_parent="cs"/>
+      <CaseFrame label="A connection\3A answer one request" selector="True" selectout="" uid="cst" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:t_c.value" uid="t_c" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:t_tok.value" uid="t_tok" uid_parent="cst"/>
+        <Tunnel _id="In3" outputs="value:t_paths.value" uid="t_paths" uid_parent="cst"/>
+        <Constant outputs="value:n4k.value" type="int32" uid="n4k" uid_parent="cst" value="16384"/>
+        <Constant outputs="value:rto.value" type="int32" uid="rto" uid_parent="cst" value="2000"/>
+        <Constant _name="immediate" outputs="value:imm.value" type="uint16{standard,buffered,CRLF,immediate}" uid="imm" uid_parent="cst" value="3"/>
+        <Node _name="TCP Read" inputs="connection ID:t_c.value,bytes to read:n4k.value,?parm9:rto.value,?parm7:imm.value" outputs="data out:rd.data out,error out:" uid="rd" uid_parent="cst"/>
+        <Constant outputs="value:u32t.value" type="uint32" uid="u32t" uid_parent="cst" value="0"/>
+        <Node _name="Type Cast" inputs="x:t_c.value,type:u32t.value" outputs="*(type *) &amp;x:cu.*(type *) &amp;x" uid="cu" uid_parent="cst"/>
+        <Call inputs="Request String:rd.data out" outputs="error out:pr.error out,Request out:pr.Request out" target="HTTP Utils.lvlib\3ARequest.lvclass\3AParse From String.vi" uid="pr" uid_parent="cst"/>
+        <Call inputs="Request in:pr.Request out" outputs="Request out:,Target URI:gu.Target URI" target="HTTP Utils.lvlib\3ARequest.lvclass\3AGet Target URI.vi" uid="gu" uid_parent="cst"/>
+        <Call inputs="URI in:gu.Target URI" outputs="Path:gp.Path" target="Stream.lvlib\3AURI.lvclass\3AGet Path.vi" uid="gp" uid_parent="cst"/>
+        <Call inputs="URI in:gu.Target URI" outputs="Query:gq.Query" target="Stream.lvlib\3AURI.lvclass\3AGet Query.vi" uid="gq" uid_parent="cst"/>
+        <Call inputs="query:gq.Query,token:t_tok.value" outputs="ok?:tc.ok?" target="RemoteVI Token Check.vi" uid="tc" uid_parent="cst"/>
+        <Node _name="Search 1D Array" inputs="1D array:t_paths.value,element:gp.Path" outputs="index of element:ip.v" uid="ip" uid_parent="cst"/>
+        <Node _name="Greater Or Equal To 0?" inputs="x:ip.v" outputs="x &gt;= 0?:known.v" uid="known" uid_parent="cst"/>
+        <Node _name="And" inputs="x:known.v,y:tc.ok?" outputs="x .and. y?:page.v" uid="page" uid_parent="cst"/>
+        <Constant outputs="value:s200.value" type="uint16" uid="s200" uid_parent="cst" value="200"/>
+        <Constant outputs="value:s403.value" type="uint16" uid="s403" uid_parent="cst" value="403"/>
+        <Constant outputs="value:s404.value" type="uint16" uid="s404" uid_parent="cst" value="404"/>
+        <Node _name="Select" inputs="t:s403.value,s:known.v,f:s404.value" outputs="s? t\3Af:bad.v" uid="bad" uid_parent="cst"/>
+        <Node _name="Select" inputs="t:s200.value,s:page.v,f:bad.v" outputs="s? t\3Af:status.v" uid="status" uid_parent="cst"/>
+        <Call inputs="" outputs="servers:st.servers,text:" target="RemoteVI Status.vi" uid="st" uid_parent="cst"/>
+        <Call inputs="status:st.servers" outputs="html:lp.html" target="RemoteVI Landing Page.vi" uid="lp" uid_parent="cst"/>
+        <Call inputs="connection:cu.*(type *) &amp;x,status:status.v,page?:page.v,html:lp.html" outputs="error out:" target="RemoteVI Send Static Response.vi" uid="ss" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame label="No connection" selector="False" selectout="" uid="csf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:" uid="f_c" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:" uid="f_tok" uid_parent="csf"/>
+        <Tunnel _id="In3" outputs="value:" uid="f_paths" uid_parent="csf"/>
+      </CaseFrame>
+    </Structure>
+    <Constant outputs="value:t0.value" type="int32" uid="t0" uid_parent="wl" value="0"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_not.value,timeout in ms (-1):t0.value" outputs="timed out?:wn.timed out?" uid="wn" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:wn.timed out?" outputs=".not. x?:gotstop.v" uid="gotstop" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:gotstop.v,y:lfail.v" outputs="x .or. y?:stop.v" uid="stop" uid_parent="wl"/>
+    <Tunnel _id="Out1" inputs="value:l_lis.value" outputs="value:lis_end.value" uid="lis_end" uid_parent="wl"/>
+    <Tunnel _id="Out2" inputs="value:l_not.value" outputs="value:not_end.value" uid="not_end" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Node _name="TCP Close Connection" inputs="connection ID:lis_end.value" outputs="" uid="lc" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:not_end.value" outputs="" uid="rn" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors creating the listener or obtaining the notifier\2C or the listener error that stopped the loop." inputs="value:err_end.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,48 @@
+<VI _name="RemoteVI Start Landing Page.vi" description="Starts RemoteVI Server's landing page\3A RemoteVI Landing Server.vi (found next to this VI) launched like a share (RemoteVI Launch Share.vi with loop VI)\2C so it also needs its own random token and listens on 127.0.0.1 unless whole network? is TRUE. When port is in use (error 60) the next port is tried\2C up to 20 ports\3B port out is the one that listens. Stop it with RemoteVI Stop.vi and port out.">
+  <Control _name="port" conIdx="5" connection="recommended" description="First port to try." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Control _name="whole network?" conIdx="1" connection="recommended" description="FALSE (default)\3A this computer only." outputs="value:wn.value" type="bool" uid="wn" uid_parent="root" value="false"/>
+  <Control _name="token" conIdx="2" connection="optional" description="Empty (default)\3A a new random token." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+VI Path" inputs="error in (no error):ei.value" outputs="error out:me.error out,VI Path:me.VI Path" type="{LV.VI}" uid="me" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:me.VI Path" outputs="stripped path:dir.stripped path" uid="dir" uid_parent="root"/>
+  <Constant outputs="value:lsn.value" type="string" uid="lsn" uid_parent="root" value="RemoteVI Landing Server.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:lsn.value" outputs="appended path:lsp.appended path" uid="lsp" uid_parent="root"/>
+  <Constant _name="no VI" outputs="value:novi.value" type="ref{LV.VI}" uid="novi" uid_parent="root" value=""/>
+  <Constant outputs="value:k0.value" type="uint64" uid="k0" uid_parent="root" value="0"/>
+  <Constant outputs="value:fps.value" type="double" uid="fps" uid_parent="root" value="1"/>
+  <Constant outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Constant outputs="value:one.value" type="uint16" uid="one" uid_parent="root" value="1"/>
+  <Constant outputs="value:c60.value" type="int32" uid="c60" uid_parent="root" value="60"/>
+  <Constant outputs="value:n20.value" type="int32" uid="n20" uid_parent="root" value="19"/>
+  <Structure _name="While Loop" count="wl.value" label="Next port while this one is in use" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:lsp.appended path" outputs="value:l_lsp.value" uid="l_lsp" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:novi.value" outputs="value:l_novi.value" uid="l_novi" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:k0.value" outputs="value:l_k0.value" uid="l_k0" uid_parent="wl"/>
+    <Tunnel _id="In4" inputs="value:fps.value" outputs="value:l_fps.value" uid="l_fps" uid_parent="wl"/>
+    <Tunnel _id="In5" inputs="value:wn.value" outputs="value:l_wn.value" uid="l_wn" uid_parent="wl"/>
+    <Tunnel _id="In6" inputs="value:tk.value" outputs="value:l_tk.value" uid="l_tk" uid_parent="wl"/>
+    <Tunnel _id="In7" inputs="value:fls.value" outputs="value:l_fls.value" uid="l_fls" uid_parent="wl"/>
+    <Tunnel _id="In8" inputs="value:me.error out" outputs="value:l_ei.value" uid="l_ei" uid_parent="wl"/>
+    <Tunnel _id="In9" inputs="value:one.value" outputs="value:l_one.value" uid="l_one" uid_parent="wl"/>
+    <Tunnel _id="In10" inputs="value:c60.value" outputs="value:l_60.value" uid="l_60" uid_parent="wl"/>
+    <Tunnel _id="In11" inputs="value:n20.value" outputs="value:l_n20.value" uid="l_n20" uid_parent="wl"/>
+    <ShiftReg uid="srp" uid_parent="wl">
+      <Left inputs="value:port.value" outputs="value:p.value" uid="srpl" uid_parent="srp"/>
+      <Right inputs="value:np.v" outputs="value:" uid="srpr" uid_parent="srp"/>
+    </ShiftReg>
+    <Call inputs="VI:l_novi.value,port:p.value,fps:l_fps.value,whole network?:l_wn.value,token:l_tk.value,view only?:l_fls.value,window:l_k0.value,loop VI:l_lsp.value,error in:l_ei.value" outputs="URL:ls.URL,error out:ls.error out" target="RemoteVI Launch Share.vi" uid="ls" uid_parent="wl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:ls.error out" outputs="code:ec.code" uid="ec" uid_parent="wl"/>
+    <Node _name="Equal?" inputs="x:ec.code,y:l_60.value" outputs="x = y?:inuse.v" uid="inuse" uid_parent="wl"/>
+    <Node _name="Less?" inputs="x:wl.value,y:l_n20.value" outputs="x &lt; y?:more.v" uid="more" uid_parent="wl"/>
+    <Node _name="And" inputs="x:inuse.v,y:more.v" outputs="x .and. y?:again.v" uid="again" uid_parent="wl"/>
+    <Node _name="Not" inputs="x:again.v" outputs=".not. x?:stop.v" uid="stop" uid_parent="wl"/>
+    <Node _name="Add" inputs="x:p.value,y:l_one.value" outputs="x+y:np.v" uid="np" uid_parent="wl"/>
+    <Tunnel _id="Out1" inputs="value:ls.URL" outputs="value:url.value" uid="url" uid_parent="wl"/>
+    <Tunnel _id="Out2" inputs="value:p.value" outputs="value:pout.value" uid="pout" uid_parent="wl"/>
+    <Tunnel _id="Out3" inputs="value:ls.error out" outputs="value:eout.value" uid="eout" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Indicator _name="URL" conIdx="4" connection="recommended" description="The landing page's link with its token." inputs="value:url.value" type="string" uid="o_u" uid_parent="root" value=""/>
+  <Indicator _name="port out" conIdx="6" connection="recommended" description="The port that listens." inputs="value:pout.value" type="uint16" uid="o_p" uid_parent="root" value="0"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="The error of the last try (60 when 20 ports were in use)." inputs="value:eout.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

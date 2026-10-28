@@ -111,6 +111,21 @@
 				<Item Name="build" Type="Folder">
 					<Item Name="Fixture Tab Panel.vi" Type="VI" URL="../tests/fixtures/build/Fixture Tab Panel.vi"/>
 				</Item>
+				<Item Name="RemoteVI Complex Fixture All Controls.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture All Controls.vi"/>
+				<Item Name="RemoteVI Complex Fixture Arrange.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Arrange.vi"/>
+				<Item Name="RemoteVI Complex Fixture Button Refs.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Button Refs.vi"/>
+				<Item Name="RemoteVI Complex Fixture Children.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Children.vi"/>
+				<Item Name="RemoteVI Complex Fixture Events.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Events.vi"/>
+				<Item Name="RemoteVI Complex Fixture Find Controls.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Find Controls.vi"/>
+				<Item Name="RemoteVI Complex Fixture Layout.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Layout.vi"/>
+				<Item Name="RemoteVI Complex Fixture Paste.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Paste.vi"/>
+				<Item Name="RemoteVI Complex Fixture Prep Panel.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Prep Panel.vi"/>
+				<Item Name="RemoteVI Complex Fixture Refs.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Refs.vi"/>
+				<Item Name="RemoteVI Complex Fixture Value Text.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Value Text.vi"/>
+				<Item Name="RemoteVI Complex Fixture.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture.vi"/>
+				<Item Name="RemoteVI Complex Inspector.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Inspector.vi"/>
+				<Item Name="RemoteVI Complex View A.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex View A.vi"/>
+				<Item Name="RemoteVI Complex View B.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex View B.vi"/>
 				<Item Name="RemoteVI Fixture Arrange.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture Arrange.vi"/>
 				<Item Name="RemoteVI Fixture Find Control.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture Find Control.vi"/>
 				<Item Name="RemoteVI Fixture Key Line.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture Key Line.vi"/>

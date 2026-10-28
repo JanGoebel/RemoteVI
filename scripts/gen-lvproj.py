@@ -13,6 +13,7 @@ exists" / "conflict" errors when VIs were re-added to RemoteVI.lvlib. So the pro
 
 Run it after adding or removing a VI outside source/:   python scripts/gen-lvproj.py
 """
+import subprocess
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -41,11 +42,17 @@ def item(path, indent):
     return f'{indent}<Item Name="{escape(path.name, {chr(34): "&quot;"})}" Type="{kind}" URL="../{escape(p, {chr(34): "&quot;"})}"/>'
 
 
+def ignored(path):
+    """True for a git-ignored file (build intermediates such as tests/fixtures/build/Complex Panel.vi)."""
+    r = subprocess.run(['git', 'check-ignore', '-q', str(path)], cwd=ROOT)
+    return r.returncode == 0
+
+
 def files(directory, recurse):
     d = ROOT / directory
     if not d.is_dir():
         return [], []
-    direct = sorted(f for f in d.iterdir() if f.is_file() and f.suffix.lower() in LV_EXT)
+    direct = sorted(f for f in d.iterdir() if f.is_file() and f.suffix.lower() in LV_EXT and not ignored(f))
     subs = sorted(s for s in d.iterdir() if s.is_dir() and recurse)
     return direct, subs
 

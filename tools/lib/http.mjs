@@ -119,3 +119,24 @@ export const SECURITY_HEADERS = Object.freeze({
   'Cache-Control': 'no-store',
   'Content-Security-Policy': "default-src 'none'; connect-src 'self'; img-src blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; frame-ancestors 'none'",
 });
+
+/**
+ * Access token check (docs/security.md): the query string of the request target must carry
+ * t=<token>. Every `?` counts as a parameter separator like `&` (the server may get the query
+ * with or without its leading `?`); the first `t` parameter is compared with the share's token
+ * in constant time. An empty token never matches (fail closed). Server/RemoteVI Token Check.vi,
+ * vectors tests/vectors/http.json -> tokens.
+ */
+export function tokenOk(query, token) {
+  if (!token) return false;
+  const q = `&${query.replace(/\?/g, '&')}`;
+  const at = q.indexOf('&t=');
+  if (at < 0) return false;
+  let v = q.slice(at + 3);
+  const end = v.indexOf('&');
+  if (end >= 0) v = v.slice(0, end);
+  if (v.length !== token.length) return false;
+  let d = 0;
+  for (let i = 0; i < v.length; i++) d |= v.charCodeAt(i) ^ token.charCodeAt(i);
+  return d === 0;
+}

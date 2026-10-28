@@ -18,7 +18,7 @@ import { dirtyRects } from './lib/rects.mjs';
 import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage, splittersMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
-import { LIMITS } from './lib/http.mjs';
+import { LIMITS, tokenOk } from './lib/http.mjs';
 
 const OUT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../tests/vectors');
 const hex = (u8) => Buffer.from(u8).toString('hex');
@@ -79,6 +79,8 @@ function websocketVectors() {
 
 // --- HTTP -------------------------------------------------------------------------------
 
+const TOKEN = '3f9a0c1d2e4b5a6978879695a4b3c2d1';
+
 function httpVectors() {
   const ok = 'GET /ws HTTP/1.1\r\nHost: 127.0.0.1:8080\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
     + 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n';
@@ -98,6 +100,24 @@ function httpVectors() {
       { name: 'too many headers', head: manyHeaders, status: 431 },
       { name: 'URI too long', head: `GET /${'a'.repeat(LIMITS.maxPathBytes)} HTTP/1.1\r\nHost: x\r\n\r\n`, status: 414 },
       { name: 'path traversal is just an unknown path', head: 'GET /../../etc/passwd HTTP/1.1\r\nHost: x\r\n\r\n', path: '/../../etc/passwd', upgrade: false },
+    ],
+    tokenDescription: 'Server/RemoteVI Token Check.vi: query is the request target after the path (with or without its ?), '
+      + 'token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches.',
+    token: TOKEN,
+    tokens: [
+      { name: 'only the token', query: 't=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('t=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
+      { name: 'with a leading ?', query: '?t=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('?t=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
+      { name: 'among other parameters', query: 'x=1&t=3f9a0c1d2e4b5a6978879695a4b3c2d1&y=2', ok: tokenOk('x=1&t=3f9a0c1d2e4b5a6978879695a4b3c2d1&y=2', TOKEN) },
+      { name: 'first t wins', query: 't=3f9a0c1d2e4b5a6978879695a4b3c2d1&t=wrong', ok: tokenOk('t=3f9a0c1d2e4b5a6978879695a4b3c2d1&t=wrong', TOKEN) },
+      { name: 'missing', query: 'x=1', ok: tokenOk('x=1', TOKEN) },
+      { name: 'empty query', query: '', ok: tokenOk('', TOKEN) },
+      { name: 'wrong token', query: 't=3f9a0c1d2e4b5a6978879695a4b3c2d2', ok: tokenOk('t=3f9a0c1d2e4b5a6978879695a4b3c2d2', TOKEN) },
+      { name: 'prefix only', query: 't=3f9a0c1d', ok: tokenOk('t=3f9a0c1d', TOKEN) },
+      { name: 'longer', query: 't=3f9a0c1d2e4b5a6978879695a4b3c2d100', ok: tokenOk('t=3f9a0c1d2e4b5a6978879695a4b3c2d100', TOKEN) },
+      { name: 'empty value', query: 't=', ok: tokenOk('t=', TOKEN) },
+      { name: 'other key ending in t', query: 'at=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('at=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
+      { name: 'uppercase key', query: 'T=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('T=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
+      { name: 'empty token never matches', query: 't=', emptyToken: true, ok: tokenOk('t=', '') },
     ],
   };
 }

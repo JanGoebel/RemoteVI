@@ -64,5 +64,75 @@
    "path": "/../../etc/passwd",
    "upgrade": false
   }
+ ],
+ "tokenDescription": "Server/RemoteVI Token Check.vi: query is the request target after the path (with or without its ?), token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches.",
+ "token": "3f9a0c1d2e4b5a6978879695a4b3c2d1",
+ "tokens": [
+  {
+   "name": "only the token",
+   "query": "t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+   "ok": true
+  },
+  {
+   "name": "with a leading ?",
+   "query": "?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+   "ok": true
+  },
+  {
+   "name": "among other parameters",
+   "query": "x=1&t=3f9a0c1d2e4b5a6978879695a4b3c2d1&y=2",
+   "ok": true
+  },
+  {
+   "name": "first t wins",
+   "query": "t=3f9a0c1d2e4b5a6978879695a4b3c2d1&t=wrong",
+   "ok": true
+  },
+  {
+   "name": "missing",
+   "query": "x=1",
+   "ok": false
+  },
+  {
+   "name": "empty query",
+   "query": "",
+   "ok": false
+  },
+  {
+   "name": "wrong token",
+   "query": "t=3f9a0c1d2e4b5a6978879695a4b3c2d2",
+   "ok": false
+  },
+  {
+   "name": "prefix only",
+   "query": "t=3f9a0c1d",
+   "ok": false
+  },
+  {
+   "name": "longer",
+   "query": "t=3f9a0c1d2e4b5a6978879695a4b3c2d100",
+   "ok": false
+  },
+  {
+   "name": "empty value",
+   "query": "t=",
+   "ok": false
+  },
+  {
+   "name": "other key ending in t",
+   "query": "at=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+   "ok": false
+  },
+  {
+   "name": "uppercase key",
+   "query": "T=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+   "ok": false
+  },
+  {
+   "name": "empty token never matches",
+   "query": "t=",
+   "emptyToken": true,
+   "ok": false
+  }
  ]
 }

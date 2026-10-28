@@ -6,11 +6,17 @@
 #   powershell -File tools\lv-share-url.ps1 -Port 8089
 param([int]$Port = 8089, [int]$TimeoutSeconds = 15)
 $ErrorActionPreference = 'Stop'
-$vi = Join-Path $PSScriptRoot '..\source\API\RemoteVI Status.vi' | Resolve-Path
-$lv = New-Object -ComObject LabVIEW.Application
+$vi = [string](Resolve-Path (Join-Path $PSScriptRoot '..\source\API\RemoteVI Status.vi'))
+try { $lv = [System.Runtime.InteropServices.Marshal]::GetActiveObject('LabVIEW.Application') }
+catch { $lv = New-Object -ComObject 'LabVIEW.Application' }
+# GetVIReference's arity differs between LabVIEW versions
+$r = $null
+foreach ($args2 in @(@($vi), @($vi, ''), @($vi, '', $false))) {
+  try { $r = $lv.GetVIReference.Invoke($args2); if ($r) { break } } catch { }
+}
+if (-not $r) { throw "cannot open $vi over LabVIEW's ActiveX server" }
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 while ($true) {
-  $r = $lv.GetVIReference([string]$vi, '', $false, 0)
   $r.Run($false)
   $text = [string]$r.GetControlValue('text')
   $m = [regex]::Match($text, "http://[^\s]+:$Port/\?t=[0-9A-Za-z]+")

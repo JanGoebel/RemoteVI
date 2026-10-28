@@ -4,6 +4,6 @@
   <Node _name="To Double Precision Float" inputs="number:now0.t" outputs="double precision float:now.v" uid="now" uid_parent="root"/>
   <Call inputs="raw:reg.servers,now:now.v" outputs="status:cv.status" target="RemoteVI Status Convert.vi" uid="cv" uid_parent="root"/>
   <Call inputs="status:cv.status" outputs="text:tx.text" target="RemoteVI Status Text.vi" uid="tx" uid_parent="root"/>
-  <Indicator _name="servers" conIdx="4" connection="recommended" description="One entry per share." inputs="value:cv.status" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error}}" uid="o_s" uid_parent="root" value="[]"/>
+  <Indicator _name="servers" conIdx="4" connection="recommended" description="One entry per share." inputs="value:cv.status" type="array{cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,bool.running,double.uptime s,array{cluster{string.address,double.connected s,double.idle s}}.clients,double.fps,double.kB per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}}" uid="o_s" uid_parent="root" value="[]"/>
   <Indicator _name="text" conIdx="6" connection="recommended" description="The status as readable text\2C one block per share." inputs="value:tx.text" type="string" uid="o_t" uid_parent="root" value=""/>
 </VI>

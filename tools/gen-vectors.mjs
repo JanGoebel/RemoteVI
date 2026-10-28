@@ -305,10 +305,10 @@ function statusVectors() {
     { port: 8088, url: 'http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1', target: 'RemoteVI Demo.vi', kind: 'VI',
       wholeNetwork: false, started: now - 65.4, updated: now - 0.3,
       clients: [{ address: '127.0.0.1', since: now - 10.2, lastInput: now - 2.7 }, { address: '192.168.1.5', since: now - 3700, lastInput: 0 }],
-      fps: 18.04, bytesPerS: 122900, frames: 1234, latencyMs: 35.2, viewOnly: false, lastError: '' },
+      fps: 18.04, bytesPerS: 122900, frames: 1234, latencyMs: 35.2, viewOnly: false, lastError: '', hWnd: 2429582 },
     { port: 8100, url: 'http://pc-17:8100/?t=00ff', target: 'Untitled - Notepad', kind: 'Window',
       wholeNetwork: true, started: now - 7300, updated: now - 5, clients: [],
-      fps: 0, bytesPerS: 0, frames: 0, latencyMs: 0, viewOnly: true, lastError: 'TCP Write: error 66' },
+      fps: 0, bytesPerS: 0, frames: 0, latencyMs: 0, viewOnly: true, lastError: 'TCP Write: error 66', hWnd: 0 },
   ];
   const converted = statusConvert(raw, now);
   return {

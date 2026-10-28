@@ -70,7 +70,8 @@
     "frames": 1234,
     "latencyMs": 35.2,
     "viewOnly": false,
-    "lastError": ""
+    "lastError": "",
+    "hWnd": 2429582
    },
    {
     "port": 8100,
@@ -86,7 +87,8 @@
     "frames": 0,
     "latencyMs": 0,
     "viewOnly": true,
-    "lastError": "TCP Write: error 66"
+    "lastError": "TCP Write: error 66",
+    "hWnd": 0
    }
   ],
   "status": [
@@ -115,7 +117,8 @@
     "frames": 1234,
     "latencyMs": 35.2,
     "viewOnly": false,
-    "lastError": ""
+    "lastError": "",
+    "hWnd": 2429582
    },
    {
     "port": 8100,
@@ -131,7 +134,8 @@
     "frames": 0,
     "latencyMs": 0,
     "viewOnly": true,
-    "lastError": "TCP Write: error 66"
+    "lastError": "TCP Write: error 66",
+    "hWnd": 0
    }
   ]
  },
@@ -169,7 +173,8 @@
      "frames": 1234,
      "latencyMs": 35.2,
      "viewOnly": false,
-     "lastError": ""
+     "lastError": "",
+     "hWnd": 2429582
     },
     {
      "port": 8100,
@@ -185,7 +190,8 @@
      "frames": 0,
      "latencyMs": 0,
      "viewOnly": true,
-     "lastError": "TCP Write: error 66"
+     "lastError": "TCP Write: error 66",
+     "hWnd": 0
     }
    ],
    "text": "Port 8088: RemoteVI Demo.vi (VI), running for 1 min 5 s, this computer only\n  http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\n  2 clients, 18.0 fps, 120 kB/s, 1234 frames, input to frame 35 ms\n  127.0.0.1, connected 10 s, last input 2 s ago\n  192.168.1.5, connected 1 h 1 min, no input yet\nPort 8100: Untitled - Notepad (Window), stopped, whole network, view only\n  http://pc-17:8100/?t=00ff\n  0 clients, 0.0 fps, 0 kB/s, 0 frames, input to frame 0 ms\n  last error: TCP Write: error 66"
@@ -213,7 +219,8 @@
      "frames": 1234,
      "latencyMs": 35.2,
      "viewOnly": false,
-     "lastError": ""
+     "lastError": "",
+     "hWnd": 2429582
     }
    ],
    "text": "Port 8088: RemoteVI Demo.vi (VI), running for 1 min 5 s, this computer only\n  http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\n  1 client, 18.0 fps, 120 kB/s, 1234 frames, input to frame 35 ms\n  127.0.0.1, connected 10 s, last input 2 s ago"

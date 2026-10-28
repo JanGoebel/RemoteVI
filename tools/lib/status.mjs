@@ -19,7 +19,7 @@ export function statusConvert(raw, now) {
       address: c.address, connected: now - c.since, idle: c.lastInput > 0 ? now - c.lastInput : -1,
     })),
     fps: r.fps, kBps: r.bytesPerS / 1024, frames: r.frames, latencyMs: r.latencyMs, viewOnly: r.viewOnly,
-    lastError: r.lastError,
+    lastError: r.lastError, hWnd: r.hWnd,
   }));
 }
 

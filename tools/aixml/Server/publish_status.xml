@@ -5,6 +5,7 @@
   <Control _name="captured?" conIdx="3" connection="recommended" description="TRUE when this iteration made a frame." outputs="value:cap.value" type="bool" uid="cap" uid_parent="root" value="false"/>
   <Control _name="clicked?" conIdx="5" connection="recommended" description="TRUE when a client posted a click or key in this iteration." outputs="value:clk.value" type="bool" uid="clk" uid_parent="root" value="false"/>
   <Control _name="error" conIdx="7" connection="recommended" description="The server loop's error\3B its source becomes last error." outputs="value:err.value" type="cluster{bool.status,int32.code,string.source}" uid="err" uid_parent="root" value="[false,0,]"/>
+  <Control _name="hWnd" conIdx="10" connection="recommended" description="The shared window (so other shares of this instance do not list it as one of their windows)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
   <Control _name="stop?" conIdx="8" connection="recommended" description="TRUE removes the entry (the server loop ends)." outputs="value:stp.value" type="bool" uid="stp" uid_parent="root" value="false"/>
   <Control _name="state" conIdx="9" connection="required" description="The statistics of the last call (a shift register in the server loop\3B all 0 at first)." outputs="value:si.value" type="cluster{double.last,uint32.frames,uint32.frames last,double.bytes last,double.click at,double.latency,double.fps,double.rate}" uid="si" uid_parent="root" value="[0,0,0,0,0,0,0,0]"/>
 
@@ -56,6 +57,7 @@
     <Tunnel _id="In13" inputs="value:s.last" uid="cs_i13" uid_parent="cs"/>
     <Tunnel _id="In14" inputs="value:s.fps" uid="cs_i14" uid_parent="cs"/>
     <Tunnel _id="In15" inputs="value:s.rate" uid="cs_i15" uid_parent="cs"/>
+    <Tunnel _id="In16" inputs="value:hw.value" uid="cs_i16" uid_parent="cs"/>
     <CaseFrame label="Due\3A publish (or remove)" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:p_inf.value" uid="p_inf" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:p_sta.value" uid="p_sta" uid_parent="cst"/>
@@ -72,6 +74,7 @@
       <Tunnel _id="In13" outputs="value:" uid="p_last" uid_parent="cst"/>
       <Tunnel _id="In14" outputs="value:" uid="p_fps0" uid_parent="cst"/>
       <Tunnel _id="In15" outputs="value:" uid="p_rate0" uid_parent="cst"/>
+      <Tunnel _id="In16" outputs="value:p_hw.value" uid="p_hw" uid_parent="cst"/>
       <Node _name="Subtract" inputs="x:p_fr.value,y:p_fl.value" outputs="x-y:df.v" uid="df" uid_parent="cst"/>
       <Node _name="To Double Precision Float" inputs="number:df.v" outputs="double precision float:dfd.v" uid="dfd" uid_parent="cst"/>
       <Node _name="Divide" inputs="x:dfd.v,y:p_dt.value" outputs="x/y:fps.v" uid="fps" uid_parent="cst"/>
@@ -83,8 +86,8 @@
       <Node _name="Unbundle By Name" fields="status,source" inputs="input cluster:p_err.value" outputs="status:pe.status,source:pe.source" uid="pe" uid_parent="cst"/>
       <Constant outputs="value:noerr.value" type="string" uid="noerr" uid_parent="cst" value=""/>
       <Node _name="Select" inputs="t:pe.source,s:pe.status,f:noerr.value" outputs="s? t\3Af:le.v" uid="le" uid_parent="cst"/>
-      <Constant _name="entry0" outputs="value:e0.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error}" uid="e0" uid_parent="cst" value="[0,,,,false,0,0,[],0,0,0,0,false,]"/>
-      <Node _name="Bundle By Name" fields="port,url,target,kind,whole network,started,updated,clients,fps,bytes per s,frames,latency ms,view only,last error" inputs="input cluster:e0.value,port:pi.port,url:pi.url,target:pi.target,kind:pi.kind,whole network:pi.wn,started:p_sta.value,updated:p_now.value,clients:p_en.value,fps:fps.v,bytes per s:rate.v,frames:p_fr.value,latency ms:p_lat.value,view only:pi.vo,last error:le.v" outputs="output cluster:ent.v" uid="ent" uid_parent="cst"/>
+      <Constant _name="entry0" outputs="value:e0.value" type="cluster{uint16.port,string.url,string.target,string.kind,bool.whole network,double.started,double.updated,array{cluster{string.address,double.since,double.last input}}.clients,double.fps,double.bytes per s,uint32.frames,double.latency ms,bool.view only,string.last error,uint64.hWnd}" uid="e0" uid_parent="cst" value="[0,,,,false,0,0,[],0,0,0,0,false,,0]"/>
+      <Node _name="Bundle By Name" fields="port,url,target,kind,whole network,started,updated,clients,fps,bytes per s,frames,latency ms,view only,last error,hWnd" inputs="hWnd:p_hw.value,input cluster:e0.value,port:pi.port,url:pi.url,target:pi.target,kind:pi.kind,whole network:pi.wn,started:p_sta.value,updated:p_now.value,clients:p_en.value,fps:fps.v,bytes per s:rate.v,frames:p_fr.value,latency ms:p_lat.value,view only:pi.vo,last error:le.v" outputs="output cluster:ent.v" uid="ent" uid_parent="cst"/>
       <Node _name="Not" inputs="x:p_stp.value" outputs=".not. x?:pub.v" uid="pub" uid_parent="cst"/>
       <Call inputs="publish?:pub.v,remove?:p_stp.value,status:ent.v" outputs="servers:" target="RemoteVI Status Registry.vi" uid="reg" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:p_now.value" uid="p_o1" uid_parent="cst"/>
@@ -109,6 +112,7 @@
       <Tunnel _id="In13" outputs="value:q_last.value" uid="q_last" uid_parent="csf"/>
       <Tunnel _id="In14" outputs="value:q_fps.value" uid="q_fps" uid_parent="csf"/>
       <Tunnel _id="In15" outputs="value:q_rate.value" uid="q_rate" uid_parent="csf"/>
+      <Tunnel _id="In16" outputs="value:" uid="q_hw" uid_parent="csf"/>
       <Tunnel _id="Out1" inputs="value:q_last.value" uid="q_o1" uid_parent="csf"/>
       <Tunnel _id="Out2" inputs="value:q_fl.value" uid="q_o2" uid_parent="csf"/>
       <Tunnel _id="Out3" inputs="value:q_bl.value" uid="q_o3" uid_parent="csf"/>

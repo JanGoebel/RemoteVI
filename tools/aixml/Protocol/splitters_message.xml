@@ -1,0 +1,24 @@
+<VI _name="RemoteVI Splitters Message.vi" description="Builds the text message splitters &lt;json&gt; (docs\5Cprotocol.md section 3.3) from the splitter bars RemoteVI Read Splitters.vi read\3A a JSON array with one object per bar\2C id (its index in bars)\2C x\2C y\2C w\2C h (the bar in frame coordinates)\2C vertical (true or false)\2C min and max (the range of its left edge for a vertical bar\2C its top edge for a horizontal one\2C in frame coordinates) in that order - splitters [] when there is none. The client drags a bar itself and answers s id pos. Pure function\2C cannot fail. Reference\3A splittersMessage() in tools\5Clib\5Cprotocol.mjs\2C vectors tests\5Cvectors\5Ctext.json (splitters).">
+  <FreeLabel comment="One JSON object per splitter bar\2C comma joined" uid="lbl" uid_parent="root"/>
+  <Control _name="bars" conIdx="0" connection="required" description="The splitter bars a user can drag\3A x\2C y\2C w\2C h in frame coordinates\2C vertical\2C and min\2C max of the left (vertical) or top (horizontal) edge." outputs="value:bl.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="bl" uid_parent="root" value="[]"/>
+  <Constant _name="object" outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="\2C{&quot;id&quot;\3A%d\2C&quot;x&quot;\3A%d\2C&quot;y&quot;\3A%d\2C&quot;w&quot;\3A%d\2C&quot;h&quot;\3A%d\2C&quot;vertical&quot;\3A%s\2C&quot;min&quot;\3A%d\2C&quot;max&quot;\3A%d}"/>
+  <Constant outputs="value:kt.value" type="string" uid="kt" uid_parent="root" value="true"/>
+  <Constant outputs="value:kf.value" type="string" uid="kf" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="fl.value" label="One object per bar" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:bl.value" mode="index" outputs="value:b.value" uid="b" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:fmt.value" outputs="value:t_f.value" uid="t_f" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:kt.value" outputs="value:t_t.value" uid="t_t" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:kf.value" outputs="value:t_n.value" uid="t_n" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="x,y,w,h,vertical,min,max" inputs="input cluster:b.value" outputs="x:u.x,y:u.y,w:u.w,h:u.h,vertical:u.v,min:u.min,max:u.max" uid="u" uid_parent="fl"/>
+    <Node _name="Select" inputs="t:t_t.value,s:u.v,f:t_n.value" outputs="s? t\3Af:vs.v" uid="vs" uid_parent="fl"/>
+    <Node _name="Format Into String" inputs="format string:t_f.value,input 1:fl.value,input 2:u.x,input 3:u.y,input 4:u.w,input 5:u.h,input 6:vs.v,input 7:u.min,input 8:u.max" outputs="resulting string:fs.v" uid="fs" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:fs.v" mode="index" outputs="value:objs.value" uid="objs" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:objs.value" outputs="concatenated string:all.v" uid="all" uid_parent="root"/>
+  <Constant _name="drop the leading comma" outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Node _name="String Subset" inputs="string:all.v,offset (0):one.value" outputs="substring:body.v" uid="body" uid_parent="root"/>
+  <Constant outputs="value:pre.value" type="string" uid="pre" uid_parent="root" value="splitters ["/>
+  <Constant outputs="value:post.value" type="string" uid="post" uid_parent="root" value="]"/>
+  <Node _name="Concatenate Strings" inputs="string:pre.value,string:body.v,string:post.value" outputs="concatenated string:msg.v" uid="msg" uid_parent="root"/>
+  <Indicator _name="message" conIdx="4" connection="recommended" description="The text message splitters [...]\2C to be sent as one WebSocket text frame." inputs="value:msg.v" type="string" uid="o_msg" uid_parent="root" value=""/>
+</VI>

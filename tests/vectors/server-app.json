@@ -1,0 +1,288 @@
+{
+ "description": "App/RemoteVI Window Rows.vi (raw top-level windows -> shareable rows: group|program|title|pid|hWnd, skip = the app's own window) and App/RemoteVI Landing Page.vi (status as RemoteVI Status.vi returns it -> HTML).",
+ "raw": [
+  {
+   "hWnd": 1001,
+   "pid": 4000,
+   "path": "C:\\Windows\\notepad.exe",
+   "cls": "Notepad",
+   "title": "notes.txt - Notepad",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1002,
+   "pid": 5000,
+   "path": "C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe",
+   "cls": "LVDChild",
+   "title": "RemoteVI Demo.vi",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1003,
+   "pid": 5000,
+   "path": "C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe",
+   "cls": "LVDChild",
+   "title": "RemoteVI Demo.vi Block Diagram",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1004,
+   "pid": 5000,
+   "path": "C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe",
+   "cls": "LVDChild",
+   "title": "RemoteVI.lvproj - Project Explorer",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1005,
+   "pid": 6000,
+   "path": "D:\\apps\\Test Stand.exe",
+   "cls": "LVDChild",
+   "title": "Main.vi",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1006,
+   "pid": 4000,
+   "path": "C:\\Windows\\notepad.exe",
+   "cls": "#32770",
+   "title": "Save As",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1007,
+   "pid": 7000,
+   "path": "C:\\Windows\\explorer.exe",
+   "cls": "Shell_TrayWnd",
+   "title": "",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1008,
+   "pid": 7000,
+   "path": "C:\\Windows\\explorer.exe",
+   "cls": "CabinetWClass",
+   "title": "Documents",
+   "visible": false,
+   "owned": false,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1009,
+   "pid": 8000,
+   "path": "C:\\tools\\Calc.exe",
+   "cls": "ApplicationFrameWindow",
+   "title": "Calculator",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1010,
+   "pid": 8000,
+   "path": "C:\\tools\\Calc.exe",
+   "cls": "Tip",
+   "title": "tool tip",
+   "visible": true,
+   "owned": false,
+   "exStyle": 128,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1011,
+   "pid": 5000,
+   "path": "C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe",
+   "cls": "LVDChild",
+   "title": "A first.vi",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1012,
+   "pid": 5000,
+   "path": "C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe",
+   "cls": "LVDChild",
+   "title": "RemoteVI Server",
+   "visible": true,
+   "owned": true,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1013,
+   "pid": 9000,
+   "path": "C:\\x\\zero.exe",
+   "cls": "Zero",
+   "title": "zero size",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 0,
+   "h": 300
+  }
+ ],
+ "windowRows": [
+  {
+   "name": "all programs",
+   "labviewOnly": false,
+   "skip": 1012,
+   "rows": [
+    "0|LabVIEW.exe|A first.vi|5000|1011",
+    "0|LabVIEW.exe|RemoteVI Demo.vi|5000|1002",
+    "1|Test Stand.exe|Main.vi|6000|1005",
+    "2|Calc.exe|Calculator|8000|1009",
+    "2|notepad.exe|notes.txt - Notepad|4000|1001"
+   ]
+  },
+  {
+   "name": "LabVIEW only",
+   "labviewOnly": true,
+   "skip": 1012,
+   "rows": [
+    "0|LabVIEW.exe|A first.vi|5000|1011",
+    "0|LabVIEW.exe|RemoteVI Demo.vi|5000|1002",
+    "1|Test Stand.exe|Main.vi|6000|1005"
+   ]
+  },
+  {
+   "name": "nothing skipped",
+   "labviewOnly": true,
+   "skip": 0,
+   "rows": [
+    "0|LabVIEW.exe|A first.vi|5000|1011",
+    "0|LabVIEW.exe|RemoteVI Demo.vi|5000|1002",
+    "0|LabVIEW.exe|RemoteVI Server|5000|1012",
+    "1|Test Stand.exe|Main.vi|6000|1005"
+   ]
+  }
+ ],
+ "landing": [
+  {
+   "name": "no share",
+   "status": [],
+   "html": "<!doctype html><html><head><meta charset=\"windows-1252\"><meta name=\"viewport\" content=\"width=device-width\"><title>RemoteVI Server</title><style>body{font:15px Segoe UI,Arial,sans-serif;margin:32px;color:#222}h1{font-size:22px}ul{list-style:none;padding:0}li{margin:10px 0;padding:12px 16px;border:1px solid #ccd;border-radius:8px}a{font-weight:600;color:#0b57d0;text-decoration:none}span{display:block;color:#666;font-size:13px}</style></head><body><h1>RemoteVI Server</h1><p>Nothing is shared right now.</p></body></html>"
+  },
+  {
+   "name": "one running, one stopped",
+   "status": [
+    {
+     "port": 8088,
+     "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+     "target": "RemoteVI Demo.vi",
+     "kind": "VI",
+     "wholeNetwork": false,
+     "running": true,
+     "uptime": 65.40000009536743,
+     "clients": [
+      {
+       "address": "127.0.0.1",
+       "connected": 10.199999809265137,
+       "idle": 2.6999998092651367
+      },
+      {
+       "address": "192.168.1.5",
+       "connected": 3700,
+       "idle": -1
+      }
+     ],
+     "fps": 18.04,
+     "kBps": 120.01953125,
+     "frames": 1234,
+     "latencyMs": 35.2,
+     "viewOnly": false,
+     "lastError": "",
+     "hWnd": 2429582
+    },
+    {
+     "port": 8100,
+     "url": "http://pc-17:8100/?t=00ff",
+     "target": "Untitled - Notepad",
+     "kind": "Window",
+     "wholeNetwork": true,
+     "running": false,
+     "uptime": 7300,
+     "clients": [],
+     "fps": 0,
+     "kBps": 0,
+     "frames": 0,
+     "latencyMs": 0,
+     "viewOnly": true,
+     "lastError": "TCP Write: error 66",
+     "hWnd": 0
+    }
+   ],
+   "html": "<!doctype html><html><head><meta charset=\"windows-1252\"><meta name=\"viewport\" content=\"width=device-width\"><title>RemoteVI Server</title><style>body{font:15px Segoe UI,Arial,sans-serif;margin:32px;color:#222}h1{font-size:22px}ul{list-style:none;padding:0}li{margin:10px 0;padding:12px 16px;border:1px solid #ccd;border-radius:8px}a{font-weight:600;color:#0b57d0;text-decoration:none}span{display:block;color:#666;font-size:13px}</style></head><body><h1>RemoteVI Server</h1><ul><li><a href=\"http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\">RemoteVI Demo.vi</a><span>VI - port 8088</span></li></ul></body></html>"
+  },
+  {
+   "name": "escaped title",
+   "status": [
+    {
+     "port": 8088,
+     "url": "http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1",
+     "target": "a<b> & \"c\"",
+     "kind": "VI",
+     "wholeNetwork": true,
+     "running": true,
+     "uptime": 65.40000009536743,
+     "clients": [
+      {
+       "address": "127.0.0.1",
+       "connected": 10.199999809265137,
+       "idle": 2.6999998092651367
+      },
+      {
+       "address": "192.168.1.5",
+       "connected": 3700,
+       "idle": -1
+      }
+     ],
+     "fps": 18.04,
+     "kBps": 120.01953125,
+     "frames": 1234,
+     "latencyMs": 35.2,
+     "viewOnly": true,
+     "lastError": "",
+     "hWnd": 2429582
+    }
+   ],
+   "html": "<!doctype html><html><head><meta charset=\"windows-1252\"><meta name=\"viewport\" content=\"width=device-width\"><title>RemoteVI Server</title><style>body{font:15px Segoe UI,Arial,sans-serif;margin:32px;color:#222}h1{font-size:22px}ul{list-style:none;padding:0}li{margin:10px 0;padding:12px 16px;border:1px solid #ccd;border-radius:8px}a{font-weight:600;color:#0b57d0;text-decoration:none}span{display:block;color:#666;font-size:13px}</style></head><body><h1>RemoteVI Server</h1><ul><li><a href=\"http://127.0.0.1:8088/?t=3f9a0c1d2e4b5a6978879695a4b3c2d1\">a&lt;b&gt; &amp; &quot;c&quot;</a><span>VI - port 8088, whole network, view only</span></li></ul></body></html>"
+  }
+ ]
+}

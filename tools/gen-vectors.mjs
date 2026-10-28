@@ -18,6 +18,7 @@ import { dirtyRects } from './lib/rects.mjs';
 import { encodeFrame, encodeOverlay, encodeWindowFrame, parseInput, mouseLParam, jsonString, tipsMessage, splittersMessage } from './lib/protocol.mjs';
 import { translateInput, trackModifiers } from './lib/input.mjs';
 import { statusConvert, statusText, formatDuration } from './lib/status.mjs';
+import { windowRows, renderRow, landingPage } from './lib/server-app.mjs';
 import { acceptKey, encodeServerFrame } from './lib/websocket.mjs';
 import { LIMITS, tokenOk } from './lib/http.mjs';
 
@@ -326,6 +327,44 @@ function statusVectors() {
   };
 }
 
+// --- RemoteVI Server app ------------------------------------------------------------------
+
+function serverAppVectors() {
+  const w = (hWnd, pid, path, cls, title, extra = {}) => ({ hWnd, pid, path, cls, title, visible: true, owned: false, exStyle: 0, w: 400, h: 300, ...extra });
+  const raw = [
+    w(1001, 4000, 'C:\\Windows\\notepad.exe', 'Notepad', 'notes.txt - Notepad'),
+    w(1002, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'RemoteVI Demo.vi', { owned: true }),
+    w(1003, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'RemoteVI Demo.vi Block Diagram', { owned: true }),
+    w(1004, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'RemoteVI.lvproj - Project Explorer', { owned: true }),
+    w(1005, 6000, 'D:\\apps\\Test Stand.exe', 'LVDChild', 'Main.vi', { owned: true }),
+    w(1006, 4000, 'C:\\Windows\\notepad.exe', '#32770', 'Save As', { owned: true }),
+    w(1007, 7000, 'C:\\Windows\\explorer.exe', 'Shell_TrayWnd', ''),
+    w(1008, 7000, 'C:\\Windows\\explorer.exe', 'CabinetWClass', 'Documents', { visible: false }),
+    w(1009, 8000, 'C:\\tools\\Calc.exe', 'ApplicationFrameWindow', 'Calculator'),
+    w(1010, 8000, 'C:\\tools\\Calc.exe', 'Tip', 'tool tip', { exStyle: 0x80 }),
+    w(1011, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'A first.vi', { owned: true }),
+    w(1012, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'RemoteVI Server', { owned: true }),
+    w(1013, 9000, 'C:\\x\\zero.exe', 'Zero', 'zero size', { w: 0 }),
+  ];
+  const statusVec = statusVectors().convert.status;
+  return {
+    description: 'App/RemoteVI Window Rows.vi (raw top-level windows -> shareable rows: group|program|title|pid|hWnd, '
+      + 'skip = the app\'s own window) and App/RemoteVI Landing Page.vi (status as RemoteVI Status.vi returns it -> HTML).',
+    raw,
+    windowRows: [
+      { name: 'all programs', labviewOnly: false, skip: 1012, rows: windowRows(raw, { skip: 1012 }).map(renderRow) },
+      { name: 'LabVIEW only', labviewOnly: true, skip: 1012, rows: windowRows(raw, { labviewOnly: true, skip: 1012 }).map(renderRow) },
+      { name: 'nothing skipped', labviewOnly: true, skip: 0, rows: windowRows(raw, { labviewOnly: true }).map(renderRow) },
+    ],
+    landing: [
+      { name: 'no share', status: [], html: landingPage([]) },
+      { name: 'one running, one stopped', status: statusVec, html: landingPage(statusVec) },
+      { name: 'escaped title', status: [{ ...statusVec[0], target: 'a<b> & "c"', viewOnly: true, wholeNetwork: true }],
+        html: landingPage([{ ...statusVec[0], target: 'a<b> & "c"', viewOnly: true, wholeNetwork: true }]) },
+    ],
+  };
+}
+
 export function buildVectors() {
   return {
     'websocket.json': websocketVectors(),
@@ -336,6 +375,7 @@ export function buildVectors() {
     'translate.json': translateVectors(),
     'text.json': textVectors(),
     'status.json': statusVectors(),
+    'server-app.json': serverAppVectors(),
   };
 }
 

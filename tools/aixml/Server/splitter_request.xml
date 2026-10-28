@@ -1,0 +1,23 @@
+<VI _name="RemoteVI Splitter Request.vi" description="Keeps the splitter move a client asked for (s id pos\2C docs\5Cprotocol.md section 4) until the server loop may make VI Server calls - a functional global (a Feedback Node outside any loop\2C initialized on the first call only\2C so the state survives between calls of this non-reentrant VI). put? TRUE (RemoteVI Handle Text Message.vi) stores id and pos for the panel hWnd\2C replacing a move not applied yet. put? FALSE (RemoteVI Apply Splitter.vi) takes the move stored for hWnd\3A pending? is TRUE and id out\2C pos out are the move\2C which is then forgotten\3B a move stored for another panel (another server of this LabVIEW instance) stays. One slot\3A the moves of two servers within one loop iteration keep the later one. Pure G\2C no I/O.">
+  <Control _name="put?" conIdx="0" connection="recommended" description="TRUE stores a move\2C FALSE takes the move stored for hWnd." outputs="value:put.value" type="bool" uid="put" uid_parent="root" value="false"/>
+  <Control _name="hWnd" conIdx="1" connection="required" description="The published panel's window handle." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="id" conIdx="2" connection="recommended" description="Splitter bar id (index in the splitters message) to store." outputs="value:id.value" type="uint64" uid="id" uid_parent="root" value="0"/>
+  <Control _name="pos" conIdx="3" connection="recommended" description="New frame coordinate of the bar's left (vertical) or top (horizontal) edge to store." outputs="value:pos.value" type="int32" uid="pos" uid_parent="root" value="0"/>
+  <Constant _name="nothing yet" outputs="value:init.value" type="cluster{bool.valid,uint64.hWnd,uint64.id,int32.pos}" uid="init" uid_parent="root" value="[false,0,0,0]"/>
+  <Node _name="Feedback Node" inputs="initializer:init.value,next value:nx.s? t\3Af" outputs="previous value:fb.previous value" uid="fb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="valid,hWnd,id,pos" inputs="input cluster:fb.previous value" outputs="valid:ps.valid,hWnd:ps.hWnd,id:ps.id,pos:ps.pos" uid="ps" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:ps.hWnd,y:hw.value" outputs="x = y?:same.v" uid="same" uid_parent="root"/>
+  <Node _name="And" inputs="x:ps.valid,y:same.v" outputs="x .and. y?:mine.v" uid="mine" uid_parent="root"/>
+  <Node _name="Not" inputs="x:put.value" outputs=".not. x?:take.v" uid="take" uid_parent="root"/>
+  <Node _name="And" inputs="x:take.v,y:mine.v" outputs="x .and. y?:got.v" uid="got" uid_parent="root"/>
+  <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="root" value="true"/>
+  <Constant outputs="value:kf.value" type="bool" uid="kf" uid_parent="root" value="false"/>
+  <Node _name="Bundle By Name" fields="valid,hWnd,id,pos" inputs="input cluster:init.value,valid:kt.value,hWnd:hw.value,id:id.value,pos:pos.value" outputs="output cluster:stored.v" uid="stored" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="valid" inputs="input cluster:fb.previous value,valid:kf.value" outputs="output cluster:taken.v" uid="taken" uid_parent="root"/>
+  <Node _name="Select" inputs="t:taken.v,s:got.v,f:fb.previous value" outputs="s? t\3Af:kp.s? t\3Af" uid="kp" uid_parent="root"/>
+  <Node _name="Select" inputs="t:stored.v,s:put.value,f:kp.s? t\3Af" outputs="s? t\3Af:nx.s? t\3Af" uid="nx" uid_parent="root"/>
+  <FreeLabel comment="One move kept between calls" uid="lbl" uid_parent="root"/>
+  <Indicator _name="pending?" conIdx="4" connection="recommended" description="put? FALSE\3A TRUE when a move for hWnd was stored (and is now taken)." inputs="value:got.v" type="bool" uid="o_p" uid_parent="root" value="false"/>
+  <Indicator _name="id out" conIdx="5" connection="recommended" description="The bar id of the taken move." inputs="value:ps.id" type="uint64" uid="o_id" uid_parent="root" value="0"/>
+  <Indicator _name="pos out" conIdx="6" connection="recommended" description="The edge position of the taken move (frame coordinates)." inputs="value:ps.pos" type="int32" uid="o_pos" uid_parent="root" value="0"/>
+</VI>

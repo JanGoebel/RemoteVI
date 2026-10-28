@@ -1,0 +1,68 @@
+<VI _name="RemoteVI Apply Splitter.vi" description="Moves a splitter bar a client dragged (s id pos\2C docs\5Cprotocol.md section 4) - LabVIEW moves a splitter bar only while it tracks the real mouse\2C which the server never moves\2C so the bar is set through VI Server instead. Only while busy? is FALSE (no popup and no modal window is open\3A a VI Server call would block in their modal loop)\2C the move stored for hWnd is taken from RemoteVI Splitter Request.vi\3B while busy it stays stored. The bar is element id of {LV.Panel} Splitters[] of VI's panel\3B bars (RemoteVI Read Splitters.vi) says where its edge is in the frame\2C so its {LV.Splitter} Position becomes Position + (pos - edge)\2C with edge the bar's x for a vertical bar and y for a horizontal one. LabVIEW keeps its own minimum pane sizes. An id that is no bar of bars does nothing. moved? is TRUE when a Position was written without error\3B the server loop then reads the bars\2C tips and origin again.">
+  <Control _name="VI" conIdx="0" connection="required" description="The VI whose front panel is published." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
+  <Control _name="hWnd" conIdx="1" connection="required" description="The published panel's window handle (the key of the stored move)." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="bars" conIdx="2" connection="required" description="The bars of the last splitters message (RemoteVI Read Splitters.vi)\3B the index is the id." outputs="value:bl.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="bl" uid_parent="root" value="[]"/>
+  <Control _name="busy?" conIdx="3" connection="required" description="TRUE while a popup or a modal window is open\3A nothing is done." outputs="value:bz.value" type="bool" uid="bz" uid_parent="root" value="false"/>
+  <Node _name="Not" inputs="x:bz.value" outputs=".not. x?:free.v" uid="free" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="free.v" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:hw.value" uid="cs_i2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:bl.value" uid="cs_i3" uid_parent="cs"/>
+    <CaseFrame label="Free\3A take a stored move" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_vi.value" uid="t_vi" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_bl.value" uid="t_bl" uid_parent="cst"/>
+      <Constant outputs="value:kf.value" type="bool" uid="kf" uid_parent="cst" value="false"/>
+      <Call inputs="put?:kf.value,hWnd:t_hw.value" outputs="pending?:rq.pending?,id out:rq.id out,pos out:rq.pos out" target="RemoteVI Splitter Request.vi" uid="rq" uid_parent="cst"/>
+      <Node _name="To Long Integer" inputs="number:rq.id out" outputs="32bit integer:ix.v" uid="ix" uid_parent="cst"/>
+      <Node _name="Array Size" inputs="array:t_bl.value" outputs="size(s):sz.v" uid="sz" uid_parent="cst"/>
+      <Node _name="Less?" inputs="x:ix.v,y:sz.v" outputs="x &lt; y?:inr.v" uid="inr" uid_parent="cst"/>
+      <Node _name="And" inputs="x:rq.pending?,y:inr.v" outputs="x .and. y?:go.v" uid="go" uid_parent="cst"/>
+      <Structure _name="Case Structure" selectin="go.v" uid="cm" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:t_vi.value" uid="cm_i1" uid_parent="cm"/>
+        <Tunnel _id="In2" inputs="value:t_bl.value" uid="cm_i2" uid_parent="cm"/>
+        <Tunnel _id="In3" inputs="value:ix.v" uid="cm_i3" uid_parent="cm"/>
+        <Tunnel _id="In4" inputs="value:rq.pos out" uid="cm_i4" uid_parent="cm"/>
+        <CaseFrame label="Set the splitter's Position" selector="True" selectout="" uid="cmt" uid_parent="cm">
+          <Tunnel _id="In1" outputs="value:m_vi.value" uid="m_vi" uid_parent="cmt"/>
+          <Tunnel _id="In2" outputs="value:m_bl.value" uid="m_bl" uid_parent="cmt"/>
+          <Tunnel _id="In3" outputs="value:m_ix.value" uid="m_ix" uid_parent="cmt"/>
+          <Tunnel _id="In4" outputs="value:m_pos.value" uid="m_pos" uid_parent="cmt"/>
+          <Node _name="Index Array" inputs="array:m_bl.value,index:m_ix.value" outputs="element:bar.v" uid="bar" uid_parent="cmt"/>
+          <Node _name="Unbundle By Name" fields="x,y,vertical" inputs="input cluster:bar.v" outputs="x:ub.x,y:ub.y,vertical:ub.v" uid="ub" uid_parent="cmt"/>
+          <Node _name="Select" inputs="t:ub.x,s:ub.v,f:ub.y" outputs="s? t\3Af:edge.v" uid="edge" uid_parent="cmt"/>
+          <Node _name="Subtract" inputs="x:m_pos.value,y:edge.v" outputs="x-y:dl.x-y" uid="dl" uid_parent="cmt"/>
+          <Node _name="Property Node" fields="read+Front Panel" inputs="reference:m_vi.value,error in (no error):" outputs="Front Panel:vp.fp,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="cmt"/>
+          <Node _name="Property Node" fields="read+Splitters[]" inputs="reference:vp.fp,error in (no error):vp.error out" outputs="reference out:,error out:ps.error out,Splitters[]:ps.sp" type="{LV.Panel}" uid="ps" uid_parent="cmt"/>
+          <Node _name="Index Array" inputs="array:ps.sp,index:m_ix.value" outputs="element:sp1.v" uid="sp1" uid_parent="cmt"/>
+          <Node _name="Property Node" fields="read+Position" inputs="reference:sp1.v,error in (no error):ps.error out" outputs="reference out:,error out:rp.error out,Position:rp.pos" type="{LV.Splitter}" uid="rp" uid_parent="cmt"/>
+          <Node _name="Add" inputs="x:rp.pos,y:dl.x-y" outputs="x+y:np.x+y" uid="np" uid_parent="cmt"/>
+          <Node _name="Property Node" fields="write+Position" inputs="reference:sp1.v,error in (no error):rp.error out,Position:np.x+y" outputs="reference out:,error out:wp.error out" type="{LV.Splitter}" uid="wp" uid_parent="cmt"/>
+          <Node _name="Close Reference" inputs="reference:vp.fp,error in (no error):wp.error out" outputs="error out:" uid="crp" uid_parent="cmt"/>
+          <Node _name="Unbundle By Name" fields="status" inputs="input cluster:wp.error out" outputs="status:es.status" uid="es" uid_parent="cmt"/>
+          <Node _name="Not" inputs="x:es.status" outputs=".not. x?:ok.v" uid="ok" uid_parent="cmt"/>
+          <Tunnel _id="Out1" inputs="value:ok.v" uid="m_o1" uid_parent="cmt"/>
+        </CaseFrame>
+        <CaseFrame label="No move" selector="False" selectout="" uid="cmf" uid_parent="cm">
+          <Tunnel _id="In1" outputs="value:" uid="n_vi" uid_parent="cmf"/>
+          <Tunnel _id="In2" outputs="value:" uid="n_bl" uid_parent="cmf"/>
+          <Tunnel _id="In3" outputs="value:" uid="n_ix" uid_parent="cmf"/>
+          <Tunnel _id="In4" outputs="value:" uid="n_pos" uid_parent="cmf"/>
+          <Constant outputs="value:nf.value" type="bool" uid="nf" uid_parent="cmf" value="false"/>
+          <Tunnel _id="Out1" inputs="value:nf.value" uid="n_o1" uid_parent="cmf"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:cm_o1.value" uid="cm_o1" uid_parent="cm"/>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:cm_o1.value" uid="t_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Busy\3A keep the move stored" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:" uid="f_vi" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_hw" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_bl" uid_parent="csf"/>
+      <Constant outputs="value:ff.value" type="bool" uid="ff" uid_parent="csf" value="false"/>
+      <Tunnel _id="Out1" inputs="value:ff.value" uid="f_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+  </Structure>
+  <Indicator _name="moved?" conIdx="4" connection="recommended" description="TRUE when a splitter's Position was written without error." inputs="value:cs_o1.value" type="bool" uid="o_mv" uid_parent="root" value="false"/>
+</VI>

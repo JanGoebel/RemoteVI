@@ -1,7 +1,8 @@
 <VI _name="RemoteVI Serve Pending Connection.vi" description="One step for one pending (accepted but not yet answered) connection\2C without blocking\3A reads what has arrived of the request head (RemoteVI Read Request Head.vi\2C timeout 0). A complete head is served by RemoteVI Handle Connection.vi (keep? FALSE\3B websocket? TRUE when it was upgraded - the caller then owns the connection as a client). A connection that is gone or has been pending for 5 s or more (now - accepted\2C a browser's speculative preconnect that never sends a request) is closed (keep? FALSE). Otherwise it stays pending with the bytes read so far (keep? TRUE). connection is the TCP connection refnum type-cast to U32.">
-  <Control _name="pending" conIdx="0" connection="required" description="The pending connection\3A connection (TCP refnum as U32)\2C head (bytes read so far)\2C accepted (tick count ms when it was accepted)." outputs="value:pin.value" type="cluster{uint32.connection,string.head,uint32.accepted}" uid="pin" uid_parent="root" value="[0,,0]"/>
+  <Control _name="pending" conIdx="0" connection="required" description="The pending connection\3A connection (TCP refnum as U32)\2C head (bytes read so far)\2C accepted (tick count ms when it was accepted)." outputs="value:pin.value" type="cluster{uint32.connection,string.head,uint32.accepted,string.address}" uid="pin" uid_parent="root" value="[0,,0,]"/>
   <Control _name="html" conIdx="5" connection="required" description="The page served for / and /index.html." outputs="value:html.value" type="string" uid="html" uid_parent="root" value=""/>
   <Control _name="max clients reached?" conIdx="7" connection="recommended" description="TRUE answers a WebSocket upgrade with 503." outputs="value:maxr.value" type="bool" uid="maxr" uid_parent="root" value="false"/>
+  <Control _name="token" conIdx="1" connection="required" description="The share's access token (RemoteVI Token Check.vi)." outputs="value:tok.value" type="string" uid="tok" uid_parent="root" value=""/>
   <Control _name="now" conIdx="9" connection="required" description="Tick count (ms) of this server loop iteration." outputs="value:now.value" type="uint32" uid="now" uid_parent="root" value="0"/>
 
   <Node _name="Unbundle By Name" fields="connection,head,accepted" inputs="input cluster:pin.value" outputs="connection:pu.connection,head:pu.head,accepted:pu.accepted" uid="pu" uid_parent="root"/>
@@ -18,13 +19,15 @@
     <Tunnel _id="In3" inputs="value:html.value" uid="cs_i3" uid_parent="cs"/>
     <Tunnel _id="In4" inputs="value:maxr.value" uid="cs_i4" uid_parent="cs"/>
     <Tunnel _id="In5" inputs="value:drop.x .or. y?" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:tok.value" uid="cs_i6" uid_parent="cs"/>
     <CaseFrame label="Head complete\3A serve the request" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_c.value" uid="t_c" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_h.value" uid="t_h" uid_parent="cst"/>
       <Tunnel _id="In3" outputs="value:t_ht.value" uid="t_ht" uid_parent="cst"/>
       <Tunnel _id="In4" outputs="value:t_mx.value" uid="t_mx" uid_parent="cst"/>
       <Tunnel _id="In5" outputs="value:" uid="t_dr" uid_parent="cst"/>
-      <Call inputs="connection:t_c.value,html:t_ht.value,max clients reached?:t_mx.value,request head:t_h.value" outputs="websocket?:hc.websocket?,error out:" target="RemoteVI Handle Connection.vi" uid="hc" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:t_tok.value" uid="t_tok" uid_parent="cst"/>
+      <Call inputs="connection:t_c.value,html:t_ht.value,max clients reached?:t_mx.value,request head:t_h.value,token:t_tok.value" outputs="websocket?:hc.websocket?,error out:" target="RemoteVI Handle Connection.vi" uid="hc" uid_parent="cst"/>
       <Constant outputs="value:tf.value" type="bool" uid="tf" uid_parent="cst" value="false"/>
       <Tunnel _id="Out1" inputs="value:tf.value" uid="t_o1" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:hc.websocket?" uid="t_o2" uid_parent="cst"/>
@@ -35,6 +38,7 @@
       <Tunnel _id="In3" outputs="value:" uid="f_ht" uid_parent="csf"/>
       <Tunnel _id="In4" outputs="value:" uid="f_mx" uid_parent="csf"/>
       <Tunnel _id="In5" outputs="value:f_dr.value" uid="f_dr" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:" uid="f_tok" uid_parent="csf"/>
       <Structure _name="Case Structure" selectin="f_dr.value" uid="cd" uid_parent="csf">
         <Tunnel _id="In1" inputs="value:f_c.value" uid="cd_i1" uid_parent="cd"/>
         <CaseFrame label="Gone or idle for 5 s\3A close it" selector="True" selectout="" uid="cdt" uid_parent="cd">
@@ -65,7 +69,7 @@
     <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
   </Structure>
 
-  <Indicator _name="pending out" conIdx="4" connection="recommended" description="pending with head extended by the bytes read now." inputs="value:pout.output cluster" type="cluster{uint32.connection,string.head,uint32.accepted}" uid="o_p" uid_parent="root" value="[0,,0]"/>
+  <Indicator _name="pending out" conIdx="4" connection="recommended" description="pending with head extended by the bytes read now." inputs="value:pout.output cluster" type="cluster{uint32.connection,string.head,uint32.accepted,string.address}" uid="o_p" uid_parent="root" value="[0,,0,]"/>
   <Indicator _name="keep?" conIdx="6" connection="recommended" description="TRUE when the connection is still pending (head incomplete\2C younger than 5 s\2C peer still there)." inputs="value:cs_o1.value" type="bool" uid="o_k" uid_parent="root" value="false"/>
   <Indicator _name="websocket?" conIdx="8" connection="recommended" description="TRUE when the request was a WebSocket upgrade that succeeded\3B the connection stays open and the caller adds it as a client." inputs="value:cs_o2.value" type="bool" uid="o_ws" uid_parent="root" value="false"/>
 </VI>

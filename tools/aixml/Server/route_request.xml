@@ -1,8 +1,9 @@
-<VI _name="RemoteVI Route Request.vi" description="Decides the HTTP status of a request from its path (docs\5Cprotocol.md section 1)\3A / and /index.html give 200 (page? TRUE)\3B /ws gives 426 without a WebSocket upgrade\2C 403 when the request is cross-origin\2C 503 when max clients reached? is TRUE\2C and otherwise 101 (switch to WebSocket)\3B any other path gives 404. Pure. Used by RemoteVI Handle Connection.vi.">
+<VI _name="RemoteVI Route Request.vi" description="Decides the HTTP status of a request from its path (docs\5Cprotocol.md section 1)\3A / and /index.html give 200 (page? TRUE)\3B both these and /ws give 403 when token ok? is FALSE (no or a wrong access token\2C docs\5Csecurity.md)\3B /ws gives 426 without a WebSocket upgrade\2C 403 when the request is cross-origin\2C 503 when max clients reached? is TRUE\2C and otherwise 101 (switch to WebSocket)\3B any other path gives 404. Pure. Used by RemoteVI Handle Connection.vi.">
   <Control _name="path" conIdx="0" connection="required" description="Path of the request target\2C e.g. /ws." outputs="value:path.value" type="string" uid="path" uid_parent="root" value=""/>
   <Control _name="upgrade request?" conIdx="5" connection="required" description="TRUE when the request asks for a WebSocket upgrade." outputs="value:upg.value" type="bool" uid="upg" uid_parent="root" value="false"/>
   <Control _name="cross origin?" conIdx="7" connection="required" description="From RemoteVI Cross Origin.vi." outputs="value:xo.value" type="bool" uid="xo" uid_parent="root" value="false"/>
   <Control _name="max clients reached?" conIdx="9" connection="recommended" description="TRUE answers a WebSocket upgrade with 503." outputs="value:maxr.value" type="bool" uid="maxr" uid_parent="root" value="false"/>
+  <Control _name="token ok?" conIdx="11" connection="required" description="TRUE when the request carries the share's access token (RemoteVI Token Check.vi)." outputs="value:tok.value" type="bool" uid="tok" uid_parent="root" value="false"/>
   <Constant outputs="value:paths.value" type="array{string}" uid="paths" uid_parent="root" value="[/,/index.html,/ws]"/>
   <Node _name="Search 1D Array" inputs="1D array:paths.value,element:path.value" outputs="index of element:sa.index of element" uid="sa" uid_parent="root"/>
   <Node _name="Increment" inputs="x:sa.index of element" outputs="x+1:inc.x+1" uid="inc" uid_parent="root"/>
@@ -24,6 +25,11 @@
   <Node _name="Select" inputs="t:s426.value,s:noup..not. x?,f:w2.s? t\3Af" outputs="s? t\3Af:w3.s? t\3Af" uid="w3" uid_parent="root"/>
   <Node _name="Select" inputs="t:s200.value,s:isPage.x = y?,f:s404.value" outputs="s? t\3Af:p1.s? t\3Af" uid="p1" uid_parent="root"/>
   <Node _name="Select" inputs="t:w3.s? t\3Af,s:isWs.x = y?,f:p1.s? t\3Af" outputs="s? t\3Af:status.s? t\3Af" uid="status" uid_parent="root"/>
-  <Indicator _name="status" conIdx="4" connection="recommended" description="HTTP status\3A 101\2C 200\2C 403\2C 404\2C 426 or 503." inputs="value:status.s? t\3Af" type="uint16" uid="o_st" uid_parent="root" value="0"/>
-  <Indicator _name="page?" conIdx="6" connection="recommended" description="TRUE for / and /index.html (serve the page)." inputs="value:isPage.x = y?" type="bool" uid="o_pg" uid_parent="root" value="false"/>
+  <Node _name="Or" inputs="x:isPage.x = y?,y:isWs.x = y?" outputs="x .or. y?:known.v" uid="known" uid_parent="root"/>
+  <Node _name="Not" inputs="x:tok.value" outputs=".not. x?:notok.v" uid="notok" uid_parent="root"/>
+  <Node _name="And" inputs="x:known.v,y:notok.v" outputs="x .and. y?:deny.v" uid="deny" uid_parent="root"/>
+  <Node _name="Select" inputs="t:s403.value,s:deny.v,f:status.s? t\3Af" outputs="s? t\3Af:fin.v" uid="fin" uid_parent="root"/>
+  <Node _name="And" inputs="x:isPage.x = y?,y:tok.value" outputs="x .and. y?:pg.v" uid="pg" uid_parent="root"/>
+  <Indicator _name="status" conIdx="4" connection="recommended" description="HTTP status\3A 101\2C 200\2C 403\2C 404\2C 426 or 503." inputs="value:fin.v" type="uint16" uid="o_st" uid_parent="root" value="0"/>
+  <Indicator _name="page?" conIdx="6" connection="recommended" description="TRUE for / and /index.html (serve the page)." inputs="value:pg.v" type="bool" uid="o_pg" uid_parent="root" value="false"/>
 </VI>

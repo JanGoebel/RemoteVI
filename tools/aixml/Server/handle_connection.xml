@@ -4,6 +4,7 @@
   <Control _name="html" conIdx="5" connection="required" description="The page served for / and /index.html (RemoteVI Index HTML.vi)." outputs="value:html.value" type="string" uid="html" uid_parent="root" value=""/>
   <Control _name="max clients reached?" conIdx="7" connection="recommended" description="TRUE answers a WebSocket upgrade with 503." outputs="value:maxr.value" type="bool" uid="maxr" uid_parent="root" value="false"/>
   <Control _name="request head" conIdx="9" connection="required" description="The request head as read by RemoteVI Read Request Head.vi." outputs="value:head.value" type="string" uid="head" uid_parent="root" value=""/>
+  <Control _name="token" conIdx="1" connection="required" description="The share's access token\3A the page and the WebSocket need it as t= in the query (RemoteVI Token Check.vi)\2C else 403." outputs="value:tok.value" type="string" uid="tok" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
 
   <Structure _name="For Loop" count="" label="Never runs\3A TCP refnum type only" maxin="tn0.value" maxout="" uid="tpl" uid_parent="root">
@@ -29,21 +30,25 @@
     <Tunnel _id="In3" inputs="value:html.value" uid="cs_i3" uid_parent="cs"/>
     <Tunnel _id="In4" inputs="value:maxr.value" uid="cs_i4" uid_parent="cs"/>
     <Tunnel _id="In5" inputs="value:cin.value" uid="cs_i5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:tok.value" uid="cs_i6" uid_parent="cs"/>
     <CaseFrame label="A request\3A route it" selector="True" selectout="" uid="cft" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_req.value" uid="t_req" uid_parent="cft"/>
       <Tunnel _id="In2" outputs="value:t_conn.value" uid="t_conn" uid_parent="cft"/>
       <Tunnel _id="In3" outputs="value:t_html.value" uid="t_html" uid_parent="cft"/>
       <Tunnel _id="In4" outputs="value:t_max.value" uid="t_max" uid_parent="cft"/>
       <Tunnel _id="In5" outputs="value:t_cu.value" uid="t_cu" uid_parent="cft"/>
+      <Tunnel _id="In6" outputs="value:t_tok.value" uid="t_tok" uid_parent="cft"/>
       <Call inputs="Request in:t_req.value" outputs="Request out:gu.Request out,Target URI:gu.Target URI" target="HTTP Utils.lvlib\3ARequest.lvclass\3AGet Target URI.vi" uid="gu" uid_parent="cft"/>
       <Call inputs="URI in:gu.Target URI" outputs="Path:gp.Path" target="Stream.lvlib\3AURI.lvclass\3AGet Path.vi" uid="gp" uid_parent="cft"/>
+      <Call inputs="URI in:gu.Target URI" outputs="Query:gq.Query" target="Stream.lvlib\3AURI.lvclass\3AGet Query.vi" uid="gq" uid_parent="cft"/>
+      <Call inputs="query:gq.Query,token:t_tok.value" outputs="ok?:tc.ok?" target="RemoteVI Token Check.vi" uid="tc" uid_parent="cft"/>
       <Call inputs="Request in:gu.Request out" outputs="Upgrade Request?:up.Upgrade Request?" target="Stream-Websocket.lvlib\3ACheck is Upgrade Request.vi" uid="up" uid_parent="cft"/>
       <Constant outputs="value:hOrigin.value" type="string" uid="hOrigin" uid_parent="cft" value="Origin"/>
       <Constant outputs="value:hHost.value" type="string" uid="hHost" uid_parent="cft" value="Host"/>
       <Call inputs="Request in:gu.Request out,Header:hOrigin.value" outputs="Exists:ho.Exists,Value:ho.Value" target="HTTP Utils.lvlib\3ARequest.lvclass\3AHeader Value.vi" uid="ho" uid_parent="cft"/>
       <Call inputs="Request in:gu.Request out,Header:hHost.value" outputs="Value:hh.Value" target="HTTP Utils.lvlib\3ARequest.lvclass\3AHeader Value.vi" uid="hh" uid_parent="cft"/>
       <Call inputs="origin exists?:ho.Exists,origin:ho.Value,host:hh.Value" outputs="cross origin?:xo.cross origin?" target="RemoteVI Cross Origin.vi" uid="xo" uid_parent="cft"/>
-      <Call inputs="path:gp.Path,upgrade request?:up.Upgrade Request?,cross origin?:xo.cross origin?,max clients reached?:t_max.value" outputs="status:rr.status,page?:rr.page?" target="RemoteVI Route Request.vi" uid="rr" uid_parent="cft"/>
+      <Call inputs="path:gp.Path,upgrade request?:up.Upgrade Request?,cross origin?:xo.cross origin?,max clients reached?:t_max.value,token ok?:tc.ok?" outputs="status:rr.status,page?:rr.page?" target="RemoteVI Route Request.vi" uid="rr" uid_parent="cft"/>
       <Constant outputs="value:s101.value" type="uint16" uid="s101" uid_parent="cft" value="101"/>
       <Node _name="Equal?" inputs="x:rr.status,y:s101.value" outputs="x = y?:doup.x = y?" uid="doup" uid_parent="cft"/>
 
@@ -102,6 +107,7 @@
       <Tunnel _id="In3" outputs="value:" uid="x_html" uid_parent="cff"/>
       <Tunnel _id="In4" outputs="value:" uid="x_max" uid_parent="cff"/>
       <Tunnel _id="In5" outputs="value:" uid="x_cu" uid_parent="cff"/>
+      <Tunnel _id="In6" outputs="value:" uid="x_tok" uid_parent="cff"/>
       <Node _name="TCP Close Connection" inputs="connection ID:x_conn.value" outputs="" uid="xx" uid_parent="cff"/>
       <Constant outputs="value:xfalse.value" type="bool" uid="xfalse" uid_parent="cff" value="false"/>
       <Constant outputs="value:xnoerr.value" type="cluster{bool.status,int32.code,string.source}" uid="xnoerr" uid_parent="cff" value="[false,0,]"/>

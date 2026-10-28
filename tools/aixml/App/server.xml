@@ -290,11 +290,13 @@
             <Tunnel _id="In4" outputs="value:fsht_wn.value" uid="fsht_wn" uid_parent="fshct"/>
             <Tunnel _id="In5" outputs="value:fsht_vo.value" uid="fsht_vo" uid_parent="fshct"/>
             <Node _name="Index Array" inputs="array:fsht_rows.value,index:fsht_i.value" outputs="element:fshrow.v" uid="fshrow" uid_parent="fshct"/>
-            <Call inputs="row:fshrow.v,port:fsht_p.value,whole network?:fsht_wn.value,view only?:fsht_vo.value" outputs="URL:,message:fshsh.message,error out:" target="RemoteVI Server Share.vi" uid="fshsh" uid_parent="fshct"/>
+            <Call inputs="row:fshrow.v,port:fsht_p.value,whole network?:fsht_wn.value,view only?:fsht_vo.value" outputs="URL:,message:fshsh.message,error out:fshsh.err" target="RemoteVI Server Share.vi" uid="fshsh" uid_parent="fshct"/>
+            <Node _name="Unbundle By Name" fields="status" inputs="input cluster:fshsh.err" outputs="status:fshse.status" uid="fshse" uid_parent="fshct"/>
             <Call inputs="" outputs="servers:fshs.servers,text:" target="RemoteVI Status.vi" uid="fshs" uid_parent="fshct"/>
             <Call inputs="status:fshs.servers" outputs="items:,ports:fshr.ports" target="RemoteVI Share Rows.vi" uid="fshr" uid_parent="fshct"/>
             <Node _name="Build Array" inputs="array:fshr.ports,element:fsht_p.value" outputs="appended array:fshused.v" uid="fshused" uid_parent="fshct"/>
-            <Call inputs="used:fshused.v,start:fsht_p.value" outputs="port:fshnx.port" target="RemoteVI Next Free Port.vi" uid="fshnx" uid_parent="fshct"/>
+            <Node _name="Select" inputs="t:fshr.ports,s:fshse.status,f:fshused.v" outputs="s? t\3Af:fshus.v" uid="fshus" uid_parent="fshct"/>
+            <Call inputs="used:fshus.v,start:fsht_p.value" outputs="port:fshnx.port" target="RemoteVI Next Free Port.vi" uid="fshnx" uid_parent="fshct"/>
             <Node _name="Local Variable" element="Port" inputs="Port:fshnx.port" uid="fshlp" uid_parent="fshct"/>
             <Tunnel _id="Out1" inputs="value:fshsh.message" uid="fshcto" uid_parent="fshct"/>
           </CaseFrame>

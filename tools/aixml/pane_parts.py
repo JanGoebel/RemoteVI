@@ -33,6 +33,9 @@ DONORS = [
     LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Read Vertical Scroll.vi",
     LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Write Vertical Scroll.vi",
     LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane\Read Origin.vi",
+    # Panel Splitters[]; Splitter IsVertical? and Bounds (RemoteVI Read Splitters.vi)
+    LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Pane Relief Main UI\Pane Relief Main UI\Create Panel Objects.vi",
+    LV + r"\resource\dialog\QuickDrop\plugins\_PaneReliefSupport\Classes\Splitter\Read Size.vi",
 ]
 
 

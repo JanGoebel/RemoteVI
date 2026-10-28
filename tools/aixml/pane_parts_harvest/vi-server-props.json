@@ -249,6 +249,22 @@
     "source": "<labview>\\vi.lib\\MGI\\Panel Manager\\Panel\\Window Position\\Reference Position\\Size\\Auto-Stretch\\Calculate.vi",
     "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x0004\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
    },
+   "Panes[]": {
+    "access": "r",
+    "code": 104105990,
+    "declaredBy": "LV.Panel",
+    "label": "Panes[]",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Pane Relief Main UI\\Pane Relief Main UI\\Create Panel Objects.vi",
+    "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x004B\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
+   },
+   "Splitters[]": {
+    "access": "r",
+    "code": 104105991,
+    "declaredBy": "LV.Panel",
+    "label": "Splitters[]",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Pane Relief Main UI\\Pane Relief Main UI\\Create Panel Objects.vi",
+    "type": "<TypeDesc Type=\"Array\" Format=\"inline\"><Dimension Flags=\"0x00FF\" FixedSize=\"0xFFFFFF\" />\n        <TypeDesc Type=\"Refnum\" RefType=\"LVObjCtl\" CtlFlags=\"0x004C\" HasItem=\"0\" Format=\"inline\" /></TypeDesc>"
+   },
    "Width": {
     "access": "r",
     "code": 103983108,
@@ -259,6 +275,22 @@
    }
   },
   "LV.Splitter": {
+   "Height": {
+    "access": "r",
+    "code": 103983109,
+    "declaredBy": "LV.Splitter",
+    "label": "Height",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Splitter\\Read Size.vi",
+    "type": "<TypeDesc Type=\"NumUInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "IsVertical?": {
+    "access": "r",
+    "code": 2056308736,
+    "declaredBy": "LV.Splitter",
+    "label": "IsVertical?",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Splitter\\Read Size.vi",
+    "type": "<TypeDesc Type=\"Boolean\" Format=\"inline\" />"
+   },
    "Locked": {
     "access": "w",
     "code": 2056308741,
@@ -281,6 +313,14 @@
     "declaredBy": "LV.Splitter",
     "label": "Position",
     "source": "<labview>\\vi.lib\\MGI\\Monitored Actor\\Classic Monitor\\Logger\\Classic Logger Actor\\Slide Splitter.vi",
+    "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
+   },
+   "UID": {
+    "access": "r",
+    "code": 103983123,
+    "declaredBy": "LV.Splitter",
+    "label": "UID",
+    "source": "<labview>\\resource\\dialog\\QuickDrop\\plugins\\_PaneReliefSupport\\Classes\\Splitter\\Read Size.vi",
     "type": "<TypeDesc Type=\"NumInt32\" Prop1=\"0\" Format=\"inline\" />"
    },
    "Width": {

@@ -299,6 +299,140 @@
 				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Demo.exe</Property>
 				<Property Name="TgtF_versionIndependent" Type="Bool">false</Property>
 			</Item>
+			<Item Name="RemoteVI Fixture" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{18DB4E96-81F3-58C8-ABAA-BE8C5D74FCF3}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{A60B1B29-CA5A-5C1D-B775-EB652EEA15C0}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="App_serverType" Type="Int">0</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">false</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{CD002928-10AD-5268-9AB9-3D7989379058}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">RemoteVI Fixture</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">false</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../builds/RemoteVI Fixture</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{247E3C76-C57E-52A0-8E2E-2C4A4862037F}</Property>
+				<Property Name="Bld_version.build" Type="Int">0</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">RemoteVI Fixture.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">../builds/RemoteVI Fixture/RemoteVI Fixture.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../builds/RemoteVI Fixture/data</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{8C4A24A4-F151-53AD-8BD8-BC8309589D07}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/Tests/Fixture/RemoteVI Fixture.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="Source[2].Library.allowMissingMembers" Type="Bool">true</Property>
+				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[2].itemID" Type="Ref">/My Computer/RemoteVI.lvlib</Property>
+				<Property Name="Source[2].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[2].type" Type="Str">Library</Property>
+				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[3].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/Server/RemoteVI Server Loop.vi</Property>
+				<Property Name="Source[3].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[3].type" Type="Str">VI</Property>
+				<Property Name="Source[4].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[4].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/App/RemoteVI Landing Server.vi</Property>
+				<Property Name="Source[4].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[4].type" Type="Str">VI</Property>
+				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[5].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/API/RemoteVI Status Panel.vi</Property>
+				<Property Name="Source[5].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[5].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">6</Property>
+				<Property Name="TgtF_companyName" Type="Str">Jan Goebel</Property>
+				<Property Name="TgtF_enableDebugging" Type="Bool">false</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">RemoteVI Fixture - the integration-test fixture in a process of its own (cross-process tests, docs/testing.md)</Property>
+				<Property Name="TgtF_internalName" Type="Str">RemoteVI Fixture</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright (c) 2026 Jan Goebel, MIT license</Property>
+				<Property Name="TgtF_productName" Type="Str">RemoteVI Fixture</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{EEC6A9E0-CA47-5B50-AE6F-244B990E9782}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Fixture.exe</Property>
+				<Property Name="TgtF_versionIndependent" Type="Bool">false</Property>
+			</Item>
+			<Item Name="RemoteVI Complex Fixture" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{14B57A3D-6097-5D68-841B-69BC57F3A741}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{CB1EF3E3-9221-5DF2-98EE-18D18867E6F0}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="App_serverType" Type="Int">0</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">false</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{B8FBEBB8-D4B2-5D13-8261-746FA287175B}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">RemoteVI Complex Fixture</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">false</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../builds/RemoteVI Complex Fixture</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{27DDC9D3-C8FD-5B4C-98A8-287FE8CE5B7A}</Property>
+				<Property Name="Bld_version.build" Type="Int">0</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">RemoteVI Complex Fixture.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">../builds/RemoteVI Complex Fixture/RemoteVI Complex Fixture.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../builds/RemoteVI Complex Fixture/data</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{F2458185-792C-5A41-97CF-FD06B796AE20}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/Tests/Fixture/RemoteVI Complex Fixture.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="Source[2].Library.allowMissingMembers" Type="Bool">true</Property>
+				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[2].itemID" Type="Ref">/My Computer/RemoteVI.lvlib</Property>
+				<Property Name="Source[2].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[2].type" Type="Str">Library</Property>
+				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[3].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/Server/RemoteVI Server Loop.vi</Property>
+				<Property Name="Source[3].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[3].type" Type="Str">VI</Property>
+				<Property Name="Source[4].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[4].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/App/RemoteVI Landing Server.vi</Property>
+				<Property Name="Source[4].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[4].type" Type="Str">VI</Property>
+				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[5].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/API/RemoteVI Status Panel.vi</Property>
+				<Property Name="Source[5].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[5].type" Type="Str">VI</Property>
+				<Property Name="Source[6].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[6].itemID" Type="Ref">/My Computer/Tests/Fixture/RemoteVI Complex View A.vi</Property>
+				<Property Name="Source[6].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[6].type" Type="Str">VI</Property>
+				<Property Name="Source[7].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[7].itemID" Type="Ref">/My Computer/Tests/Fixture/RemoteVI Complex View B.vi</Property>
+				<Property Name="Source[7].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[7].type" Type="Str">VI</Property>
+				<Property Name="Source[8].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[8].itemID" Type="Ref">/My Computer/Tests/Fixture/RemoteVI Complex Inspector.vi</Property>
+				<Property Name="Source[8].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[8].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">9</Property>
+				<Property Name="TgtF_companyName" Type="Str">Jan Goebel</Property>
+				<Property Name="TgtF_enableDebugging" Type="Bool">false</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">RemoteVI Complex Fixture - the complex-UI fixture in a process of its own (cross-process tests)</Property>
+				<Property Name="TgtF_internalName" Type="Str">RemoteVI Complex Fixture</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright (c) 2026 Jan Goebel, MIT license</Property>
+				<Property Name="TgtF_productName" Type="Str">RemoteVI Complex Fixture</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{BA219A23-58B4-50E2-928D-8F6B6B6473C3}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Complex Fixture.exe</Property>
+				<Property Name="TgtF_versionIndependent" Type="Bool">false</Property>
+			</Item>
 		</Item>
 	</Item>
 </Project>

@@ -12,10 +12,12 @@ exists" / "conflict" errors when VIs were re-added to RemoteVI.lvlib. So the pro
   Spikes/                   benchmarks
   Tools Menu/RemoteVI       the Tools menu entry (the VIPM package installs it into <LabVIEW>/project)
 
-and two build specifications (builds/ is git-ignored, nothing built is committed):
+and four build specifications (builds/ is git-ignored, nothing built is committed):
 
   RemoteVI Server           builds/RemoteVI Server/RemoteVI Server.exe - App/RemoteVI Server.vi
   RemoteVI Demo             builds/RemoteVI Demo/RemoteVI Demo.exe - examples/RemoteVI Demo.vi
+  RemoteVI Fixture          builds/RemoteVI Fixture/RemoteVI Fixture.exe - the test fixture in its own process
+  RemoteVI Complex Fixture  builds/RemoteVI Complex Fixture/... - the complex fixture in its own process
 
 Both include the whole RemoteVI library ("Always Included"): the Server Loop, the Landing Server
 and the Status Panel are opened by path at run time, so no static call pulls them in.
@@ -58,13 +60,19 @@ EXES = [
      'RemoteVI Server - share any window in a web browser'),
     ('RemoteVI Demo', 'RemoteVI Demo.exe', '/My Computer/Examples/RemoteVI Demo.vi',
      'RemoteVI Demo - a built application that shares its own panel'),
+    ('RemoteVI Fixture', 'RemoteVI Fixture.exe', '/My Computer/Tests/Fixture/RemoteVI Fixture.vi',
+     'RemoteVI Fixture - the integration-test fixture in a process of its own (cross-process tests, docs/testing.md)'),
+    ('RemoteVI Complex Fixture', 'RemoteVI Complex Fixture.exe', '/My Computer/Tests/Fixture/RemoteVI Complex Fixture.vi',
+     'RemoteVI Complex Fixture - the complex-UI fixture in a process of its own (cross-process tests)',
+     ['/My Computer/Tests/Fixture/RemoteVI Complex View A.vi', '/My Computer/Tests/Fixture/RemoteVI Complex View B.vi',
+      '/My Computer/Tests/Fixture/RemoteVI Complex Inspector.vi']),
 ]
 
 
 DYNAMIC = ['Server/RemoteVI Server Loop.vi', 'App/RemoteVI Landing Server.vi', 'API/RemoteVI Status Panel.vi']
 
 
-def build_spec(name, exe, top, desc, indent):
+def build_spec(name, exe, top, desc, extra=(), indent='\t\t\t'):
     dest = '../builds/%s' % name
     props = [
         ('App_copyErrors', 'Bool', 'true'),
@@ -106,13 +114,14 @@ def build_spec(name, exe, top, desc, indent):
         ('Source[2].type', 'Str', 'Library'),
     ]
     # opened by path at run time (no static caller): always included
-    for i, vi in enumerate(DYNAMIC, start=3):
+    dyn = ['/My Computer/RemoteVI.lvlib/' + vi for vi in DYNAMIC] + list(extra)
+    for i, ref in enumerate(dyn, start=3):
         props += [('Source[%d].destinationIndex' % i, 'Int', '0'),
-                  ('Source[%d].itemID' % i, 'Ref', '/My Computer/RemoteVI.lvlib/' + vi),
+                  ('Source[%d].itemID' % i, 'Ref', ref),
                   ('Source[%d].sourceInclusion' % i, 'Str', 'Include'),
                   ('Source[%d].type' % i, 'Str', 'VI')]
     props += [
-        ('SourceCount', 'Int', str(3 + len(DYNAMIC))),
+        ('SourceCount', 'Int', str(3 + len(dyn))),
         ('TgtF_companyName', 'Str', 'Jan Goebel'),
         ('TgtF_enableDebugging', 'Bool', 'false'),
         ('TgtF_fileDescription', 'Str', desc),
@@ -204,7 +213,7 @@ def main():
         *body,
         '\t\t<Item Name="Dependencies" Type="Dependencies"/>',
         '\t\t<Item Name="Build Specifications" Type="Build">',
-        *[line for spec in EXES for line in build_spec(*spec, '\t\t\t')],
+        *[line for spec in EXES for line in build_spec(*spec)],
         '\t\t</Item>',
         '\t</Item>',
         '</Project>',

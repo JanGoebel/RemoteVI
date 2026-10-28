@@ -1,0 +1,24 @@
+<VI _name="RemoteVI New Token.vi" description="Makes a new access token for a share (docs\5Csecurity.md)\3A 16 bytes from the operating system's cryptographically secure random number generator (bcrypt BCryptGenRandom.vi)\2C written as 32 lowercase hex digits. error out carries error in and the error of the call\3B an NTSTATUS other than 0 is error 5003 and token is empty\2C so a share never starts with a guessable token.">
+  <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant outputs="value:n16.value" type="uint32" uid="n16" uid_parent="root" value="16"/>
+  <Call inputs="byte count:n16.value,error in:ei.value" outputs="random bytes:rb.bytes,return value:rb.rv,error out:rb.error out" target="bcrypt BCryptGenRandom.vi" uid="rb" uid_parent="root"/>
+  <Constant outputs="value:fmt.value" type="string" uid="fmt" uid_parent="root" value="%02x"/>
+  <Structure _name="For Loop" count="" label="Two hex digits per byte" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rb.bytes" mode="index" outputs="value:b.value" uid="b" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:fmt.value" outputs="value:f.value" uid="f" uid_parent="fl"/>
+    <Node _name="Format Into String" inputs="format string:f.value,input 1:b.value" outputs="resulting string:hx.v" uid="hx" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:hx.v" mode="index" outputs="value:hs.value" uid="hs" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:hs.value" outputs="concatenated string:hex.v" uid="hex" uid_parent="root"/>
+  <Constant outputs="value:z.value" type="int32" uid="z" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:rb.rv,y:z.value" outputs="x != y?:bad.v" uid="bad" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:rb.error out" outputs="status:es.status" uid="es" uid_parent="root"/>
+  <Node _name="Or" inputs="x:bad.v,y:es.status" outputs="x .or. y?:fail.v" uid="fail" uid_parent="root"/>
+  <Constant outputs="value:empty.value" type="string" uid="empty" uid_parent="root" value=""/>
+  <Node _name="Select" inputs="t:empty.value,s:fail.v,f:hex.v" outputs="s? t\3Af:tok.v" uid="tok" uid_parent="root"/>
+  <Constant _name="no random bytes" outputs="value:e5003.value" type="cluster{bool.status,int32.code,string.source}" uid="e5003" uid_parent="root" value="[true,5003,RemoteVI New Token.vi\3A BCryptGenRandom failed]"/>
+  <Node _name="Select" inputs="t:e5003.value,s:bad.v,f:rb.error out" outputs="s? t\3Af:eo1.v" uid="eo1" uid_parent="root"/>
+  <Node _name="Merge Errors" inputs="error in:rb.error out,error in:eo1.v" outputs="error out:me.error out" uid="me" uid_parent="root"/>
+  <Indicator _name="token" conIdx="4" connection="recommended" description="32 lowercase hex digits\3B empty on an error." inputs="value:tok.v" type="string" uid="o_t" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C or the error of the random number generator (5003)." inputs="value:me.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

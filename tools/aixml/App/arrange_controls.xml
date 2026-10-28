@@ -50,8 +50,22 @@
             <Tunnel _id="In3" outputs="value:cb_h.value" uid="cb_h" uid_parent="cbcf"/>
             <Constant outputs="value:cbbt.value" type="bool" uid="cbbt" uid_parent="cbcf" value="true"/>
             <Constant outputs="value:cbbf.value" type="bool" uid="cbbf" uid_parent="cbcf" value="false"/>
-            <Node _name="Property Node" fields="write+Multiple Text String,read+Label.Text,read+Boolean Text,write+Lock Boolean Text In Center,write+Label.Visible" inputs="reference:cb_r.value,Multiple Text String:cbbf.value,Lock Boolean Text In Center:cbbt.value,Label.Visible:cbbf.value" outputs="Label.Text:cbbl.text,Boolean Text:cbbl.bt,reference out:cbbl.ref,error out:" type="{LV.Boolean}" uid="cbbl" uid_parent="cbcf"/>
-            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl.bt,Text:cbbl.text,Visible:cbbt.value" outputs="reference out:,error out:" type="{LV.Text}" uid="cbtx" uid_parent="cbcf"/>
+            <Node _name="Property Node" fields="read+Label.Text,read+Boolean Text" inputs="reference:cb_r.value" outputs="Label.Text:cbbl.text,Boolean Text:cbbl.bt,reference out:cbbl.ref,error out:" type="{LV.Boolean}" uid="cbbl" uid_parent="cbcf"/>
+            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl.bt,Text:cbbl.text,Visible:cbbt.value" outputs="reference out:,error out:cbtx.err" type="{LV.Text}" uid="cbtx" uid_parent="cbcf"/>
+            <Node _name="Property Node" fields="write+Multiple Text String" inputs="reference:cb_r.value,Multiple Text String:cbbf.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cbmt" uid_parent="cbcf"/>
+            <Node _name="Property Node" fields="write+Lock Boolean Text In Center" inputs="reference:cb_r.value,Lock Boolean Text In Center:cbbt.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cblk" uid_parent="cbcf"/>
+            <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cbtx.err" outputs="status:cbtxe.status" uid="cbtxe" uid_parent="cbcf"/>
+            <Structure _name="Case Structure" selectin="cbtxe.status" uid="cbhl" uid_parent="cbcf">
+              <Tunnel _id="In1" inputs="value:cb_r.value" uid="cbhli" uid_parent="cbhl"/>
+              <CaseFrame label="The boolean text could not be set (a run-time engine)\3A keep the label" selector="True" selectout="" uid="cbhlt" uid_parent="cbhl">
+                <Tunnel _id="In1" outputs="value:" uid="cbhl_a" uid_parent="cbhlt"/>
+              </CaseFrame>
+              <CaseFrame label="Text shown on the button\3A hide the label" selector="False" selectout="" uid="cbhlf" uid_parent="cbhl">
+                <Tunnel _id="In1" outputs="value:cbhl_r.value" uid="cbhl_r" uid_parent="cbhlf"/>
+                <Constant outputs="value:cbhlc.value" type="bool" uid="cbhlc" uid_parent="cbhlf" value="false"/>
+                <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:cbhl_r.value,Label.Visible:cbhlc.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cblv" uid_parent="cbhlf"/>
+              </CaseFrame>
+            </Structure>
             <Node _name="To Unsigned Long Integer" inputs="number:cb_w.value" outputs="unsigned 32bit integer:cbw.u" uid="cbw" uid_parent="cbcf"/>
             <Node _name="To Unsigned Long Integer" inputs="number:cb_h.value" outputs="unsigned 32bit integer:cbh.u" uid="cbh" uid_parent="cbcf"/>
             <Constant outputs="value:cbs0.value" type="cluster{uint32.Width,uint32.Height}" uid="cbs0" uid_parent="cbcf" value="[0,0]"/>
@@ -196,8 +210,22 @@
             <Tunnel _id="In3" outputs="value:cb_h2.value" uid="cb_h2" uid_parent="cbcf2"/>
             <Constant outputs="value:cbbt2.value" type="bool" uid="cbbt2" uid_parent="cbcf2" value="true"/>
             <Constant outputs="value:cbbf2.value" type="bool" uid="cbbf2" uid_parent="cbcf2" value="false"/>
-            <Node _name="Property Node" fields="write+Multiple Text String,read+Label.Text,read+Boolean Text,write+Lock Boolean Text In Center,write+Label.Visible" inputs="reference:cb_r2.value,Multiple Text String:cbbf2.value,Lock Boolean Text In Center:cbbt2.value,Label.Visible:cbbf2.value" outputs="Label.Text:cbbl2.text,Boolean Text:cbbl2.bt,reference out:cbbl2.ref,error out:" type="{LV.Boolean}" uid="cbbl2" uid_parent="cbcf2"/>
-            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl2.bt,Text:cbbl2.text,Visible:cbbt2.value" outputs="reference out:,error out:" type="{LV.Text}" uid="cbtx2" uid_parent="cbcf2"/>
+            <Node _name="Property Node" fields="read+Label.Text,read+Boolean Text" inputs="reference:cb_r2.value" outputs="Label.Text:cbbl2.text,Boolean Text:cbbl2.bt,reference out:cbbl2.ref,error out:" type="{LV.Boolean}" uid="cbbl2" uid_parent="cbcf2"/>
+            <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:cbbl2.bt,Text:cbbl2.text,Visible:cbbt2.value" outputs="reference out:,error out:cbtx2.err" type="{LV.Text}" uid="cbtx2" uid_parent="cbcf2"/>
+            <Node _name="Property Node" fields="write+Multiple Text String" inputs="reference:cb_r2.value,Multiple Text String:cbbf2.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cbmt2" uid_parent="cbcf2"/>
+            <Node _name="Property Node" fields="write+Lock Boolean Text In Center" inputs="reference:cb_r2.value,Lock Boolean Text In Center:cbbt2.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cblk2" uid_parent="cbcf2"/>
+            <Node _name="Unbundle By Name" fields="status" inputs="input cluster:cbtx2.err" outputs="status:cbtxe2.status" uid="cbtxe2" uid_parent="cbcf2"/>
+            <Structure _name="Case Structure" selectin="cbtxe2.status" uid="cbhl2" uid_parent="cbcf2">
+              <Tunnel _id="In1" inputs="value:cb_r2.value" uid="cbhli2" uid_parent="cbhl2"/>
+              <CaseFrame label="The boolean text could not be set (a run-time engine)\3A keep the label" selector="True" selectout="" uid="cbhlt2" uid_parent="cbhl2">
+                <Tunnel _id="In1" outputs="value:" uid="cbhl_a2" uid_parent="cbhlt2"/>
+              </CaseFrame>
+              <CaseFrame label="Text shown on the button\3A hide the label" selector="False" selectout="" uid="cbhlf2" uid_parent="cbhl2">
+                <Tunnel _id="In1" outputs="value:cbhl_r2.value" uid="cbhl_r2" uid_parent="cbhlf2"/>
+                <Constant outputs="value:cbhlc2.value" type="bool" uid="cbhlc2" uid_parent="cbhlf2" value="false"/>
+                <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:cbhl_r2.value,Label.Visible:cbhlc2.value" outputs="reference out:,error out:" type="{LV.Boolean}" uid="cblv2" uid_parent="cbhlf2"/>
+              </CaseFrame>
+            </Structure>
             <Node _name="To Unsigned Long Integer" inputs="number:cb_w2.value" outputs="unsigned 32bit integer:cbw2.u" uid="cbw2" uid_parent="cbcf2"/>
             <Node _name="To Unsigned Long Integer" inputs="number:cb_h2.value" outputs="unsigned 32bit integer:cbh2.u" uid="cbh2" uid_parent="cbcf2"/>
             <Constant outputs="value:cbs02.value" type="cluster{uint32.Width,uint32.Height}" uid="cbs02" uid_parent="cbcf2" value="[0,0]"/>

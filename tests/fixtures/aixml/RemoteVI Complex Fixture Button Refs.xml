@@ -1,0 +1,16 @@
+<VI _name="RemoteVI Complex Fixture Button Refs.vi" description="Helper of RemoteVI Complex Fixture Events.vi. Splits the array of control references RemoteVI Complex Fixture Find Controls.vi returns for Stop\2C Inspector\2C View\2C Data File into one named reference each\2C so Register For Events names each event source after its control (&lt;Stop Ref&gt;).">
+  <FreeLabel comment="One named reference per control" uid="lbl" uid_parent="root"/>
+  <Control _name="Controls" conIdx="0" connection="required" description="References in the order Stop\2C Inspector\2C View\2C Data File." outputs="value:c.value" type="array{ref{LV.Control}}" uid="c" uid_parent="root" value="[]"/>
+  <Constant _name="0" outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k0.value" outputs="element:x0.element" uid="x0" uid_parent="root"/>
+  <Indicator _name="Stop Ref" conIdx="4" connection="recommended" description="The control Stop." inputs="value:x0.element" type="ref{LV.Control}" uid="o0" uid_parent="root" value=""/>
+  <Constant _name="1" outputs="value:k1.value" type="int32" uid="k1" uid_parent="root" value="1"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k1.value" outputs="element:x1.element" uid="x1" uid_parent="root"/>
+  <Indicator _name="Inspector Ref" conIdx="5" connection="recommended" description="The control Inspector." inputs="value:x1.element" type="ref{LV.Control}" uid="o1" uid_parent="root" value=""/>
+  <Constant _name="2" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k2.value" outputs="element:x2.element" uid="x2" uid_parent="root"/>
+  <Indicator _name="View Ref" conIdx="6" connection="recommended" description="The control View." inputs="value:x2.element" type="ref{LV.Control}" uid="o2" uid_parent="root" value=""/>
+  <Constant _name="3" outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k3.value" outputs="element:x3.element" uid="x3" uid_parent="root"/>
+  <Indicator _name="Data File Ref" conIdx="7" connection="recommended" description="The control Data File." inputs="value:x3.element" type="ref{LV.Control}" uid="o3" uid_parent="root" value=""/>
+</VI>

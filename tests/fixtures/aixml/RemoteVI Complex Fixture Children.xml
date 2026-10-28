@@ -1,0 +1,67 @@
+<VI _name="RemoteVI Complex Fixture Children.vi" description="Helper of RemoteVI Complex Fixture.vi. Returns the controls one level inside Control\3A the controls on every page of a tab control\2C the elements of a cluster\2C nothing for any other control. Errors of the casts are not errors here (a control that is neither is the normal case)\3B errors of the property reads go to error out.">
+  <FreeLabel comment="Tab pages or cluster elements" uid="lbl" uid_parent="root"/>
+  <Control _name="Control" conIdx="0" connection="required" description="Any control." outputs="value:c.value" type="ref{LV.Control}" uid="c" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="tab class" outputs="value:ctab.value" type="ref{LV.TabControl}" uid="ctab" uid_parent="root" value=""/>
+  <Constant _name="cluster class" outputs="value:cclu.value" type="ref{LV.Cluster}" uid="cclu" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:ctab.value,reference:c.value" outputs="specific class reference:tt.ref,error out:tt.error out" uid="tt" uid_parent="root"/>
+  <Node _name="To More Specific Class" inputs="target class:cclu.value,reference:c.value" outputs="specific class reference:tc.ref,error out:tc.error out" uid="tc" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tt.error out" outputs="status:ust.s" uid="ust" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:tc.error out" outputs="status:usc.s" uid="usc" uid_parent="root"/>
+  <Constant _name="none" outputs="value:none.value" type="array{ref{LV.Control}}" uid="none" uid_parent="root" value="[]"/>
+  <Structure _name="Case Structure" selectin="ust.s" uid="cst" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:tt.ref" uid="t_i1" uid_parent="cst"/>
+    <Tunnel _id="In2" inputs="value:ei.value" uid="t_i2" uid_parent="cst"/>
+    <Tunnel _id="In3" inputs="value:none.value" uid="t_i3" uid_parent="cst"/>
+    <CaseFrame label="A tab control\3A the controls of every page" selector="False" selectout="" uid="tF" uid_parent="cst">
+      <Tunnel _id="In1" outputs="value:tf1.value" uid="tf1" uid_parent="tF"/>
+      <Tunnel _id="In2" outputs="value:tf2.value" uid="tf2" uid_parent="tF"/>
+      <Tunnel _id="In3" outputs="value:" uid="tf3" uid_parent="tF"/>
+      <Node _name="Property Node" fields="read+Pages" inputs="reference:tf1.value,error in (no error):tf2.value" outputs="reference out:,error out:pg.error out,Pages:pg.pages" type="{LV.TabControl}" uid="pg" uid_parent="tF"/>
+      <Structure _name="For Loop" count="" label="Each page" maxin="" maxout="" uid="fp" uid_parent="tF">
+        <Tunnel _id="In1" inputs="value:pg.pages" mode="index" outputs="value:pgi.value" uid="pgi" uid_parent="fp"/>
+        <ShiftReg uid="srp" uid_parent="fp">
+          <Left inputs="value:pg.error out" outputs="value:pe.value" uid="srpl" uid_parent="srp"/>
+          <Right inputs="value:pc.error out" outputs="value:pageErr.value" uid="srpr" uid_parent="srp"/>
+        </ShiftReg>
+        <Node _name="Property Node" fields="read+Controls on Page[]" inputs="reference:pgi.value,error in (no error):pe.value" outputs="reference out:,error out:pc.error out,Controls on Page[]:pc.c" type="{LV.Page}" uid="pc" uid_parent="fp"/>
+        <Tunnel _id="Out1" inputs="value:pc.c" mode="concat" outputs="value:pageCtls.value" uid="pageCtls" uid_parent="fp"/>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:pageCtls.value" uid="tfo1" uid_parent="tF"/>
+      <Tunnel _id="Out2" inputs="value:pageErr.value" uid="tfo2" uid_parent="tF"/>
+    </CaseFrame>
+    <CaseFrame label="Not a tab control" selector="True" selectout="" uid="tT" uid_parent="cst">
+      <Tunnel _id="In1" outputs="value:" uid="tt1" uid_parent="tT"/>
+      <Tunnel _id="In2" outputs="value:tt2.value" uid="tt2" uid_parent="tT"/>
+      <Tunnel _id="In3" outputs="value:tt3.value" uid="tt3" uid_parent="tT"/>
+      <Tunnel _id="Out1" inputs="value:tt3.value" uid="tto1" uid_parent="tT"/>
+      <Tunnel _id="Out2" inputs="value:tt2.value" uid="tto2" uid_parent="tT"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:tabCtls.value" uid="co1" uid_parent="cst"/>
+    <Tunnel _id="Out2" outputs="value:tabErr.value" uid="co2" uid_parent="cst"/>
+  </Structure>
+  <Structure _name="Case Structure" selectin="usc.s" uid="csc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:tc.ref" uid="c_i1" uid_parent="csc"/>
+    <Tunnel _id="In2" inputs="value:tabErr.value" uid="c_i2" uid_parent="csc"/>
+    <Tunnel _id="In3" inputs="value:tabCtls.value" uid="c_i3" uid_parent="csc"/>
+    <CaseFrame label="A cluster\3A its elements" selector="False" selectout="" uid="cF" uid_parent="csc">
+      <Tunnel _id="In1" outputs="value:cf1.value" uid="cf1" uid_parent="cF"/>
+      <Tunnel _id="In2" outputs="value:cf2.value" uid="cf2" uid_parent="cF"/>
+      <Tunnel _id="In3" outputs="value:" uid="cf3" uid_parent="cF"/>
+      <Node _name="Property Node" fields="read+Controls[]" inputs="reference:cf1.value,error in (no error):cf2.value" outputs="reference out:,error out:cl.error out,Controls[]:cl.c" type="{LV.Cluster}" uid="cl" uid_parent="cF"/>
+      <Tunnel _id="Out1" inputs="value:cl.c" uid="cfo1" uid_parent="cF"/>
+      <Tunnel _id="Out2" inputs="value:cl.error out" uid="cfo2" uid_parent="cF"/>
+    </CaseFrame>
+    <CaseFrame label="Not a cluster" selector="True" selectout="" uid="cT" uid_parent="csc">
+      <Tunnel _id="In1" outputs="value:" uid="ct1" uid_parent="cT"/>
+      <Tunnel _id="In2" outputs="value:ct2.value" uid="ct2" uid_parent="cT"/>
+      <Tunnel _id="In3" outputs="value:ct3.value" uid="ct3" uid_parent="cT"/>
+      <Tunnel _id="Out1" inputs="value:ct3.value" uid="cto1" uid_parent="cT"/>
+      <Tunnel _id="Out2" inputs="value:ct2.value" uid="cto2" uid_parent="cT"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:kids.value" uid="cso1" uid_parent="csc"/>
+    <Tunnel _id="Out2" outputs="value:kidsErr.value" uid="cso2" uid_parent="csc"/>
+  </Structure>
+  <Indicator _name="Children" conIdx="4" connection="recommended" description="The controls one level inside\3B empty for a control that holds none." inputs="value:kids.value" type="array{ref{LV.Control}}" uid="ko" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:kidsErr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

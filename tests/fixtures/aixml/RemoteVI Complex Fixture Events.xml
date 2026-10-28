@@ -1,0 +1,168 @@
+<VI _name="RemoteVI Complex Fixture Events.vi" description="Event loop of RemoteVI Complex Fixture.vi\2C a subVI so that the fixture's own diagram has no Event Structure (its panel is grafted from another VI\2C and only static Value Change events survive that). Finds the controls by label on Panel (RemoteVI Complex Fixture Find Controls.vi\2C every pane\2C tab page and cluster)\2C registers Value Change\2C Mouse Down and Mouse Up of each and sends one log line per event through the named queue RemoteVI Complex Fixture\3A value lines (RemoteVI Complex Fixture Value Text.vi\3A every Val of the value's XML joined with |)\2C mousedown and mouseup lines. Stop sends the named notifier RemoteVI Complex Fixture and ends the loop. Inspector opens RemoteVI Complex Inspector.vi in its own window (FP.Open without activating\2C Run VI). View shows View A or View B in the subpanel Viewer. Stop and Inspector are switches set back to FALSE here\2C because a latched button only resets when its terminal is read.">
+  <FreeLabel comment="All events dynamic" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel of RemoteVI Complex Fixture.vi." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="name" outputs="value:qn.value" type="string" uid="qn" uid_parent="root" value="RemoteVI Complex Fixture"/>
+  <Constant _name="line type" outputs="value:qt.value" type="string" uid="qt" uid_parent="root" value=""/>
+  <Constant _name="stop type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Queue" inputs="name (unnamed):qn.value,element data type:qt.value,create if not found? (T):,error in (no error):ei.value,max queue size (-1\2C unlimited):" outputs="queue out:oq.queue out,created new?:,error out:oq.error out" uid="oq" uid_parent="root"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):qn.value,notification data type:nt.value,create if not found? (T):,error in (no error):oq.error out" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Constant _name="labels" outputs="value:lbs.value" type="array{string}" uid="lbs" uid_parent="root" value="[Settings,Rate,Level,Nav,Scope,Channel,Results,Steps]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:pa.value,labels:lbs.value,error in:on.error out" outputs="Controls:fc.Controls,error out:fc.error out" uid="fc" uid_parent="root"/>
+  <Constant _name="labels" outputs="value:lbb.value" type="array{string}" uid="lbb" uid_parent="root" value="[Stop,Inspector,View,Data File]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:pa.value,labels:lbb.value,error in:fc.error out" outputs="Controls:fb.Controls,error out:fb.error out" uid="fb" uid_parent="root"/>
+  <Call target="RemoteVI Complex Fixture Refs.vi" inputs="Controls:fc.Controls" outputs="Settings Ref:refs.Settings,Rate Ref:refs.Rate,Level Ref:refs.Level,Nav Ref:refs.Nav,Scope Ref:refs.Scope,Channel Ref:refs.Channel,Results Ref:refs.Results,Steps Ref:refs.Steps" uid="refs" uid_parent="root"/>
+  <Call target="RemoteVI Complex Fixture Button Refs.vi" inputs="Controls:fb.Controls" outputs="Stop Ref:refs.Stop,Inspector Ref:refs.Inspector,View Ref:refs.View,Data File Ref:refs.DataFile" uid="refb" uid_parent="root"/>
+  <Constant _name="released" outputs="value:fls.value" type="bool" uid="fls" uid_parent="root" value="false"/>
+  <Node _name="To Variant" inputs="anything:fls.value" outputs="variant:flv.variant" uid="flv" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Value" inputs="reference:refs.Stop,error in (no error):fb.error out,Value:flv.variant" outputs="reference out:,error out:r0.error out" type="{LV.Control}" uid="r0" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Value" inputs="reference:refs.Inspector,error in (no error):r0.error out,Value:flv.variant" outputs="reference out:,error out:r1.error out" type="{LV.Control}" uid="r1" uid_parent="root"/>
+  <Node _name="Register For Events" inputs="event registration refnum:,error in (no error):r1.error out,event source:refs.Settings,event source:refs.Settings,event source:refs.Settings,event source:refs.Rate,event source:refs.Rate,event source:refs.Rate,event source:refs.Level,event source:refs.Level,event source:refs.Level,event source:refs.Nav,event source:refs.Nav,event source:refs.Nav,event source:refs.Scope,event source:refs.Scope,event source:refs.Scope,event source:refs.Channel,event source:refs.Channel,event source:refs.Channel,event source:refs.Results,event source:refs.Results,event source:refs.Results,event source:refs.Steps,event source:refs.Steps,event source:refs.Steps,event source:refs.Stop,event source:refs.Stop,event source:refs.Stop,event source:refs.Inspector,event source:refs.Inspector,event source:refs.Inspector,event source:refs.View,event source:refs.View,event source:refs.View,event source:refs.DataFile,event source:refs.DataFile,event source:refs.DataFile" outputs="event registration refnum:reg.event registration refnum,error out:reg.error out" uid="reg" uid_parent="root"/>
+  <Constant _name="viewer" outputs="value:vwl.value" type="array{string}" uid="vwl" uid_parent="root" value="[Viewer]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:pa.value,labels:vwl.value,error in:reg.error out" outputs="Controls:fv.Controls,error out:fv.error out" uid="fv" uid_parent="root"/>
+  <Constant _name="zero" outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:fv.Controls,index:i0.value" outputs="element:ixv.element" uid="ixv" uid_parent="root"/>
+  <Constant _name="subpanel class" outputs="value:csp.value" type="ref{LV.SubPanel}" uid="csp" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:csp.value,reference:ixv.element,error in:fv.error out" outputs="specific class reference:sp.ref,error out:sp.error out" uid="sp" uid_parent="root"/>
+  <Node _name="Current VI's Path" outputs="path:cvp.path" uid="cvp" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:cvp.path" outputs="stripped path:dir.stripped path,name:" uid="dir" uid_parent="root"/>
+  <Constant _name="RemoteVI Complex View A.vi" outputs="value:na.value" type="string" uid="na" uid_parent="root" value="RemoteVI Complex View A.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:na.value" outputs="appended path:pa.appended path" uid="pa" uid_parent="root"/>
+  <Constant _name="RemoteVI Complex View B.vi" outputs="value:nb.value" type="string" uid="nb" uid_parent="root" value="RemoteVI Complex View B.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:nb.value" outputs="appended path:pb.appended path" uid="pb" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:pa.appended path,error in (no error):sp.error out" outputs="vi reference:ra.vi reference,error out:ra.error out" uid="ra" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:pb.appended path,error in (no error):ra.error out" outputs="vi reference:rb.vi reference,error out:rb.error out" uid="rb" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Event loop - one log line per event" uid="evl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:ev1.value" uid="ev1" uid_parent="evl"/>
+    <Tunnel _id="In2" inputs="value:reg.event registration refnum" outputs="value:ev2.value" uid="ev2" uid_parent="evl"/>
+    <Tunnel _id="In3" inputs="value:sp.ref" outputs="value:ev3.value" uid="ev3" uid_parent="evl"/>
+    <Tunnel _id="In4" inputs="value:ra.vi reference" outputs="value:ev4.value" uid="ev4" uid_parent="evl"/>
+    <Tunnel _id="In5" inputs="value:rb.vi reference" outputs="value:ev5.value" uid="ev5" uid_parent="evl"/>
+    <Tunnel _id="In6" inputs="value:dir.stripped path" outputs="value:ev6.value" uid="ev6" uid_parent="evl"/>
+    <Tunnel _id="In7" inputs="value:oq.queue out" outputs="value:evQ.value" uid="evQ" uid_parent="evl"/>
+    <ShiftReg uid="srE" uid_parent="evl">
+      <Left inputs="value:rb.error out" outputs="value:evE.value" uid="evEl" uid_parent="srE"/>
+      <Right inputs="value:enq.error out" outputs="value:evErr.value" uid="evEr" uid_parent="srE"/>
+    </ShiftReg>
+    <Structure _name="Event Structure" uid="ev" uid_parent="evl">
+      <Tunnel _id="In1" inputs="value:ev1.value" uid="evI1" uid_parent="ev"/>
+      <Tunnel _id="In2" inputs="value:ev2.value" uid="evI2" uid_parent="ev"/>
+      <Tunnel _id="In3" inputs="value:ev3.value" uid="evI3" uid_parent="ev"/>
+      <Tunnel _id="In4" inputs="value:ev4.value" uid="evI4" uid_parent="ev"/>
+      <Tunnel _id="In5" inputs="value:ev5.value" uid="evI5" uid_parent="ev"/>
+      <Tunnel _id="In6" inputs="value:ev6.value" uid="evI6" uid_parent="ev"/>
+      <CaseFrame selector=" &lt;Stop Ref&gt;\3A Value Change " uid="fst" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:fstI1.value" uid="fstI1" uid_parent="fst"/>
+        <Tunnel _id="In2" outputs="value:" uid="fstI2" uid_parent="fst"/>
+        <Tunnel _id="In3" outputs="value:" uid="fstI3" uid_parent="fst"/>
+        <Tunnel _id="In4" outputs="value:" uid="fstI4" uid_parent="fst"/>
+        <Tunnel _id="In5" outputs="value:" uid="fstI5" uid_parent="fst"/>
+        <Tunnel _id="In6" outputs="value:" uid="fstI6" uid_parent="fst"/>
+        <Constant _name="stop" outputs="value:fst1.value" type="bool" uid="fst1" uid_parent="fst" value="true"/>
+        <Node _name="Send Notification" inputs="notifier:fstI1.value,notification:fst1.value,error in (no error):" outputs="notifier out:,error out:" uid="fst2" uid_parent="fst"/>
+        <Constant _name="TRUE" outputs="value:fst3.value" type="string" uid="fst3" uid_parent="fst" value="TRUE"/>
+        <Constant _name="label" outputs="value:fstL.value" type="string" uid="fstL" uid_parent="fst" value="Stop"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:fstL.value,value:fst3.value,error in:" outputs="line:fstV.line,error out:" uid="fstV" uid_parent="fst"/>
+        <Tunnel _id="Out1" inputs="value:fstV.line" uid="fstO1" uid_parent="fst"/>
+        <Tunnel _id="Out2" inputs="value:fst1.value" uid="fstO2" uid_parent="fst"/>
+      </CaseFrame>
+      <CaseFrame selector=" &lt;Inspector Ref&gt;\3A Value Change " uid="fin" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="finI1" uid_parent="fin"/>
+        <Tunnel _id="In2" outputs="value:" uid="finI2" uid_parent="fin"/>
+        <Tunnel _id="In3" outputs="value:" uid="finI3" uid_parent="fin"/>
+        <Tunnel _id="In4" outputs="value:" uid="finI4" uid_parent="fin"/>
+        <Tunnel _id="In5" outputs="value:" uid="finI5" uid_parent="fin"/>
+        <Tunnel _id="In6" outputs="value:finI6.value" uid="finI6" uid_parent="fin"/>
+        <Node _name="Event Data Node" fields="CtlRef,OldVal,NewVal" outputs="CtlRef:fin0.CtlRef,OldVal:,NewVal:" uid="fin0" uid_parent="fin"/>
+        <Constant _name="released" outputs="value:fin9.value" type="bool" uid="fin9" uid_parent="fin" value="false"/>
+        <Node _name="To Variant" inputs="anything:fin9.value" outputs="variant:fin10.variant" uid="fin10" uid_parent="fin"/>
+        <Node _name="Property Node" fields="write+Value" inputs="reference:fin0.CtlRef,error in (no error):,Value:fin10.variant" outputs="reference out:,error out:" type="{LV.Control}" uid="fin11" uid_parent="fin"/>
+        <Constant _name="inspector" outputs="value:fin1.value" type="string" uid="fin1" uid_parent="fin" value="RemoteVI Complex Inspector.vi"/>
+        <Node _name="Build Path" inputs="base path:finI6.value,name or relative path:fin1.value" outputs="appended path:fin2.appended path" uid="fin2" uid_parent="fin"/>
+        <Node _name="Open VI Reference" inputs="vi path:fin2.appended path" outputs="vi reference:fin3.vi reference,error out:fin3.error out" uid="fin3" uid_parent="fin"/>
+        <Constant _name="do not activate" outputs="value:fin4.value" type="bool" uid="fin4" uid_parent="fin" value="false"/>
+        <Node _name="Invoke Node" target="FP.Open" type="{LV.VI}" inputs="reference:fin3.vi reference,error in (no error):fin3.error out,Activate:fin4.value,State:" outputs="reference out:,error out:fin5.error out" uid="fin5" uid_parent="fin"/>
+        <Constant _name="dispose" outputs="value:fin6.value" type="bool" uid="fin6" uid_parent="fin" value="true"/>
+        <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:fin3.vi reference,error in (no error):fin5.error out,Wait until done:fin4.value,Auto Dispose Ref:fin6.value" outputs="reference out:,error out:fin7.error out" uid="fin7" uid_parent="fin"/>
+        <Constant _name="TRUE" outputs="value:fin8.value" type="string" uid="fin8" uid_parent="fin" value="TRUE"/>
+        <Constant _name="label" outputs="value:finL.value" type="string" uid="finL" uid_parent="fin" value="Inspector"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:finL.value,value:fin8.value,error in:fin7.error out" outputs="line:finV.line,error out:" uid="finV" uid_parent="fin"/>
+        <Tunnel _id="Out1" inputs="value:finV.line" uid="finO1" uid_parent="fin"/>
+        <Tunnel _id="Out2" inputs="value:" uid="finO2" uid_parent="fin"/>
+      </CaseFrame>
+      <CaseFrame selector=" &lt;View Ref&gt;\3A Value Change " uid="fvw" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="fvwI1" uid_parent="fvw"/>
+        <Tunnel _id="In2" outputs="value:" uid="fvwI2" uid_parent="fvw"/>
+        <Tunnel _id="In3" outputs="value:fvwI3.value" uid="fvwI3" uid_parent="fvw"/>
+        <Tunnel _id="In4" outputs="value:fvwI4.value" uid="fvwI4" uid_parent="fvw"/>
+        <Tunnel _id="In5" outputs="value:fvwI5.value" uid="fvwI5" uid_parent="fvw"/>
+        <Tunnel _id="In6" outputs="value:" uid="fvwI6" uid_parent="fvw"/>
+        <Node _name="Event Data Node" fields="CtlRef,OldVal,NewVal" outputs="CtlRef:,OldVal:,NewVal:fvw0.NewVal" uid="fvw0" uid_parent="fvw"/>
+        <Constant _name="ring type" outputs="value:fvw8.value" type="int32" uid="fvw8" uid_parent="fvw" value="0"/>
+        <Node _name="Variant To Data" inputs="variant:fvw0.NewVal,type:fvw8.value" outputs="data:vw.data,error out:" uid="vw" uid_parent="fvw"/>
+        <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:fvwI3.value,error in (no error):" outputs="reference out:,error out:fvw1.error out" uid="fvw1" uid_parent="fvw"/>
+        <Constant _name="zero" outputs="value:fvw2.value" type="int32" uid="fvw2" uid_parent="fvw" value="0"/>
+        <Node _name="Equal?" inputs="x:vw.data,y:fvw2.value" outputs="x = y?:fvw3.x = y?" uid="fvw3" uid_parent="fvw"/>
+        <Node _name="Select" inputs="t:fvwI4.value,s:fvw3.x = y?,f:fvwI5.value" outputs="s? t\3Af:fvw4.s? t\3Af" uid="fvw4" uid_parent="fvw"/>
+        <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:fvwI3.value,error in (no error):fvw1.error out,VI Ref:fvw4.s? t\3Af" outputs="reference out:,error out:fvw5.error out" uid="fvw5" uid_parent="fvw"/>
+        <Constant _name="item texts" outputs="value:fvw6.value" type="array{string}" uid="fvw6" uid_parent="fvw" value="[View A,View B]"/>
+        <Node _name="Index Array" inputs="array:fvw6.value,index:vw.data" outputs="element:fvw7.element" uid="fvw7" uid_parent="fvw"/>
+        <Constant _name="label" outputs="value:fvwL.value" type="string" uid="fvwL" uid_parent="fvw" value="View"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:fvwL.value,value:fvw7.element,error in:fvw5.error out" outputs="line:fvwV.line,error out:" uid="fvwV" uid_parent="fvw"/>
+        <Tunnel _id="Out1" inputs="value:fvwV.line" uid="fvwO1" uid_parent="fvw"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fvwO2" uid_parent="fvw"/>
+      </CaseFrame>
+      <CaseFrame selector=" &lt;Settings Ref&gt;, &lt;Rate Ref&gt;, &lt;Level Ref&gt;, &lt;Nav Ref&gt;, &lt;Scope Ref&gt;, &lt;Channel Ref&gt;, &lt;Results Ref&gt;, &lt;Steps Ref&gt;, &lt;Data File Ref&gt;\3A Value Change " uid="dvc" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="dvcI1" uid_parent="dvc"/>
+        <Tunnel _id="In2" outputs="value:" uid="dvcI2" uid_parent="dvc"/>
+        <Tunnel _id="In3" outputs="value:" uid="dvcI3" uid_parent="dvc"/>
+        <Tunnel _id="In4" outputs="value:" uid="dvcI4" uid_parent="dvc"/>
+        <Tunnel _id="In5" outputs="value:" uid="dvcI5" uid_parent="dvc"/>
+        <Tunnel _id="In6" outputs="value:" uid="dvcI6" uid_parent="dvc"/>
+        <Node _name="Event Data Node" fields="CtlRef,OldVal,NewVal" outputs="CtlRef:dvc1.CtlRef,OldVal:,NewVal:dvc1.NewVal" uid="dvc1" uid_parent="dvc"/>
+        <Node _name="Property Node" fields="read+Label.Text" inputs="reference:dvc1.CtlRef,error in (no error):" outputs="Label.Text:dvc2.lt,reference out:,error out:" type="{LV.Control}" uid="dvc2" uid_parent="dvc"/>
+        <Call target="RemoteVI Complex Fixture Value Text.vi" inputs="value:dvc1.NewVal,error in:" outputs="text:dvc3.text,error out:" uid="dvc3" uid_parent="dvc"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:dvc2.lt,value:dvc3.text,error in:" outputs="line:dvc4.line,error out:" uid="dvc4" uid_parent="dvc"/>
+        <Tunnel _id="Out1" inputs="value:dvc4.line" uid="dvcO1" uid_parent="dvc"/>
+        <Tunnel _id="Out2" inputs="value:" uid="dvcO2" uid_parent="dvc"/>
+      </CaseFrame>
+      <CaseFrame selector=" &lt;Settings Ref&gt;, &lt;Rate Ref&gt;, &lt;Level Ref&gt;, &lt;Nav Ref&gt;, &lt;Scope Ref&gt;, &lt;Channel Ref&gt;, &lt;Results Ref&gt;, &lt;Steps Ref&gt;, &lt;Stop Ref&gt;, &lt;Inspector Ref&gt;, &lt;View Ref&gt;, &lt;Data File Ref&gt;\3A Mouse Down " uid="dmd" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="dmdI1" uid_parent="dmd"/>
+        <Tunnel _id="In2" outputs="value:" uid="dmdI2" uid_parent="dmd"/>
+        <Tunnel _id="In3" outputs="value:" uid="dmdI3" uid_parent="dmd"/>
+        <Tunnel _id="In4" outputs="value:" uid="dmdI4" uid_parent="dmd"/>
+        <Tunnel _id="In5" outputs="value:" uid="dmdI5" uid_parent="dmd"/>
+        <Tunnel _id="In6" outputs="value:" uid="dmdI6" uid_parent="dmd"/>
+        <Node _name="Event Data Node" fields="CtlRef,Coords,Button,PlatMods" outputs="CtlRef:dmd1.CtlRef,Coords:dmd1.Coords,Button:dmd1.Button,PlatMods:dmd1.PlatMods" uid="dmd1" uid_parent="dmd"/>
+        <Constant _name="kind" outputs="value:dmd2.value" type="string" uid="dmd2" uid_parent="dmd" value="mousedown"/>
+        <Call target="RemoteVI Fixture Mouse Line.vi" inputs="kind:dmd2.value,CtlRef:dmd1.CtlRef,Coords:dmd1.Coords,Button:dmd1.Button,PlatMods:dmd1.PlatMods,error in:" outputs="line:dmd3.line,error out:" uid="dmd3" uid_parent="dmd"/>
+        <Tunnel _id="Out1" inputs="value:dmd3.line" uid="dmdO1" uid_parent="dmd"/>
+        <Tunnel _id="Out2" inputs="value:" uid="dmdO2" uid_parent="dmd"/>
+      </CaseFrame>
+      <CaseFrame selector=" &lt;Settings Ref&gt;, &lt;Rate Ref&gt;, &lt;Level Ref&gt;, &lt;Nav Ref&gt;, &lt;Scope Ref&gt;, &lt;Channel Ref&gt;, &lt;Results Ref&gt;, &lt;Steps Ref&gt;, &lt;Stop Ref&gt;, &lt;Inspector Ref&gt;, &lt;View Ref&gt;, &lt;Data File Ref&gt;\3A Mouse Up " uid="dmu" uid_parent="ev">
+        <Tunnel _id="In1" outputs="value:" uid="dmuI1" uid_parent="dmu"/>
+        <Tunnel _id="In2" outputs="value:" uid="dmuI2" uid_parent="dmu"/>
+        <Tunnel _id="In3" outputs="value:" uid="dmuI3" uid_parent="dmu"/>
+        <Tunnel _id="In4" outputs="value:" uid="dmuI4" uid_parent="dmu"/>
+        <Tunnel _id="In5" outputs="value:" uid="dmuI5" uid_parent="dmu"/>
+        <Tunnel _id="In6" outputs="value:" uid="dmuI6" uid_parent="dmu"/>
+        <Node _name="Event Data Node" fields="CtlRef,Coords,Button,PlatMods" outputs="CtlRef:dmu1.CtlRef,Coords:dmu1.Coords,Button:dmu1.Button,PlatMods:dmu1.PlatMods" uid="dmu1" uid_parent="dmu"/>
+        <Constant _name="kind" outputs="value:dmu2.value" type="string" uid="dmu2" uid_parent="dmu" value="mouseup"/>
+        <Call target="RemoteVI Fixture Mouse Line.vi" inputs="kind:dmu2.value,CtlRef:dmu1.CtlRef,Coords:dmu1.Coords,Button:dmu1.Button,PlatMods:dmu1.PlatMods,error in:" outputs="line:dmu3.line,error out:" uid="dmu3" uid_parent="dmu"/>
+        <Tunnel _id="Out1" inputs="value:dmu3.line" uid="dmuO1" uid_parent="dmu"/>
+        <Tunnel _id="Out2" inputs="value:" uid="dmuO2" uid_parent="dmu"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" cond="true" outputs="value:evLine.value" uid="evLine" uid_parent="ev"/>
+      <Tunnel _id="Out2" cond="true" outputs="value:evStop.value" uid="evStop" uid_parent="ev"/>
+    </Structure>
+    <Node _name="Enqueue Element" inputs="queue:evQ.value,element:evLine.value,timeout in ms (-1):,error in (no error):evE.value" outputs="queue out:,timed out?:,error out:enq.error out" uid="enq" uid_parent="evl"/>
+    <Condition inputs="value:evStop.value" uid="evlCond" uid_parent="evl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:ev2.value" outputs="value:evRo.value" uid="evRo" uid_parent="evl"/>
+  </Structure>
+  <Node _name="Unregister For Events" inputs="event registration refnum:evRo.value,error in:evErr.value" outputs="error out:ur.error out" uid="ur" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ra.vi reference,error in (no error):ur.error out" outputs="error out:cra.error out" uid="cra" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:rb.vi reference,error in (no error):cra.error out" outputs="error out:crb.error out" uid="crb" uid_parent="root"/>
+  <Node _name="Release Queue" inputs="queue:oq.queue out,force destroy? (F):,error in (no error):crb.error out" outputs="queue name:,remaining elements:,error out:rq.error out" uid="rq" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out,force destroy? (F):,error in (no error):rq.error out" outputs="notifier name:,last notification:,error out:rn.error out" uid="rn" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the registration\2C the event loop and its queue." inputs="value:rn.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

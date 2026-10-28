@@ -1,0 +1,33 @@
+<VI _name="RemoteVI Complex Fixture Value Text.vi" description="Event-log helper of RemoteVI Complex Fixture.vi. The text of a value of any type for a value line of the log\3A the contents of every Val element of LabVIEW's XML of the value (Flatten To XML)\2C joined with |. A numeric gives its number\2C a string or path its text\2C a boolean 0 or 1\2C an enum or tab control its index\2C a cluster its elements in order (Name|Gain|Enabled)\2C an array or table its elements row by row. error in is passed through unchanged.">
+  <FreeLabel comment="Every Val of the XML\2C joined with |" uid="lbl" uid_parent="root"/>
+  <Control _name="value" conIdx="0" connection="required" description="Any value\2C for example an event's NewVal." outputs="value:va.value" type="variant" uid="va" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Passed through to error out." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Flatten To XML" inputs="anything:va.value" outputs="xml string:fx.xml string" uid="fx" uid_parent="root"/>
+  <Constant _name="open tag" outputs="value:ot.value" type="string" uid="ot" uid_parent="root" value="&lt;Val&gt;"/>
+  <Constant _name="close tag" outputs="value:ct.value" type="string" uid="ct" uid_parent="root" value="&lt;/Val&gt;"/>
+  <Constant _name="nothing yet" outputs="value:e0.value" type="string" uid="e0" uid_parent="root" value=""/>
+  <Structure _name="While Loop" count="" label="Each Val element" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ot.value" outputs="value:wo.value" uid="wo" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:ct.value" outputs="value:wc.value" uid="wc" uid_parent="wl"/>
+    <ShiftReg uid="srs" uid_parent="wl">
+      <Left inputs="value:fx.xml string" outputs="value:rest.value" uid="srsl" uid_parent="srs"/>
+      <Right inputs="value:m2.after" outputs="value:" uid="srsr" uid_parent="srs"/>
+    </ShiftReg>
+    <ShiftReg uid="srt" uid_parent="wl">
+      <Left inputs="value:e0.value" outputs="value:acc.value" uid="srtl" uid_parent="srt"/>
+      <Right inputs="value:sel.s? t\3Af" outputs="value:all.value" uid="srtr" uid_parent="srt"/>
+    </ShiftReg>
+    <Node _name="Match Pattern" inputs="string:rest.value,regular expression:wo.value" outputs="before substring:,match substring:,after substring:m1.after,offset past match:m1.off" uid="m1" uid_parent="wl"/>
+    <Node _name="Match Pattern" inputs="string:m1.after,regular expression:wc.value" outputs="before substring:m2.before,match substring:,after substring:m2.after,offset past match:" uid="m2" uid_parent="wl"/>
+    <Constant _name="no separator" outputs="value:z.value" type="string" uid="z" uid_parent="wl" value=""/>
+    <Node _name="Less Than 0?" inputs="x:m1.off" outputs="x &lt; 0?:none.x &lt; 0?" uid="none" uid_parent="wl"/>
+    <Node _name="Empty String/Path?" inputs="string/path:acc.value" outputs="empty?:first.empty?" uid="first" uid_parent="wl"/>
+    <Constant _name="bar" outputs="value:bar.value" type="string" uid="bar" uid_parent="wl" value="|"/>
+    <Node _name="Select" inputs="t:z.value,s:first.empty?,f:bar.value" outputs="s? t\3Af:sep.s? t\3Af" uid="sep" uid_parent="wl"/>
+    <Node _name="Concatenate Strings" inputs="string:acc.value,string:sep.s? t\3Af,string:m2.before" outputs="concatenated string:cat.concatenated string" uid="cat" uid_parent="wl"/>
+    <Node _name="Select" inputs="t:acc.value,s:none.x &lt; 0?,f:cat.concatenated string" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="wl"/>
+    <Condition inputs="value:none.x &lt; 0?" uid="wlCond" uid_parent="wl" value="stop"/>
+  </Structure>
+  <Indicator _name="text" conIdx="4" connection="recommended" description="The value as text." inputs="value:all.value" type="string" uid="to" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C unchanged." inputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,80 @@
+<VI _name="RemoteVI Complex View A.vi" description="View A of RemoteVI Complex Fixture.vi\2C shown in its subpanel Viewer. A small panel of its own\3A A Text (string)\2C A Gain (numeric)\2C A Apply (latched button). It obtains the named queue RemoteVI Complex Fixture (the fixture writes the vlayout lines of the VI shown in the subpanel). An event loop enqueues one log line per event\3A value changes of A Text\2C A Gain and A Apply\2C key down on A Text\2C mouse down on all three. A parallel loop waits on the named notifier RemoteVI Complex Fixture and\2C when it fires or is destroyed\2C sets the hidden switch A Quit with Value (Signaling)\2C which ends the event loop. The fixture writes the queued lines to its log.">
+  <FreeLabel comment="Logs through the fixture's queue" uid="lbl" uid_parent="root"/>
+  <Constant _name="queue name" outputs="value:qn.value" type="string" uid="qn" uid_parent="root" value="RemoteVI Complex Fixture"/>
+  <Constant _name="line type" outputs="value:qt.value" type="string" uid="qt" uid_parent="root" value=""/>
+  <Constant _name="do not create" outputs="value:nc.value" type="bool" uid="nc" uid_parent="root" value="false"/>
+  <Node _name="Obtain Queue" inputs="name (unnamed):qn.value,element data type:qt.value,create if not found? (T):nc.value,error in (no error):,max queue size (-1\2C unlimited):" outputs="queue out:oq.queue out,created new?:,error out:oq.error out" uid="oq" uid_parent="root"/>
+  <Constant _name="stop type" outputs="value:st.value" type="bool" uid="st" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):qn.value,notification data type:st.value,create if not found? (T):nc.value,error in (no error):" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+
+  <Structure _name="While Loop" count="" label="Event loop - log every event" uid="evl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:oq.queue out" outputs="value:evQ.value" uid="evQ" uid_parent="evl"/>
+    <ShiftReg uid="srE" uid_parent="evl">
+      <Left inputs="value:oq.error out" outputs="value:evE.value" uid="evEl" uid_parent="srE"/>
+      <Right inputs="value:enq.error out" outputs="value:evErr.value" uid="evEr" uid_parent="srE"/>
+    </ShiftReg>
+    <Structure _name="Event Structure" uid="ev" uid_parent="evl">
+      <CaseFrame selector=" &quot;A Apply&quot;\3A Value Change " uid="fap" uid_parent="ev">
+        <Control _name="A Apply" description="Latched button." outputs="value:aap.value" style="latched" type="bool" uid="aap" uid_parent="fap" value="false"/>
+        <Constant _name="label" outputs="value:lap.value" type="string" uid="lap" uid_parent="fap" value="A Apply"/>
+        <Constant _name="TRUE" outputs="value:tap.value" type="string" uid="tap" uid_parent="fap" value="TRUE"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lap.value,value:tap.value,error in:" outputs="line:cap.line,error out:" uid="cap" uid_parent="fap"/>
+        <Tunnel _id="Out1" inputs="value:cap.line" uid="fapO1" uid_parent="fap"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fapO2" uid_parent="fap"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;A Text&quot;\3A Value Change " uid="ftx" uid_parent="ev">
+        <Control _name="A Text" description="String." outputs="value:" type="string" uid="atx" uid_parent="ftx" value=""/>
+        <Node _name="Event Data Node" fields="NewVal" outputs="NewVal:edtx.NewVal" uid="edtx" uid_parent="ftx"/>
+        <Constant _name="label" outputs="value:ltx.value" type="string" uid="ltx" uid_parent="ftx" value="A Text"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:ltx.value,value:edtx.NewVal,error in:" outputs="line:ctx.line,error out:" uid="ctx" uid_parent="ftx"/>
+        <Tunnel _id="Out1" inputs="value:ctx.line" uid="ftxO1" uid_parent="ftx"/>
+        <Tunnel _id="Out2" inputs="value:" uid="ftxO2" uid_parent="ftx"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;A Gain&quot;\3A Value Change " uid="fgn" uid_parent="ev">
+        <Control _name="A Gain" description="Numeric." outputs="value:" type="double" uid="agn" uid_parent="fgn" value="0"/>
+        <Node _name="Event Data Node" fields="NewVal" outputs="NewVal:edgn.NewVal" uid="edgn" uid_parent="fgn"/>
+        <Constant _name="fmt" outputs="value:fgf.value" type="string" uid="fgf" uid_parent="fgn" value="%g"/>
+        <Node _name="Format Into String" inputs="format string:fgf.value,input 1:edgn.NewVal" outputs="resulting string:sgn.resulting string,error out:" uid="sgn" uid_parent="fgn"/>
+        <Constant _name="label" outputs="value:lgn.value" type="string" uid="lgn" uid_parent="fgn" value="A Gain"/>
+        <Call target="RemoteVI Fixture Value Line.vi" inputs="label:lgn.value,value:sgn.resulting string,error in:" outputs="line:cgn.line,error out:" uid="cgn" uid_parent="fgn"/>
+        <Tunnel _id="Out1" inputs="value:cgn.line" uid="fgnO1" uid_parent="fgn"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fgnO2" uid_parent="fgn"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;A Text&quot;\3A Key Down " uid="fkd" uid_parent="ev">
+        <Node _name="Event Data Node" fields="CtlRef,Char,VKey,PlatMods" outputs="CtlRef:edkd.CtlRef,Char:edkd.Char,VKey:edkd.VKey,PlatMods:edkd.PlatMods" uid="edkd" uid_parent="fkd"/>
+        <Constant _name="item name" outputs="value:fsk.value" type="string" uid="fsk" uid_parent="fkd" value="%s"/>
+        <Node _name="Format Into String" inputs="format string:fsk.value,input 1:edkd.VKey" outputs="resulting string:vkn.resulting string,error out:" uid="vkn" uid_parent="fkd"/>
+        <Call target="RemoteVI Fixture Key Line.vi" inputs="CtlRef:edkd.CtlRef,Char:edkd.Char,VKey:vkn.resulting string,PlatMods:edkd.PlatMods,error in:" outputs="line:ckd.line,error out:" uid="ckd" uid_parent="fkd"/>
+        <Tunnel _id="Out1" inputs="value:ckd.line" uid="fkdO1" uid_parent="fkd"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fkdO2" uid_parent="fkd"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;A Apply&quot;, &quot;A Text&quot;, &quot;A Gain&quot;\3A Mouse Down " uid="fmd" uid_parent="ev">
+        <Node _name="Event Data Node" fields="CtlRef,Coords,Button,PlatMods" outputs="CtlRef:edmd.CtlRef,Coords:edmd.Coords,Button:edmd.Button,PlatMods:edmd.PlatMods" uid="edmd" uid_parent="fmd"/>
+        <Constant _name="kind" outputs="value:kmd.value" type="string" uid="kmd" uid_parent="fmd" value="mousedown"/>
+        <Call target="RemoteVI Fixture Mouse Line.vi" inputs="kind:kmd.value,CtlRef:edmd.CtlRef,Coords:edmd.Coords,Button:edmd.Button,PlatMods:edmd.PlatMods,error in:" outputs="line:cmd.line,error out:" uid="cmd" uid_parent="fmd"/>
+        <Tunnel _id="Out1" inputs="value:cmd.line" uid="fmdO1" uid_parent="fmd"/>
+        <Tunnel _id="Out2" inputs="value:" uid="fmdO2" uid_parent="fmd"/>
+      </CaseFrame>
+      <CaseFrame selector=" &quot;A Quit&quot;\3A Value Change " uid="fqt" uid_parent="ev">
+        <Control _name="A Quit" description="Hidden switch\3B set with Value (Signaling) when the fixture stops." outputs="value:aqt.value" type="bool" uid="aqt" uid_parent="fqt" value="false"/>
+        <Tunnel _id="Out1" inputs="value:" uid="fqtO1" uid_parent="fqt"/>
+        <Tunnel _id="Out2" inputs="value:aqt.value" uid="fqtO2" uid_parent="fqt"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" cond="true" outputs="value:evLine.value" uid="evLine" uid_parent="ev"/>
+      <Tunnel _id="Out2" cond="true" outputs="value:evStop.value" uid="evStop" uid_parent="ev"/>
+    </Structure>
+    <Node _name="Enqueue Element" inputs="queue:evQ.value,element:evLine.value,timeout in ms (-1):,error in (no error):evE.value" outputs="queue out:,timed out?:,error out:enq.error out" uid="enq" uid_parent="evl"/>
+    <Condition inputs="value:evStop.value" uid="evlCond" uid_parent="evl" value="stop"/>
+  </Structure>
+
+  <Structure _name="While Loop" count="" label="Wait for the fixture to stop" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:wN.value" uid="wN" uid_parent="wl"/>
+    <Node _name="Wait on Notification" inputs="notifier:wN.value,ignore previous (F):,timeout in ms (-1):,error in (no error):" outputs="notifier out:,notification:,timed out?:,error out:" uid="won" uid_parent="wl"/>
+    <Constant _name="stop" outputs="value:wt.value" type="bool" uid="wt" uid_parent="wl" value="true"/>
+    <Condition inputs="value:wt.value" uid="wlCond" uid_parent="wl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:wt.value" outputs="value:qv.value" uid="qv" uid_parent="wl"/>
+  </Structure>
+  <Node _name="Property Node" fields="write+Value (Signaling)" link="A Quit" inputs="error in (no error):,Value (Signaling):qv.value" outputs="error out:" type="{LV.Boolean}" uid="sig" uid_parent="root"/>
+  <Node _name="Release Queue" inputs="queue:oq.queue out,force destroy? (F):,error in (no error):evErr.value" outputs="queue name:,remaining elements:,error out:" uid="rq" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out,force destroy? (F):,error in (no error):evErr.value" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+</VI>

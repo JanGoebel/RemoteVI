@@ -1,0 +1,26 @@
+<VI _name="RemoteVI Complex Fixture Find Controls.vi" description="Helper of RemoteVI Complex Fixture.vi. Returns a reference to the control labelled each of labels\2C searched among all controls RemoteVI Complex Fixture All Controls.vi finds on Panel (every pane\2C tab pages\2C clusters)\2C in the order of labels\3B Not a Refnum for a label no control carries. For registering the events of controls pasted in after generation. Errors of the property reads go to error out.">
+  <FreeLabel comment="Controls by label\2C anywhere on the panel" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel to search." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="labels" conIdx="5" connection="required" description="Labels of the controls wanted." outputs="value:lb.value" type="array{string}" uid="lb" uid_parent="root" value="[]"/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Call target="RemoteVI Complex Fixture All Controls.vi" inputs="Panel:pa.value,error in:ei.value" outputs="Controls:ac.Controls,error out:ac.error out" uid="ac" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Every control's label" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ac.Controls" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:ac.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:pn.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value,error in (no error):le.value" outputs="Label.Text:pn.lt,reference out:,error out:pn.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:pn.lt" mode="index" outputs="value:names.value" uid="names" uid_parent="fl"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Each wanted label" maxin="" maxout="" uid="fw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:lb.value" mode="index" outputs="value:w.value" uid="w" uid_parent="fw"/>
+    <Tunnel _id="In2" inputs="value:names.value" outputs="value:w_n.value" uid="w_n" uid_parent="fw"/>
+    <Tunnel _id="In3" inputs="value:ac.Controls" outputs="value:w_c.value" uid="w_c" uid_parent="fw"/>
+    <Node _name="Search 1D Array" inputs="1D array:w_n.value,element:w.value" outputs="index of element:sa.index of element" uid="sa" uid_parent="fw"/>
+    <Node _name="Index Array" inputs="array:w_c.value,index:sa.index of element" outputs="element:ix.element" uid="ix" uid_parent="fw"/>
+    <Tunnel _id="Out1" inputs="value:ix.element" mode="index" outputs="value:found.value" uid="found" uid_parent="fw"/>
+  </Structure>
+  <Indicator _name="Controls" conIdx="4" connection="recommended" description="One reference per label\2C Not a Refnum where none was found." inputs="value:found.value" type="array{ref{LV.Control}}" uid="co" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:lerr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,195 @@
+<VI _name="RemoteVI Complex Fixture.vi" description="Event-logging test fixture of the RemoteVI integration tests for a complex application UI (tests\5Clv\5Ccomplex.test.mjs). Its panel is NI's Resizable Panel with Splitter Bars example with three panes (left\2C toolbar\2C main) and an unlocked vertical and horizontal splitter bar\3B RemoteVI Complex Fixture Arrange.vi lays it out. Left pane\3A tree Nav\2C table Results\2C array of clusters Steps (the pane scrolls). Toolbar\3A Inspector\2C ring View\2C Stop\2C string Status. Main pane (its tab control scales with the pane)\3A tab control Settings with the page Acquisition (cluster Channel with Name\2C Gain and Enabled\2C slide Rate\2C knob Level\2C path Data File with browse button) and the page Display (graph Scope with cursors)\2C and the subpanel Viewer\2C which shows RemoteVI Complex View A.vi or View B.vi\2C both running\2C swapped by View. Inspector opens RemoteVI Complex Inspector.vi as a separate\2C non-modal window (FP.Open\2C Run VI). At start it truncates or creates the log (Log Path\2C or RemoteVI Complex Fixture.log in the system temp directory)\2C writes layout lines (panel coordinates of every control in every pane\2C tab page and cluster) and pane lines\2C publishes its panel on port 8089 and writes ready. RemoteVI Complex Fixture Events.vi handles the events (all registered dynamically\2C so the panel can come from another VI) and sends its lines\2C like the views and the inspector\2C through the named queue RemoteVI Complex Fixture\3B the housekeeping loop here writes them to the log every 100 ms\2C shows the last in Status and writes the layout and pane lines again whenever they changed (a splitter was dragged\2C a pane scrolled). Stop sends the named notifier RemoteVI Complex Fixture\2C which ends the event loop\2C the housekeeping loop\2C the views and the inspector.">
+  <FreeLabel comment="Complex UI fixture - events in RemoteVI Complex Fixture Events.vi" uid="lbl" uid_parent="root"/>
+  <Control _name="Log Path" description="Where the event log is written. Empty\3A RemoteVI Complex Fixture.log in the system temp directory." outputs="value:lp.value" type="path" uid="lp" uid_parent="root" value=""/>
+  <Node _name="Empty String/Path?" inputs="string/path:lp.value" outputs="empty?:ep.empty?" uid="ep" uid_parent="root"/>
+  <Node _name="Temporary Directory" outputs="path:td.path" uid="td" uid_parent="root"/>
+  <Constant _name="log name" outputs="value:ln.value" type="string" uid="ln" uid_parent="root" value="RemoteVI Complex Fixture.log"/>
+  <Node _name="Build Path" inputs="base path:td.path,name or relative path:ln.value" outputs="appended path:bp.appended path" uid="bp" uid_parent="root"/>
+  <Node _name="Select" inputs="t:bp.appended path,s:ep.empty?,f:lp.value" outputs="s? t\3Af:lpath.s? t\3Af" uid="lpath" uid_parent="root"/>
+  <Constant _name="replace or create" outputs="value:op.value" type="uint16{open,replace,create,open or create,replace or create,replace or create with confirmation}" uid="op" uid_parent="root" value="4"/>
+  <Node _name="Open/Create/Replace File" inputs="file path (use dialog):lpath.s? t\3Af,operation (0\3Aopen):op.value,error in:" outputs="refnum out:of.refnum out,error out:of.error out" uid="of" uid_parent="root"/>
+  <Constant _name="name" outputs="value:qn.value" type="string" uid="qn" uid_parent="root" value="RemoteVI Complex Fixture"/>
+  <Constant _name="line type" outputs="value:qt.value" type="string" uid="qt" uid_parent="root" value=""/>
+  <Constant _name="stop type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Queue" inputs="name (unnamed):qn.value,element data type:qt.value,create if not found? (T):,error in (no error):of.error out,max queue size (-1\2C unlimited):" outputs="queue out:oq.queue out,created new?:,error out:oq.error out" uid="oq" uid_parent="root"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):qn.value,notification data type:nt.value,create if not found? (T):,error in (no error):oq.error out" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:,error in (no error):on.error out" outputs="Front Panel:vp.fp,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="root"/>
+  <Constant _name="kind" outputs="value:lk.value" type="string" uid="lk" uid_parent="root" value="layout"/>
+  <Call target="RemoteVI Complex Fixture Layout.vi" inputs="Panel:vp.fp,kind:lk.value,Host Panel:vp.fp,error in:vp.error out" outputs="layout:lay.layout,panes:lay.panes,error out:lay.error out" uid="lay" uid_parent="root"/>
+  <Control _name="Results" description="Table\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:res.value" style="Table" type="array.2{string}" value="[]" uid="res" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:res.value" outputs="variant:" uid="resV" uid_parent="root"/>
+  <Control _name="Steps" description="Array of clusters\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:stp.value" type="array{cluster{string.Name,double.Value,bool.On}}" value="[]" uid="stp" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:stp.value" outputs="variant:" uid="stpV" uid_parent="root"/>
+  <Control _name="Channel" description="Cluster of Name\2C Gain and Enabled\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:chn.value" type="cluster{string.Name,double.Gain,bool.Enabled}" value="[,0,false]" uid="chn" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:chn.value" outputs="variant:" uid="chnV" uid_parent="root"/>
+  <Control _name="Stop" description="Button (switch when released\2C set back by the event loop) that ends the fixture\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:stop.value" type="bool" value="false" uid="stop" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:stop.value" outputs="variant:" uid="stopV" uid_parent="root"/>
+  <Control _name="Inspector" description="Button (switch when released\2C set back by the event loop) that opens the inspector window\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:insp.value" type="bool" value="false" uid="insp" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:insp.value" outputs="variant:" uid="inspV" uid_parent="root"/>
+  <Control _name="View" description="Text ring View A\2C View B\3B swaps the VI in the subpanel Viewer\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:vw.value" items="View A,View B" style="Ring" type="int32" value="0" values="[0,1]" uid="vw" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:vw.value" outputs="variant:" uid="vwV" uid_parent="root"/>
+  <Control _name="Data File" description="Path control with a browse button (shown by Arrange)\3B its events are handled in RemoteVI Complex Fixture Events.vi." outputs="value:dfi.value" type="path" value="" uid="dfi" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:dfi.value" outputs="variant:" uid="dfiV" uid_parent="root"/>
+  <Constant _name="viewer" outputs="value:vwl.value" type="array{string}" uid="vwl" uid_parent="root" value="[Viewer,Scope]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:vp.fp,labels:vwl.value,error in:lay.error out" outputs="Controls:fv.Controls,error out:fv.error out" uid="fv" uid_parent="root"/>
+  <Constant _name="zero" outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Constant _name="one" outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
+  <Node _name="Index Array" inputs="array:fv.Controls,index:i0.value" outputs="element:ixv.element" uid="ixv" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:fv.Controls,index:i1.value" outputs="element:ixs.element" uid="ixs" uid_parent="root"/>
+  <Constant _name="subpanel class" outputs="value:csp.value" type="ref{LV.SubPanel}" uid="csp" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:csp.value,reference:ixv.element,error in:fv.error out" outputs="specific class reference:sp.ref,error out:sp.error out" uid="sp" uid_parent="root"/>
+  <Node _name="Current VI's Path" outputs="path:cvp.path" uid="cvp" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:cvp.path" outputs="stripped path:dir.stripped path,name:" uid="dir" uid_parent="root"/>
+  <Constant _name="RemoteVI Complex View A.vi" outputs="value:na.value" type="string" uid="na" uid_parent="root" value="RemoteVI Complex View A.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:na.value" outputs="appended path:pa.appended path" uid="pa" uid_parent="root"/>
+  <Constant _name="RemoteVI Complex View B.vi" outputs="value:nb.value" type="string" uid="nb" uid_parent="root" value="RemoteVI Complex View B.vi"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:nb.value" outputs="appended path:pb.appended path" uid="pb" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:pa.appended path,error in (no error):sp.error out" outputs="vi reference:ra.vi reference,error out:ra.error out" uid="ra" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:pb.appended path,error in (no error):ra.error out" outputs="vi reference:rb.vi reference,error out:rb.error out" uid="rb" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:sp.ref,error in (no error):rb.error out,VI Ref:ra.vi reference" outputs="reference out:,error out:ins.error out" uid="ins" uid_parent="root"/>
+  <Constant _name="no wait" outputs="value:nw.value" type="bool" uid="nw" uid_parent="root" value="false"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:ra.vi reference,error in (no error):ins.error out,Wait until done:nw.value,Auto Dispose Ref:nw.value" outputs="reference out:,error out:runa.error out" uid="runa" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:rb.vi reference,error in (no error):runa.error out,Wait until done:nw.value,Auto Dispose Ref:nw.value" outputs="reference out:,error out:runb.error out" uid="runb" uid_parent="root"/>
+  <Constant _name="points" outputs="value:n200.value" type="int32" uid="n200" uid_parent="root" value="200"/>
+  <Constant _name="step" outputs="value:kst.value" type="double" uid="kst" uid_parent="root" value="0.0628"/>
+  <Structure _name="For Loop" count="gd.value" label="Scope data" maxin="n200.value" maxout="" uid="gd" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:kst.value" outputs="value:gk.value" uid="gk" uid_parent="gd"/>
+    <Node _name="Multiply" inputs="x:gd.value,y:gk.value" outputs="x*y:gm.x*y" uid="gm" uid_parent="gd"/>
+    <Node _name="Sine" inputs="x:gm.x*y" outputs="sin(x):gs.sin(x)" uid="gs" uid_parent="gd"/>
+    <Node _name="Cosine" inputs="x:gm.x*y" outputs="cos(x):gc.cos(x)" uid="gc" uid_parent="gd"/>
+    <Tunnel _id="Out1" inputs="value:gs.sin(x)" mode="index" outputs="value:ys.value" uid="ys" uid_parent="gd"/>
+    <Tunnel _id="Out2" inputs="value:gc.cos(x)" mode="index" outputs="value:yc.value" uid="yc" uid_parent="gd"/>
+  </Structure>
+  <Node _name="Build Array" inputs="element:ys.value,element:yc.value" outputs="appended array:g2.appended array" uid="g2" uid_parent="root"/>
+  <Node _name="To Variant" inputs="anything:g2.appended array" outputs="variant:gv.variant" uid="gv" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Value" inputs="reference:ixs.element,error in (no error):runb.error out,Value:gv.variant" outputs="reference out:,error out:wsc.error out" type="{LV.Control}" uid="wsc" uid_parent="root"/>
+  <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8089"/>
+  <Call target="../../source/API/RemoteVI Start.vi" inputs="port:port.value,error in:wsc.error out" outputs="URL:,error out:st.error out" uid="st" uid_parent="root"/>
+  <Constant _name="ready line" outputs="value:rl.value" type="string" uid="rl" uid_parent="root" value="ready\0A"/>
+  <Node _name="Concatenate Strings" inputs="string:lay.layout,string:lay.panes,string:rl.value" outputs="concatenated string:lr.concatenated string" uid="lr" uid_parent="root"/>
+  <Node _name="Write to Text File" inputs="file (use dialog):of.refnum out,text:lr.concatenated string,error in:st.error out" outputs="refnum out:w2.refnum out,error out:w2.error out" uid="w2" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:lay.layout,string:lay.panes" outputs="concatenated string:lay0.concatenated string" uid="lay0" uid_parent="root"/>
+  <Call target="RemoteVI Complex Fixture Events.vi" inputs="Panel:vp.fp,error in:w2.error out" outputs="error out:evs.error out" uid="evs" uid_parent="root"/>
+  <Constant _name="period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="100"/>
+  <Constant _name="every 5th" outputs="value:k5.value" type="int32" uid="k5" uid_parent="root" value="5"/>
+  <Structure _name="While Loop" count="hk.value" label="Housekeeping - queued lines\2C layout changes" uid="hk" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:hkN.value" uid="hkN" uid_parent="hk"/>
+    <Tunnel _id="In2" inputs="value:oq.queue out" outputs="value:hkQ.value" uid="hkQ" uid_parent="hk"/>
+    <Tunnel _id="In3" inputs="value:w2.refnum out" outputs="value:hkF.value" uid="hkF" uid_parent="hk"/>
+    <Tunnel _id="In4" inputs="value:ms.value" outputs="value:hkMs.value" uid="hkMs" uid_parent="hk"/>
+    <Tunnel _id="In5" inputs="value:vp.fp" outputs="value:hkP.value" uid="hkP" uid_parent="hk"/>
+    <Tunnel _id="In6" inputs="value:k5.value" outputs="value:hk5.value" uid="hk5" uid_parent="hk"/>
+    <Tunnel _id="In7" inputs="value:lk.value" outputs="value:hkK.value" uid="hkK" uid_parent="hk"/>
+    <Tunnel _id="In8" inputs="value:sp.ref" outputs="value:hkS.value" uid="hkS" uid_parent="hk"/>
+    <ShiftReg uid="srL" uid_parent="hk">
+      <Left inputs="value:lay0.concatenated string" outputs="value:hkL.value" uid="hkLl" uid_parent="srL"/>
+      <Right inputs="value:hcs.lay" outputs="value:" uid="hkLr" uid_parent="srL"/>
+    </ShiftReg>
+    <ShiftReg uid="srH" uid_parent="hk">
+      <Left inputs="value:w2.error out" outputs="value:hkE.value" uid="hkEl" uid_parent="srH"/>
+      <Right inputs="value:hw.error out" outputs="value:hkErr.value" uid="hkEr" uid_parent="srH"/>
+    </ShiftReg>
+    <Node _name="Wait on Notification" inputs="notifier:hkN.value,ignore previous (F):,timeout in ms (-1):hkMs.value,error in (no error):" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:" uid="won" uid_parent="hk"/>
+    <Constant _name="nothing" outputs="value:dq0.value" type="string" uid="dq0" uid_parent="hk" value=""/>
+    <Constant _name="no wait" outputs="value:dqt.value" type="int32" uid="dqt" uid_parent="hk" value="0"/>
+    <Structure _name="While Loop" count="" label="Drain the queued lines" uid="dq" uid_parent="hk">
+      <Tunnel _id="In1" inputs="value:hkQ.value" outputs="value:dqQ.value" uid="dqQ" uid_parent="dq"/>
+      <Tunnel _id="In2" inputs="value:dqt.value" outputs="value:dqT.value" uid="dqT" uid_parent="dq"/>
+      <Tunnel _id="In3" inputs="value:dq0.value" outputs="value:dqZ.value" uid="dqZ" uid_parent="dq"/>
+      <ShiftReg uid="srD" uid_parent="dq">
+        <Left inputs="value:dq0.value" outputs="value:dqA.value" uid="dqAl" uid_parent="srD"/>
+        <Right inputs="value:dqc.concatenated string" outputs="value:fqs.concatenated string" uid="dqAr" uid_parent="srD"/>
+      </ShiftReg>
+      <Node _name="Dequeue Element" inputs="queue:dqQ.value,timeout in ms (-1):dqT.value,error in (no error):" outputs="queue out:,element:dqe.element,timed out?:dqe.timed out?,error out:dqe.error out" uid="dqe" uid_parent="dq"/>
+      <Node _name="Select" inputs="t:dqZ.value,s:dqe.timed out?,f:dqe.element" outputs="s? t\3Af:dqs.s? t\3Af" uid="dqs" uid_parent="dq"/>
+      <Node _name="Concatenate Strings" inputs="string:dqA.value,string:dqs.s? t\3Af" outputs="concatenated string:dqc.concatenated string" uid="dqc" uid_parent="dq"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:dqe.error out" outputs="status:dqx.status" uid="dqx" uid_parent="dq"/>
+      <Node _name="Or" inputs="x:dqe.timed out?,y:dqx.status" outputs="x .or. y?:dqo.x .or. y?" uid="dqo" uid_parent="dq"/>
+      <Condition inputs="value:dqo.x .or. y?" uid="dqCond" uid_parent="dq" value="stop"/>
+    </Structure>
+    <Node _name="Quotient &amp; Remainder" inputs="x:hk.value,y:hk5.value" outputs="x-y*floor(x/y):qr.r,floor(x/y):" uid="qr" uid_parent="hk"/>
+    <Constant _name="zero" outputs="value:hz.value" type="int32" uid="hz" uid_parent="hk" value="0"/>
+    <Node _name="Equal?" inputs="x:qr.r,y:hz.value" outputs="x = y?:hq.x = y?" uid="hq" uid_parent="hk"/>
+    <Structure _name="Case Structure" selectin="hq.x = y?" uid="hcs" uid_parent="hk">
+      <Tunnel _id="In1" inputs="value:hkP.value" uid="hci1" uid_parent="hcs"/>
+      <Tunnel _id="In2" inputs="value:hkL.value" uid="hci2" uid_parent="hcs"/>
+      <Tunnel _id="In3" inputs="value:hkK.value" uid="hci3" uid_parent="hcs"/>
+      <Tunnel _id="In4" inputs="value:hkS.value" uid="hci4" uid_parent="hcs"/>
+      <CaseFrame label="Every 500 ms\3A layout again\2C written when it changed" selector="True" selectout="" uid="hct" uid_parent="hcs">
+        <Tunnel _id="In1" outputs="value:ht1.value" uid="ht1" uid_parent="hct"/>
+        <Tunnel _id="In2" outputs="value:ht2.value" uid="ht2" uid_parent="hct"/>
+        <Tunnel _id="In3" outputs="value:ht3.value" uid="ht3" uid_parent="hct"/>
+        <Tunnel _id="In4" outputs="value:ht4.value" uid="ht4" uid_parent="hct"/>
+        <Call target="RemoteVI Complex Fixture Layout.vi" inputs="Panel:ht1.value,kind:ht3.value,Host Panel:ht1.value,error in:" outputs="layout:hl.layout,panes:hl.panes,error out:" uid="hl" uid_parent="hct"/>
+        <Node _name="Property Node" fields="read+InsertedVI" inputs="reference:ht4.value,error in (no error):" outputs="InsertedVI:hiv.vi,reference out:,error out:hiv.error out" type="{LV.SubPanel}" uid="hiv" uid_parent="hct"/>
+        <Node _name="Property Node" fields="read+Front Panel" inputs="reference:hiv.vi,error in (no error):hiv.error out" outputs="Front Panel:hif.fp,reference out:,error out:hif.error out" type="{LV.VI}" uid="hif" uid_parent="hct"/>
+        <Constant _name="vlayout" outputs="value:hvk.value" type="string" uid="hvk" uid_parent="hct" value="vlayout"/>
+        <Call target="RemoteVI Complex Fixture Layout.vi" inputs="Panel:hif.fp,kind:hvk.value,Host Panel:ht1.value,error in:hif.error out" outputs="layout:hvl.layout,panes:,error out:" uid="hvl" uid_parent="hct"/>
+        <Node _name="Concatenate Strings" inputs="string:hl.layout,string:hl.panes,string:hvl.layout" outputs="concatenated string:hc.concatenated string" uid="hc" uid_parent="hct"/>
+        <Node _name="Not Equal?" inputs="x:hc.concatenated string,y:ht2.value" outputs="x != y?:hn.x != y?" uid="hn" uid_parent="hct"/>
+        <Constant _name="nothing" outputs="value:he.value" type="string" uid="he" uid_parent="hct" value=""/>
+        <Node _name="Select" inputs="t:hc.concatenated string,s:hn.x != y?,f:he.value" outputs="s? t\3Af:hs.s? t\3Af" uid="hs" uid_parent="hct"/>
+        <Tunnel _id="Out1" inputs="value:hc.concatenated string" uid="hto1" uid_parent="hct"/>
+        <Tunnel _id="Out2" inputs="value:hs.s? t\3Af" uid="hto2" uid_parent="hct"/>
+      </CaseFrame>
+      <CaseFrame selector="False" selectout="" uid="hcf" uid_parent="hcs">
+        <Tunnel _id="In1" outputs="value:" uid="hf1" uid_parent="hcf"/>
+        <Tunnel _id="In2" outputs="value:hf2.value" uid="hf2" uid_parent="hcf"/>
+        <Tunnel _id="In3" outputs="value:" uid="hf3" uid_parent="hcf"/>
+        <Tunnel _id="In4" outputs="value:" uid="hf4" uid_parent="hcf"/>
+        <Constant _name="nothing" outputs="value:hfe.value" type="string" uid="hfe" uid_parent="hcf" value=""/>
+        <Tunnel _id="Out1" inputs="value:hf2.value" uid="hfo1" uid_parent="hcf"/>
+        <Tunnel _id="Out2" inputs="value:hfe.value" uid="hfo2" uid_parent="hcf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:hcs.lay" uid="hco1" uid_parent="hcs"/>
+      <Tunnel _id="Out2" outputs="value:hcs.new" uid="hco2" uid_parent="hcs"/>
+    </Structure>
+    <Node _name="Concatenate Strings" inputs="string:fqs.concatenated string,string:hcs.new" outputs="concatenated string:hall.concatenated string" uid="hall" uid_parent="hk"/>
+    <Node _name="Write to Text File" inputs="file (use dialog):hkF.value,text:hall.concatenated string,error in:hkE.value" outputs="refnum out:,error out:hw.error out" uid="hw" uid_parent="hk"/>
+    <Node _name="Empty String/Path?" inputs="string/path:fqs.concatenated string" outputs="empty?:hse.empty?" uid="hse" uid_parent="hk"/>
+    <Structure _name="Case Structure" selectin="hse.empty?" uid="hss" uid_parent="hk">
+      <Tunnel _id="In1" inputs="value:fqs.concatenated string" uid="hsi1" uid_parent="hss"/>
+      <CaseFrame label="New lines\3A the last ones in Status" selector="False" selectout="" uid="hsf" uid_parent="hss">
+        <Tunnel _id="In1" outputs="value:hsf1.value" uid="hsf1" uid_parent="hsf"/>
+        <Node _name="Property Node" fields="write+Value" link="Status" inputs="error in (no error):,Value:hsf1.value" outputs="error out:" type="{LV.String}" uid="hsv" uid_parent="hsf"/>
+      </CaseFrame>
+      <CaseFrame selector="True" selectout="" uid="hst" uid_parent="hss">
+        <Tunnel _id="In1" outputs="value:" uid="hst1" uid_parent="hst"/>
+      </CaseFrame>
+    </Structure>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:hnt..not. x?" uid="hnt" uid_parent="hk"/>
+    <Condition inputs="value:hnt..not. x?" uid="hkCond" uid_parent="hk" value="stop"/>
+  </Structure>
+  <Indicator _name="Status" description="The last lines written to the log." inputs="value:sts0.value" type="string" uid="sts" uid_parent="root" value=""/>
+  <Constant _name="empty" outputs="value:sts0.value" type="string" uid="sts0" uid_parent="root" value=""/>
+  <Node _name="Merge Errors" inputs="error in:evs.error out,error in:hkErr.value" outputs="error out:m1.error out" uid="m1" uid_parent="root"/>
+  <Constant _name="nothing" outputs="value:lq0.value" type="string" uid="lq0" uid_parent="root" value=""/>
+  <Constant _name="wait for the last lines" outputs="value:lqt.value" type="int32" uid="lqt" uid_parent="root" value="200"/>
+  <Structure _name="While Loop" count="" label="Drain the last lines" uid="lq" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:oq.queue out" outputs="value:lqQ.value" uid="lqQ" uid_parent="lq"/>
+    <Tunnel _id="In2" inputs="value:lqt.value" outputs="value:lqT.value" uid="lqT" uid_parent="lq"/>
+    <Tunnel _id="In3" inputs="value:lq0.value" outputs="value:lqZ.value" uid="lqZ" uid_parent="lq"/>
+    <Tunnel _id="In4" inputs="value:m1.error out" outputs="value:lqE.value" uid="lqE" uid_parent="lq"/>
+    <ShiftReg uid="srQ" uid_parent="lq">
+      <Left inputs="value:lq0.value" outputs="value:lqA.value" uid="lqAl" uid_parent="srQ"/>
+      <Right inputs="value:lqc.concatenated string" outputs="value:lastLines.value" uid="lqAr" uid_parent="srQ"/>
+    </ShiftReg>
+    <Node _name="Dequeue Element" inputs="queue:lqQ.value,timeout in ms (-1):lqT.value,error in (no error):" outputs="queue out:,element:lqe.element,timed out?:lqe.timed out?,error out:lqe.error out" uid="lqe" uid_parent="lq"/>
+    <Node _name="Select" inputs="t:lqZ.value,s:lqe.timed out?,f:lqe.element" outputs="s? t\3Af:lqs.s? t\3Af" uid="lqs" uid_parent="lq"/>
+    <Node _name="Concatenate Strings" inputs="string:lqA.value,string:lqs.s? t\3Af" outputs="concatenated string:lqc.concatenated string" uid="lqc" uid_parent="lq"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:lqe.error out" outputs="status:lqx.status" uid="lqx" uid_parent="lq"/>
+    <Node _name="Or" inputs="x:lqe.timed out?,y:lqx.status" outputs="x .or. y?:lqo.x .or. y?" uid="lqo" uid_parent="lq"/>
+    <Condition inputs="value:lqo.x .or. y?" uid="lqCond" uid_parent="lq" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:lqE.value" outputs="value:lqEo.value" uid="lqEo" uid_parent="lq"/>
+  </Structure>
+  <Node _name="Write to Text File" inputs="file (use dialog):w2.refnum out,text:lastLines.value,error in:lqEo.value" outputs="refnum out:,error out:lw.error out" uid="lw" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:sp.ref,error in (no error):lw.error out" outputs="reference out:,error out:rmv.error out" uid="rmv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ra.vi reference,error in (no error):rmv.error out" outputs="error out:cra.error out" uid="cra" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:rb.vi reference,error in (no error):cra.error out" outputs="error out:crb.error out" uid="crb" uid_parent="root"/>
+  <Call target="../../source/API/RemoteVI Stop.vi" inputs="port:port.value,error in:crb.error out" outputs="error out:spo.error out" uid="spo" uid_parent="root"/>
+  <Node _name="Close File" inputs="refnum:w2.refnum out,error in:spo.error out" outputs="path:,error out:cf.error out" uid="cf" uid_parent="root"/>
+  <Constant _name="force" outputs="value:frc.value" type="bool" uid="frc" uid_parent="root" value="true"/>
+  <Node _name="Release Queue" inputs="queue:oq.queue out,force destroy? (F):frc.value,error in (no error):cf.error out" outputs="queue name:,remaining elements:,error out:rq.error out" uid="rq" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out,force destroy? (F):frc.value,error in (no error):rq.error out" outputs="notifier name:,last notification:,error out:rn.error out" uid="rn" uid_parent="root"/>
+  <Indicator _name="error out" description="Errors of start-up\2C the event loop\2C the housekeeping loop and shutdown\2C merged." inputs="value:rn.error out" type="cluster{bool.status,int32.code,string.source}" uid="eout" uid_parent="root" value="[false,0,]"/>
+</VI>

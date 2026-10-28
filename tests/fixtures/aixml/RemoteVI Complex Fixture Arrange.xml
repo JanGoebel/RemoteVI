@@ -1,0 +1,322 @@
+<VI _name="RemoteVI Complex Fixture Arrange.vi" description="Build tool of RemoteVI Complex Fixture.vi\3A run it after RemoteVI Complex Fixture Paste.vi\2C with the fixture idle\3B it can be run again (every step sets\2C nothing is added). Lays the panel out\3A each control is moved (GObject Move) into its pane (0 left\2C 1 toolbar\2C 2 main) or into a page of the tab control Settings and placed relative to the pane's visible top-left or to Settings. The toolbar holds Inspector\2C View\2C Stop and Status\2C the left pane Nav\2C Results and Steps (taller than the pane\2C so it scrolls) and the hidden Log Path and error out\2C the main pane Settings\3B page Acquisition holds Channel\2C Rate\2C Level and Data File\2C page Display holds Scope\2C page Viewer (added with Add Page when the tab has two) the subpanel Viewer. Then\3A pages named Acquisition\2C Display and Viewer with fixed 110 px tabs\2C Stop and Inspector switch when released\2C Data File with its browse button\2C Results with column headers and three rows\2C Steps three elements high\2C tip strips on Rate\2C on Gain inside Channel and on Nav\2C the main pane scaling Settings with the pane (Pane Set Scaling\2C Scale Single Object)\2C the window 1180 x 760\3B in View A\2C View B and the inspector (Views) the Quit switches hidden and tip strips set. Saves the fixture and the views. problems lists every row or step that returned an error\2C with its code\3B the run goes on.">
+  <FreeLabel comment="Lay the panel out\2C then save" uid="lbl" uid_parent="root"/>
+  <Control _name="Fixture" conIdx="0" connection="required" description="Path of RemoteVI Complex Fixture.vi. Saved in place." outputs="value:fx.value" type="path" uid="fx" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Open VI Reference" inputs="vi path:fx.value,error in (no error):ei.value" outputs="vi reference:of.vi reference,error out:of.error out" uid="of" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:of.vi reference,error in (no error):of.error out" outputs="reference out:,error out:fpf.error out,Front Panel:fpf.fp" type="{LV.VI}" uid="fpf" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Panes[]" inputs="reference:fpf.fp,error in (no error):fpf.error out" outputs="reference out:,error out:pp.error out,Panes[]:pp.panes" type="{LV.Panel}" uid="pp" uid_parent="root"/>
+  <Constant _name="window" outputs="value:wb.value" type="cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}" uid="wb" uid_parent="root" value="[80,80,1260,840]"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3APanel Bounds" inputs="reference:of.vi reference,error in (no error):pp.error out,Front Panel Window\3APanel Bounds:wb.value" outputs="reference out:,error out:wn.error out" type="{LV.VI}" uid="wn" uid_parent="root"/>
+  <Constant _name="settings" outputs="value:lst.value" type="array{string}" uid="lst" uid_parent="root" value="[Settings,Gain]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:lst.value,error in:wn.error out" outputs="Controls:fst.Controls,error out:fst.error out" uid="fst" uid_parent="root"/>
+  <Constant _name="zero" outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Constant _name="one" outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
+  <Node _name="Index Array" inputs="array:fst.Controls,index:i0.value" outputs="element:ist.element" uid="ist" uid_parent="root"/>
+  <Constant _name="tab class" outputs="value:cta.value" type="ref{LV.TabControl}" uid="cta" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:cta.value,reference:ist.element,error in:fst.error out" outputs="specific class reference:tab.ref,error out:tab.error out" uid="tab" uid_parent="root"/>
+  <Constant _name="fixed tab size" outputs="value:tsz.value" type="int32" uid="tsz" uid_parent="root" value="2"/>
+  <Constant _name="tab dimension" outputs="value:tdm.value" type="cluster{int32.Width,int32.Height}" uid="tdm" uid_parent="root" value="[110,23]"/>
+  <Node _name="Property Node" fields="write+Tab Size,write+Fixed Tab Dimension,read+Pages" inputs="reference:tab.ref,error in (no error):tab.error out,Tab Size:tsz.value,Fixed Tab Dimension:tdm.value" outputs="reference out:,error out:tp.error out,Pages:tp.pages" type="{LV.TabControl}" uid="tp" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:tp.pages" outputs="size(s):tpn.size" uid="tpn" uid_parent="root"/>
+  <Constant _name="three" outputs="value:i3.value" type="int32" uid="i3" uid_parent="root" value="3"/>
+  <Node _name="Less?" inputs="x:tpn.size,y:i3.value" outputs="x &lt; y?:tpl.x &lt; y?" uid="tpl" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="tpl.x &lt; y?" uid="cap" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:tab.ref" uid="capi1" uid_parent="cap"/>
+    <Tunnel _id="In2" inputs="value:tp.error out" uid="capi2" uid_parent="cap"/>
+    <Tunnel _id="In3" inputs="value:tp.pages" uid="capi3" uid_parent="cap"/>
+    <CaseFrame label="Two pages\3A add the third (Viewer)" selector="True" selectout="" uid="capT" uid_parent="cap">
+      <Tunnel _id="In1" outputs="value:apt1.value" uid="apt1" uid_parent="capT"/>
+      <Tunnel _id="In2" outputs="value:apt2.value" uid="apt2" uid_parent="capT"/>
+      <Tunnel _id="In3" outputs="value:" uid="apt3" uid_parent="capT"/>
+      <Constant _name="after page 1" outputs="value:apk.value" type="int32" uid="apk" uid_parent="capT" value="1"/>
+      <Constant _name="after" outputs="value:apa.value" type="bool" uid="apa" uid_parent="capT" value="true"/>
+      <Node _name="Invoke Node" target="Add Page" type="{LV.TabControl}" inputs="reference:apt1.value,error in (no error):apt2.value,Page:apk.value,After:apa.value" outputs="reference out:,error out:apn.error out" uid="apn" uid_parent="capT"/>
+      <Node _name="Property Node" fields="read+Pages" inputs="reference:apt1.value,error in (no error):apn.error out" outputs="reference out:,error out:apr.error out,Pages:apr.pages" type="{LV.TabControl}" uid="apr" uid_parent="capT"/>
+      <Tunnel _id="Out1" inputs="value:apr.pages" uid="apto1" uid_parent="capT"/>
+      <Tunnel _id="Out2" inputs="value:apr.error out" uid="apto2" uid_parent="capT"/>
+    </CaseFrame>
+    <CaseFrame selector="False" selectout="" uid="capF" uid_parent="cap">
+      <Tunnel _id="In1" outputs="value:" uid="apf1" uid_parent="capF"/>
+      <Tunnel _id="In2" outputs="value:apf2.value" uid="apf2" uid_parent="capF"/>
+      <Tunnel _id="In3" outputs="value:apf3.value" uid="apf3" uid_parent="capF"/>
+      <Tunnel _id="Out1" inputs="value:apf3.value" uid="apfo1" uid_parent="capF"/>
+      <Tunnel _id="Out2" inputs="value:apf2.value" uid="apfo2" uid_parent="capF"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cap.pages" uid="capo1" uid_parent="cap"/>
+    <Tunnel _id="Out2" outputs="value:cap.err" uid="capo2" uid_parent="cap"/>
+  </Structure>
+  <Constant _name="page names" outputs="value:pgn.value" type="array{string}" uid="pgn" uid_parent="root" value="[Acquisition,Display,Viewer]"/>
+  <Structure _name="For Loop" count="" label="Name the pages" maxin="" maxout="" uid="fpg" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cap.pages" mode="index" outputs="value:pg.value" uid="pg" uid_parent="fpg"/>
+    <Tunnel _id="In2" inputs="value:pgn.value" mode="index" outputs="value:pgl.value" uid="pgl" uid_parent="fpg"/>
+    <ShiftReg uid="srp" uid_parent="fpg">
+      <Left inputs="value:cap.err" outputs="value:pe.value" uid="srpl" uid_parent="srp"/>
+      <Right inputs="value:pw.error out" outputs="value:pageErr.value" uid="srpr" uid_parent="srp"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="write+Page Label,write+Tab Caption" inputs="reference:pg.value,error in (no error):pe.value,Page Label:pgl.value,Tab Caption:pgl.value" outputs="reference out:,error out:pw.error out" type="{LV.Page}" uid="pw" uid_parent="fpg"/>
+  </Structure>
+  <Call target="Clear Errors.vi" inputs="error in (no error):pageErr.value" outputs="error out:ce0.error out" uid="ce0" uid_parent="root"/>
+  <Constant _name="labels" outputs="value:rl.value" type="array{string}" uid="rl" uid_parent="root" value="[View,Status,Inspector,Stop,Nav,Results,Steps,Log Path,error out,Settings,Channel,Rate,Level,Data File,Scope,Viewer]"/>
+  <Constant _name="panes" outputs="value:rp.value" type="array{int32}" uid="rp" uid_parent="root" value="[1,1,0,0,0,0,0,0,0,2,2,2,2,2,2,2]"/>
+  <Constant _name="pages" outputs="value:rg.value" type="array{int32}" uid="rg" uid_parent="root" value="[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,0,0,0,0,1,2]"/>
+  <Constant _name="offsets" outputs="value:ro.value" type="array{cluster{int32.Left,int32.Top}}" uid="ro" uid_parent="root" value="[[20,-11],[130,-8],[12,8],[120,8],[12,64],[12,290],[12,450],[12,840],[12,880],[12,-6],[20,50],[230,40],[390,40],[20,220],[10,40],[20,50]]"/>
+  <Constant _name="no duplicate" outputs="value:nd.value" type="bool" uid="nd" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="" label="Move each control into its pane or page and place it" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rl.value" mode="index" outputs="value:lL.value" uid="lL" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:rp.value" mode="index" outputs="value:lP.value" uid="lP" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:rg.value" mode="index" outputs="value:lG.value" uid="lG" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:ro.value" mode="index" outputs="value:lO.value" uid="lO" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:fpf.fp" outputs="value:lF.value" uid="lF" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:pp.panes" outputs="value:lPs.value" uid="lPs" uid_parent="fl"/>
+    <Tunnel _id="In7" inputs="value:tab.ref" outputs="value:lT.value" uid="lT" uid_parent="fl"/>
+    <Tunnel _id="In8" inputs="value:nd.value" outputs="value:lD.value" uid="lD" uid_parent="fl"/>
+    <Tunnel _id="In9" inputs="value:ce0.error out" outputs="value:lE.value" uid="lE" uid_parent="fl"/>
+    <Node _name="Build Array" inputs="element:lL.value" outputs="appended array:l1.appended array" uid="l1" uid_parent="fl"/>
+    <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:lF.value,labels:l1.appended array,error in:lE.value" outputs="Controls:fc.Controls,error out:fc.error out" uid="fc" uid_parent="fl"/>
+    <Constant _name="zero" outputs="value:z.value" type="int32" uid="z" uid_parent="fl" value="0"/>
+    <Node _name="Index Array" inputs="array:fc.Controls,index:z.value" outputs="element:ctl.element" uid="ctl" uid_parent="fl"/>
+    <Node _name="Index Array" inputs="array:lPs.value,index:lP.value" outputs="element:pane.element" uid="pane" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Position" inputs="reference:pane.element,error in (no error):fc.error out" outputs="reference out:,error out:pnp.error out,Position:pnp.pos" type="{LV.GObject}" uid="pnp" uid_parent="fl"/>
+    <Node _name="Less Than 0?" inputs="x:lG.value" outputs="x &lt; 0?:np.x &lt; 0?" uid="np" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:lO.value" outputs="Left:uo.l,Top:uo.t" uid="uo" uid_parent="fl"/>
+    <Structure _name="Case Structure" selectin="np.x &lt; 0?" uid="cs" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:ctl.element" uid="csi1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:pane.element" uid="csi2" uid_parent="cs"/>
+      <Tunnel _id="In3" inputs="value:pnp.pos" uid="csi3" uid_parent="cs"/>
+      <Tunnel _id="In4" inputs="value:lT.value" uid="csi4" uid_parent="cs"/>
+      <Tunnel _id="In5" inputs="value:lG.value" uid="csi5" uid_parent="cs"/>
+      <Tunnel _id="In6" inputs="value:uo.l" uid="csi6" uid_parent="cs"/>
+      <Tunnel _id="In7" inputs="value:uo.t" uid="csi7" uid_parent="cs"/>
+      <Tunnel _id="In8" inputs="value:lD.value" uid="csi8" uid_parent="cs"/>
+      <Tunnel _id="In9" inputs="value:pnp.error out" uid="csi9" uid_parent="cs"/>
+      <CaseFrame label="Into the pane" selector="True" selectout="" uid="cT" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:t1.value" uid="t1" uid_parent="cT"/>
+        <Tunnel _id="In2" outputs="value:t2.value" uid="t2" uid_parent="cT"/>
+        <Tunnel _id="In3" outputs="value:t3.value" uid="t3" uid_parent="cT"/>
+        <Tunnel _id="In4" outputs="value:" uid="t4" uid_parent="cT"/>
+        <Tunnel _id="In5" outputs="value:" uid="t5" uid_parent="cT"/>
+        <Tunnel _id="In6" outputs="value:t6.value" uid="t6" uid_parent="cT"/>
+        <Tunnel _id="In7" outputs="value:t7.value" uid="t7" uid_parent="cT"/>
+        <Tunnel _id="In8" outputs="value:t8.value" uid="t8" uid_parent="cT"/>
+        <Tunnel _id="In9" outputs="value:t9.value" uid="t9" uid_parent="cT"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:t3.value" outputs="Left:tq.l,Top:tq.t" uid="tq" uid_parent="cT"/>
+        <Node _name="Add" inputs="x:tq.l,y:t6.value" outputs="x+y:tx.x+y" uid="tx" uid_parent="cT"/>
+        <Node _name="Add" inputs="x:tq.t,y:t7.value" outputs="x+y:ty.x+y" uid="ty" uid_parent="cT"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:t3.value,Left:tx.x+y,Top:ty.x+y" outputs="output cluster:tb.output cluster" uid="tb" uid_parent="cT"/>
+        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:t1.value,error in (no error):t9.value,position:tb.output cluster,owner:t2.value,duplicate:t8.value" outputs="reference out:,error out:tm.error out" uid="tm" uid_parent="cT"/>
+        <Node _name="Property Node" fields="write+Position" inputs="reference:t1.value,error in (no error):tm.error out,Position:tb.output cluster" outputs="reference out:,error out:tw.error out" type="{LV.Control}" uid="tw" uid_parent="cT"/>
+        <Tunnel _id="Out1" inputs="value:tw.error out" uid="tO1" uid_parent="cT"/>
+      </CaseFrame>
+      <CaseFrame label="Onto a page of Settings" selector="False" selectout="" uid="cF" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:f1.value" uid="f1" uid_parent="cF"/>
+        <Tunnel _id="In2" outputs="value:" uid="f2" uid_parent="cF"/>
+        <Tunnel _id="In3" outputs="value:" uid="f3" uid_parent="cF"/>
+        <Tunnel _id="In4" outputs="value:f4.value" uid="f4" uid_parent="cF"/>
+        <Tunnel _id="In5" outputs="value:f5.value" uid="f5" uid_parent="cF"/>
+        <Tunnel _id="In6" outputs="value:f6.value" uid="f6" uid_parent="cF"/>
+        <Tunnel _id="In7" outputs="value:f7.value" uid="f7" uid_parent="cF"/>
+        <Tunnel _id="In8" outputs="value:f8.value" uid="f8" uid_parent="cF"/>
+        <Tunnel _id="In9" outputs="value:f9.value" uid="f9" uid_parent="cF"/>
+        <Node _name="Property Node" fields="read+Pages" inputs="reference:f4.value,error in (no error):f9.value" outputs="reference out:,error out:fpq.error out,Pages:fpq.pages" type="{LV.TabControl}" uid="fpq" uid_parent="cF"/>
+        <Node _name="Index Array" inputs="array:fpq.pages,index:f5.value" outputs="element:fpe.element" uid="fpe" uid_parent="cF"/>
+        <Node _name="Property Node" fields="read+Position" inputs="reference:f4.value,error in (no error):fpq.error out" outputs="reference out:,error out:ftp.error out,Position:ftp.pos" type="{LV.Control}" uid="ftp" uid_parent="cF"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:ftp.pos" outputs="Left:fq.l,Top:fq.t" uid="fq" uid_parent="cF"/>
+        <Node _name="Add" inputs="x:fq.l,y:f6.value" outputs="x+y:fxa.x+y" uid="fxa" uid_parent="cF"/>
+        <Node _name="Add" inputs="x:fq.t,y:f7.value" outputs="x+y:fy.x+y" uid="fy" uid_parent="cF"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:ftp.pos,Left:fxa.x+y,Top:fy.x+y" outputs="output cluster:fb.output cluster" uid="fb" uid_parent="cF"/>
+        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:f1.value,error in (no error):ftp.error out,position:fb.output cluster,owner:fpe.element,duplicate:f8.value" outputs="reference out:,error out:fm.error out" uid="fm" uid_parent="cF"/>
+        <Node _name="Property Node" fields="write+Position" inputs="reference:f1.value,error in (no error):fm.error out,Position:fb.output cluster" outputs="reference out:,error out:fw.error out" type="{LV.Control}" uid="fw" uid_parent="cF"/>
+        <Tunnel _id="Out1" inputs="value:fw.error out" uid="fO1" uid_parent="cF"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cs.err" uid="csO1" uid_parent="cs"/>
+    </Structure>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cs.err" outputs="code:ue.code" uid="ue" uid_parent="fl"/>
+    <Constant _name="fmt" outputs="value:pf.value" type="string" uid="pf" uid_parent="fl" value="%s %d"/>
+    <Node _name="Format Into String" inputs="format string:pf.value,input 1:lL.value,input 2:ue.code" outputs="resulting string:ps.resulting string" uid="ps" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ps.resulting string" mode="index" outputs="value:rowProblems.value" uid="rowProblems" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:cs.err" outputs="value:lastErr.value" uid="lastErr" uid_parent="fl"/>
+  </Structure>
+  <Call target="Clear Errors.vi" inputs="error in (no error):lastErr.value" outputs="error out:ce1.error out" uid="ce1" uid_parent="root"/>
+  <Constant _name="Stop" outputs="value:s0l.value" type="array{string}" uid="s0l" uid_parent="root" value="[Stop]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s0l.value,error in:ce1.error out" outputs="Controls:s0f.Controls,error out:s0f.error out" uid="s0f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s0f.Controls,index:i0.value" outputs="element:s0i.element" uid="s0i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s0c.value" type="ref{LV.Boolean}" uid="s0c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s0c.value,reference:s0i.element,error in:s0f.error out" outputs="specific class reference:s0t.ref,error out:s0t.error out" uid="s0t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s0v.value" type="uint32" uid="s0v" uid_parent="root" value="1"/>
+  <Node _name="Property Node" fields="write+Mechanical Action" inputs="reference:s0t.ref,error in (no error):s0t.error out,Mechanical Action:s0v.value" outputs="reference out:,error out:s0p.error out" type="{LV.Boolean}" uid="s0p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s0p.error out" outputs="code:s0e.code" uid="s0e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s0p.error out" outputs="error out:s0x.error out" uid="s0x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s0m.value" type="string" uid="s0m" uid_parent="root" value="Stop Mechanical Action %d"/>
+  <Node _name="Format Into String" inputs="format string:s0m.value,input 1:s0e.code" outputs="resulting string:s0s.resulting string" uid="s0s" uid_parent="root"/>
+  <Constant _name="Inspector" outputs="value:s1l.value" type="array{string}" uid="s1l" uid_parent="root" value="[Inspector]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s1l.value,error in:s0x.error out" outputs="Controls:s1f.Controls,error out:s1f.error out" uid="s1f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s1f.Controls,index:i0.value" outputs="element:s1i.element" uid="s1i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s1c.value" type="ref{LV.Boolean}" uid="s1c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s1c.value,reference:s1i.element,error in:s1f.error out" outputs="specific class reference:s1t.ref,error out:s1t.error out" uid="s1t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s1v.value" type="uint32" uid="s1v" uid_parent="root" value="1"/>
+  <Node _name="Property Node" fields="write+Mechanical Action" inputs="reference:s1t.ref,error in (no error):s1t.error out,Mechanical Action:s1v.value" outputs="reference out:,error out:s1p.error out" type="{LV.Boolean}" uid="s1p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s1p.error out" outputs="code:s1e.code" uid="s1e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s1p.error out" outputs="error out:s1x.error out" uid="s1x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s1m.value" type="string" uid="s1m" uid_parent="root" value="Inspector Mechanical Action %d"/>
+  <Node _name="Format Into String" inputs="format string:s1m.value,input 1:s1e.code" outputs="resulting string:s1s.resulting string" uid="s1s" uid_parent="root"/>
+  <Constant _name="Log Path" outputs="value:s2l.value" type="array{string}" uid="s2l" uid_parent="root" value="[Log Path]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s2l.value,error in:s1x.error out" outputs="Controls:s2f.Controls,error out:s2f.error out" uid="s2f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s2f.Controls,index:i0.value" outputs="element:s2i.element" uid="s2i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s2v.value" type="bool" uid="s2v" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Visible" inputs="reference:s2i.element,error in (no error):s2f.error out,Visible:s2v.value" outputs="reference out:,error out:s2p.error out" type="{LV.Control}" uid="s2p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s2p.error out" outputs="code:s2e.code" uid="s2e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s2p.error out" outputs="error out:s2x.error out" uid="s2x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s2m.value" type="string" uid="s2m" uid_parent="root" value="Log Path Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s2m.value,input 1:s2e.code" outputs="resulting string:s2s.resulting string" uid="s2s" uid_parent="root"/>
+  <Constant _name="error out" outputs="value:s3l.value" type="array{string}" uid="s3l" uid_parent="root" value="[error out]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s3l.value,error in:s2x.error out" outputs="Controls:s3f.Controls,error out:s3f.error out" uid="s3f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s3f.Controls,index:i0.value" outputs="element:s3i.element" uid="s3i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s3v.value" type="bool" uid="s3v" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Visible" inputs="reference:s3i.element,error in (no error):s3f.error out,Visible:s3v.value" outputs="reference out:,error out:s3p.error out" type="{LV.Control}" uid="s3p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s3p.error out" outputs="code:s3e.code" uid="s3e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s3p.error out" outputs="error out:s3x.error out" uid="s3x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s3m.value" type="string" uid="s3m" uid_parent="root" value="error out Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s3m.value,input 1:s3e.code" outputs="resulting string:s3s.resulting string" uid="s3s" uid_parent="root"/>
+  <Constant _name="Data File" outputs="value:s4l.value" type="array{string}" uid="s4l" uid_parent="root" value="[Data File]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s4l.value,error in:s3x.error out" outputs="Controls:s4f.Controls,error out:s4f.error out" uid="s4f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s4f.Controls,index:i0.value" outputs="element:s4i.element" uid="s4i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s4c.value" type="ref{LV.Path}" uid="s4c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s4c.value,reference:s4i.element,error in:s4f.error out" outputs="specific class reference:s4t.ref,error out:s4t.error out" uid="s4t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s4v.value" type="bool" uid="s4v" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Browse Button\3AVisible" inputs="reference:s4t.ref,error in (no error):s4t.error out,Browse Button\3AVisible:s4v.value" outputs="reference out:,error out:s4p.error out" type="{LV.Path}" uid="s4p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s4p.error out" outputs="code:s4e.code" uid="s4e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s4p.error out" outputs="error out:s4x.error out" uid="s4x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s4m.value" type="string" uid="s4m" uid_parent="root" value="Data File Browse Button:Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s4m.value,input 1:s4e.code" outputs="resulting string:s4s.resulting string" uid="s4s" uid_parent="root"/>
+  <Constant _name="Results" outputs="value:s5l.value" type="array{string}" uid="s5l" uid_parent="root" value="[Results]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s5l.value,error in:s4x.error out" outputs="Controls:s5f.Controls,error out:s5f.error out" uid="s5f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s5f.Controls,index:i0.value" outputs="element:s5i.element" uid="s5i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s5c.value" type="ref{LV.Table}" uid="s5c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s5c.value,reference:s5i.element,error in:s5f.error out" outputs="specific class reference:s5t.ref,error out:s5t.error out" uid="s5t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s5v.value" type="bool" uid="s5v" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Visible Items\3AColumn Headers Visible" inputs="reference:s5t.ref,error in (no error):s5t.error out,Visible Items\3AColumn Headers Visible:s5v.value" outputs="reference out:,error out:s5p.error out" type="{LV.Table}" uid="s5p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s5p.error out" outputs="code:s5e.code" uid="s5e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s5p.error out" outputs="error out:s5x.error out" uid="s5x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s5m.value" type="string" uid="s5m" uid_parent="root" value="Results Visible Items:Column Headers Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s5m.value,input 1:s5e.code" outputs="resulting string:s5s.resulting string" uid="s5s" uid_parent="root"/>
+  <Constant _name="Results" outputs="value:s6l.value" type="array{string}" uid="s6l" uid_parent="root" value="[Results]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s6l.value,error in:s5x.error out" outputs="Controls:s6f.Controls,error out:s6f.error out" uid="s6f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s6f.Controls,index:i0.value" outputs="element:s6i.element" uid="s6i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s6c.value" type="ref{LV.Table}" uid="s6c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s6c.value,reference:s6i.element,error in:s6f.error out" outputs="specific class reference:s6t.ref,error out:s6t.error out" uid="s6t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s6v.value" type="array{string}" uid="s6v" uid_parent="root" value="[Step,Value]"/>
+  <Node _name="Property Node" fields="write+Column Header Strings[]" inputs="reference:s6t.ref,error in (no error):s6t.error out,Column Header Strings[]:s6v.value" outputs="reference out:,error out:s6p.error out" type="{LV.Table}" uid="s6p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s6p.error out" outputs="code:s6e.code" uid="s6e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s6p.error out" outputs="error out:s6x.error out" uid="s6x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s6m.value" type="string" uid="s6m" uid_parent="root" value="Results Column Header Strings[] %d"/>
+  <Node _name="Format Into String" inputs="format string:s6m.value,input 1:s6e.code" outputs="resulting string:s6s.resulting string" uid="s6s" uid_parent="root"/>
+  <Constant _name="Results" outputs="value:s7l.value" type="array{string}" uid="s7l" uid_parent="root" value="[Results]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s7l.value,error in:s6x.error out" outputs="Controls:s7f.Controls,error out:s7f.error out" uid="s7f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s7f.Controls,index:i0.value" outputs="element:s7i.element" uid="s7i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s7c.value" type="ref{LV.Table}" uid="s7c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s7c.value,reference:s7i.element,error in:s7f.error out" outputs="specific class reference:s7t.ref,error out:s7t.error out" uid="s7t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s7v.value" type="array.2{string}" uid="s7v" uid_parent="root" value="[[Init,1],[Run,2],[Stop,3]]"/>
+  <Node _name="Property Node" fields="write+Value" inputs="reference:s7t.ref,error in (no error):s7t.error out,Value:s7v.value" outputs="reference out:,error out:s7p.error out" type="{LV.Table}" uid="s7p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s7p.error out" outputs="code:s7e.code" uid="s7e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s7p.error out" outputs="error out:s7x.error out" uid="s7x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s7m.value" type="string" uid="s7m" uid_parent="root" value="Results Value %d"/>
+  <Node _name="Format Into String" inputs="format string:s7m.value,input 1:s7e.code" outputs="resulting string:s7s.resulting string" uid="s7s" uid_parent="root"/>
+  <Constant _name="Steps" outputs="value:s8l.value" type="array{string}" uid="s8l" uid_parent="root" value="[Steps]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s8l.value,error in:s7x.error out" outputs="Controls:s8f.Controls,error out:s8f.error out" uid="s8f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s8f.Controls,index:i0.value" outputs="element:s8i.element" uid="s8i" uid_parent="root"/>
+  <Constant _name="class" outputs="value:s8c.value" type="ref{LV.Array}" uid="s8c" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:s8c.value,reference:s8i.element,error in:s8f.error out" outputs="specific class reference:s8t.ref,error out:s8t.error out" uid="s8t" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s8v.value" type="uint32" uid="s8v" uid_parent="root" value="3"/>
+  <Node _name="Property Node" fields="write+Number of Rows" inputs="reference:s8t.ref,error in (no error):s8t.error out,Number of Rows:s8v.value" outputs="reference out:,error out:s8p.error out" type="{LV.Array}" uid="s8p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s8p.error out" outputs="code:s8e.code" uid="s8e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s8p.error out" outputs="error out:s8x.error out" uid="s8x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s8m.value" type="string" uid="s8m" uid_parent="root" value="Steps Number of Rows %d"/>
+  <Node _name="Format Into String" inputs="format string:s8m.value,input 1:s8e.code" outputs="resulting string:s8s.resulting string" uid="s8s" uid_parent="root"/>
+  <Constant _name="Rate" outputs="value:s9l.value" type="array{string}" uid="s9l" uid_parent="root" value="[Rate]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s9l.value,error in:s8x.error out" outputs="Controls:s9f.Controls,error out:s9f.error out" uid="s9f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s9f.Controls,index:i0.value" outputs="element:s9i.element" uid="s9i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s9v.value" type="string" uid="s9v" uid_parent="root" value="Sample rate"/>
+  <Node _name="Property Node" fields="write+TipStrip" inputs="reference:s9i.element,error in (no error):s9f.error out,TipStrip:s9v.value" outputs="reference out:,error out:s9p.error out" type="{LV.Control}" uid="s9p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s9p.error out" outputs="code:s9e.code" uid="s9e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s9p.error out" outputs="error out:s9x.error out" uid="s9x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s9m.value" type="string" uid="s9m" uid_parent="root" value="Rate TipStrip %d"/>
+  <Node _name="Format Into String" inputs="format string:s9m.value,input 1:s9e.code" outputs="resulting string:s9s.resulting string" uid="s9s" uid_parent="root"/>
+  <Constant _name="Gain" outputs="value:s10l.value" type="array{string}" uid="s10l" uid_parent="root" value="[Gain]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s10l.value,error in:s9x.error out" outputs="Controls:s10f.Controls,error out:s10f.error out" uid="s10f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s10f.Controls,index:i0.value" outputs="element:s10i.element" uid="s10i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s10v.value" type="string" uid="s10v" uid_parent="root" value="Channel gain"/>
+  <Node _name="Property Node" fields="write+TipStrip" inputs="reference:s10i.element,error in (no error):s10f.error out,TipStrip:s10v.value" outputs="reference out:,error out:s10p.error out" type="{LV.Control}" uid="s10p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s10p.error out" outputs="code:s10e.code" uid="s10e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s10p.error out" outputs="error out:s10x.error out" uid="s10x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s10m.value" type="string" uid="s10m" uid_parent="root" value="Gain TipStrip %d"/>
+  <Node _name="Format Into String" inputs="format string:s10m.value,input 1:s10e.code" outputs="resulting string:s10s.resulting string" uid="s10s" uid_parent="root"/>
+  <Constant _name="Nav" outputs="value:s11l.value" type="array{string}" uid="s11l" uid_parent="root" value="[Nav]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s11l.value,error in:s10x.error out" outputs="Controls:s11f.Controls,error out:s11f.error out" uid="s11f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s11f.Controls,index:i0.value" outputs="element:s11i.element" uid="s11i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s11v.value" type="string" uid="s11v" uid_parent="root" value="Pick a section"/>
+  <Node _name="Property Node" fields="write+TipStrip" inputs="reference:s11i.element,error in (no error):s11f.error out,TipStrip:s11v.value" outputs="reference out:,error out:s11p.error out" type="{LV.Control}" uid="s11p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s11p.error out" outputs="code:s11e.code" uid="s11e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s11p.error out" outputs="error out:s11x.error out" uid="s11x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s11m.value" type="string" uid="s11m" uid_parent="root" value="Nav TipStrip %d"/>
+  <Node _name="Format Into String" inputs="format string:s11m.value,input 1:s11e.code" outputs="resulting string:s11s.resulting string" uid="s11s" uid_parent="root"/>
+  <Constant _name="View" outputs="value:s12l.value" type="array{string}" uid="s12l" uid_parent="root" value="[View]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s12l.value,error in:s11x.error out" outputs="Controls:s12f.Controls,error out:s12f.error out" uid="s12f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s12f.Controls,index:i0.value" outputs="element:s12i.element" uid="s12i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s12v.value" type="bool" uid="s12v" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:s12i.element,error in (no error):s12f.error out,Label.Visible:s12v.value" outputs="reference out:,error out:s12p.error out" type="{LV.Control}" uid="s12p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s12p.error out" outputs="code:s12e.code" uid="s12e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s12p.error out" outputs="error out:s12x.error out" uid="s12x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s12m.value" type="string" uid="s12m" uid_parent="root" value="View Label.Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s12m.value,input 1:s12e.code" outputs="resulting string:s12s.resulting string" uid="s12s" uid_parent="root"/>
+  <Constant _name="Status" outputs="value:s13l.value" type="array{string}" uid="s13l" uid_parent="root" value="[Status]"/>
+  <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:fpf.fp,labels:s13l.value,error in:s12x.error out" outputs="Controls:s13f.Controls,error out:s13f.error out" uid="s13f" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:s13f.Controls,index:i0.value" outputs="element:s13i.element" uid="s13i" uid_parent="root"/>
+  <Constant _name="value" outputs="value:s13v.value" type="bool" uid="s13v" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Label.Visible" inputs="reference:s13i.element,error in (no error):s13f.error out,Label.Visible:s13v.value" outputs="reference out:,error out:s13p.error out" type="{LV.Control}" uid="s13p" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:s13p.error out" outputs="code:s13e.code" uid="s13e" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):s13p.error out" outputs="error out:s13x.error out" uid="s13x" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:s13m.value" type="string" uid="s13m" uid_parent="root" value="Status Label.Visible %d"/>
+  <Node _name="Format Into String" inputs="format string:s13m.value,input 1:s13e.code" outputs="resulting string:s13s.resulting string" uid="s13s" uid_parent="root"/>
+  <Constant _name="two" outputs="value:i2.value" type="int32" uid="i2" uid_parent="root" value="2"/>
+  <Node _name="Index Array" inputs="array:pp.panes,index:i2.value" outputs="element:mp.element" uid="mp" uid_parent="root"/>
+  <Constant _name="scale single object" outputs="value:ssm.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="ssm" uid_parent="root" value="2"/>
+  <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:mp.element,error in (no error):s13x.error out,ScalingMode:ssm.value,ScalableObj:ist.element" outputs="reference out:,error out:sc.error out" uid="sc" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code" inputs="input cluster:sc.error out" outputs="code:sce.code" uid="sce" uid_parent="root"/>
+  <Constant _name="fmt" outputs="value:scm.value" type="string" uid="scm" uid_parent="root" value="Set Scaling %d"/>
+  <Node _name="Format Into String" inputs="format string:scm.value,input 1:sce.code" outputs="resulting string:scs.resulting string" uid="scs" uid_parent="root"/>
+  <Control _name="Views" conIdx="1" connection="recommended" description="Paths of RemoteVI Complex View A.vi\2C View B.vi and Inspector.vi\3B each is edited and saved." outputs="value:vws.value" type="array{path}" uid="vws" uid_parent="root" value="[]"/>
+  <Constant _name="quit labels" outputs="value:vql.value" type="array{string}" uid="vql" uid_parent="root" value="[A Quit,B Quit,Inspector Quit]"/>
+  <Constant _name="tip labels" outputs="value:vtl.value" type="array{string}" uid="vtl" uid_parent="root" value="[A Apply,B Run,Apply]"/>
+  <Constant _name="tips" outputs="value:vtt.value" type="array{string}" uid="vtt" uid_parent="root" value="[Apply view A,Run view B,Apply the note]"/>
+  <Constant _name="hidden" outputs="value:vhf.value" type="bool" uid="vhf" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="" label="Each view" maxin="" maxout="" uid="fv" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vws.value" mode="index" outputs="value:vp.value" uid="vp" uid_parent="fv"/>
+    <Tunnel _id="In2" inputs="value:vql.value" mode="index" outputs="value:vq.value" uid="vq" uid_parent="fv"/>
+    <Tunnel _id="In3" inputs="value:vtl.value" mode="index" outputs="value:vt.value" uid="vt" uid_parent="fv"/>
+    <Tunnel _id="In4" inputs="value:vtt.value" mode="index" outputs="value:vx.value" uid="vx" uid_parent="fv"/>
+    <Tunnel _id="In5" inputs="value:vhf.value" outputs="value:vh.value" uid="vh" uid_parent="fv"/>
+    <Tunnel _id="In6" inputs="value:i0.value" outputs="value:v0.value" uid="v0" uid_parent="fv"/>
+    <Tunnel _id="In7" inputs="value:i1.value" outputs="value:v1.value" uid="v1" uid_parent="fv"/>
+    <Node _name="Open VI Reference" inputs="vi path:vp.value" outputs="vi reference:vo.vi reference,error out:vo.error out" uid="vo" uid_parent="fv"/>
+    <Node _name="Property Node" fields="read+Front Panel" inputs="reference:vo.vi reference,error in (no error):vo.error out" outputs="reference out:,error out:vf.error out,Front Panel:vf.fp" type="{LV.VI}" uid="vf" uid_parent="fv"/>
+    <Node _name="Build Array" inputs="element:vq.value,element:vt.value" outputs="appended array:vb.appended array" uid="vb" uid_parent="fv"/>
+    <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:vf.fp,labels:vb.appended array,error in:vf.error out" outputs="Controls:vc.Controls,error out:vc.error out" uid="vc" uid_parent="fv"/>
+    <Node _name="Index Array" inputs="array:vc.Controls,index:v0.value" outputs="element:vqr.element" uid="vqr" uid_parent="fv"/>
+    <Node _name="Index Array" inputs="array:vc.Controls,index:v1.value" outputs="element:vtr.element" uid="vtr" uid_parent="fv"/>
+    <Node _name="Property Node" fields="write+Visible" inputs="reference:vqr.element,error in (no error):vc.error out,Visible:vh.value" outputs="reference out:,error out:vw1.error out" type="{LV.Control}" uid="vw1" uid_parent="fv"/>
+    <Node _name="Property Node" fields="write+TipStrip" inputs="reference:vtr.element,error in (no error):vw1.error out,TipStrip:vx.value" outputs="reference out:,error out:vw2.error out" type="{LV.Control}" uid="vw2" uid_parent="fv"/>
+    <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:vo.vi reference,error in (no error):vw2.error out" outputs="reference out:,error out:vsv.error out" uid="vsv" uid_parent="fv"/>
+    <Node _name="Close Reference" inputs="reference:vo.vi reference,error in (no error):vsv.error out" outputs="error out:vcl.error out" uid="vcl" uid_parent="fv"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:vcl.error out" outputs="code:vce.code" uid="vce" uid_parent="fv"/>
+    <Constant _name="fmt" outputs="value:vfm.value" type="string" uid="vfm" uid_parent="fv" value="view %s %d"/>
+    <Node _name="Format Into String" inputs="format string:vfm.value,input 1:vq.value,input 2:vce.code" outputs="resulting string:vfs.resulting string" uid="vfs" uid_parent="fv"/>
+    <Tunnel _id="Out1" inputs="value:vfs.resulting string" mode="index" outputs="value:viewProblems.value" uid="viewProblems" uid_parent="fv"/>
+  </Structure>
+  <Node _name="Build Array" inputs="array:rowProblems.value,element:s0s.resulting string,element:s1s.resulting string,element:s2s.resulting string,element:s3s.resulting string,element:s4s.resulting string,element:s5s.resulting string,element:s6s.resulting string,element:s7s.resulting string,element:s8s.resulting string,element:s9s.resulting string,element:s10s.resulting string,element:s11s.resulting string,element:s12s.resulting string,element:s13s.resulting string,element:scs.resulting string,array:viewProblems.value" outputs="appended array:all.appended array" uid="all" uid_parent="root"/>
+  <Indicator _name="problems" conIdx="4" connection="recommended" description="One line per row and step\3A its label and error code (0 = done)." inputs="value:all.appended array" type="array{string}" uid="pr" uid_parent="root" value="[]"/>
+  <Node _name="Merge Errors" inputs="error in:s13p.error out,error in:sc.error out" outputs="error out:mm.error out" uid="mm" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):mm.error out" outputs="error out:ce2.error out" uid="ce2" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:of.vi reference,error in (no error):ce2.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of opening and saving the fixture (the layout steps report in problems)." inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

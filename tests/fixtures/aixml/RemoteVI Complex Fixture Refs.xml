@@ -1,0 +1,28 @@
+<VI _name="RemoteVI Complex Fixture Refs.vi" description="Helper of RemoteVI Complex Fixture Events.vi. Splits the array of control references RemoteVI Complex Fixture Find Controls.vi returns for Settings\2C Rate\2C Level\2C Nav\2C Scope\2C Channel\2C Results\2C Steps into one named reference each\2C so Register For Events names each event source after its control (&lt;Settings Ref&gt;).">
+  <FreeLabel comment="One named reference per control" uid="lbl" uid_parent="root"/>
+  <Control _name="Controls" conIdx="0" connection="required" description="References in the order Settings\2C Rate\2C Level\2C Nav\2C Scope\2C Channel\2C Results\2C Steps." outputs="value:c.value" type="array{ref{LV.Control}}" uid="c" uid_parent="root" value="[]"/>
+  <Constant _name="0" outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k0.value" outputs="element:x0.element" uid="x0" uid_parent="root"/>
+  <Indicator _name="Settings Ref" conIdx="4" connection="recommended" description="The control Settings." inputs="value:x0.element" type="ref{LV.Control}" uid="o0" uid_parent="root" value=""/>
+  <Constant _name="1" outputs="value:k1.value" type="int32" uid="k1" uid_parent="root" value="1"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k1.value" outputs="element:x1.element" uid="x1" uid_parent="root"/>
+  <Indicator _name="Rate Ref" conIdx="5" connection="recommended" description="The control Rate." inputs="value:x1.element" type="ref{LV.Control}" uid="o1" uid_parent="root" value=""/>
+  <Constant _name="2" outputs="value:k2.value" type="int32" uid="k2" uid_parent="root" value="2"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k2.value" outputs="element:x2.element" uid="x2" uid_parent="root"/>
+  <Indicator _name="Level Ref" conIdx="6" connection="recommended" description="The control Level." inputs="value:x2.element" type="ref{LV.Control}" uid="o2" uid_parent="root" value=""/>
+  <Constant _name="3" outputs="value:k3.value" type="int32" uid="k3" uid_parent="root" value="3"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k3.value" outputs="element:x3.element" uid="x3" uid_parent="root"/>
+  <Indicator _name="Nav Ref" conIdx="7" connection="recommended" description="The control Nav." inputs="value:x3.element" type="ref{LV.Control}" uid="o3" uid_parent="root" value=""/>
+  <Constant _name="4" outputs="value:k4.value" type="int32" uid="k4" uid_parent="root" value="4"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k4.value" outputs="element:x4.element" uid="x4" uid_parent="root"/>
+  <Indicator _name="Scope Ref" conIdx="8" connection="recommended" description="The control Scope." inputs="value:x4.element" type="ref{LV.Control}" uid="o4" uid_parent="root" value=""/>
+  <Constant _name="5" outputs="value:k5.value" type="int32" uid="k5" uid_parent="root" value="5"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k5.value" outputs="element:x5.element" uid="x5" uid_parent="root"/>
+  <Indicator _name="Channel Ref" conIdx="9" connection="recommended" description="The control Channel." inputs="value:x5.element" type="ref{LV.Control}" uid="o5" uid_parent="root" value=""/>
+  <Constant _name="6" outputs="value:k6.value" type="int32" uid="k6" uid_parent="root" value="6"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k6.value" outputs="element:x6.element" uid="x6" uid_parent="root"/>
+  <Indicator _name="Results Ref" conIdx="10" connection="recommended" description="The control Results." inputs="value:x6.element" type="ref{LV.Control}" uid="o6" uid_parent="root" value=""/>
+  <Constant _name="7" outputs="value:k7.value" type="int32" uid="k7" uid_parent="root" value="7"/>
+  <Node _name="Index Array" inputs="array:c.value,index:k7.value" outputs="element:x7.element" uid="x7" uid_parent="root"/>
+  <Indicator _name="Steps Ref" conIdx="11" connection="recommended" description="The control Steps." inputs="value:x7.element" type="ref{LV.Control}" uid="o7" uid_parent="root" value=""/>
+</VI>

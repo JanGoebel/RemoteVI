@@ -1,0 +1,76 @@
+<VI _name="RemoteVI Complex Fixture Layout.vi" description="Event-log helper of RemoteVI Complex Fixture.vi. Builds the layout lines of the log for every control RemoteVI Complex Fixture All Controls.vi finds on Panel\3A kind TAB label TAB x y w h LF\2C the control's body in the coordinates of Host Panel's window\3A its Position and Bounds are converted from its pane's coordinates to panel coordinates ({LV.Pane} CvtPaneToPanelCoords on its OwningPane)\2C then to screen coordinates (CvtPanelToScreenCoords of Host Panel)\2C minus the top-left of Host Panel's Front Panel Window\3APanel Bounds - the same coordinates as RemoteVI's frame minus its origin message\2C for controls in every pane\2C on tab pages\2C in clusters and in a VI shown in a subpanel of Host Panel (whose pane coordinates convert into the host's panel). A visible label above the control is not part of the body (Position and Bounds include it). panes gets one line per pane of Panel\3A pane TAB index TAB x y w h LF\2C the visible part of the pane (its Position and Bounds as a GObject) in the same coordinates. Errors of the property reads go to error out.">
+  <FreeLabel comment="Pane to panel to screen\2C minus the panel's top-left" uid="lbl" uid_parent="root"/>
+  <Control _name="Panel" conIdx="0" connection="required" description="Front Panel whose controls are listed." outputs="value:pa.value" type="ref{LV.Panel}" uid="pa" uid_parent="root" value=""/>
+  <Control _name="kind" conIdx="1" connection="required" description="First field of each control line\3A layout\2C or vlayout for the VI in a subpanel." outputs="value:kd.value" type="string" uid="kd" uid_parent="root" value="layout"/>
+  <Control _name="Host Panel" conIdx="2" connection="required" description="Front Panel of the window the coordinates refer to (Panel itself\2C or the panel holding the subpanel that shows Panel's VI)." outputs="value:hp.value" type="ref{LV.Panel}" uid="hp" uid_parent="root" value=""/>
+  <Control _name="error in" conIdx="11" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Property Node" fields="read+Owning VI" inputs="reference:hp.value,error in (no error):ei.value" outputs="Owning VI:ov.vi,reference out:,error out:ov.error out" type="{LV.Panel}" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel Window\3APanel Bounds" inputs="reference:ov.vi,error in (no error):ov.error out" outputs="Front Panel Window\3APanel Bounds:pb.b,reference out:,error out:pb.error out" type="{LV.VI}" uid="pb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="left,top" inputs="input cluster:pb.b" outputs="left:pbl.l,top:pbl.t" uid="pbl" uid_parent="root"/>
+  <Call target="RemoteVI Complex Fixture All Controls.vi" inputs="Panel:pa.value,error in:pb.error out" outputs="Controls:ac.Controls,error out:ac.error out" uid="ac" uid_parent="root"/>
+  <Constant _name="control line" outputs="value:fc.value" type="string" uid="fc" uid_parent="root" value="%s\09%s\09%d %d %d %d\0A"/>
+  <Structure _name="For Loop" count="" label="One line per control" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ac.Controls" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:kd.value" outputs="value:l_kd.value" uid="l_kd" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:fc.value" outputs="value:l_fc.value" uid="l_fc" uid_parent="fl"/>
+    <Tunnel _id="In4" inputs="value:hp.value" outputs="value:l_hp.value" uid="l_hp" uid_parent="fl"/>
+    <Tunnel _id="In5" inputs="value:pbl.l" outputs="value:l_pl.value" uid="l_pl" uid_parent="fl"/>
+    <Tunnel _id="In6" inputs="value:pbl.t" outputs="value:l_pt.value" uid="l_pt" uid_parent="fl"/>
+    <ShiftReg uid="sre" uid_parent="fl">
+      <Left inputs="value:ac.error out" outputs="value:le.value" uid="srel" uid_parent="sre"/>
+      <Right inputs="value:sv.error out" outputs="value:lerr.value" uid="srer" uid_parent="sre"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Label.Text,read+Label.Visible,read+Position,read+Bounds,read+OwningPane,read+Label" inputs="reference:c.value,error in (no error):le.value" outputs="Label.Text:pn.lt,Label.Visible:pn.lv,Position:pn.pos,Bounds:pn.bnd,OwningPane:pn.pane,Label:pn.lab,reference out:,error out:pn.error out" type="{LV.Control}" uid="pn" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Position,read+Bounds" inputs="reference:pn.lab,error in (no error):pn.error out" outputs="Position:lb.pos,Bounds:lb.bnd,reference out:,error out:lb.error out" type="{LV.Text}" uid="lb" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="CvtPaneToPanelCoords" type="{LV.Pane}" inputs="reference:pn.pane,error in (no error):lb.error out,PaneCoords:pn.pos" outputs="reference out:,error out:cv.error out,PanelCoords:cv.pc" uid="cv" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:l_hp.value,error in (no error):cv.error out,PanelCoords:cv.pc" outputs="reference out:,error out:sv.error out,ScreenCoords:sv.sc" uid="sv" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:sv.sc" outputs="Horizontal:us.h,Vertical:us.v" uid="us" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:us.h,y:l_pl.value" outputs="x-y:cx.x-y" uid="cx" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:us.v,y:l_pt.value" outputs="x-y:cy.x-y" uid="cy" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:pn.bnd" outputs="Width:ub.w,Height:ub.h" uid="ub" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Top" inputs="input cluster:pn.pos" outputs="Top:up.t" uid="up" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Top" inputs="input cluster:lb.pos" outputs="Top:ul.t" uid="ul" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="Height" inputs="input cluster:lb.bnd" outputs="Height:ulh.h" uid="ulh" uid_parent="fl"/>
+    <Node _name="To Long Integer" inputs="number:ulh.h" outputs="32bit integer:ilh.i" uid="ilh" uid_parent="fl"/>
+    <Node _name="To Long Integer" inputs="number:ub.h" outputs="32bit integer:ibh.i" uid="ibh" uid_parent="fl"/>
+    <Node _name="Add" inputs="x:ul.t,y:ilh.i" outputs="x+y:lbot.x+y" uid="lbot" uid_parent="fl"/>
+    <Constant _name="slack" outputs="value:k3.value" type="int32" uid="k3" uid_parent="fl" value="3"/>
+    <Node _name="Add" inputs="x:up.t,y:k3.value" outputs="x+y:upk.x+y" uid="upk" uid_parent="fl"/>
+    <Node _name="Less Or Equal?" inputs="x:ul.t,y:upk.x+y" outputs="x &lt;= y?:atop.x &lt;= y?" uid="atop" uid_parent="fl"/>
+    <Node _name="And" inputs="x:pn.lv,y:atop.x &lt;= y?" outputs="x .and. y?:above.x .and. y?" uid="above" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:lbot.x+y,y:up.t" outputs="x-y:lh.x-y" uid="lh" uid_parent="fl"/>
+    <Constant _name="none" outputs="value:k0.value" type="int32" uid="k0" uid_parent="fl" value="0"/>
+    <Node _name="Select" inputs="t:lh.x-y,s:above.x .and. y?,f:k0.value" outputs="s? t\3Af:cut.s? t\3Af" uid="cut" uid_parent="fl"/>
+    <Node _name="Add" inputs="x:cy.x-y,y:cut.s? t\3Af" outputs="x+y:by.x+y" uid="by" uid_parent="fl"/>
+    <Node _name="Subtract" inputs="x:ibh.i,y:cut.s? t\3Af" outputs="x-y:bh.x-y" uid="bh" uid_parent="fl"/>
+    <Node _name="Format Into String" inputs="format string:l_fc.value,input 1:l_kd.value,input 2:pn.lt,input 3:cx.x-y,input 4:by.x+y,input 5:ub.w,input 6:bh.x-y" outputs="resulting string:fs.resulting string" uid="fs" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:fs.resulting string" mode="index" outputs="value:lines.value" uid="lines" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Property Node" fields="read+Panes[]" inputs="reference:pa.value,error in (no error):lerr.value" outputs="Panes[]:pp.panes,reference out:,error out:pp.error out" type="{LV.Panel}" uid="pp" uid_parent="root"/>
+  <Constant _name="pane line" outputs="value:fp.value" type="string" uid="fp" uid_parent="root" value="pane\09%d\09%d %d %d %d\0A"/>
+  <Structure _name="For Loop" count="fq.value" label="One line per pane" maxin="" maxout="" uid="fq" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pp.panes" mode="index" outputs="value:q.value" uid="q" uid_parent="fq"/>
+    <Tunnel _id="In2" inputs="value:fp.value" outputs="value:q_fp.value" uid="q_fp" uid_parent="fq"/>
+    <Tunnel _id="In3" inputs="value:hp.value" outputs="value:q_hp.value" uid="q_hp" uid_parent="fq"/>
+    <Tunnel _id="In4" inputs="value:pbl.l" outputs="value:q_pl.value" uid="q_pl" uid_parent="fq"/>
+    <Tunnel _id="In5" inputs="value:pbl.t" outputs="value:q_pt.value" uid="q_pt" uid_parent="fq"/>
+    <ShiftReg uid="srq" uid_parent="fq">
+      <Left inputs="value:pp.error out" outputs="value:qe.value" uid="srql" uid_parent="srq"/>
+      <Right inputs="value:qs2.error out" outputs="value:qerr.value" uid="srqr" uid_parent="srq"/>
+    </ShiftReg>
+    <Node _name="Property Node" fields="read+Position,read+Bounds" inputs="reference:q.value,error in (no error):qe.value" outputs="Position:qn.pos,Bounds:qn.bnd,reference out:,error out:qn.error out" type="{LV.GObject}" uid="qn" uid_parent="fq"/>
+    <Node _name="Invoke Node" target="CvtPaneToPanelCoords" type="{LV.Pane}" inputs="reference:q.value,error in (no error):qn.error out,PaneCoords:qn.pos" outputs="reference out:,error out:qv.error out,PanelCoords:qv.pc" uid="qv" uid_parent="fq"/>
+    <Node _name="Invoke Node" target="CvtPanelToScreenCoords" type="{LV.Panel}" inputs="reference:q_hp.value,error in (no error):qv.error out,PanelCoords:qv.pc" outputs="reference out:,error out:qs2.error out,ScreenCoords:qs2.sc" uid="qs2" uid_parent="fq"/>
+    <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:qs2.sc" outputs="Horizontal:qc.h,Vertical:qc.v" uid="qc" uid_parent="fq"/>
+    <Node _name="Subtract" inputs="x:qc.h,y:q_pl.value" outputs="x-y:qx.x-y" uid="qx" uid_parent="fq"/>
+    <Node _name="Subtract" inputs="x:qc.v,y:q_pt.value" outputs="x-y:qy.x-y" uid="qy" uid_parent="fq"/>
+    <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:qn.bnd" outputs="Width:qb.w,Height:qb.h" uid="qb" uid_parent="fq"/>
+    <Node _name="Format Into String" inputs="format string:q_fp.value,input 1:fq.value,input 2:qx.x-y,input 3:qy.x-y,input 4:qb.w,input 5:qb.h" outputs="resulting string:qs.resulting string" uid="qs" uid_parent="fq"/>
+    <Tunnel _id="Out1" inputs="value:qs.resulting string" mode="index" outputs="value:plines.value" uid="plines" uid_parent="fq"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:lines.value" outputs="concatenated string:jl.concatenated string" uid="jl" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:plines.value" outputs="concatenated string:jp.concatenated string" uid="jp" uid_parent="root"/>
+  <Indicator _name="layout" conIdx="4" connection="recommended" description="The control lines\2C each terminated by a line feed." inputs="value:jl.concatenated string" type="string" uid="lo" uid_parent="root" value=""/>
+  <Indicator _name="panes" conIdx="5" connection="recommended" description="The pane lines\2C each terminated by a line feed." inputs="value:jp.concatenated string" type="string" uid="po" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="Errors of the property reads." inputs="value:qerr.value" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

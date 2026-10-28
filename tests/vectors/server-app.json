@@ -156,6 +156,42 @@
    "exStyle": 0,
    "w": 0,
    "h": 300
+  },
+  {
+   "hWnd": 1014,
+   "pid": 9100,
+   "path": "C:\\Windows\\TextInputHost.exe",
+   "cls": "Windows.UI.Core.CoreWindow",
+   "title": "Input experience",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 400,
+   "h": 300
+  },
+  {
+   "hWnd": 1015,
+   "pid": 9200,
+   "path": "C:\\x\\small.exe",
+   "cls": "Small",
+   "title": "tiny window",
+   "visible": true,
+   "owned": false,
+   "exStyle": 0,
+   "w": 99,
+   "h": 300
+  },
+  {
+   "hWnd": 1016,
+   "pid": 9300,
+   "path": "C:\\x\\overlay.exe",
+   "cls": "Ovl",
+   "title": "no activate",
+   "visible": true,
+   "owned": false,
+   "exStyle": 134217728,
+   "w": 400,
+   "h": 300
   }
  ],
  "windowRows": [

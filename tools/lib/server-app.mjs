@@ -3,6 +3,11 @@
 // App/RemoteVI Landing Page.vi; vectors in tests/vectors/server-app.json.
 
 export const WS_EX_TOOLWINDOW = 0x80;
+export const WS_EX_NOACTIVATE = 0x08000000;
+/** Shell and system windows that are visible to Win32 but not real program windows. */
+export const EXCLUDED_CLASSES = ['Windows.UI.Core.CoreWindow', 'Windows.Internal.Shell.TabProxyWindow', 'Progman', 'LockScreenBackstopFrame'];
+export const MIN_W = 100;
+export const MIN_H = 50;
 export const GROUPS = ['LabVIEW', 'LabVIEW application', 'Other programs'];
 
 /** The file name of a program path, `C:\a\LabVIEW.exe` -> `LabVIEW.exe`. */
@@ -14,7 +19,8 @@ export function programName(path) {
 /**
  * The shareable windows, grouped and sorted. raw: top-level windows as Win32 lists them
  * {hWnd, pid, path (program path), cls, title, visible, owned, exStyle, w, h}.
- * Kept: visible, with a size and a caption, no tool window; a window of LabVIEW (class LVDChild)
+ * Kept: visible, at least MIN_W x MIN_H, with a caption, no tool window (WS_EX_TOOLWINDOW) and no window that
+ * cannot be activated (WS_EX_NOACTIVATE), not one of EXCLUDED_CLASSES; a window of LabVIEW (class LVDChild)
  * also when it is owned (LabVIEW's panels are owned by its hidden frame), others only unowned;
  * not a LabVIEW window whose caption names a Block Diagram or Project Explorer; not the window `skip` (the app's own).
  * group 0: LabVIEW (the development environment, LabVIEW.exe), 1: a LabVIEW-built application
@@ -24,7 +30,8 @@ export function programName(path) {
 export function windowRows(raw, { labviewOnly = false, skip = 0 } = {}) {
   const rows = [];
   for (const w of raw) {
-    if (!w.visible || w.w <= 0 || w.h <= 0 || !w.title || (w.exStyle & WS_EX_TOOLWINDOW) || w.hWnd === skip) continue;
+    if (!w.visible || w.w < MIN_W || w.h < MIN_H || !w.title || (w.exStyle & (WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE))
+        || EXCLUDED_CLASSES.includes(w.cls) || w.hWnd === skip) continue;
     const lv = w.cls === 'LVDChild';
     if (w.owned && !lv) continue;
     if (lv && (w.title.includes('Block Diagram') || w.title.includes('Project Explorer'))) continue;

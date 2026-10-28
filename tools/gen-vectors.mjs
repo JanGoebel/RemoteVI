@@ -345,6 +345,9 @@ function serverAppVectors() {
     w(1011, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'A first.vi', { owned: true }),
     w(1012, 5000, 'C:\\Program Files\\National Instruments\\LabVIEW 2025\\LabVIEW.exe', 'LVDChild', 'RemoteVI Server', { owned: true }),
     w(1013, 9000, 'C:\\x\\zero.exe', 'Zero', 'zero size', { w: 0 }),
+    w(1014, 9100, 'C:\\Windows\\TextInputHost.exe', 'Windows.UI.Core.CoreWindow', 'Input experience'),
+    w(1015, 9200, 'C:\\x\\small.exe', 'Small', 'tiny window', { w: 99 }),
+    w(1016, 9300, 'C:\\x\\overlay.exe', 'Ovl', 'no activate', { exStyle: 0x08000000 }),
   ];
   const statusVec = statusVectors().convert.status;
   return {

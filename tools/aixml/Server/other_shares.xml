@@ -1,0 +1,16 @@
+<VI _name="RemoteVI Other Shares.vi" description="The windows the OTHER running shares of this LabVIEW application instance publish (every share but the one on port\3B RemoteVI Status Registry.vi\2C running = published within 2 s). RemoteVI Track Windows.vi does not list them as windows of this share\3A two VIs shared from one LabVIEW are both running front panels\2C and each would otherwise show the other's panel as one of its own windows.">
+  <Control _name="port" conIdx="0" connection="required" description="The port of this share." outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
+  <Call inputs="" outputs="servers:reg.servers" target="RemoteVI Status Registry.vi" uid="reg" uid_parent="root"/>
+  <Node _name="Get Date/Time In Seconds" outputs="seconds since 1Jan1904:now0.t" uid="now0" uid_parent="root"/>
+  <Node _name="To Double Precision Float" inputs="number:now0.t" outputs="double precision float:now.v" uid="now" uid_parent="root"/>
+  <Call inputs="raw:reg.servers,now:now.v" outputs="status:cv.status" target="RemoteVI Status Convert.vi" uid="cv" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Running shares on other ports" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:cv.status" mode="index" outputs="value:s.value" uid="s" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:port.value" outputs="value:p.value" uid="p" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="port,running,hWnd" inputs="input cluster:s.value" outputs="port:u.port,running:u.run,hWnd:u.hwnd" uid="u" uid_parent="fl"/>
+    <Node _name="Not Equal?" inputs="x:u.port,y:p.value" outputs="x != y?:other.v" uid="other" uid_parent="fl"/>
+    <Node _name="And" inputs="x:other.v,y:u.run" outputs="x .and. y?:keep.v" uid="keep" uid_parent="fl"/>
+    <Tunnel _id="Out1" cond="keep.v" inputs="value:u.hwnd" mode="index" outputs="value:hw.value" uid="hw" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="hWnds" conIdx="4" connection="recommended" description="The windows of the other running shares." inputs="value:hw.value" type="array{uint64}" uid="o_h" uid_parent="root" value="[]"/>
+</VI>

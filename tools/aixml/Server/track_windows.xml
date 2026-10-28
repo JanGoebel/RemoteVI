@@ -4,6 +4,7 @@
   <Control _name="state" conIdx="7" connection="recommended" description="RemoteVI List Windows.vi state from the previous iteration." outputs="value:st.value" type="cluster{bool.initialised,array{uint64}.baseline,array{uint64}.previous,array{uint64}.listed}" uid="st" uid_parent="root" value="[false,[],[],[]]"/>
   <Control _name="now" conIdx="1" connection="recommended" description="Tick count (ms) of this iteration." outputs="value:now.value" type="uint32" uid="now" uid_parent="root" value="0"/>
   <Control _name="last list" conIdx="2" connection="recommended" description="Tick count of the last listing (last list out of the previous iteration)." outputs="value:last.value" type="uint32" uid="last" uid_parent="root" value="0"/>
+  <Control _name="other shares" conIdx="11" connection="recommended" description="The windows of the other shares of this application instance (RemoteVI Other Shares.vi)\3A never listed as windows of this share." outputs="value:oth.value" type="array{uint64}" uid="oth" uid_parent="root" value="[]"/>
   <Control _name="previous windows" conIdx="9" connection="recommended" description="windows of the previous iteration." outputs="value:pw.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="pw" uid_parent="root" value="[]"/>
   <Structure _name="For Loop" count="" label="Was one modal?" maxin="" maxout="" uid="fp" uid_parent="root">
     <Tunnel _id="In1" inputs="value:pw.value" mode="index" outputs="value:pwe.value" uid="pwe" uid_parent="fp"/>
@@ -21,10 +22,12 @@
     <Tunnel _id="In1" inputs="value:hw.value" uid="cs_i1" uid_parent="cs"/>
     <Tunnel _id="In2" inputs="value:st.value" uid="cs_i2" uid_parent="cs"/>
     <Tunnel _id="In3" inputs="value:pw.value" uid="cs_i3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:oth.value" uid="cs_i4" uid_parent="cs"/>
     <CaseFrame label="List the windows" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_hw.value" uid="t_hw" uid_parent="cst"/>
       <Tunnel _id="In2" outputs="value:t_st.value" uid="t_st" uid_parent="cst"/>
       <Tunnel _id="In3" outputs="value:" uid="t_pw" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_oth.value" uid="t_oth" uid_parent="cst"/>
       <Call inputs="panel hWnd:t_hw.value,state:t_st.value" outputs="windows:lw.windows,modal?:lw.modal?,candidates:lw.candidates,state out:lw.state out,error out:" target="RemoteVI List Windows.vi" uid="lw" uid_parent="cst"/>
       <Node _name="Unbundle By Name" fields="initialised,previous" inputs="input cluster:t_st.value" outputs="initialised:ust.init,previous:ust.prev" uid="ust" uid_parent="cst"/>
       <Node _name="Unbundle By Name" fields="listed" inputs="input cluster:lw.state out" outputs="listed:usl.listed" uid="usl" uid_parent="cst"/>
@@ -33,13 +36,17 @@
         <Tunnel _id="In2" inputs="value:ust.prev" outputs="value:npv.value" uid="npv" uid_parent="fn"/>
         <Tunnel _id="In3" inputs="value:usl.listed" outputs="value:nls.value" uid="nls" uid_parent="fn"/>
         <Tunnel _id="In4" inputs="value:ust.init" outputs="value:nin.value" uid="nin" uid_parent="fn"/>
+        <Tunnel _id="In5" inputs="value:t_oth.value" outputs="value:noth.value" uid="noth" uid_parent="fn"/>
+        <Node _name="Search 1D Array" inputs="1D array:noth.value,element:nc.value" outputs="index of element:io.v" uid="io" uid_parent="fn"/>
+        <Node _name="Less Than 0?" inputs="x:io.v" outputs="x &lt; 0?:nototh.v" uid="nototh" uid_parent="fn"/>
         <Node _name="Search 1D Array" inputs="1D array:npv.value,element:nc.value" outputs="index of element:ip.v" uid="ip" uid_parent="fn"/>
         <Node _name="Less Than 0?" inputs="x:ip.v" outputs="x &lt; 0?:np.v" uid="np" uid_parent="fn"/>
         <Node _name="Not" inputs="x:nin.value" outputs=".not. x?:first.v" uid="first" uid_parent="fn"/>
         <Node _name="Or" inputs="x:np.v,y:first.v" outputs="x .or. y?:isnew.v" uid="isnew" uid_parent="fn"/>
         <Node _name="Search 1D Array" inputs="1D array:nls.value,element:nc.value" outputs="index of element:il.v" uid="il" uid_parent="fn"/>
         <Node _name="Less Than 0?" inputs="x:il.v" outputs="x &lt; 0?:nl.v" uid="nl" uid_parent="fn"/>
-        <Node _name="And" inputs="x:isnew.v,y:nl.v" outputs="x .and. y?:ask.v" uid="ask" uid_parent="fn"/>
+        <Node _name="And" inputs="x:isnew.v,y:nl.v" outputs="x .and. y?:ask0.v" uid="ask0" uid_parent="fn"/>
+        <Node _name="And" inputs="x:ask0.v,y:nototh.v" outputs="x .and. y?:ask.v" uid="ask" uid_parent="fn"/>
         <Tunnel _id="Out1" cond="ask.v" inputs="value:nc.value" mode="index" outputs="value:fresh.value" uid="fresh" uid_parent="fn"/>
       </Structure>
       <Node _name="Empty Array?" inputs="array:fresh.value" outputs="empty?:fe.v" uid="fe" uid_parent="cst"/>
@@ -65,13 +72,31 @@
         </CaseFrame>
         <Tunnel _id="Out1" outputs="value:crp.state" uid="crpo1" uid_parent="crp"/>
       </Structure>
-      <Tunnel _id="Out1" inputs="value:lw.windows" uid="t_o1" uid_parent="cst"/>
-      <Tunnel _id="Out2" inputs="value:crp.state" uid="t_o2" uid_parent="cst"/>
+      <Structure _name="For Loop" count="" label="Never the panels of the other shares" maxin="" maxout="" uid="fx" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:lw.windows" mode="index" outputs="value:xw.value" uid="xw" uid_parent="fx"/>
+        <Tunnel _id="In2" inputs="value:t_oth.value" outputs="value:xo.value" uid="xo" uid_parent="fx"/>
+        <Node _name="Unbundle By Name" fields="id" inputs="input cluster:xw.value" outputs="id:xu.id" uid="xu" uid_parent="fx"/>
+        <Node _name="Search 1D Array" inputs="1D array:xo.value,element:xu.id" outputs="index of element:xi.v" uid="xi" uid_parent="fx"/>
+        <Node _name="Less Than 0?" inputs="x:xi.v" outputs="x &lt; 0?:xk.v" uid="xk" uid_parent="fx"/>
+        <Tunnel _id="Out1" cond="xk.v" inputs="value:xw.value" mode="index" outputs="value:xkeep.value" uid="xkeep" uid_parent="fx"/>
+      </Structure>
+      <Node _name="Unbundle By Name" fields="listed" inputs="input cluster:crp.state" outputs="listed:xl.listed" uid="xl" uid_parent="cst"/>
+      <Structure _name="For Loop" count="" label="nor in the listed set" maxin="" maxout="" uid="fy" uid_parent="cst">
+        <Tunnel _id="In1" inputs="value:xl.listed" mode="index" outputs="value:yh.value" uid="yh" uid_parent="fy"/>
+        <Tunnel _id="In2" inputs="value:t_oth.value" outputs="value:yo.value" uid="yo" uid_parent="fy"/>
+        <Node _name="Search 1D Array" inputs="1D array:yo.value,element:yh.value" outputs="index of element:yi.v" uid="yi" uid_parent="fy"/>
+        <Node _name="Less Than 0?" inputs="x:yi.v" outputs="x &lt; 0?:yk.v" uid="yk" uid_parent="fy"/>
+        <Tunnel _id="Out1" cond="yk.v" inputs="value:yh.value" mode="index" outputs="value:ykeep.value" uid="ykeep" uid_parent="fy"/>
+      </Structure>
+      <Node _name="Bundle By Name" fields="listed" inputs="input cluster:crp.state,listed:ykeep.value" outputs="output cluster:xs.v" uid="xs" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:xkeep.value" uid="t_o1" uid_parent="cst"/>
+      <Tunnel _id="Out2" inputs="value:xs.v" uid="t_o2" uid_parent="cst"/>
     </CaseFrame>
     <CaseFrame label="Keep the previous list" selector="False" selectout="" uid="csf" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:" uid="f_hw" uid_parent="csf"/>
       <Tunnel _id="In2" outputs="value:f_st.value" uid="f_st" uid_parent="csf"/>
       <Tunnel _id="In3" outputs="value:f_pw.value" uid="f_pw" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_oth" uid_parent="csf"/>
       <Tunnel _id="Out1" inputs="value:f_pw.value" uid="f_o1" uid_parent="csf"/>
       <Tunnel _id="Out2" inputs="value:f_st.value" uid="f_o2" uid_parent="csf"/>
     </CaseFrame>

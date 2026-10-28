@@ -120,6 +120,8 @@ export async function connect({ fb = false } = {}) {
     if (typeof ev.data === 'string') {
       const m = /^origin (-?\d+) (-?\d+)$/.exec(ev.data);
       if (m) { c.origin = { x: Number(m[1]), y: Number(m[2]) }; c.originSeen = true; }
+      // A window target (RemoteVI Start Window.vi) knows no panel origin (no VI Server): RVI_ORIGIN=x,y gives it.
+      if (m && process.env.RVI_ORIGIN) { const [ox, oy] = process.env.RVI_ORIGIN.split(',').map(Number); c.origin = { x: ox, y: oy }; }
       if (ev.data.startsWith('windows ')) {
         try { c.windows = JSON.parse(ev.data.slice(8)); } catch { /* ignore */ }
       }

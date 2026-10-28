@@ -8,6 +8,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 	<Property Name="NI.Lib.Version" Type="Str">1.0.0.0</Property>
 	<Property Name="NI.LV.All.SourceOnly" Type="Bool">true</Property>
 	<Item Name="API" Type="Folder">
+		<Item Name="RemoteVI Start Window.vi" Type="VI" URL="../API/RemoteVI Start Window.vi"/>
 		<Item Name="RemoteVI Start.vi" Type="VI" URL="../API/RemoteVI Start.vi"/>
 		<Item Name="RemoteVI Status.vi" Type="VI" URL="../API/RemoteVI Status.vi"/>
 		<Item Name="RemoteVI Stop.vi" Type="VI" URL="../API/RemoteVI Stop.vi"/>
@@ -42,6 +43,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Post Menu Key.vi" Type="VI" URL="../Input/RemoteVI Post Menu Key.vi"/>
 		<Item Name="RemoteVI Route Input.vi" Type="VI" URL="../Input/RemoteVI Route Input.vi"/>
 		<Item Name="RemoteVI Swallow Button Up.vi" Type="VI" URL="../Input/RemoteVI Swallow Button Up.vi"/>
+		<Item Name="RemoteVI Target Geometry.vi" Type="VI" URL="../Input/RemoteVI Target Geometry.vi"/>
 		<Item Name="RemoteVI Track Modifiers.vi" Type="VI" URL="../Input/RemoteVI Track Modifiers.vi"/>
 		<Item Name="RemoteVI Translate Input.vi" Type="VI" URL="../Input/RemoteVI Translate Input.vi"/>
 		<Item Name="RemoteVI Wait Popup Age.vi" Type="VI" URL="../Input/RemoteVI Wait Popup Age.vi"/>
@@ -82,6 +84,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Hide Remote Popups.vi" Type="VI" URL="../Server/RemoteVI Hide Remote Popups.vi"/>
 		<Item Name="RemoteVI Index HTML.vi" Type="VI" URL="../Server/RemoteVI Index HTML.vi"/>
 		<Item Name="RemoteVI Launch Server Loop.vi" Type="VI" URL="../Server/RemoteVI Launch Server Loop.vi"/>
+		<Item Name="RemoteVI Launch Share.vi" Type="VI" URL="../Server/RemoteVI Launch Share.vi"/>
 		<Item Name="RemoteVI List Popups.vi" Type="VI" URL="../Server/RemoteVI List Popups.vi"/>
 		<Item Name="RemoteVI Logical Popups.vi" Type="VI" URL="../Server/RemoteVI Logical Popups.vi"/>
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
@@ -120,6 +123,8 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Status Convert.vi" Type="VI" URL="../Server/RemoteVI Status Convert.vi"/>
 		<Item Name="RemoteVI Status Registry.vi" Type="VI" URL="../Server/RemoteVI Status Registry.vi"/>
 		<Item Name="RemoteVI Status Text.vi" Type="VI" URL="../Server/RemoteVI Status Text.vi"/>
+		<Item Name="RemoteVI Target Name.vi" Type="VI" URL="../Server/RemoteVI Target Name.vi"/>
+		<Item Name="RemoteVI Target Running.vi" Type="VI" URL="../Server/RemoteVI Target Running.vi"/>
 		<Item Name="RemoteVI Token Check.vi" Type="VI" URL="../Server/RemoteVI Token Check.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>

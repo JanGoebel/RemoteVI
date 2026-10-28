@@ -337,7 +337,7 @@ def check_parse():
     cases = [("Parse '%s'" % c["text"], c["text"], render_parse(c["result"])) for c in vec["cases"]]
     d = check_doc("Parse Input", "input.json", "a null result is kind invalid; the other outputs are "
                   "compared only where the vector's result names them (mouse: msg x y wParam, key: msg "
-                  "wParam lParam, ack: seq, close: id).")
+                  "wParam lParam, ack: seq, close: id, splitter: id and x as pos).")
     f = cases_loop(d, "string.name,string.text,string.expect", cases, ["name", "text", "expect"], "One vector")
     o = render_parse_g(d, f["text"], "L")
     finish_check(d, *close_cases(d, f["name"], f["expect"], o))
@@ -355,6 +355,8 @@ def render_parse(r):
         return "ack seq=%d" % r["seq"]
     if r["kind"] == "close":
         return "close id=%d" % r["id"]
+    if r["kind"] == "splitter":
+        return "splitter id=%d pos=%d" % (r["id"], r["pos"])
     raise ValueError(r)
 
 
@@ -373,8 +375,10 @@ def render_parse_g(d, text_net, parent):
                           d.s("sk3", " lParam=", parent), n["lParam"]], parent)
     ack = d.concat("ca", [d.s("sa1", "ack seq=", parent), n["seq"]], parent)
     close = d.concat("cx", [d.s("sx1", "close id=", parent), n["id"]], parent)
+    split = d.concat("cq", [d.s("sq1", "splitter id=", parent), n["id"], d.s("sq2", " pos=", parent), n["x"]], parent)
     inv = d.s("si", "invalid", parent)
-    d.node("ba", "Build Array", [("element", inv), ("element", mouse), ("element", key), ("element", ack), ("element", close)],
+    d.node("ba", "Build Array", [("element", inv), ("element", mouse), ("element", key), ("element", ack), ("element", close),
+                                 ("element", split)],
            [("appended array", "ba.v")], parent)
     d.node("ki", "To Long Integer", [("number", "pi.kind")], [("32bit integer", "ki.v")], parent)
     d.node("ix", "Index Array", [("array", "ba.v"), ("index", "ki.v")], [("element", "ix.v")], parent)
@@ -551,6 +555,44 @@ def check_track_modifiers():
     return d
 
 
+def check_string_out(subject, vecfile, what, ctype, cases, inputs, output="message"):
+    """A pure VI whose result is a string: cases are (name, *inputs, expect); inputs names the
+    case fields in the order of the cluster after name and before expect, each wired to the
+    subject's terminal of that name. Expected and actual are compared as the strings they are."""
+    d = check_doc(subject, vecfile, what)
+    fields = ["name"] + inputs + ["expect"]
+    f = cases_loop(d, "string.name,%s,string.expect" % ctype, cases, fields, "One vector")
+    d.call("sut", "RemoteVI %s.vi" % subject, [(i, f[i]) for i in inputs], [(output, "sut.v")], "L")
+    finish_check(d, *close_cases(d, f["name"], f["expect"], "sut.v"))
+    return d
+
+
+def check_json_string():
+    vec = json.load(open(os.path.join(VEC, "text.json")))
+    cases = [(c["name"], c["text"], c["json"]) for c in vec["jsonStrings"]]
+    return check_string_out("JSON String", "text.json (jsonStrings)", "text is the vector's UTF-16 code units, "
+                            "json is compared as the string literal it is.", "array{uint16}.text", cases, ["text"], "json")
+
+
+def check_tips_message():
+    vec = json.load(open(os.path.join(VEC, "text.json")))
+    # The VI widens each byte of a tip text to one code unit: the vectors' texts are all below 0x100.
+    cases = [(c["name"], [(t["x"], t["y"], t["w"], t["h"], "".join(chr(u) for u in t["text"])) for t in c["tips"]],
+              c["message"]) for c in vec["tips"]]
+    return check_string_out("Tips Message", "text.json (tips)", "each tip's text is the vector's code units as "
+                            "bytes (all below 0x100); the message is compared as the string it is.",
+                            "array{cluster{int32.x,int32.y,int32.w,int32.h,string.text}}.tips", cases, ["tips"])
+
+
+def check_splitters_message():
+    vec = json.load(open(os.path.join(VEC, "text.json")))
+    cases = [(c["name"], [(b["x"], b["y"], b["w"], b["h"], b["vertical"], b["min"], b["max"]) for b in c["bars"]],
+              c["message"]) for c in vec["splitters"]]
+    return check_string_out("Splitters Message", "text.json (splitters)", "the message is compared as the string it is.",
+                            "array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}.bars",
+                            cases, ["bars"])
+
+
 # --------------------------------------------------------------------------- Caraya layer
 SUBJECTS = [  # (subject, area, vector source for the description)
     ("Frame Encode", "Protocol", "frame.json cases"),
@@ -562,6 +604,9 @@ SUBJECTS = [  # (subject, area, vector source for the description)
     ("Dirty Rects", "Capture", "rects.json"),
     ("Translate Input", "Input", "translate.json cases"),
     ("Track Modifiers", "Input", "translate.json modifiers"),
+    ("JSON String", "Protocol", "text.json jsonStrings"),
+    ("Tips Message", "Protocol", "text.json tips"),
+    ("Splitters Message", "Protocol", "text.json splitters"),
 ]
 
 
@@ -638,6 +683,9 @@ def all_docs():
         "Dirty Rects": check_dirty_rects,
         "Translate Input": check_translate,
         "Track Modifiers": check_track_modifiers,
+        "JSON String": check_json_string,
+        "Tips Message": check_tips_message,
+        "Splitters Message": check_splitters_message,
     }
     rel = []
     for subject, area, source in SUBJECTS:

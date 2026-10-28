@@ -6,6 +6,9 @@
   <Control _name="whole network?" conIdx="1" connection="recommended" description="FALSE (default)\3A reachable from this computer only (listens on 127.0.0.1). TRUE\3A listens on every interface - reachable by everyone who can reach this computer and has the link." outputs="value:wn.value" type="bool" uid="wn" uid_parent="root" value="false"/>
   <Control _name="token" conIdx="2" connection="optional" description="The access token the link carries. Empty (default)\3A a new random token." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
   <Control _name="view only?" conIdx="3" connection="optional" description="TRUE\3A the browsers see the panel but cannot operate it." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
+  <Control _name="VI Server" conIdx="8" connection="optional" description="Window shares only\3A how to reach the window's LabVIEW over VI Server for full features (Shift\2C Ctrl and Alt\2C tip strips\2C splitter bars). Empty (default)\3A from the application's INI file (server.tcp.enabled=True\2C server.tcp.port)\3B off\3A window only\3B host\3Aport\3A that VI Server." outputs="value:vsa.value" type="string" uid="vsa" uid_parent="root" value=""/>
+  <Constant outputs="value:vskt.value" type="bool" uid="vskt" uid_parent="root" value="true"/>
+  <Call inputs="put?:vskt.value,hWnd:win.value,address:vsa.value,error in:e2.v" outputs="error out:vsr.error out" target="RemoteVI VI Server Request.vi" uid="vsr" uid_parent="root"/>
   <Control _name="window" conIdx="9" connection="recommended" description="A window of any process to share instead of VI's front panel (a window target)\3B 0 = VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
   <Control _name="loop VI" conIdx="10" connection="optional" description="Another reentrant loop VI with the Server Loop's controls\3B empty (default)\3A RemoteVI Server Loop.vi." outputs="value:lvp.value" type="path" uid="lvp" uid_parent="root" value=""/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in. Nothing is started on an incoming error." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
@@ -43,7 +46,7 @@
   <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
 
   <Structure _name="Case Structure" selectin="sr.running?" uid="cl" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:e2.v" uid="cl_i1" uid_parent="cl"/>
+    <Tunnel _id="In1" inputs="value:vsr.error out" uid="cl_i1" uid_parent="cl"/>
     <Tunnel _id="In2" inputs="value:vi.value" uid="cl_i2" uid_parent="cl"/>
     <Tunnel _id="In3" inputs="value:port.value" uid="cl_i3" uid_parent="cl"/>
     <Tunnel _id="In4" inputs="value:fps.value" uid="cl_i4" uid_parent="cl"/>

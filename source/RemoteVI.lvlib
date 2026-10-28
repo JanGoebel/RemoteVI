@@ -69,6 +69,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Track Modifiers.vi" Type="VI" URL="../Input/RemoteVI Track Modifiers.vi"/>
 		<Item Name="RemoteVI Translate Input.vi" Type="VI" URL="../Input/RemoteVI Translate Input.vi"/>
 		<Item Name="RemoteVI Wait Popup Age.vi" Type="VI" URL="../Input/RemoteVI Wait Popup Age.vi"/>
+		<Item Name="RemoteVI Write Modifiers.vi" Type="VI" URL="../Input/RemoteVI Write Modifiers.vi"/>
 	</Item>
 	<Item Name="Protocol" Type="Folder">
 		<Item Name="RemoteVI Frame Encode.vi" Type="VI" URL="../Protocol/RemoteVI Frame Encode.vi"/>
@@ -88,6 +89,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Announce Listener.vi" Type="VI" URL="../Server/RemoteVI Announce Listener.vi"/>
 		<Item Name="RemoteVI Answer Control Frame.vi" Type="VI" URL="../Server/RemoteVI Answer Control Frame.vi"/>
 		<Item Name="RemoteVI Apply Splitter.vi" Type="VI" URL="../Server/RemoteVI Apply Splitter.vi"/>
+		<Item Name="RemoteVI Call Hooks.vi" Type="VI" URL="../Server/RemoteVI Call Hooks.vi"/>
 		<Item Name="RemoteVI Capture And Send.vi" Type="VI" URL="../Server/RemoteVI Capture And Send.vi"/>
 		<Item Name="RemoteVI Capture Frame.vi" Type="VI" URL="../Server/RemoteVI Capture Frame.vi"/>
 		<Item Name="RemoteVI Capture Windows.vi" Type="VI" URL="../Server/RemoteVI Capture Windows.vi"/>
@@ -95,6 +97,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Click State.vi" Type="VI" URL="../Server/RemoteVI Click State.vi"/>
 		<Item Name="RemoteVI Client Panel.vi" Type="VI" URL="../Server/RemoteVI Client Panel.vi"/>
 		<Item Name="RemoteVI Close Clients.vi" Type="VI" URL="../Server/RemoteVI Close Clients.vi"/>
+		<Item Name="RemoteVI Connect VI Server.vi" Type="VI" URL="../Server/RemoteVI Connect VI Server.vi"/>
 		<Item Name="RemoteVI Control Children.vi" Type="VI" URL="../Server/RemoteVI Control Children.vi"/>
 		<Item Name="RemoteVI Cross Origin.vi" Type="VI" URL="../Server/RemoteVI Cross Origin.vi"/>
 		<Item Name="RemoteVI Drop Closed Clients.vi" Type="VI" URL="../Server/RemoteVI Drop Closed Clients.vi"/>
@@ -119,10 +122,12 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
 		<Item Name="RemoteVI Publish Status.vi" Type="VI" URL="../Server/RemoteVI Publish Status.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
+		<Item Name="RemoteVI Read Panel Info.vi" Type="VI" URL="../Server/RemoteVI Read Panel Info.vi"/>
 		<Item Name="RemoteVI Read Request Head.vi" Type="VI" URL="../Server/RemoteVI Read Request Head.vi"/>
 		<Item Name="RemoteVI Read Splitters.vi" Type="VI" URL="../Server/RemoteVI Read Splitters.vi"/>
 		<Item Name="RemoteVI Read Tips.vi" Type="VI" URL="../Server/RemoteVI Read Tips.vi"/>
 		<Item Name="RemoteVI Refresh Geometry.vi" Type="VI" URL="../Server/RemoteVI Refresh Geometry.vi"/>
+		<Item Name="RemoteVI Remote Target.vi" Type="VI" URL="../Server/RemoteVI Remote Target.vi"/>
 		<Item Name="RemoteVI Retrack Popups.vi" Type="VI" URL="../Server/RemoteVI Retrack Popups.vi"/>
 		<Item Name="RemoteVI Route Request.vi" Type="VI" URL="../Server/RemoteVI Route Request.vi"/>
 		<Item Name="RemoteVI Running Panels.vi" Type="VI" URL="../Server/RemoteVI Running Panels.vi"/>
@@ -150,6 +155,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Token Check.vi" Type="VI" URL="../Server/RemoteVI Token Check.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>
+		<Item Name="RemoteVI VI Server Request.vi" Type="VI" URL="../Server/RemoteVI VI Server Request.vi"/>
 		<Item Name="RemoteVI VI Stopped.vi" Type="VI" URL="../Server/RemoteVI VI Stopped.vi"/>
 		<Item Name="RemoteVI Write To Clients.vi" Type="VI" URL="../Server/RemoteVI Write To Clients.vi"/>
 		<Item Name="RemoteVI Yield If Idle.vi" Type="VI" URL="../Server/RemoteVI Yield If Idle.vi"/>

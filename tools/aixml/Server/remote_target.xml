@@ -1,0 +1,30 @@
+<VI _name="RemoteVI Remote Target.vi" description="The shares that reach their window's LabVIEW over VI Server (the VI Server route\2C docs\5Carchitecture.md\2C Window targets) - a functional global (a Feedback Node outside any loop\2C initialized on the first call only)\2C keyed by the shared window's hWnd. put? TRUE stores hooks (RemoteVI Remote Hooks.vi opened in that LabVIEW\2C RemoteVI Connect VI Server.vi) and VI name (the shared VI's name there) for hWnd\2C replacing an earlier entry\3B remove? TRUE forgets hWnd\3B otherwise the entry of hWnd is looked up. found? tells whether hWnd had an entry before this call\3B hooks out and VI name out are its values. RemoteVI Write Modifiers.vi and RemoteVI Read Panel Info.vi ask it which way to go\3B the server loop puts the entry after connecting and removes it when it ends.">
+  <Control _name="put?" conIdx="0" connection="recommended" description="TRUE stores hooks and VI name for hWnd." outputs="value:put.value" type="bool" uid="put" uid_parent="root" value="false"/>
+  <Control _name="hWnd" conIdx="1" connection="required" description="The shared window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Control _name="hooks" conIdx="2" connection="recommended" description="RemoteVI Remote Hooks.vi in the window's LabVIEW." outputs="value:hk.value" type="ref{LV.VI}" uid="hk" uid_parent="root" value=""/>
+  <Control _name="VI name" conIdx="3" connection="recommended" description="The shared VI's name in the window's LabVIEW." outputs="value:vn.value" type="string" uid="vn" uid_parent="root" value=""/>
+  <Control _name="remove?" conIdx="5" connection="recommended" description="TRUE forgets hWnd." outputs="value:rm.value" type="bool" uid="rm" uid_parent="root" value="false"/>
+  <Constant _name="nothing yet" outputs="value:init.value" type="cluster{array{uint64}.hWnds,array{ref{LV.VI}}.hooks,array{string}.names}" uid="init" uid_parent="root" value="[[],[],[]]"/>
+  <Node _name="Feedback Node" inputs="initializer:init.value,next value:nx2.s? t\3Af" outputs="previous value:fb.previous value" uid="fb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hWnds,hooks,names" inputs="input cluster:fb.previous value" outputs="hWnds:st.hWnds,hooks:st.hooks,names:st.names" uid="st" uid_parent="root"/>
+  <Node _name="Search 1D Array" inputs="1D array:st.hWnds,element:hw.value" outputs="index of element:ix.v" uid="ix" uid_parent="root"/>
+  <Node _name="Greater Or Equal To 0?" inputs="x:ix.v" outputs="x &gt;= 0?:found.v" uid="found" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:st.hooks,index:ix.v" outputs="element:ho.v" uid="ho" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:st.names,index:ix.v" outputs="element:no.v" uid="no" uid_parent="root"/>
+  <Node _name="Delete From Array" inputs="array:st.hWnds,index:ix.v" outputs="array w/ subset deleted:dh.v" uid="dh" uid_parent="root"/>
+  <Node _name="Delete From Array" inputs="array:st.hooks,index:ix.v" outputs="array w/ subset deleted:dk.v" uid="dk" uid_parent="root"/>
+  <Node _name="Delete From Array" inputs="array:st.names,index:ix.v" outputs="array w/ subset deleted:dn.v" uid="dn" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="hWnds,hooks,names" inputs="input cluster:fb.previous value,hWnds:dh.v,hooks:dk.v,names:dn.v" outputs="output cluster:del.v" uid="del" uid_parent="root"/>
+  <Node _name="Select" inputs="t:del.v,s:found.v,f:fb.previous value" outputs="s? t\3Af:without.v" uid="without" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="hWnds,hooks,names" inputs="input cluster:without.v" outputs="hWnds:wo.hWnds,hooks:wo.hooks,names:wo.names" uid="wo" uid_parent="root"/>
+  <Node _name="Build Array" concat="true" inputs="array:wo.hWnds,element:hw.value" outputs="appended array:ah.v" uid="ah" uid_parent="root"/>
+  <Node _name="Build Array" concat="true" inputs="array:wo.hooks,element:hk.value" outputs="appended array:ak.v" uid="ak" uid_parent="root"/>
+  <Node _name="Build Array" concat="true" inputs="array:wo.names,element:vn.value" outputs="appended array:an.v" uid="an" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="hWnds,hooks,names" inputs="input cluster:without.v,hWnds:ah.v,hooks:ak.v,names:an.v" outputs="output cluster:with.v" uid="with" uid_parent="root"/>
+  <Node _name="Select" inputs="t:without.v,s:rm.value,f:fb.previous value" outputs="s? t\3Af:nx1.s? t\3Af" uid="nx1" uid_parent="root"/>
+  <Node _name="Select" inputs="t:with.v,s:put.value,f:nx1.s? t\3Af" outputs="s? t\3Af:nx2.s? t\3Af" uid="nx2" uid_parent="root"/>
+  <FreeLabel comment="One entry per shared window" uid="lbl" uid_parent="root"/>
+  <Indicator _name="found?" conIdx="4" connection="recommended" description="TRUE when hWnd had an entry before this call." inputs="value:found.v" type="bool" uid="o_f" uid_parent="root" value="false"/>
+  <Indicator _name="hooks out" conIdx="6" connection="recommended" description="The hooks of hWnd's entry." inputs="value:ho.v" type="ref{LV.VI}" uid="o_h" uid_parent="root" value=""/>
+  <Indicator _name="VI name out" conIdx="7" connection="recommended" description="The VI name of hWnd's entry." inputs="value:no.v" type="string" uid="o_n" uid_parent="root" value=""/>
+</VI>

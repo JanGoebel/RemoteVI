@@ -1,0 +1,209 @@
+<VI _name="RemoteVI Connect VI Server.vi" description="The VI Server route of a window share (docs\5Carchitecture.md\2C Window targets): when window belongs to ANOTHER LabVIEW process that runs VI Server\2C opens an application reference to it (Open Application Reference)\2C finds the running VI whose open front panel is window - opened by the window title (a built application answers Application\3AAll VIs In Memory with error 1032\2C measured)\2C then checked with Front Panel Window\3AOS Window and Execution\3AState\3B a panel with a custom window title is not found and opens RemoteVI Remote Hooks.vi there from the packed library builds\5CRemoteVI Hooks\5CRemoteVI Hooks.lvlibp (or RemoteVI Hooks.lvlibp next to RemoteVI's folder\3B a built application can only load compiled code). address\3A empty = read the application's INI file (&lt;exe&gt;.ini next to the process\2C server.tcp.enabled=True\2C server.tcp.port\2C default 3363) and connect to 127.0.0.1\3B off = do not try\3B host\3Aport = that VI Server. connected? TRUE\3A VI (the shared VI there)\2C hooks and VI name are valid and the share runs with full features (modifier keys\2C tip strips\2C splitter bars through the hooks\3B everything else as for a VI of this LabVIEW). FALSE\3A window only\3B mode says why. Called by RemoteVI Server Setup.vi inside the server loop\2C so the references live as long as the share.">
+  <Control _name="window" conIdx="0" connection="required" description="The shared window." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
+  <Control _name="address" conIdx="1" connection="recommended" description="Empty\3A from the INI file\3B off\3B or host\3Aport." outputs="value:ad.value" type="string" uid="ad" uid_parent="root" value=""/>
+
+  <Call inputs="hWnd:win.value" outputs="process ID:wp.process ID,thread ID:,error out:" target="user32 GetWindowThreadProcessId.vi" uid="wp" uid_parent="root"/>
+  <Call inputs="" outputs="process ID:mp.process ID,error out:" target="kernel32 GetCurrentProcessId.vi" uid="mp" uid_parent="root"/>
+  <Node _name="Equal?" inputs="x:wp.process ID,y:mp.process ID" outputs="x = y?:mine.v" uid="mine" uid_parent="root"/>
+  <Constant outputs="value:koff.value" type="string" uid="koff" uid_parent="root" value="off"/>
+  <Node _name="Equal?" inputs="x:ad.value,y:koff.value" outputs="x = y?:off.v" uid="off" uid_parent="root"/>
+  <Node _name="Or" inputs="x:mine.v,y:off.v" outputs="x .or. y?:skip.v" uid="skip" uid_parent="root"/>
+  <Node _name="Empty String/Path?" inputs="string/path:ad.value" outputs="empty?:auto.v" uid="auto" uid_parent="root"/>
+
+  <FreeLabel comment="Where is the VI Server? The INI file of the application\2C or the address given" uid="lbl1" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="auto.v" uid="ca" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:wp.process ID" uid="ca_i1" uid_parent="ca"/>
+    <Tunnel _id="In2" inputs="value:ad.value" uid="ca_i2" uid_parent="ca"/>
+    <CaseFrame label="From the INI file" selector="True" selectout="" uid="cat" uid_parent="ca">
+      <Tunnel _id="In1" outputs="value:a_pid.value" uid="a_pid" uid_parent="cat"/>
+      <Tunnel _id="In2" outputs="value:" uid="a_ad" uid_parent="cat"/>
+      <Call inputs="process ID:a_pid.value" outputs="path:pp.path" target="RemoteVI Process Path.vi" uid="pp" uid_parent="cat"/>
+      <Constant outputs="value:rexe.value" type="string" uid="rexe" uid_parent="cat" value="\5C.[Ee][Xx][Ee]$"/>
+      <Node _name="Match Pattern" inputs="string:pp.path,regular expression:rexe.value" outputs="before substring:mx.before,offset past match:mx.off" uid="mx" uid_parent="cat"/>
+      <Constant outputs="value:kini.value" type="string" uid="kini" uid_parent="cat" value=".ini"/>
+      <Node _name="Concatenate Strings" inputs="string:mx.before,string:kini.value" outputs="concatenated string:ini.s" uid="ini" uid_parent="cat"/>
+      <Node _name="String To Path" inputs="string:ini.s" outputs="path:inip.v" uid="inip" uid_parent="cat"/>
+      <Node _name="Read from Text File" inputs="file (use dialog):inip.v" outputs="text:rf.text,error out:rf.error out" uid="rf" uid_parent="cat"/>
+      <Constant outputs="value:ren.value" type="string" uid="ren" uid_parent="cat" value="server\5C.tcp\5C.enabled=[Tt][Rr][Uu][Ee]"/>
+      <Node _name="Match Pattern" inputs="string:rf.text,regular expression:ren.value" outputs="offset past match:me.off" uid="me" uid_parent="cat"/>
+      <Node _name="Greater Or Equal To 0?" inputs="x:me.off" outputs="x &gt;= 0?:en.v" uid="en" uid_parent="cat"/>
+      <Constant outputs="value:rpo.value" type="string" uid="rpo" uid_parent="cat" value="server\5C.tcp\5C.port="/>
+      <Node _name="Match Pattern" inputs="string:rf.text,regular expression:rpo.value" outputs="after substring:mpo.after,offset past match:mpo.off" uid="mpo" uid_parent="cat"/>
+      <Node _name="Decimal String To Number" inputs="string:mpo.after" outputs="number:pn.v" uid="pn" uid_parent="cat"/>
+      <Node _name="Greater Than 0?" inputs="x:pn.v" outputs="x &gt; 0?:hasp.v" uid="hasp" uid_parent="cat"/>
+      <Node _name="Greater Or Equal To 0?" inputs="x:mpo.off" outputs="x &gt;= 0?:hasp2.v" uid="hasp2" uid_parent="cat"/>
+      <Node _name="And" inputs="x:hasp.v,y:hasp2.v" outputs="x .and. y?:hp.v" uid="hp" uid_parent="cat"/>
+      <Constant _name="LabVIEW's default VI Server port" outputs="value:k3363.value" type="int32" uid="k3363" uid_parent="cat" value="3363"/>
+      <Node _name="Select" inputs="t:pn.v,s:hp.v,f:k3363.value" outputs="s? t\3Af:port.v" uid="port" uid_parent="cat"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:rf.error out" outputs="status:rfs.status" uid="rfs" uid_parent="cat"/>
+      <Node _name="Not" inputs="x:rfs.status" outputs=".not. x?:iniok.v" uid="iniok" uid_parent="cat"/>
+      <Node _name="And" inputs="x:en.v,y:iniok.v" outputs="x .and. y?:use.v" uid="use" uid_parent="cat"/>
+      <Constant outputs="value:loc.value" type="string" uid="loc" uid_parent="cat" value="127.0.0.1"/>
+      <Constant outputs="value:why1.value" type="string" uid="why1" uid_parent="cat" value="its INI file does not enable VI Server (server.tcp.enabled=True)"/>
+      <Tunnel _id="Out1" inputs="value:loc.value" uid="cat_o1" uid_parent="cat"/>
+      <Tunnel _id="Out2" inputs="value:port.v" uid="cat_o2" uid_parent="cat"/>
+      <Tunnel _id="Out3" inputs="value:use.v" uid="cat_o3" uid_parent="cat"/>
+      <Tunnel _id="Out4" inputs="value:why1.value" uid="cat_o4" uid_parent="cat"/>
+    </CaseFrame>
+    <CaseFrame label="host\3Aport given" selector="False" selectout="" uid="caf" uid_parent="ca">
+      <Tunnel _id="In1" outputs="value:" uid="b_pid" uid_parent="caf"/>
+      <Tunnel _id="In2" outputs="value:b_ad.value" uid="b_ad" uid_parent="caf"/>
+      <Constant outputs="value:rco.value" type="string" uid="rco" uid_parent="caf" value=":"/>
+      <Node _name="Match Pattern" inputs="string:b_ad.value,regular expression:rco.value" outputs="before substring:mc.before,after substring:mc.after" uid="mc" uid_parent="caf"/>
+      <Node _name="Decimal String To Number" inputs="string:mc.after" outputs="number:bpn.v" uid="bpn" uid_parent="caf"/>
+      <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="caf" value="true"/>
+      <Constant outputs="value:why2.value" type="string" uid="why2" uid_parent="caf" value="no VI Server at the address given"/>
+      <Tunnel _id="Out1" inputs="value:mc.before" uid="caf_o1" uid_parent="caf"/>
+      <Tunnel _id="Out2" inputs="value:bpn.v" uid="caf_o2" uid_parent="caf"/>
+      <Tunnel _id="Out3" inputs="value:kt.value" uid="caf_o3" uid_parent="caf"/>
+      <Tunnel _id="Out4" inputs="value:why2.value" uid="caf_o4" uid_parent="caf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:host.value" uid="host" uid_parent="ca"/>
+    <Tunnel _id="Out2" outputs="value:port.value" uid="port" uid_parent="ca"/>
+    <Tunnel _id="Out3" outputs="value:try.value" uid="try" uid_parent="ca"/>
+    <Tunnel _id="Out4" outputs="value:why.value" uid="why" uid_parent="ca"/>
+  </Structure>
+  <Node _name="Not" inputs="x:skip.v" outputs=".not. x?:ns.v" uid="ns" uid_parent="root"/>
+  <Node _name="And" inputs="x:try.value,y:ns.v" outputs="x .and. y?:go.v" uid="go" uid_parent="root"/>
+  <Node _name="Current VI's Path" outputs="path:me.path" uid="me" uid_parent="root"/>
+
+  <FreeLabel comment="Connect\2C find the shared VI\2C open the hooks" uid="lbl2" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="go.v" uid="cg" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:host.value" uid="cg_i1" uid_parent="cg"/>
+    <Tunnel _id="In2" inputs="value:port.value" uid="cg_i2" uid_parent="cg"/>
+    <Tunnel _id="In3" inputs="value:win.value" uid="cg_i3" uid_parent="cg"/>
+    <Tunnel _id="In4" inputs="value:me.path" uid="cg_i4" uid_parent="cg"/>
+    <Tunnel _id="In5" inputs="value:why.value" uid="cg_i5" uid_parent="cg"/>
+    <CaseFrame label="Try VI Server" selector="True" selectout="" uid="cgt" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:g_host.value" uid="g_host" uid_parent="cgt"/>
+      <Tunnel _id="In2" outputs="value:g_port.value" uid="g_port" uid_parent="cgt"/>
+      <Tunnel _id="In3" outputs="value:g_win.value" uid="g_win" uid_parent="cgt"/>
+      <Tunnel _id="In4" outputs="value:g_me.value" uid="g_me" uid_parent="cgt"/>
+      <Tunnel _id="In5" outputs="value:" uid="g_why" uid_parent="cgt"/>
+      <Node _name="To Unsigned Long Integer" inputs="number:g_port.value" outputs="unsigned 32bit integer:pu.v" uid="pu" uid_parent="cgt"/>
+      <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="cgt" value="1000"/>
+      <Node _name="Open Application Reference" inputs="machine name (&quot;&quot;\3A  open local reference):g_host.value,port number or service name (3363):pu.v,timeout ms:tmo.value" outputs="application reference:oa.app,error out:oa.error out" uid="oa" uid_parent="cgt"/>
+      <Node _name="Property Node" fields="read+Application\3AVersion Number" inputs="reference:oa.app,error in (no error):oa.error out" outputs="Application\3AVersion Number:ap.ver,reference out:,error out:ap.error out" type="{LV.Application}" uid="ap" uid_parent="cgt"/>
+      <Constant outputs="value:nvr.value" type="ref{LV.VI}" uid="nvr" uid_parent="cgt" value=""/>
+      <Call inputs="VI:nvr.value,window:g_win.value" outputs="name:tn.VI Name,error out:" target="RemoteVI Target Name.vi" uid="tn" uid_parent="cgt"/>
+      <Node _name="Build Array" inputs="element:tn.VI Name" outputs="appended array:apv.vis" uid="apv" uid_parent="cgt"/>
+      <Constant _name="running top level" outputs="value:k2.value" type="int32" uid="k2" uid_parent="cgt" value="2"/>
+      <Structure _name="For Loop" count="" label="Each VI in memory there\3A keep the one with this panel window" maxin="" maxout="" uid="fv" uid_parent="cgt">
+        <Tunnel _id="In1" inputs="value:apv.vis" mode="index" outputs="value:vn.value" uid="vn" uid_parent="fv"/>
+        <Tunnel _id="In2" inputs="value:g_win.value" outputs="value:vw.value" uid="vw" uid_parent="fv"/>
+        <Tunnel _id="In3" inputs="value:k2.value" outputs="value:vk.value" uid="vk" uid_parent="fv"/>
+        <Tunnel _id="In4" inputs="value:oa.app" outputs="value:va.value" uid="va" uid_parent="fv"/>
+        <Node _name="Open VI Reference" inputs="application reference (local):va.value,vi path:vn.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fv"/>
+        <Node _name="Property Node" fields="read+Execution\3AState,read+Front Panel Window\3AOpen,read+Front Panel Window\3AOS Window" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="Execution\3AState:pv.state,Front Panel Window\3AOpen:pv.open,Front Panel Window\3AOS Window:pv.os,reference out:,error out:pv.error out" type="{LV.VI}" uid="pv" uid_parent="fv"/>
+        <Node _name="To Unsigned Quad Integer" inputs="number:pv.os" outputs="unsigned 64bit integer:oq.u" uid="oq" uid_parent="fv"/>
+        <Node _name="Equal?" inputs="x:oq.u,y:vw.value" outputs="x = y?:same.v" uid="same" uid_parent="fv"/>
+        <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pv.error out" outputs="status:es.status" uid="es" uid_parent="fv"/>
+        <Node _name="Not" inputs="x:es.status" outputs=".not. x?:ok.v" uid="ok" uid_parent="fv"/>
+        <Node _name="To Long Integer" inputs="number:pv.state" outputs="32bit integer:st.i" uid="st" uid_parent="fv"/>
+        <Node _name="Greater Or Equal?" inputs="x:st.i,y:vk.value" outputs="x &gt;= y?:run.v" uid="run" uid_parent="fv"/>
+        <Node _name="Build Array" inputs="element:same.v,element:pv.open,element:ok.v,element:run.v" outputs="appended array:b4.v" uid="b4" uid_parent="fv"/>
+        <Node _name="And Array Elements" inputs="Boolean array:b4.v" outputs="logical AND:keep.v" uid="keep" uid_parent="fv"/>
+        <Structure _name="Case Structure" selectin="keep.v" uid="cc" uid_parent="fv">
+          <Tunnel _id="In1" inputs="value:ov.vi reference" uid="cc_i1" uid_parent="cc"/>
+          <CaseFrame label="This one\3A keep its reference" selector="True" selectout="" uid="cct" uid_parent="cc">
+            <Tunnel _id="In1" outputs="value:" uid="t_r" uid_parent="cct"/>
+          </CaseFrame>
+          <CaseFrame label="Another VI\3A close its reference" selector="False" selectout="" uid="ccf" uid_parent="cc">
+            <Tunnel _id="In1" outputs="value:f_r.value" uid="f_r" uid_parent="ccf"/>
+            <Node _name="Close Reference" inputs="reference:f_r.value" outputs="error out:" uid="cr" uid_parent="ccf"/>
+          </CaseFrame>
+        </Structure>
+        <Tunnel _id="Out1" cond="keep.v" inputs="value:ov.vi reference" mode="index" outputs="value:found.value" uid="found" uid_parent="fv"/>
+        <Tunnel _id="Out2" cond="keep.v" inputs="value:vn.value" mode="index" outputs="value:names.value" uid="names" uid_parent="fv"/>
+      </Structure>
+      <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="cgt" value="0"/>
+      <Node _name="Index Array" inputs="array:found.value,index:i0.value" outputs="element:vi1.v" uid="vi1" uid_parent="cgt"/>
+      <Node _name="Index Array" inputs="array:names.value,index:i0.value" outputs="element:nm1.v" uid="nm1" uid_parent="cgt"/>
+      <Node _name="Array Size" inputs="array:found.value" outputs="size(s):nf.v" uid="nf" uid_parent="cgt"/>
+      <Node _name="Greater?" inputs="x:nf.v,y:i0.value" outputs="x &gt; y?:any.v" uid="any" uid_parent="cgt"/>
+      <Node _name="Strip Path" inputs="path:g_me.value" outputs="stripped path:d1.stripped path" uid="d1" uid_parent="cgt"/>
+      <Node _name="Strip Path" inputs="path:d1.stripped path" outputs="stripped path:d2.stripped path" uid="d2" uid_parent="cgt"/>
+      <Node _name="Strip Path" inputs="path:d2.stripped path" outputs="stripped path:rootp.stripped path" uid="rootp" uid_parent="cgt"/>
+      <Constant _name="built by the RemoteVI Hooks build specification" outputs="value:rel1.value" type="string" uid="rel1" uid_parent="cgt" value="builds\5CRemoteVI Hooks\5CRemoteVI Hooks.lvlibp\5Chooks\5CRemoteVI Remote Hooks.vi"/>
+      <Node _name="Build Path" inputs="base path:rootp.stripped path,name or relative path:rel1.value" outputs="appended path:hp1.appended path" uid="hp1" uid_parent="cgt"/>
+      <Node _name="Open VI Reference" inputs="application reference (local):oa.app,vi path:hp1.appended path,error in (no error):ap.error out" outputs="vi reference:oh1.vi reference,error out:oh1.error out" uid="oh1" uid_parent="cgt"/>
+      <Node _name="Unbundle By Name" fields="status" inputs="input cluster:oh1.error out" outputs="status:h1s.status" uid="h1s" uid_parent="cgt"/>
+      <Constant _name="next to RemoteVI's folder (built application\2C package)" outputs="value:rel2.value" type="string" uid="rel2" uid_parent="cgt" value="RemoteVI Hooks.lvlibp\5Chooks\5CRemoteVI Remote Hooks.vi"/>
+      <Node _name="Build Path" inputs="base path:rootp.stripped path,name or relative path:rel2.value" outputs="appended path:hp2.appended path" uid="hp2" uid_parent="cgt"/>
+      <Structure _name="Case Structure" selectin="h1s.status" uid="ch" uid_parent="cgt">
+        <Tunnel _id="In1" inputs="value:oh1.vi reference" uid="ch_i1" uid_parent="ch"/>
+        <Tunnel _id="In2" inputs="value:oh1.error out" uid="ch_i2" uid_parent="ch"/>
+        <Tunnel _id="In3" inputs="value:oa.app" uid="ch_i3" uid_parent="ch"/>
+        <Tunnel _id="In4" inputs="value:hp2.appended path" uid="ch_i4" uid_parent="ch"/>
+        <CaseFrame label="Found in builds\5C" selector="False" selectout="" uid="chf" uid_parent="ch">
+          <Tunnel _id="In1" outputs="value:h_r.value" uid="h_r" uid_parent="chf"/>
+          <Tunnel _id="In2" outputs="value:h_e.value" uid="h_e" uid_parent="chf"/>
+          <Tunnel _id="In3" outputs="value:" uid="h_a" uid_parent="chf"/>
+          <Tunnel _id="In4" outputs="value:" uid="h_p" uid_parent="chf"/>
+          <Tunnel _id="Out1" inputs="value:h_r.value" uid="chf_o1" uid_parent="chf"/>
+          <Tunnel _id="Out2" inputs="value:h_e.value" uid="chf_o2" uid_parent="chf"/>
+        </CaseFrame>
+        <CaseFrame label="Not there\3A next to RemoteVI's folder" selector="True" selectout="" uid="cht" uid_parent="ch">
+          <Tunnel _id="In1" outputs="value:" uid="j_r" uid_parent="cht"/>
+          <Tunnel _id="In2" outputs="value:" uid="j_e" uid_parent="cht"/>
+          <Tunnel _id="In3" outputs="value:j_a.value" uid="j_a" uid_parent="cht"/>
+          <Tunnel _id="In4" outputs="value:j_p.value" uid="j_p" uid_parent="cht"/>
+          <Node _name="Open VI Reference" inputs="application reference (local):j_a.value,vi path:j_p.value" outputs="vi reference:oh2.vi reference,error out:oh2.error out" uid="oh2" uid_parent="cht"/>
+          <Tunnel _id="Out1" inputs="value:oh2.vi reference" uid="cht_o1" uid_parent="cht"/>
+          <Tunnel _id="Out2" inputs="value:oh2.error out" uid="cht_o2" uid_parent="cht"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:hooks.value" uid="hooks" uid_parent="ch"/>
+        <Tunnel _id="Out2" outputs="value:herr.value" uid="herr" uid_parent="ch"/>
+      </Structure>
+      <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:herr.value" outputs="status:hs.status,code:hs.code" uid="hs" uid_parent="cgt"/>
+      <Node _name="Not" inputs="x:hs.status" outputs=".not. x?:hok.v" uid="hok" uid_parent="cgt"/>
+      <Node _name="And" inputs="x:any.v,y:hok.v" outputs="x .and. y?:conn.v" uid="conn" uid_parent="cgt"/>
+      <Node _name="Unbundle By Name" fields="status,code" inputs="input cluster:ap.error out" outputs="status:as.status,code:as.code" uid="as" uid_parent="cgt"/>
+      <Constant outputs="value:fok.value" type="string" uid="fok" uid_parent="cgt" value="VI Server %s\3A%d"/>
+      <Node _name="Format Into String" inputs="format string:fok.value,input 1:g_host.value,input 2:pu.v" outputs="resulting string:mok.s" uid="mok" uid_parent="cgt"/>
+      <Constant outputs="value:fna.value" type="string" uid="fna" uid_parent="cgt" value="window only (no VI Server at %s\3A%d\2C error %d)"/>
+      <Node _name="Format Into String" inputs="format string:fna.value,input 1:g_host.value,input 2:pu.v,input 3:as.code" outputs="resulting string:mna.s" uid="mna" uid_parent="cgt"/>
+      <Constant outputs="value:fnv.value" type="string" uid="fnv" uid_parent="cgt" value="window only (VI Server at %s\3A%d has no running VI with this panel)"/>
+      <Node _name="Format Into String" inputs="format string:fnv.value,input 1:g_host.value,input 2:pu.v" outputs="resulting string:mnv.s" uid="mnv" uid_parent="cgt"/>
+      <Constant outputs="value:fnh.value" type="string" uid="fnh" uid_parent="cgt" value="window only (RemoteVI Hooks.lvlibp could not be loaded there\2C error %d - build the RemoteVI Hooks build specification)"/>
+      <Node _name="Format Into String" inputs="format string:fnh.value,input 1:hs.code" outputs="resulting string:mnh.s" uid="mnh" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:mnv.s,s:any.v,f:mnh.s" outputs="s? t\3Af:m1.v" uid="m1" uid_parent="cgt"/>
+      <Node _name="Not" inputs="x:any.v" outputs=".not. x?:nany.v" uid="nany" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:mnv.s,s:nany.v,f:mnh.s" outputs="s? t\3Af:m2.v" uid="m2" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:mna.s,s:as.status,f:m2.v" outputs="s? t\3Af:m3.v" uid="m3" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:mok.s,s:conn.v,f:m3.v" outputs="s? t\3Af:mode1.v" uid="mode1" uid_parent="cgt"/>
+      <Tunnel _id="Out1" inputs="value:conn.v" uid="cgt_o1" uid_parent="cgt"/>
+      <Tunnel _id="Out2" inputs="value:vi1.v" uid="cgt_o2" uid_parent="cgt"/>
+      <Tunnel _id="Out3" inputs="value:hooks.value" uid="cgt_o3" uid_parent="cgt"/>
+      <Tunnel _id="Out4" inputs="value:nm1.v" uid="cgt_o4" uid_parent="cgt"/>
+      <Tunnel _id="Out5" inputs="value:mode1.v" uid="cgt_o5" uid_parent="cgt"/>
+    </CaseFrame>
+    <CaseFrame label="This LabVIEW\2C off\2C or no VI Server in the INI file" selector="False" selectout="" uid="cgf" uid_parent="cg">
+      <Tunnel _id="In1" outputs="value:" uid="n_host" uid_parent="cgf"/>
+      <Tunnel _id="In2" outputs="value:" uid="n_port" uid_parent="cgf"/>
+      <Tunnel _id="In3" outputs="value:" uid="n_win" uid_parent="cgf"/>
+      <Tunnel _id="In4" outputs="value:" uid="n_me" uid_parent="cgf"/>
+      <Tunnel _id="In5" outputs="value:n_why.value" uid="n_why" uid_parent="cgf"/>
+      <Constant outputs="value:nf.value" type="bool" uid="nf" uid_parent="cgf" value="false"/>
+      <Constant outputs="value:nvi.value" type="ref{LV.VI}" uid="nvi" uid_parent="cgf" value=""/>
+      <Constant outputs="value:nnm.value" type="string" uid="nnm" uid_parent="cgf" value=""/>
+      <Constant outputs="value:fwo.value" type="string" uid="fwo" uid_parent="cgf" value="window only (%s)"/>
+      <Node _name="Format Into String" inputs="format string:fwo.value,input 1:n_why.value" outputs="resulting string:mwo.s" uid="mwo" uid_parent="cgf"/>
+      <Tunnel _id="Out1" inputs="value:nf.value" uid="cgf_o1" uid_parent="cgf"/>
+      <Tunnel _id="Out2" inputs="value:nvi.value" uid="cgf_o2" uid_parent="cgf"/>
+      <Tunnel _id="Out3" inputs="value:nvi.value" uid="cgf_o3" uid_parent="cgf"/>
+      <Tunnel _id="Out4" inputs="value:nnm.value" uid="cgf_o4" uid_parent="cgf"/>
+      <Tunnel _id="Out5" inputs="value:mwo.s" uid="cgf_o5" uid_parent="cgf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cn.value" uid="cn" uid_parent="cg"/>
+    <Tunnel _id="Out2" outputs="value:rvi.value" uid="rvi" uid_parent="cg"/>
+    <Tunnel _id="Out3" outputs="value:rhk.value" uid="rhk" uid_parent="cg"/>
+    <Tunnel _id="Out4" outputs="value:rnm.value" uid="rnm" uid_parent="cg"/>
+    <Tunnel _id="Out5" outputs="value:mode.value" uid="mode" uid_parent="cg"/>
+  </Structure>
+  <Indicator _name="connected?" conIdx="4" connection="recommended" description="TRUE\3A the VI Server route is open (full features)." inputs="value:cn.value" type="bool" uid="o_c" uid_parent="root" value="false"/>
+  <Indicator _name="VI" conIdx="6" connection="recommended" description="The shared VI in the other LabVIEW (when connected)." inputs="value:rvi.value" type="ref{LV.VI}" uid="o_v" uid_parent="root" value=""/>
+  <Indicator _name="hooks" conIdx="7" connection="recommended" description="RemoteVI Remote Hooks.vi in the other LabVIEW (when connected)." inputs="value:rhk.value" type="ref{LV.VI}" uid="o_h" uid_parent="root" value=""/>
+  <Indicator _name="VI name" conIdx="8" connection="recommended" description="The shared VI's name there." inputs="value:rnm.value" type="string" uid="o_n" uid_parent="root" value=""/>
+  <Indicator _name="mode" conIdx="9" connection="recommended" description="VI Server host\3Aport\2C or window only (and why)." inputs="value:mode.value" type="string" uid="o_m" uid_parent="root" value=""/>
+</VI>

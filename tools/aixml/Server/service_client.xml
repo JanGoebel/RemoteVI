@@ -210,10 +210,10 @@
         <Condition inputs="value:dstop.x .or. y?" uid="dlc" uid_parent="dl" value="stop"/>
       </Structure>
 
-      <Node _name="Unbundle By Name" fields="popup" inputs="input cluster:f_vi.value" outputs="popup:fvu.popup" uid="fvu" uid_parent="csf"/>
+      <Node _name="Unbundle By Name" fields="popup,hWnd" inputs="input cluster:f_vi.value" outputs="popup:fvu.popup,hWnd:fvu.hWnd" uid="fvu" uid_parent="csf"/>
       <Constant _name="none held" outputs="value:m0.value" type="uint8" uid="m0" uid_parent="csf" value="0"/>
       <Node _name="Select" inputs="t:m0.value,s:cls_end.value,f:mods_end.value" outputs="s? t\3Af:mfin.s? t\3Af" uid="mfin" uid_parent="csf"/>
-      <Call inputs="mods:mfin.s? t\3Af,mods set:mset_end.value,popup:fvu.popup,error in:err_end.value" outputs="mods set out:amc.mods set out,error out:amc.error out" target="RemoteVI Apply Modifiers.vi" uid="amc" uid_parent="csf"/>
+      <Call inputs="mods:mfin.s? t\3Af,mods set:mset_end.value,popup:fvu.popup,hWnd:fvu.hWnd,error in:err_end.value" outputs="mods set out:amc.mods set out,error out:amc.error out" target="RemoteVI Apply Modifiers.vi" uid="amc" uid_parent="csf"/>
       <Node _name="Get Date/Time In Seconds" outputs="seconds since 1Jan1904:lnow.t" uid="lnow" uid_parent="csf"/>
       <Node _name="To Double Precision Float" inputs="number:lnow.t" outputs="double precision float:lnowd.v" uid="lnowd" uid_parent="csf"/>
       <Node _name="Select" inputs="t:lnowd.v,s:inp_end.value,f:vou.last" outputs="s? t\3Af:nlast.v" uid="nlast" uid_parent="csf"/>

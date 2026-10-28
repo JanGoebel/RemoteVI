@@ -4,10 +4,67 @@
   <Control _name="view only?" conIdx="1" connection="recommended" description="TRUE\3A the greeting says viewonly 1." outputs="value:vo.value" type="bool" uid="vo" uid_parent="root" value="false"/>
   <Control _name="window" conIdx="9" connection="recommended" description="The shared window of a window target (any process)\3B 0 = the front panel window of VI." outputs="value:win.value" type="uint64" uid="win" uid_parent="root" value="0"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
-  <Call inputs="VI:vi.value,window:win.value,error in:ei.value" outputs="name:pn.VI Name,error out:pn.error out" target="RemoteVI Target Name.vi" uid="pn" uid_parent="root"/>
+  <Constant outputs="value:z64.value" type="uint64" uid="z64" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:win.value,y:z64.value" outputs="x != y?:isw.v" uid="isw" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="isw.v" uid="cvs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:vi.value" uid="cvs_i1" uid_parent="cvs"/>
+    <Tunnel _id="In2" inputs="value:win.value" uid="cvs_i2" uid_parent="cvs"/>
+    <CaseFrame label="A window\3A over VI Server when its LabVIEW runs one (RemoteVI Connect VI Server.vi)" selector="True" selectout="" uid="cvst" uid_parent="cvs">
+      <Tunnel _id="In1" outputs="value:v_vi.value" uid="v_vi" uid_parent="cvst"/>
+      <Tunnel _id="In2" outputs="value:v_win.value" uid="v_win" uid_parent="cvst"/>
+      <Constant outputs="value:vkf.value" type="bool" uid="vkf" uid_parent="cvst" value="false"/>
+      <Call inputs="put?:vkf.value,hWnd:v_win.value" outputs="stored?:rq.stored?,address out:rq.address out" target="RemoteVI VI Server Request.vi" uid="rq" uid_parent="cvst"/>
+      <Call inputs="window:v_win.value,address:rq.address out" outputs="connected?:cvi.connected?,VI:cvi.VI,hooks:cvi.hooks,VI name:cvi.VI name,mode:cvi.mode" target="RemoteVI Connect VI Server.vi" uid="cvi" uid_parent="cvst"/>
+      <Structure _name="Case Structure" selectin="cvi.connected?" uid="cpt" uid_parent="cvst">
+        <Tunnel _id="In1" inputs="value:v_win.value" uid="cpt_i1" uid_parent="cpt"/>
+        <Tunnel _id="In2" inputs="value:cvi.hooks" uid="cpt_i2" uid_parent="cpt"/>
+        <Tunnel _id="In3" inputs="value:cvi.VI name" uid="cpt_i3" uid_parent="cpt"/>
+        <Tunnel _id="In4" inputs="value:cvi.VI" uid="cpt_i4" uid_parent="cpt"/>
+        <Tunnel _id="In5" inputs="value:v_vi.value" uid="cpt_i5" uid_parent="cpt"/>
+        <CaseFrame label="Connected\3A remember the hooks\2C share the VI there" selector="True" selectout="" uid="cptt" uid_parent="cpt">
+          <Tunnel _id="In1" outputs="value:p_win.value" uid="p_win" uid_parent="cptt"/>
+          <Tunnel _id="In2" outputs="value:p_hk.value" uid="p_hk" uid_parent="cptt"/>
+          <Tunnel _id="In3" outputs="value:p_nm.value" uid="p_nm" uid_parent="cptt"/>
+          <Tunnel _id="In4" outputs="value:p_vi.value" uid="p_vi" uid_parent="cptt"/>
+          <Tunnel _id="In5" outputs="value:" uid="p_ovi" uid_parent="cptt"/>
+          <Constant outputs="value:pkt.value" type="bool" uid="pkt" uid_parent="cptt" value="true"/>
+          <Call inputs="put?:pkt.value,hWnd:p_win.value,hooks:p_hk.value,VI name:p_nm.value" outputs="" target="RemoteVI Remote Target.vi" uid="put" uid_parent="cptt"/>
+          <Constant outputs="value:pz.value" type="uint64" uid="pz" uid_parent="cptt" value="0"/>
+          <Tunnel _id="Out1" inputs="value:p_vi.value" uid="cptt_o1" uid_parent="cptt"/>
+          <Tunnel _id="Out2" inputs="value:pz.value" uid="cptt_o2" uid_parent="cptt"/>
+        </CaseFrame>
+        <CaseFrame label="Window only" selector="False" selectout="" uid="cptf" uid_parent="cpt">
+          <Tunnel _id="In1" outputs="value:q_win.value" uid="q_win" uid_parent="cptf"/>
+          <Tunnel _id="In2" outputs="value:" uid="q_hk" uid_parent="cptf"/>
+          <Tunnel _id="In3" outputs="value:" uid="q_nm" uid_parent="cptf"/>
+          <Tunnel _id="In4" outputs="value:" uid="q_vi" uid_parent="cptf"/>
+          <Tunnel _id="In5" outputs="value:q_ovi.value" uid="q_ovi" uid_parent="cptf"/>
+          <Tunnel _id="Out1" inputs="value:q_ovi.value" uid="cptf_o1" uid_parent="cptf"/>
+          <Tunnel _id="Out2" inputs="value:q_win.value" uid="cptf_o2" uid_parent="cptf"/>
+        </CaseFrame>
+        <Tunnel _id="Out1" outputs="value:cpvi.value" uid="cpvi" uid_parent="cpt"/>
+        <Tunnel _id="Out2" outputs="value:cpwin.value" uid="cpwin" uid_parent="cpt"/>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:cpvi.value" uid="cvst_o1" uid_parent="cvst"/>
+      <Tunnel _id="Out2" inputs="value:cpwin.value" uid="cvst_o2" uid_parent="cvst"/>
+      <Tunnel _id="Out3" inputs="value:cvi.mode" uid="cvst_o3" uid_parent="cvst"/>
+    </CaseFrame>
+    <CaseFrame label="A VI of this LabVIEW" selector="False" selectout="" uid="cvsf" uid_parent="cvs">
+      <Tunnel _id="In1" outputs="value:w_vi.value" uid="w_vi" uid_parent="cvsf"/>
+      <Tunnel _id="In2" outputs="value:w_win.value" uid="w_win" uid_parent="cvsf"/>
+      <Constant outputs="value:mvi.value" type="string" uid="mvi" uid_parent="cvsf" value="VI"/>
+      <Tunnel _id="Out1" inputs="value:w_vi.value" uid="cvsf_o1" uid_parent="cvsf"/>
+      <Tunnel _id="Out2" inputs="value:w_win.value" uid="cvsf_o2" uid_parent="cvsf"/>
+      <Tunnel _id="Out3" inputs="value:mvi.value" uid="cvsf_o3" uid_parent="cvsf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:evi.value" uid="evi" uid_parent="cvs"/>
+    <Tunnel _id="Out2" outputs="value:ewin.value" uid="ewin" uid_parent="cvs"/>
+    <Tunnel _id="Out3" outputs="value:emode.value" uid="emode" uid_parent="cvs"/>
+  </Structure>
+  <Call inputs="VI:evi.value,window:ewin.value,error in:ei.value" outputs="name:pn.VI Name,error out:pn.error out" target="RemoteVI Target Name.vi" uid="pn" uid_parent="root"/>
   <Call inputs="VI name:pn.VI Name,view only?:vo.value" outputs="hello:gr.hello" target="RemoteVI Greeting.vi" uid="gr" uid_parent="root"/>
   <Call inputs="" outputs="html:ih.html" target="RemoteVI Index HTML.vi" uid="ih" uid_parent="root"/>
-  <Call inputs="VI:vi.value,window:win.value" outputs="geo:gg0.geo,hWnd:gg0.hWnd,origin:gg0.origin,error out:" target="RemoteVI Target Geometry.vi" uid="gg0" uid_parent="root"/>
+  <Call inputs="VI:evi.value,window:ewin.value" outputs="geo:gg0.geo,hWnd:gg0.hWnd,origin:gg0.origin,error out:" target="RemoteVI Target Geometry.vi" uid="gg0" uid_parent="root"/>
   <Constant outputs="value:k1000.value" type="double" uid="k1000" uid_parent="root" value="1000"/>
   <Node _name="Divide" inputs="x:k1000.value,y:fps.value" outputs="x/y:period.x/y" uid="period" uid_parent="root"/>
   <Indicator _name="hello" conIdx="4" connection="recommended" description="The greeting frames for a new client." inputs="value:gr.hello" type="string" uid="o_h" uid_parent="root" value=""/>
@@ -17,5 +74,8 @@
   <Indicator _name="origin" conIdx="2" connection="recommended" description="Where the panel area starts inside the frame (RemoteVI Get Panel Geometry.vi)." inputs="value:gg0.origin" type="cluster{int32.x,int32.y}" uid="o_or" uid_parent="root" value="[0,0]"/>
   <Indicator _name="period" conIdx="3" connection="recommended" description="1000 / fps\2C in ms." inputs="value:period.x/y" type="double" uid="o_per" uid_parent="root" value="0"/>
   <Indicator _name="VI name" conIdx="7" connection="recommended" description="Name of the published VI." inputs="value:pn.VI Name" type="string" uid="o_nm" uid_parent="root" value=""/>
+  <Indicator _name="VI out" conIdx="12" connection="recommended" description="The VI to share\3A VI\2C or for a window of another LabVIEW reached over VI Server the VI whose panel it is (a reference into that LabVIEW)." inputs="value:evi.value" type="ref{LV.VI}" uid="o_vi" uid_parent="root" value=""/>
+  <Indicator _name="window out" conIdx="13" connection="recommended" description="window\2C or 0 when the window is shared as a VI over VI Server." inputs="value:ewin.value" type="uint64" uid="o_win" uid_parent="root" value="0"/>
+  <Indicator _name="mode" conIdx="14" connection="recommended" description="VI (a panel of this LabVIEW)\2C VI Server host\3Aport (full features)\2C or window only (and why)." inputs="value:emode.value" type="string" uid="o_mode" uid_parent="root" value=""/>
   <Indicator _name="error out" conIdx="15" connection="recommended" description="error in and the error of reading the VI name." inputs="value:pn.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

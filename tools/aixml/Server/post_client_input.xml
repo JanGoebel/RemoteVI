@@ -15,7 +15,7 @@
   <Node _name="Unbundle By Name" fields="geo,hWnd,popup" inputs="input cluster:pan.value" outputs="geo:up.geo,hWnd:up.hWnd,popup:up.popup" uid="up" uid_parent="root"/>
   <Call inputs="hWnd:up.hWnd,error in:ei.value" outputs="was minimized?:,error out:rim.error out" target="RemoteVI Restore If Minimized.vi" uid="rim" uid_parent="root"/>
   <Call inputs="kind:kind.value,msg:msg.value,wParam:wp.value,mods in:mods.value" outputs="mods out:tm.mods out" target="RemoteVI Track Modifiers.vi" uid="tm" uid_parent="root"/>
-  <Call inputs="mods:tm.mods out,mods set:mset.value,popup:up.popup,error in:rim.error out" outputs="mods set out:am.mods set out,error out:am.error out" target="RemoteVI Apply Modifiers.vi" uid="am" uid_parent="root"/>
+  <Call inputs="mods:tm.mods out,mods set:mset.value,popup:up.popup,hWnd:up.hWnd,error in:rim.error out" outputs="mods set out:am.mods set out,error out:am.error out" target="RemoteVI Apply Modifiers.vi" uid="am" uid_parent="root"/>
   <Call inputs="popup?:up.popup,msg:msg.value,x:x.value,y:y.value,geo:up.geo" outputs="" target="RemoteVI Note Popup Pointer.vi" uid="npp" uid_parent="root"/>
   <Call inputs="hWnd:up.hWnd,error in:am.error out" outputs="captured?:mc.captured?,error out:mc.error out" target="RemoteVI Mouse Captured.vi" uid="mc" uid_parent="root"/>
   <Call inputs="kind:kind.value,msg:msg.value,x:x.value,y:y.value,wParam:wp.value,lParam:lp.value,geo:up.geo,popup:up.popup,tracking in:mc.captured?" outputs="posts:ti.posts,tracking out:ti.tracking out,cursor:ti.cursor" target="RemoteVI Translate Input.vi" uid="ti" uid_parent="root"/>

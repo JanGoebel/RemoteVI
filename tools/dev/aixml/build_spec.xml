@@ -1,0 +1,8 @@
+<VI _name="Build Spec.vi" description="Builds a build specification of a project (scratch helper)">
+  <Control _name="project" outputs="value:pp.value" type="path" uid="pp" uid_parent="root" value=""/>
+  <Control _name="spec" outputs="value:sp.value" type="string" uid="sp" uid_parent="root" value=""/>
+  <Constant outputs="value:t.value" type="string" uid="t" uid_parent="root" value="My Computer"/>
+  <Call inputs="Path to project:pp.value,Name of build specification (if empty\3A build all):sp.value,Name of target (My Computer):t.value" outputs="Generated files:b.files,error out:b.err" target="BuildTargetBuildSpecification.vi" uid="b" uid_parent="root"/>
+  <Indicator _name="files" inputs="value:b.files" type="array{path}" uid="o1" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" inputs="value:b.err" type="cluster{bool.status,int32.code,string.source}" uid="o2" uid_parent="root" value="[false,0,]"/>
+</VI>

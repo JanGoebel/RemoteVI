@@ -1,0 +1,8 @@
+<VI _name="Abort Path.vi" description="Test helper: aborts the VI at path.">
+  <Control _name="path" conIdx="0" connection="required" outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
+  <Node _name="Open VI Reference" inputs="vi path:p.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Abort VI" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:ab.reference out,error out:ab.error out" uid="ab" uid_parent="root"/>
+  <Node _name="Invoke Node" target="FP.Close" type="{LV.VI}" inputs="reference:ab.reference out" outputs="reference out:fc.reference out,error out:" uid="fc" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:fc.reference out,error in (no error):ab.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

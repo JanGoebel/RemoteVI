@@ -1,0 +1,16 @@
+<VI _name="Mem.vi" description="Dev helper: names of the VIs in memory (main instance) that contain text, comma-joined.">
+  <Control _name="text" type="string" uid="flt" uid_parent="root" value="RemoteVI" outputs="value:flt.value"/>
+  <Node _name="Property Node" fields="read+Application\3AAll VIs In Memory" inputs="" outputs="error out:,Application\3AAll VIs In Memory:ap.vis" type="{LV.Application}" uid="ap" uid_parent="root"/>
+  <Constant outputs="value:cm.value" type="string" uid="cm" uid_parent="root" value=" | "/>
+  <Structure _name="For Loop" count="" label="Each VI" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ap.vis" mode="index" outputs="value:n.value" uid="n" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:flt.value" outputs="value:f.value" uid="f" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:cm.value" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Node _name="Search/Split String" inputs="string:n.value,search string/char (-):f.value" outputs="substring before match:,match + rest of string:,offset of match:ss.off" uid="ss" uid_parent="fl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:ss.off" outputs="x &gt;= 0?:hit.v" uid="hit" uid_parent="fl"/>
+    <Node _name="Concatenate Strings" inputs="string:n.value,string:c.value" outputs="concatenated string:nc.v" uid="nc" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:nc.v" mode="index" cond="hit.v" outputs="value:sel.value" uid="sel" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:sel.value" outputs="concatenated string:all.v" uid="all" uid_parent="root"/>
+  <Indicator _name="names" type="string" uid="on" uid_parent="root" value="" inputs="value:all.v"/>
+</VI>

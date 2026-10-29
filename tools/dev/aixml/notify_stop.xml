@@ -1,0 +1,13 @@
+<VI _name="Notify Stop.vi" description="Dev helper: sends a notification on RemoteVI:&lt;port&gt; (stops that server loop) without waiting.">
+  <Control _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8089"/>
+  <Constant outputs="value:pfx.value" type="string" uid="pfx" uid_parent="root" value="RemoteVI\3A"/>
+  <Node _name="Number To Decimal String" inputs="number:port.value" outputs="decimal integer string:ps.decimal integer string" uid="ps" uid_parent="root"/>
+  <Node _name="Concatenate Strings" inputs="string:pfx.value,string:ps.decimal integer string" outputs="concatenated string:nn.concatenated string" uid="nn" uid_parent="root"/>
+  <Constant outputs="value:ntype.value" type="string" uid="ntype" uid_parent="root" value=""/>
+  <Constant outputs="value:nocreate.value" type="bool" uid="nocreate" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.concatenated string,notification data type:ntype.value,create if not found? (T):nocreate.value" outputs="notifier out:on.notifier out,error out:on.error out" uid="on" uid_parent="root"/>
+  <Constant outputs="value:msg.value" type="string" uid="msg" uid_parent="root" value="stop"/>
+  <Node _name="Send Notification" inputs="notifier:on.notifier out,notification:msg.value,error in (no error):on.error out" outputs="notifier out:sn.notifier out,error out:sn.error out" uid="sn" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:sn.notifier out,error in (no error):sn.error out" outputs="error out:rn.error out" uid="rn" uid_parent="root"/>
+  <Indicator _name="error out" inputs="value:rn.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

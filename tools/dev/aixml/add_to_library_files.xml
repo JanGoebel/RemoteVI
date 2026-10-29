@@ -1,0 +1,52 @@
+<VI _name="Add To Library Files.vi" description="Dev helper: like Add To Library Main2.vi but reads item paths and caller paths from text files (one path per line). In THIS application instance (no project): opens the library, adds every item with AddItem, opens a reference to each caller (so they relink), saves the modified library members (Save All This Library, only modified) and closes everything.">
+  <Control _name="library path" type="path" uid="lp" uid_parent="root" value="" outputs="value:lp.value"/>
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Control _name="callers file" type="path" uid="cf" uid_parent="root" value="" outputs="value:cf.value"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value" outputs="text:ri.text,error out:" uid="ri" uid_parent="root"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):cf.value,count:all.value" outputs="text:rc.text,error out:" uid="rc" uid_parent="root"/>
+  <Constant _name="VI type" type="string" uid="vt" uid_parent="root" value="VI" outputs="value:vt.value"/>
+  <Node _name="Invoke Node" target="Library.Open" type="{LV.Application}" inputs="error in (no error):,Path:lp.value" outputs="Library.Open:lo.lib,reference out:,error out:lo.err" uid="lo" uid_parent="root"/>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:vt.value" outputs="value:tt.t" uid="tt" uid_parent="fl"/>
+    <ShiftReg uid="srl" uid_parent="fl">
+      <Left inputs="value:lo.lib" outputs="value:sl.lib" uid="srll" uid_parent="srl"/>
+      <Right inputs="value:sl.lib" outputs="value:lout.lib" uid="srlr" uid_parent="srl"/>
+    </ShiftReg>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Strip Path" inputs="path:itp.path" outputs="stripped path:,name:sp.name" uid="sp" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="AddItem" type="{LV.ProjectItem}" inputs="reference:sl.lib,error in (no error):,Name:sp.name,Path:itp.path,Type:tt.t" outputs="reference out:,error out:ad.err,AddItem:ad.item" uid="ad" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:ad.item" outputs="error out:" uid="ci" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:ad.err" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+  </Structure>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fo" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rc.text" mode="index" outputs="value:oc.s" uid="oc" uid_parent="fo"/>
+    <ShiftReg uid="srq" uid_parent="fo">
+      <Left inputs="value:lout.lib" outputs="value:ql.lib" uid="srql" uid_parent="srq"/>
+      <Right inputs="value:ql.lib" outputs="value:lout2.lib" uid="srqr" uid_parent="srq"/>
+    </ShiftReg>
+    <Node _name="String To Path" inputs="string:oc.s" outputs="path:ocp.path" uid="ocp" uid_parent="fo"/>
+    <Node _name="Open VI Reference" inputs="vi path:ocp.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fo"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:ov.error out" outputs="code:ovc.code" uid="ovc" uid_parent="fo"/>
+    <Tunnel _id="Out1" inputs="value:ov.vi reference" mode="index" outputs="value:refs.r" uid="refs" uid_parent="fo"/>
+    <Tunnel _id="Out2" inputs="value:ovc.code" mode="index" outputs="value:occ.codes" uid="occ" uid_parent="fo"/>
+  </Structure>
+  <Constant type="bool" uid="tru" uid_parent="root" value="true" outputs="value:tru.value"/>
+  <Call target="Edit LVLibs.lvlib\3ASave All This Library.vi" inputs="Library in:lout2.lib,Save Only Modified VIs and Libraries? (F):tru.value,error in (no error):lo.err" outputs="Library out:sv.lib,error out:sv.err" uid="sv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:sv.lib,error in (no error):sv.err" outputs="error out:c1.err" uid="c1" uid_parent="root"/>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:refs.r" mode="index" outputs="value:rcr.r" uid="rcr" uid_parent="fc"/>
+    <Node _name="Close Reference" inputs="reference:rcr.r" outputs="error out:" uid="cr" uid_parent="fc"/>
+  </Structure>
+  <Node _name="Array Max &amp; Min" inputs="array:co.codes" outputs="max value:amx.max,max index (indices):,min value:amx.min,min index:" uid="amx" uid_parent="root"/>
+  <Node _name="Array Max &amp; Min" inputs="array:occ.codes" outputs="max value:omx.max,max index (indices):,min value:omx.min,min index:" uid="omx" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:co.codes" outputs="size(s):nco.v" uid="nco" uid_parent="root"/>
+  <Indicator _name="items added" type="int32" uid="oni" uid_parent="root" value="0" inputs="value:nco.v"/>
+  <Indicator _name="add code max" type="int32" uid="oco" uid_parent="root" value="0" inputs="value:amx.max"/>
+  <Indicator _name="add code min" type="int32" uid="oco2" uid_parent="root" value="0" inputs="value:amx.min"/>
+  <Indicator _name="open code max" type="int32" uid="ooc" uid_parent="root" value="0" inputs="value:omx.max"/>
+  <Indicator _name="open code min" type="int32" uid="ooc2" uid_parent="root" value="0" inputs="value:omx.min"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:c1.err"/>
+</VI>

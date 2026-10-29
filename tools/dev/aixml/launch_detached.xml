@@ -1,0 +1,9 @@
+<VI _name="Launch Detached.vi" description="Test helper: opens the front panel of the VI at path and runs it without waiting.">
+  <Control _name="path" conIdx="0" connection="required" outputs="value:p.value" type="path" uid="p" uid_parent="root" value=""/>
+  <Node _name="Open VI Reference" inputs="vi path:p.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Constant outputs="value:t.value" type="bool" uid="t" uid_parent="root" value="true"/>
+  <Constant outputs="value:f.value" type="bool" uid="f" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AOpen" inputs="reference:ov.vi reference,error in (no error):ov.error out,Front Panel Window\3AOpen:t.value" outputs="reference out:pn.reference out,error out:pn.error out" type="{LV.VI}" uid="pn" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:pn.reference out,error in (no error):pn.error out,Wait until done:f.value,Auto Dispose Ref:t.value" outputs="reference out:,error out:run.error out" uid="run" uid_parent="root"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" inputs="value:run.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

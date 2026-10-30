@@ -62,7 +62,9 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - `{LV.Control} Replace` with NXG .ctl files;
   - remote `CvtPaneToPanelCoords`;
   - parallel MCP calls. Never run MCP calls in parallel.
-- **AIXML probes:** sequence Close Reference through the error wire. An unwired Close Reference runs first and causes misleading error 66.
+- **Close Reference:** sequence it through the error wire, in probes and product code alike. An unwired Close Reference may run first: misleading error 66 in probes, and Read Tips and Read Splitters kept returning their last message (the flaky tip strip test over VI Server).
+- **Composer and For Loops:** `count` is dropped when the loop also has an indexing input tunnel. To run a loop zero times, feed it an empty array (Select) instead.
+- **References into a subpanel VI:** a VI run as top level (the hooks over VI Server, `lvai_run_vi_and_read_values`) closes the references it opened when it ends. Closing one to a subpanel's VI (`InsertedVI`) removes that VI from its subpanel.
 - **Git Bash heredocs:** they mangle backslash escapes such as `\3A` in AIXML. Write edit scripts with the Write tool.
 - **LabVIEW 2020 compatibility:**
   - A library saved by a newer LabVIEW also carries that version in the header of its flattened icon (`NI.Lib.Icon`). LabVIEW 2020 then refuses the library (error 122) and every member VI is broken with "error of type 2000000". `lvlib_version.py` rewrites the header.
@@ -89,7 +91,7 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
 - **Host badge:** "remote in use" in a corner of the shared window: a click-through, non-activating floating panel that must not appear in the stream.
 - **RemoteVI Server.exe:** must ship and locate the hooks lvlibp.
 - **Window titles:** characters outside the system code page show "?".
-- **VI Server route:** subpanel tip strips and splitter writes do not work across it.
+- **VI Server route:** subpanel tip strips are left out (see the pitfall on references into a subpanel VI); reading them would need a hooks VI that keeps running.
 - **Modifiers:** AttachThreadInput fallback for window targets without VI Server, once the user allows it.
 - **Context menus:** the short host flash (70–120 ms) of remotely opened menus remains. An empty window region breaks keyboard-driven menus.
 - **Packaging and CI:** VIPM package (deferred by the user), main branch and PR workflow, self-hosted CI runner, cursor shape.

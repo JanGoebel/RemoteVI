@@ -89,7 +89,7 @@ Measured on 2026-10-28, LabVIEW 2025, run-time engine 2025.3.3:
 | Suite | In the same LabVIEW (VI target) | Another process, window only | Another process, over VI Server | Differences |
 |---|---|---|---|---|
 | fixture | 24 / 24 | 20 / 24 | **24 / 24** | window only: Shift and Ctrl held in the browser (2 tests) and Shift+Right arrow do not reach the other process (docs/security.md, Host input); tip strips need VI Server |
-| complex | 20 / 20, 1 skipped | 16 / 20, 1 skipped | 17 / 20, 1 skipped | window only: tip strips, the splitters message and both splitter drags. Over VI Server the splitters message and the tip strips of the tab pages work, but the tip strips of the VI in the subpanel are missing and both splitter drags fail: setting `{LV.Splitter} Position` through a reference into the other process does not move the bar (not investigated further). The inspector window (FP.Open, owned by the hidden frame window) is listed and operated in both modes |
+| complex | 20 / 20, 1 skipped | 16 / 20, 1 skipped | 19 / 20, 1 skipped | window only: tip strips, the splitters message and both splitter drags. Over VI Server everything but the tip strips of the VI in the subpanel works (2026-10-30, see below). The inspector window (FP.Open, owned by the hidden frame window) is listed and operated in both modes |
 
 Everything else - clicks, drags, typing, menus and submenus, ring menus, tabs, wheel, double click, dialogs, the native file dialog, subpanels, tables, trees, graph cursors, scrollbars - works the same across processes.
 
@@ -105,12 +105,14 @@ The repository is saved for LabVIEW 2020 (20.0). Measured on 2026-10-30 with the
 | two shares | 3 / 3 | 3 / 3 |
 | fixture EXE, over VI Server | 24 / 24 | 24 / 24 |
 | fixture EXE, window only | 20 / 24 | 20 / 24 |
-| complex EXE, over VI Server | 17 / 20, 1 skipped | 17 / 20, 1 skipped |
+| complex EXE, over VI Server | 17 / 20, 1 skipped (before the fix below) | 19 / 20, 1 skipped |
 | complex EXE, window only | 16 / 20, 1 skipped | 16 / 20, 1 skipped |
 | demo: click / key to photon, median | 13 / 9 ms | 14 / 13 ms |
 | demo: bytes per frame, median | 12.2 kB | 7.7 kB |
 
-The failures are the known ones of the table above. Over VI Server, the first full run of the fixture suite against a freshly started share sometimes fails the tip strip test (the `tips` the client got does not cover Button); it passes on the next run and on its own. LabVIEW 2020 runs beside 2026 and is driven from it with `tools/dev/Remote Run.vi` (CLAUDE.md).
+The failures are the known ones of the table above.
+
+Over VI Server the first full run of the fixture suite against a freshly started share used to fail the tip strip test now and then, and the splitter drags of the complex suite failed. Both had one cause: `RemoteVI Read Tips.vi`, `RemoteVI Read Splitters.vi` and `RemoteVI Remote Hooks.vi` closed their panel and VI references with a Close Reference that was not wired into the error chain, so LabVIEW could run it before the reads, which then failed and kept the last message. They are sequenced now and report an `error out`. With the reads working, a second effect showed: the hooks run as a top-level VI in the other process, and when a run ends LabVIEW closes the references it opened - a reference to the VI in a subpanel (`{LV.SubPanel} InsertedVI`) among them, which removes that VI from its subpanel (measured in the built application and in the LabVIEW 2026 IDE; the server loop of an own panel keeps running, so its references stay open). The hooks therefore call Read Tips with `subpanels?` FALSE: over VI Server the tip strips of a VI in a subpanel are left out. Measured from LabVIEW 2026 against the executables built by LabVIEW 2020: fixture over VI Server 24 / 24, also as the first run on fresh shares; complex over VI Server 19 / 20, 1 skipped; complex in the same LabVIEW 20 / 20, 1 skipped. The LabVIEW 2020 column was not measured again. LabVIEW 2020 runs beside 2026 and is driven from it with `tools/dev/Remote Run.vi` (CLAUDE.md).
 
 ### Complex application UI
 

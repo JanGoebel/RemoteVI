@@ -1,0 +1,25 @@
+<VI _name="RemoteVI Encode Rect PNG.vi" description="Cuts rect out of pixmap (2D U32 [row\2C column]\2C 0x00RRGGBB) with Array Subset\2C flattens it to a 24-bit LabVIEW image and encodes it as PNG in memory with LVImageDataToPNGByteArray\2C the function LabVIEW exports and NI's LV Image to PNG Data.vi calls (Win32\5CLabVIEW LVImageDataToPNGByteArray.vi). It is called directly because LabVIEW 2020's LV Image to PNG Data.vi has no compression input and always writes an uncompressed PNG. compression is the zlib level\3A 0 writes an uncompressed PNG\2C 1 (default) is the fastest compressing level\2C 9 the smallest\2C -1 is zlib's own default (6). It is coerced to -1..9 because the encoder returns an EMPTY png and no error for a level above 9. A rect reaching past the pixmap is clipped by Array Subset. On an error at error in nothing is encoded and png is empty.">
+  <FreeLabel comment="Crop\2C flatten to 24 bit\2C encode PNG" uid="cmt" uid_parent="root"/>
+  <Control _name="pixmap" conIdx="11" connection="required" description="The full capture\2C 2D U32 [row\2C column]\2C 0x00RRGGBB." outputs="value:pm.value" type="array.2{uint32}" uid="pm" uid_parent="root" value="[]"/>
+  <Control _name="rect" conIdx="10" connection="required" description="The rectangle to encode\2C in pixels\3A x\2C y of the top-left corner\2C w\2C h." outputs="value:rc.value" type="cluster{int32.x,int32.y,int32.w,int32.h}" uid="rc" uid_parent="root" value="[0,0,0,0]"/>
+  <Control _name="compression" conIdx="9" connection="recommended" description="zlib level\2C coerced to -1..9. 0 = none\2C 1 = fastest (default)\2C 9 = smallest\2C -1 = zlib default (6)." outputs="value:cp.value" type="int32" uid="cp" uid_parent="root" value="1"/>
+  <Control _name="error in" conIdx="8" connection="recommended" description="An error here skips the encoding." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Constant _name="lowest level" outputs="value:lo.value" type="int32" uid="lo" uid_parent="root" value="-1"/>
+  <Constant _name="highest level" outputs="value:hi.value" type="int32" uid="hi" uid_parent="root" value="9"/>
+  <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:rc.value" outputs="x:ur.x,y:ur.y,w:ur.w,h:ur.h" uid="ur" uid_parent="root"/>
+  <Node _name="In Range and Coerce" includeHigh="true" includeLow="true" inputs="upper limit:hi.value,x:cp.value,lower limit:lo.value" outputs="coerced(x):co.coerced(x),In Range?:" uid="co" uid_parent="root"/>
+  <Node _name="Array Subset" dimensions="2" inputs="array:pm.value,index:ur.y,length:ur.h,index:ur.x,length:ur.w" outputs="subarray:sub.subarray" uid="sub" uid_parent="root"/>
+  <Call inputs="24-bit pixmap:sub.subarray,8-bit pixmap:,4-bit pixmap:,1-bit pixmap  :,top left:,colors:,mask:" outputs="image data:fp.image data" target="Flatten Pixmap.vi" uid="fp" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="image depth,image,colors,Rectangle" inputs="input cluster:fp.image data" outputs="image depth:ui.depth,image:ui.image,colors:ui.colors,Rectangle:ui.rect" uid="ui" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:ui.rect" outputs="left:ub.left,top:ub.top,right:ub.right,bottom:ub.bottom" uid="ub" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:ub.right,y:ub.left" outputs="x-y:sw.w" uid="sw" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:ub.bottom,y:ub.top" outputs="x-y:sh.h" uid="sh" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:sw.w" outputs="unsigned 32bit integer:uw.u" uid="uw" uid_parent="root"/>
+  <Node _name="To Unsigned Long Integer" inputs="number:sh.h" outputs="unsigned 32bit integer:uh.u" uid="uh" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:ui.colors" outputs="32bit integer:uc.i" uid="uc" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:ui.colors" outputs="size(s):as.n" uid="as" uid_parent="root"/>
+  <Call inputs="compression:co.coerced(x),width:uw.u,height:uh.u,depth:ui.depth,imageBuf:ui.image,colorTable:uc.i,colorTableSize:as.n,error in:ei.value" outputs="png data:enc.png data,error out:enc.error out" target="LabVIEW LVImageDataToPNGByteArray.vi" uid="enc" uid_parent="root"/>
+  <Node _name="Byte Array To String" inputs="unsigned byte array:enc.png data" outputs="string:bs.s" uid="bs" uid_parent="root"/>
+  <Indicator _name="png" conIdx="3" connection="recommended" description="The PNG file bytes of the rectangle." inputs="value:bs.s" type="string" uid="png" uid_parent="root" value=""/>
+  <Indicator _name="error out" conIdx="0" connection="recommended" description="error in\2C or the encoder's error." inputs="value:enc.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

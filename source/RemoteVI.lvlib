@@ -175,6 +175,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="kernel32 GetCurrentThreadId.vi" Type="VI" URL="../Win32/kernel32 GetCurrentThreadId.vi"/>
 		<Item Name="kernel32 OpenProcess.vi" Type="VI" URL="../Win32/kernel32 OpenProcess.vi"/>
 		<Item Name="kernel32 QueryFullProcessImageNameW.vi" Type="VI" URL="../Win32/kernel32 QueryFullProcessImageNameW.vi"/>
+		<Item Name="LabVIEW LVImageDataToPNGByteArray.vi" Type="VI" URL="../Win32/LabVIEW LVImageDataToPNGByteArray.vi"/>
 		<Item Name="RemoteVI Capture Window.vi" Type="VI" URL="../Win32/RemoteVI Capture Window.vi"/>
 		<Item Name="RemoteVI Copy Window.vi" Type="VI" URL="../Win32/RemoteVI Copy Window.vi"/>
 		<Item Name="RemoteVI Cursor Outside Window.vi" Type="VI" URL="../Win32/RemoteVI Cursor Outside Window.vi"/>

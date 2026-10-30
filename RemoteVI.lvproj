@@ -59,6 +59,7 @@
 				<Item Name="IsWindow Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/IsWindow Wrapper Template.vi"/>
 				<Item Name="IsWindowEnabled Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/IsWindowEnabled Wrapper Template.vi"/>
 				<Item Name="IsWindowVisible Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/IsWindowVisible Wrapper Template.vi"/>
+				<Item Name="LVImageDataToPNGByteArray Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/LVImageDataToPNGByteArray Wrapper Template.vi"/>
 				<Item Name="OpenProcess Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/OpenProcess Wrapper Template.vi"/>
 				<Item Name="PostMessageW Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/PostMessageW Wrapper Template.vi"/>
 				<Item Name="PrintWindow Wrapper Template.vi" Type="VI" URL="../scripts/Win32 Wrapper Templates/PrintWindow Wrapper Template.vi"/>

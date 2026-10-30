@@ -12,10 +12,10 @@
   Only one RemoteVI server can run per LabVIEW instance: stop any other one first.
 
 .PARAMETER LabVIEWVersion
-  LabVIEW year, default 2025.
+  LabVIEW year, default 2020 (the version the repository is saved for).
 #>
 param(
-  [string]$LabVIEWVersion = '2025',
+  [string]$LabVIEWVersion = '2020',
   [ValidateSet('32', '64')][string]$Bitness = '64',
   [int]$ReadyTimeoutSeconds = 120
 )

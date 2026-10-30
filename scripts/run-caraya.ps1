@@ -17,7 +17,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$LabVIEWVersion = '2025',
+    [string]$LabVIEWVersion = '2020',
     [ValidateSet('32', '64')][string]$Bitness = '64',
     [string]$TestPath,
     [string]$Report,

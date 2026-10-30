@@ -23,17 +23,19 @@ jobs:
           python-version: '3.12'
       - name: Test vectors are up to date
         run: npm run vectors:check
+      - name: Every VI is saved for LabVIEW 2020
+        run: python tools/dev/lv_versions.py --expect 20.0
       - name: Caraya tests are up to date with the vectors
         run: python tests/caraya/build.py --check
       - name: Unit and end-to-end tests (reference server, web client)
         run: npm test
 
   labview:
-    name: LabVIEW 2025 (Caraya, integration)
+    name: LabVIEW 2020 (Caraya, integration)
     # Needs the self-hosted Windows runner described in docs/ci.md (labels: self-hosted, windows,
-    # labview-2025). Enable it with the repository variable LABVIEW_RUNNER=true.
+    # labview-2020). Enable it with the repository variable LABVIEW_RUNNER=true.
     if: vars.LABVIEW_RUNNER == 'true'
-    runs-on: [self-hosted, windows, labview-2025]
+    runs-on: [self-hosted, windows, labview-2020]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

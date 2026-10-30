@@ -1,10 +1,10 @@
 # VIPM project file: what a development / CI machine needs installed.
-#   vipm install                 installs all of it for LabVIEW 2025 (64-bit)
+#   vipm install                 installs all of it for LabVIEW 2020 (64-bit), the version the repository is saved for
 #   vipm build build\RemoteVI.vipb --version-number X.Y.Z   builds the VI package
 [project]
 name = "remotevi"
 version = "0.1.0"
-labview-version = "2025"
+labview-version = "2020"
 
 [dependencies]
 illuminatedg_lib_ig_http_utils = "1.1.0.54"

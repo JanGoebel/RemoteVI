@@ -258,7 +258,7 @@ def main():
     body = render(build_tree(), '\t\t')
     text = '\n'.join([
         "<?xml version='1.0' encoding='UTF-8'?>",
-        '<Project Type="Project" LVVersion="25008000">',
+        '<Project Type="Project" LVVersion="20008000">',
         '\t<Property Name="NI.LV.All.SourceOnly" Type="Bool">true</Property>',
         '\t<Property Name="NI.Project.Description" Type="Str">RemoteVI - publish a LabVIEW front panel to a web browser, pixel-accurate and interactive.</Property>',
         '\t<Item Name="My Computer" Type="My Computer">',

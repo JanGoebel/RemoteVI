@@ -8,7 +8,7 @@
     <Company_Name>jgoebel</Company_Name>
     <Library_Summary/>
     <Library_License>MIT</Library_License>
-    <Package_LabVIEW_Version>25.0 (64-bit)</Package_LabVIEW_Version>
+    <Package_LabVIEW_Version>20.0 (64-bit)</Package_LabVIEW_Version>
     <Community_Edition>true</Community_Edition>
     <Package_Icon/>
     <Product_Name>RemoteVI</Product_Name>

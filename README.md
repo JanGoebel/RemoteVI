@@ -20,7 +20,7 @@ The share also stops by itself when the VI stops. Several shares can run side by
 
 **2. From the Tools menu**, no code: **Tools » RemoteVI » Share in Browser** (installed by the VI package into `<LabVIEW>\project\RemoteVI`; from the repository, run `tools-menu/RemoteVI/Share in Browser.vi` or `source/App/RemoteVI Server.vi`). Pick a window on the left - LabVIEW's own first, then LabVIEW-built applications, then other programs - choose port, *Whole network* and *View only*, press **Share selected window**. On the right the shares with their clients, live; select one for Stop sharing, Copy link or Open in browser. Closing the window keeps the shares running; open it again to stop them.
 
-**3. RemoteVI Server.exe**, a standalone application (build specification `RemoteVI Server`, LabVIEW 2025 run-time engine): the same window, plus a landing page that links every share (default port 8088, the next free port when that one is in use; its link with its own token is shown at the bottom). Closing the window stops every share. Command line (after `--`):
+**3. RemoteVI Server.exe**, a standalone application (build specification `RemoteVI Server`, run-time engine of the LabVIEW it is built with, 2020 or newer): the same window, plus a landing page that links every share (default port 8088, the next free port when that one is in use; its link with its own token is shown at the bottom). Closing the window stops every share. Command line (after `--`):
 
 ```
 "RemoteVI Server.exe" -- --share "My Panel.vi" --port 8100 --token secret --whole-network --view-only --landing-port 8088
@@ -32,7 +32,7 @@ The share also stops by itself when the VI stops. Several shares can run side by
 
 ### Full features for a LabVIEW-built application (VI Server)
 
-A window of another process is shared through Win32: picture, clicks, keys, menus, dialogs and other windows. Shift, Ctrl and Alt, tip strips and splitter bars need code running inside that process. When the application is a LabVIEW-built executable (LabVIEW 2025 run-time) that runs VI Server, RemoteVI does exactly that: it connects over VI Server and runs its small hooks VI inside the application, so modifiers, tip strips and splitters work as for a panel of its own LabVIEW. Enable it in the application's INI file (next to the `.exe`, in its section):
+A window of another process is shared through Win32: picture, clicks, keys, menus, dialogs and other windows. Shift, Ctrl and Alt, tip strips and splitter bars need code running inside that process. When the application is a LabVIEW-built executable (built with the same LabVIEW version as `RemoteVI Hooks.lvlibp`) that runs VI Server, RemoteVI does exactly that: it connects over VI Server and runs its small hooks VI inside the application, so modifiers, tip strips and splitters work as for a panel of its own LabVIEW. Enable it in the application's INI file (next to the `.exe`, in its section):
 
 ```
 server.tcp.enabled=True
@@ -49,7 +49,7 @@ and allow only `127.0.0.1` in the machine access list (project: My Computer » P
 
 ## How it works
 
-* **Out:** the whole front panel window below its title bar - menu bar (also a custom run-time menu), toolbar, panel, scrollbars - copied from the window's composited surface (`GetDC` + `BitBlt`, also while it is covered) → diff in 64 px tiles → changed bands as PNG (NI's `LV Image to PNG Data.vi`, zlib level 1) → WebSocket → canvas.
+* **Out:** the whole front panel window below its title bar - menu bar (also a custom run-time menu), toolbar, panel, scrollbars - copied from the window's composited surface (`GetDC` + `BitBlt`, also while it is covered) → diff in 64 px tiles → changed bands as PNG (LabVIEW's own `LVImageDataToPNGByteArray`, the function NI's `LV Image to PNG Data.vi` calls, zlib level 1) → WebSocket → canvas.
 * **In:** the browser sends Win32 messages (`WM_LBUTTONDOWN`, `WM_MOUSEMOVE`, `WM_CHAR`, …) with coordinates in that window picture. The server maps them to the panel's window and calls `PostMessageW`; menu bar, toolbar and scrollbars are operated like the panel.
 * **HTTP:** IG HTTP Utils / IG WebSocket Stream handle the request and the upgrade. The client is one embedded HTML file.
 
@@ -72,7 +72,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ frames copied from the window's composited surface (2-5 ms), every 16 ms right after a click or key; click-to-photon about 60 ms on the demo with LabVIEW in the background (`tools/perf.mjs`); idle connections don't stall it; Start reports errors |
 | Browser client (`web/index.html`) | ✅ |
 | Tests | ✅ `npm test` (22), LabVIEW integration suites `tests/lv`: the fixture (24 of 24), a complex application UI (20 of 20, 1 skipped; see Known limits), two shares at once (3 of 3); the same suites against the fixtures built as executables in another process: over VI Server 24 of 24 and 17 of 20, window only 20 of 24 and 16 of 20 (docs/testing.md); LabVIEW in the background |
-| Caraya unit tests | ✅ 161 assertions over 20 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for LabVIEW 2025 |
+| Caraya unit tests | ✅ 161 assertions over 20 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for the LabVIEW used (measured in LabVIEW 2020 and 2026) |
 | Complex panels: splitter panes, tab pages, clusters, subpanels (also swapped at run time), tree, table, slide, knob, graph cursors, path browse dialog, scrolling panes, floating windows | ✅ operated like locally (`tests/lv/complex.test.mjs`); tip strips of controls on tab pages, in clusters and in subpanel VIs |
 | Splitter dragging | ✅ the browser drags the bar itself and the server sets the splitter position through VI Server (`splitters` message, `s <id> <pos>`) |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
@@ -114,4 +114,4 @@ Details: [docs/testing.md](docs/testing.md).
 npm run mock                               # reference server with a simulated panel on http://127.0.0.1:8090/ (no LabVIEW needed)
 ```
 
-The G code was generated with labview-mcp on LabVIEW 2025. The AIXML sources are in `tools/aixml/`; `python scripts/gen-lvproj.py` regenerates `RemoteVI.lvproj` (virtual folders, build specifications for RemoteVI Server.exe, the demo and the fixtures; build output goes to `builds/`, which is not committed). `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.
+The repository is saved for **LabVIEW 2020 (20.0)**, so it opens in LabVIEW 2020 and every newer version, which compiles it on load (the VIs are source only). The G code was generated with labview-mcp on LabVIEW 2025 and 2026 and saved for 2020 with `tools/dev/Save For Previous.vi`; `python tools/dev/lv_versions.py --expect 20.0` checks every VI (CI runs it). The AIXML sources are in `tools/aixml/`; `python scripts/gen-lvproj.py` regenerates `RemoteVI.lvproj` (virtual folders, build specifications for RemoteVI Server.exe, the demo and the fixtures; build output goes to `builds/`, which is not committed). `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.

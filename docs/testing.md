@@ -55,7 +55,7 @@ python tests/caraya/build.py --check   # CI: exit 1 when the generated AIXML is 
 
 Comparisons follow the VI's pane types: a vector value that does not fit the output type is wrapped into it as the VI documents (`k 256 -2147483648 0` gives wParam 18446744071562067968 on the U64 terminal).
 
-Requirements: Caraya (`jki_lib_caraya`) installed for LabVIEW 2025. Without it `build.py` composes only the support and check VIs and skips the Caraya layer with a message; a test VI composed against another LabVIEW's Caraya would link into that installation and be broken.
+Requirements: Caraya (`jki_lib_caraya`) installed for the LabVIEW that composes the tests (`build.py`: LabVIEW 2025). The composer writes VIs for that LabVIEW: save them for LabVIEW 2020 afterwards (CLAUDE.md, "Save version"). Without it `build.py` composes only the support and check VIs and skips the Caraya layer with a message; a test VI composed against another LabVIEW's Caraya would link into that installation and be broken.
 
 ### Running
 
@@ -92,6 +92,25 @@ Measured on 2026-10-28, LabVIEW 2025, run-time engine 2025.3.3:
 | complex | 20 / 20, 1 skipped | 16 / 20, 1 skipped | 17 / 20, 1 skipped | window only: tip strips, the splitters message and both splitter drags. Over VI Server the splitters message and the tip strips of the tab pages work, but the tip strips of the VI in the subpanel are missing and both splitter drags fail: setting `{LV.Splitter} Position` through a reference into the other process does not move the bar (not investigated further). The inspector window (FP.Open, owned by the hidden frame window) is listed and operated in both modes |
 
 Everything else - clicks, drags, typing, menus and submenus, ring menus, tabs, wheel, double click, dialogs, the native file dialog, subpanels, tables, trees, graph cursors, scrollbars - works the same across processes.
+
+### LabVIEW 2020 and 2026
+
+The repository is saved for LabVIEW 2020 (20.0). Measured on 2026-10-30 with the same sources in both versions (LabVIEW 2020 20.0f1 and LabVIEW 2026 26.3, both 64-bit with Caraya), builds made by each version with its own run-time engine:
+
+| Suite | LabVIEW 2020 | LabVIEW 2026 |
+|---|---|---|
+| Caraya | 161 / 161 | 161 / 161 |
+| fixture (VI target) | 24 / 24 | 24 / 24 |
+| complex (VI target) | 20 / 20, 1 skipped | 20 / 20, 1 skipped |
+| two shares | 3 / 3 | 3 / 3 |
+| fixture EXE, over VI Server | 24 / 24 | 24 / 24 |
+| fixture EXE, window only | 20 / 24 | 20 / 24 |
+| complex EXE, over VI Server | 17 / 20, 1 skipped | 17 / 20, 1 skipped |
+| complex EXE, window only | 16 / 20, 1 skipped | 16 / 20, 1 skipped |
+| demo: click / key to photon, median | 13 / 9 ms | 14 / 13 ms |
+| demo: bytes per frame, median | 12.2 kB | 7.7 kB |
+
+The failures are the known ones of the table above. Over VI Server, the first full run of the fixture suite against a freshly started share sometimes fails the tip strip test (the `tips` the client got does not cover Button); it passes on the next run and on its own. LabVIEW 2020 runs beside 2026 and is driven from it with `tools/dev/Remote Run.vi` (CLAUDE.md).
 
 ### Complex application UI
 

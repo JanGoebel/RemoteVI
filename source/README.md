@@ -1,6 +1,6 @@
 # source/
 
-The LabVIEW toolkit, as one library: `RemoteVI.lvlib` (LabVIEW 2025). Its virtual folders mirror the disk folders.
+The LabVIEW toolkit, as one library: `RemoteVI.lvlib`, saved for LabVIEW 2020 (opens in 2020 and every newer version). Its virtual folders mirror the disk folders.
 
 ```
 source/

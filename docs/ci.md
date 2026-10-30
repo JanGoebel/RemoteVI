@@ -19,10 +19,10 @@
 
 GitHub's hosted runners have no LabVIEW, and NI's LabVIEW containers are Linux-only, while RemoteVI injects input through Win32. So the LabVIEW jobs need a Windows machine with:
 
-* LabVIEW 2025 (64-bit), with VI Server enabled (default),
+* LabVIEW 2020 (64-bit) or newer - the repository is saved for 2020 - with VI Server enabled (default),
 * VIPM, then `vipm install` in the repository root (IG HTTP Utils, IG WebSocket Stream, IG Stream Base, Caraya, G-CLI, Caraya CLI extension, as listed in `vipm.toml`),
 * Node.js 22 and Python 3.10+,
-* a GitHub Actions runner registered for this repository with the labels `self-hosted, windows, labview-2025`, running **in an interactive user session** (not as a Windows service in session 0): RemoteVI captures and drives real windows, which need a desktop. Use the runner's `run.cmd` in a logged-in session, or auto-logon plus a scheduled task.
+* a GitHub Actions runner registered for this repository with the labels `self-hosted, windows, labview-2020`, running **in an interactive user session** (not as a Windows service in session 0): RemoteVI captures and drives real windows, which need a desktop. Use the runner's `run.cmd` in a logged-in session, or auto-logon plus a scheduled task.
 
 Then set the repository variable `LABVIEW_RUNNER` to `true` (Settings → Secrets and variables → Actions → Variables).
 

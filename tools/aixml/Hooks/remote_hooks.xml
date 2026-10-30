@@ -39,9 +39,11 @@
       <Tunnel _id="In7" outputs="value:t_e.value" uid="t_e" uid_parent="cst"/>
       <Node _name="Open VI Reference" inputs="vi path:t_vn.value,error in (no error):t_e.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="cst"/>
       <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="cst" value="true"/>
-      <Call inputs="VI:ov.vi reference,refresh?:kt.value,origin:t_og.value,message in:t_ti.value" outputs="message out:rt.message out" target="RemoteVI Read Tips.vi" uid="rt" uid_parent="cst"/>
-      <Call inputs="VI:ov.vi reference,refresh?:kt.value,origin:t_og.value,message in:t_si.value,bars in:t_bi.value" outputs="message out:rs.message out,bars out:rs.bars out" target="RemoteVI Read Splitters.vi" uid="rs" uid_parent="cst"/>
-      <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="error out:cr.error out" uid="cr" uid_parent="cst"/>
+      <Constant _name="no subpanels" outputs="value:kns.value" type="bool" uid="kns" uid_parent="cst" value="false"/>
+      <Call inputs="VI:ov.vi reference,refresh?:kt.value,origin:t_og.value,message in:t_ti.value,subpanels?:kns.value" outputs="message out:rt.message out,error out:rt.error out" target="RemoteVI Read Tips.vi" uid="rt" uid_parent="cst"/>
+      <Call inputs="VI:ov.vi reference,refresh?:kt.value,origin:t_og.value,message in:t_si.value,bars in:t_bi.value" outputs="message out:rs.message out,bars out:rs.bars out,error out:rs.error out" target="RemoteVI Read Splitters.vi" uid="rs" uid_parent="cst"/>
+      <Node _name="Merge Errors" inputs="error in:ov.error out,error in:rt.error out,error in:rs.error out" outputs="error out:me.error out" uid="me" uid_parent="cst"/>
+      <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):me.error out" outputs="error out:cr.error out" uid="cr" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:rt.message out" uid="t_o1" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:rs.message out" uid="t_o2" uid_parent="cst"/>
       <Tunnel _id="Out3" inputs="value:rs.bars out" uid="t_o3" uid_parent="cst"/>
@@ -55,5 +57,5 @@
   <Indicator _name="tips out" conIdx="4" connection="recommended" description="panel? TRUE\3A the tips message (RemoteVI Read Tips.vi)\3B else tips in." inputs="value:to.value" type="string" uid="o_t" uid_parent="root" value=""/>
   <Indicator _name="splitters out" conIdx="8" connection="recommended" description="panel? TRUE\3A the splitters message (RemoteVI Read Splitters.vi)\3B else splitters in." inputs="value:so.value" type="string" uid="o_s" uid_parent="root" value=""/>
   <Indicator _name="bars out" conIdx="9" connection="recommended" description="panel? TRUE\3A the splitter bars\3B else bars in." inputs="value:bo.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="o_b" uid_parent="root" value="[]"/>
-  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C or the error of writing the key state or of opening VI name." inputs="value:eo.value" type="cluster{bool.status,int32.code,string.source}" uid="o_e" uid_parent="root" value="[false,0,]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="error in\2C or the error of writing the key state\2C of opening VI name or of reading the tip strips or splitter bars there." inputs="value:eo.value" type="cluster{bool.status,int32.code,string.source}" uid="o_e" uid_parent="root" value="[false,0,]"/>
 </VI>

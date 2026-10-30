@@ -67,12 +67,13 @@
         <Node _name="Bundle By Name" fields="x,y,w,h,vertical,min,max" inputs="x:fx.x+y,y:fy.x+y,w:iw.v,h:ih.v,vertical:sv.v,min:mn.v,max:mx.v,input cluster:l_b0.value" outputs="output cluster:bt.v" uid="bt" uid_parent="fl"/>
         <Tunnel _id="Out1" inputs="value:bt.v" mode="index" outputs="value:bars.value" uid="bars" uid_parent="fl"/>
       </Structure>
-      <Node _name="Close Reference" inputs="reference:vp.fp,error in (no error):" outputs="error out:" uid="crp" uid_parent="cst"/>
+      <Node _name="Close Reference" inputs="reference:vp.fp,error in (no error):lerr.value" outputs="error out:crp.error out" uid="crp" uid_parent="cst"/>
       <Call inputs="bars:bars.value" outputs="message:sm.message" target="RemoteVI Splitters Message.vi" uid="sm" uid_parent="cst"/>
       <Node _name="Unbundle By Name" fields="status" inputs="input cluster:lerr.value" outputs="status:es.status" uid="es" uid_parent="cst"/>
       <Node _name="Select" inputs="t:t_mi.value,s:es.status,f:sm.message" outputs="s? t\3Af:sel.v" uid="sel" uid_parent="cst"/>
       <Node _name="Select" inputs="t:t_bi.value,s:es.status,f:bars.value" outputs="s? t\3Af:selb.v" uid="selb" uid_parent="cst"/>
       <Tunnel _id="Out1" inputs="value:sel.v" uid="cst_o1" uid_parent="cst"/>
+      <Tunnel _id="Out3" inputs="value:crp.error out" uid="cst_oe" uid_parent="cst"/>
       <Tunnel _id="Out2" inputs="value:selb.v" uid="cst_o2" uid_parent="cst"/>
     </CaseFrame>
     <CaseFrame label="Not now\3A keep the last read" selector="False" selectout="" uid="csf" uid_parent="cs">
@@ -81,11 +82,15 @@
       <Tunnel _id="In3" outputs="value:f_mi.value" uid="f_mi" uid_parent="csf"/>
       <Tunnel _id="In4" outputs="value:f_bi.value" uid="f_bi" uid_parent="csf"/>
       <Tunnel _id="Out1" inputs="value:f_mi.value" uid="csf_o1" uid_parent="csf"/>
+      <Constant outputs="value:f_ne.value" type="cluster{bool.status,int32.code,string.source}" uid="f_ne" uid_parent="csf" value="[false,0,]"/>
+      <Tunnel _id="Out3" inputs="value:f_ne.value" uid="csf_oe" uid_parent="csf"/>
       <Tunnel _id="Out2" inputs="value:f_bi.value" uid="csf_o2" uid_parent="csf"/>
     </CaseFrame>
     <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    <Tunnel _id="Out3" outputs="value:cs_oe.value" uid="cs_oe" uid_parent="cs"/>
     <Tunnel _id="Out2" outputs="value:cs_o2.value" uid="cs_o2" uid_parent="cs"/>
   </Structure>
   <Indicator _name="message out" conIdx="4" connection="recommended" description="The splitters message (splitters [...]) - new when read\2C else message in." inputs="value:cs_o1.value" type="string" uid="o_m" uid_parent="root" value=""/>
   <Indicator _name="bars out" conIdx="6" connection="recommended" description="The bars in frame coordinates - new when read\2C else bars in. The index is the id of the splitters message." inputs="value:cs_o2.value" type="array{cluster{int32.x,int32.y,int32.w,int32.h,bool.vertical,int32.min,int32.max}}" uid="o_b" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="15" connection="recommended" description="The error that made this keep the last read (an invalid VI reference\2C a property or method that failed)\3B no error when refresh? is FALSE." inputs="value:cs_oe.value" type="cluster{bool.status,int32.code,string.source}" uid="o_e" uid_parent="root" value="[false,0,]"/>
 </VI>

@@ -1,0 +1,32 @@
+<VI _name="Remote Run.vi" description="Dev helper: runs a VI in another LabVIEW over VI Server (machine\2C port\3B e.g. LabVIEW 2020 on 3365 next to LabVIEW 2026) and waits for it. inputs sets controls first\3A per element the control name and its value as LabVIEW XML wrapped in LvVariant (the type travels with it\2C so a path\2C a number or a cluster can be set). After the run the control named result is read and returned as LabVIEW XML. The VI must not be running there already.">
+  <Control _name="machine" type="string" uid="mn" uid_parent="root" value="localhost" outputs="value:mn.value"/>
+  <Control _name="port" type="uint32" uid="po" uid_parent="root" value="3365" outputs="value:po.value"/>
+  <Control _name="vi path" type="path" uid="vp" uid_parent="root" value="" outputs="value:vp.value"/>
+  <Control _name="inputs" type="array{cluster{string.name,string.xml}}" uid="ins" uid_parent="root" value="[]" outputs="value:ins.value"/>
+  <Control _name="result" type="string" uid="rn" uid_parent="root" value="error out" outputs="value:rn.value"/>
+  <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="root" value="60000"/>
+  <Constant outputs="value:vt.value" type="variant" uid="vt" uid_parent="root" value=""/>
+  <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Constant outputs="value:fal.value" type="bool" uid="fal" uid_parent="root" value="false"/>
+  <Node _name="Open Application Reference" inputs="machine name (&quot;&quot;\3A  open local reference):mn.value,port number or service name (3363):po.value,timeout ms:tmo.value" outputs="application reference:oa.app,error out:oa.err" uid="oa" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="application reference (local):oa.app,vi path:vp.value,error in (no error):oa.err" outputs="vi reference:ov.vi,error out:ov.err" uid="ov" uid_parent="root"/>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ins.value" mode="index" outputs="value:it.c" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:ov.vi" outputs="value:tr.vi" uid="tr" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:vt.value" outputs="value:tt.v" uid="tt" uid_parent="fl"/>
+    <ShiftReg uid="sr" uid_parent="fl">
+      <Left inputs="value:ov.err" outputs="value:sl.err" uid="srl" uid_parent="sr"/>
+      <Right inputs="value:cs.err" outputs="value:lo.err" uid="srr" uid_parent="sr"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="name,xml" inputs="input cluster:it.c" outputs="name:ub.name,xml:ub.xml" uid="ub" uid_parent="fl"/>
+    <Node _name="Unflatten From XML" inputs="xml string:ub.xml,type:tt.v,error in (no error):sl.err" outputs="value:ux.value,error out:ux.err" uid="ux" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Ctrl Val.Set" type="{LV.VI}" inputs="reference:tr.vi,error in (no error):ux.err,Control Name:ub.name,Value:ux.value" outputs="reference out:,error out:cs.err" uid="cs" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:ov.vi,error in (no error):lo.err,Wait until done:tru.value,Auto Dispose Ref:fal.value" outputs="reference out:rv.vi,error out:rv.err" uid="rv" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Ctrl Val.Get" type="{LV.VI}" inputs="reference:rv.vi,error in (no error):rv.err,Control Name:rn.value" outputs="reference out:gv.vi,error out:gv.err,Value:gv.Value" uid="gv" uid_parent="root"/>
+  <Node _name="Flatten To XML" inputs="anything:gv.Value" outputs="xml string:fx.xml" uid="fx" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:gv.vi,error in (no error):gv.err" outputs="error out:cv.err" uid="cv" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:oa.app,error in (no error):cv.err" outputs="error out:ca.err" uid="ca" uid_parent="root"/>
+  <Indicator _name="result xml" type="string" uid="rx" uid_parent="root" value="" inputs="value:fx.xml"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ca.err"/>
+</VI>

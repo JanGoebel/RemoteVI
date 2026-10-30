@@ -1,0 +1,31 @@
+<VI _name="Remote Exec State.vi" description="Dev helper: opens an application reference to another LabVIEW over VI Server (machine, port; e.g. LabVIEW 2020 on 3365 next to LabVIEW 2026), loads every VI listed in the items file (one path per line) there and returns per item the open error code, Execution:State as a number (0 bad = broken, 1 idle) and VI Linker Errors. Also returns that LabVIEW's version. The VIs stay in memory in that LabVIEW.">
+  <Control _name="machine" type="string" uid="mn" uid_parent="root" value="localhost" outputs="value:mn.value"/>
+  <Control _name="port" type="uint32" uid="po" uid_parent="root" value="3365" outputs="value:po.value"/>
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="root" value="60000"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value" outputs="text:ri.text,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Node _name="Open Application Reference" inputs="machine name (&quot;&quot;\3A  open local reference):mn.value,port number or service name (3363):po.value,timeout ms:tmo.value,error in (no error):ri.err" outputs="application reference:oa.app,error out:oa.err" uid="oa" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Application\3AVersion Number" type="{LV.Application}" inputs="reference:oa.app,error in (no error):oa.err" outputs="Application\3AVersion Number:av.ver,reference out:av.app,error out:av.err" uid="av" uid_parent="root"/>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:av.app" outputs="value:ta.app" uid="ta" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="application reference (local):ta.app,vi path:itp.path" outputs="vi reference:ov.vi,error out:ov.err" uid="ov" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Execution\3AState" type="{LV.VI}" inputs="reference:ov.vi,error in (no error):ov.err" outputs="Execution\3AState:es.state,reference out:es.ref0,error out:es.err0" uid="es" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+VI Linker Errors" type="{LV.VI}" inputs="reference:es.ref0,error in (no error):es.err0" outputs="VI Linker Errors:le.txt,reference out:le.ref,error out:le.err" uid="le" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:le.ref,error in (no error):le.err" outputs="error out:cr.err" uid="cr" uid_parent="fl"/>
+    <Tunnel _id="Out4" inputs="value:le.txt" mode="index" outputs="value:lo.l" uid="lo" uid_parent="fl"/>
+    <Node _name="To Long Integer" inputs="number:es.state" outputs="32bit integer:ti.v" uid="ti" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.err" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:ti.v" mode="index" outputs="value:st.states" uid="st" uid_parent="fl"/>
+    <Tunnel _id="Out3" inputs="value:ta.app" outputs="value:ao.app" uid="ao" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Close Reference" inputs="reference:ao.app,error in (no error):av.err" outputs="error out:ca.err" uid="ca" uid_parent="root"/>
+  <Indicator _name="version" type="string" uid="ov2" uid_parent="root" value="" inputs="value:av.ver"/>
+  <Indicator _name="codes" type="array{int32}" uid="oc" uid_parent="root" value="[]" inputs="value:co.codes"/>
+  <Indicator _name="states" type="array{int32}" uid="os" uid_parent="root" value="[]" inputs="value:st.states"/>
+  <Indicator _name="linker errors" type="array{string}" uid="ol" uid_parent="root" value="[]" inputs="value:lo.l"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ca.err"/>
+</VI>

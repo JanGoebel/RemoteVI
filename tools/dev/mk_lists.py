@@ -12,7 +12,15 @@ import tempfile
 d = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(d, '..', '..'))
 src = os.path.join(REPO, 'source')
-B = os.path.expandvars(r'%USERPROFILE%\.claude\plugins\cache\zuehlke-labview\labview-mcp\2.2.0\bin\pylabview')
+def _newest_lvmcp_bin():
+    """bin folder of the newest labview-mcp plugin version installed for Claude Code."""
+    root = os.path.expandvars(r"%USERPROFILE%\.claude\plugins\cache\zuehlke-labview\labview-mcp")
+    vers = [v for v in os.listdir(root) if os.path.isdir(os.path.join(root, v, "bin"))] if os.path.isdir(root) else []
+    vers.sort(key=lambda v: [int(x) if x.isdigit() else 0 for x in v.split(".")])
+    return os.path.join(root, vers[-1], "bin") if vers else os.path.join(root, "bin")
+
+
+B = os.path.join(os.environ.get('LVMCP_BIN') or _newest_lvmcp_bin(), 'pylabview')
 
 
 def has_libn(vi):

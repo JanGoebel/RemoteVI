@@ -22,3 +22,5 @@ tests/caraya/RemoteVI Caraya Report.xml
 tests/fixtures/build/Complex Panel.vi
 tests/fixtures/build/Complex Scaffold.vi
 __pycache__/
+# LabVIEW 2026 keeps per-user project state next to the project
+*.UserState/

@@ -1,0 +1,22 @@
+<VI _name="Save For Previous.vi" description="Dev helper: saves every VI listed in the items file (one path per line) for a previous LabVIEW version, in place (Save.For Previous to its own path). Returns the error code, source and Save for previous warnings per item, in list order. The VIs stay in memory in the current version: close them without saving afterwards.">
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Control _name="version" type="string" uid="ver" uid_parent="root" value="20.0" outputs="value:ver.value"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value" outputs="text:ri.text,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Structure _name="For Loop" count="" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:ver.value" outputs="value:tv.v" uid="tv" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="vi path:itp.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Save.For Previous" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out,Path to saved file:itp.path,Oldest compatible target version:tv.v" outputs="reference out:sp.ref,error out:sp.err,Save for previous warnings:sp.warn" uid="sp" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:sp.ref,error in (no error):sp.err" outputs="error out:cr.err" uid="cr" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:cr.err" outputs="code:ub.code,source:ub.source" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+    <Tunnel _id="Out3" inputs="value:sp.warn" mode="index" outputs="value:wa.w" uid="wa" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:ub.source" mode="index" outputs="value:so.srcs" uid="so" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="codes" type="array{int32}" uid="oc" uid_parent="root" value="[]" inputs="value:co.codes"/>
+  <Indicator _name="sources" type="array{string}" uid="os" uid_parent="root" value="[]" inputs="value:so.srcs"/>
+  <Indicator _name="warnings" type="array{string}" uid="ow" uid_parent="root" value="[]" inputs="value:wa.w"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ri.err"/>
+</VI>

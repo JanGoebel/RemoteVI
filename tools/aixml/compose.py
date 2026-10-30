@@ -19,9 +19,15 @@ import subprocess
 import sys
 import tempfile
 
-LVMCP_BIN = os.environ.get(
-    "LVMCP_BIN",
-    os.path.expandvars(r"%USERPROFILE%\.claude\plugins\cache\zuehlke-labview\labview-mcp\2.2.0\bin"))
+def _newest_lvmcp_bin():
+    """bin folder of the newest labview-mcp plugin version installed for Claude Code."""
+    root = os.path.expandvars(r"%USERPROFILE%\.claude\plugins\cache\zuehlke-labview\labview-mcp")
+    vers = [v for v in os.listdir(root) if os.path.isdir(os.path.join(root, v, "bin"))] if os.path.isdir(root) else []
+    vers.sort(key=lambda v: [int(x) if x.isdigit() else 0 for x in v.split(".")])
+    return os.path.join(root, vers[-1], "bin") if vers else os.path.join(root, "bin")
+
+
+LVMCP_BIN = os.environ.get("LVMCP_BIN") or _newest_lvmcp_bin()
 COMPOSER = os.path.join(LVMCP_BIN, "scripts", "aixml-pylabview", "aixml2vi.py")
 PYTHON = os.path.join(LVMCP_BIN, "pylabview", "python.exe")
 

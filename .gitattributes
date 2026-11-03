@@ -20,3 +20,7 @@
 *.vipb   -text
 
 tests/vectors/*.json text eol=lf linguist-generated
+
+# Windows batch files need CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

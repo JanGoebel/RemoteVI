@@ -40,10 +40,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Caraya unit tests
-        shell: pwsh
+        shell: powershell
         run: .\scripts\run-caraya.ps1 -Report reports\caraya.xml
       - name: LabVIEW integration suite (fixture through the real server)
-        shell: pwsh
+        shell: powershell
         run: .\scripts\run-lv-integration.ps1
       - name: Upload reports
         if: always()

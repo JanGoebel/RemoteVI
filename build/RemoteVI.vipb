@@ -84,8 +84,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
       </File_Menu>
       <Tools_Menu>
         <LLB>false</LLB>
-        <Preserve_Hierarchy>true</Preserve_Hierarchy>
-        <Path>&lt;application&gt;\project</Path>
+        <Preserve_Hierarchy>false</Preserve_Hierarchy>
+        <Path>&lt;application&gt;\project\RemoteVI</Path>
       </Tools_Menu>
       <Help_Menu>
         <LLB>false</LLB>

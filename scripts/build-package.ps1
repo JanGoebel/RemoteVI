@@ -28,7 +28,10 @@ param(
     [int]$BuildNumber = 0,
     [string]$LabVIEWVersion = '2020',
     [ValidateSet('64')][string]$Bitness = '64',
-    [switch]$SkipExecutables
+    [switch]$SkipExecutables,
+    # Accept a package whose spec does not require the [dependencies] of vipm.toml (local test builds only:
+    # such a package installs broken where those packages are missing)
+    [switch]$AllowMissingDependencies
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,7 +99,9 @@ foreach ($spec in $executables) {
     Write-Host ("Staged {0} ({1:yyyy-MM-dd HH:mm})" -f $exe, (Get-Item $exe).LastWriteTime)
 }
 
-# 3. Package
+# 3. Package (VIPM refuses to overwrite a package file)
+$out = Join-Path $builds "jgoebel_lib_remotevi-$fullVersion.vip"
+if (Test-Path $out) { Remove-Item $out }
 $before = Get-Date
 Write-Host "Building the VI package $fullVersion with VIPM for LabVIEW $LabVIEWVersion ($Bitness-bit)..."
 & $vipm --labview-version $LabVIEWVersion --labview-bitness $Bitness build $vipb --version-number $Version --build-number $BuildNumber
@@ -107,9 +112,14 @@ if (-not $vip) { throw "vipm build reported success but builds\jgoebel_lib_remot
 # 4. Check what the package carries
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead($vip.FullName)
-try { $entries = @($zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' }) } finally { $zip.Dispose() }
+try {
+    $entries = @($zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' })
+    $reader = New-Object System.IO.StreamReader(($zip.Entries | Where-Object FullName -eq 'spec').Open())
+    try { $spec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+} finally { $zip.Dispose() }
+# The Tools menu shows the folders below <LabVIEW>\project as submenus: Tools >> RemoteVI >> Share in Browser
 $required = @(
-    'RemoteVI.lvlib', 'API/RemoteVI Start.vi', 'API/RemoteVI Stop.vi', 'Share in Browser.vi',
+    'RemoteVI.lvlib', 'API/RemoteVI Start.vi', 'API/RemoteVI Stop.vi', 'project/RemoteVI/Share in Browser.vi',
     'RemoteVI Demo.vi', 'RemoteVI Demo/RemoteVI Demo.exe', 'RemoteVI Server/RemoteVI Server.exe', '.mnu'
 )
 $missing = @($required | Where-Object { $r = $_; -not ($entries | Where-Object { $_.EndsWith($r) }) })
@@ -118,6 +128,18 @@ if ($missing -or $forbidden) {
     $missing | ForEach-Object { Write-Warning "missing in the package: $_" }
     $forbidden | ForEach-Object { Write-Warning "development file in the package: $_" }
     throw "The package content check failed: $($vip.FullName)"
+}
+
+# VIPM installs the packages in the spec's Requires with this one; the ones RemoteVI's VIs call are the
+# [dependencies] of vipm.toml
+$toml = Get-Content -Raw (Join-Path $root 'vipm.toml')
+$deps = @([regex]::Match($toml, '(?ms)^\[dependencies\]\s*$(.*?)(?=^\[|\z)').Groups[1].Value -split '\r?\n' |
+    ForEach-Object { if ($_ -match '^\s*([A-Za-z0-9_&]+)\s*=') { $Matches[1] } })
+$requires = [regex]::Match($spec, '(?m)^Requires="([^"]*)"').Groups[1].Value
+$undeclared = @($deps | Where-Object { $requires -notmatch ('(^|,)' + [regex]::Escape($_) + '(>|<|=|,|$)') })
+if ($undeclared) {
+    $msg = "The package does not require $($undeclared -join ', ') (spec Requires=""$requires""): it installs broken where they are missing."
+    if ($AllowMissingDependencies) { Write-Warning $msg } else { throw "$msg Pass -AllowMissingDependencies for a local test build." }
 }
 Write-Host ("Built {0} ({1:N0} kB, {2} files)" -f $vip.FullName, ($vip.Length / 1kB), $entries.Count)
 $vip.FullName

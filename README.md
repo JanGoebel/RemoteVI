@@ -76,7 +76,7 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Complex panels: splitter panes, tab pages, clusters, subpanels (also swapped at run time), tree, table, slide, knob, graph cursors, path browse dialog, scrolling panes, floating windows | ✅ operated like locally (`tests/lv/complex.test.mjs`); tip strips of controls on tab pages, in clusters and in subpanel VIs |
 | Splitter dragging | ✅ the browser drags the bar itself and the server sets the splitter position through VI Server (`splitters` message, `s <id> <pos>`) |
 | Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
-| Palette, VI package (`build/RemoteVI.vipb`) | ✅ palette RemoteVI with the API VIs; Tools menu entry; the package itself was not built in this environment |
+| Palette, VI package (`build/RemoteVI.vipb`) | 🚧 palette RemoteVI with the API VIs, Tools menu entry, examples with the demo and RemoteVI Server as executables; built by `scripts/build-package.ps1`, in CI on every push and attached to releases for `vX.Y.Z` tags (docs/ci.md). VIPM accepts the spec; a complete package build has not run yet (it needs an activated LabVIEW 2020) |
 
 ## Known limits
 
@@ -115,3 +115,5 @@ npm run mock                               # reference server with a simulated p
 ```
 
 The repository is saved for **LabVIEW 2020 (20.0)**, so it opens in LabVIEW 2020 and every newer version, which compiles it on load (the VIs are source only). The G code was generated with labview-mcp on LabVIEW 2025 and 2026 and saved for 2020 with `tools/dev/Save For Previous.vi`; `python tools/dev/lv_versions.py --expect 20.0` checks every VI (CI runs it). The AIXML sources are in `tools/aixml/`; `python scripts/gen-lvproj.py` regenerates `RemoteVI.lvproj` (virtual folders, build specifications for RemoteVI Server.exe, the demo and the fixtures; build output goes to `builds/`, which is not committed). `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.
+
+**VI package:** `.\scripts\build-package.ps1` builds the example executables with LabVIEW 2020, then `builds\jgoebel_lib_remotevi-X.Y.Z.N.vip` from `build/RemoteVI.vipb`. CI builds it on every push, and a tag `vX.Y.Z` matching `version` in `vipm.toml` publishes it as a GitHub release ([docs/ci.md](docs/ci.md)).

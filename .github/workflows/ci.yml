@@ -39,6 +39,14 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+      - name: Install the packages of vipm.toml for LabVIEW 2020 (64-bit)
+        shell: powershell
+        run: |
+          $vipm = (Get-Command vipm -ErrorAction SilentlyContinue).Source
+          if (-not $vipm) { $vipm = Join-Path $env:ProgramFiles 'JKI\VI Package Manager\support\vipm.exe' }
+          if (-not (Test-Path $vipm)) { throw 'vipm not found: install VIPM 2026 or newer on the runner (docs/ci.md)' }
+          & $vipm --labview-version 2020 --labview-bitness 64 install
+          if ($LASTEXITCODE -ne 0) { throw "vipm install failed ($LASTEXITCODE)" }
       - name: Caraya unit tests
         shell: powershell
         run: .\scripts\run-caraya.ps1 -Report reports\caraya.xml

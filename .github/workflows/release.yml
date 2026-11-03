@@ -1,7 +1,8 @@
 name: Release
 
-# Push a tag vX.Y.Z on main to build and publish a release:
-#   git tag v1.2.3 && git push origin v1.2.3
+# Push a tag vX.Y.Z to build the VI package and publish it as a GitHub release:
+#   (set version = "X.Y.Z" in vipm.toml and commit it first)
+#   git tag vX.Y.Z && git push origin vX.Y.Z
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
@@ -9,54 +10,66 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   tests:
     uses: ./.github/workflows/ci.yml
 
-  package:
-    name: Build the VI package
-    needs: tests
-    if: vars.LABVIEW_RUNNER == 'true'
-    runs-on: [self-hosted, windows, labview-2020]
-    timeout-minutes: 30
+  version:
+    name: Release version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build jgoebel_lib_remotevi-${{ github.ref_name }}.vip
-        shell: pwsh
+      - id: check
+        env:
+          LABVIEW_RUNNER: ${{ vars.LABVIEW_RUNNER }}
         run: |
-          $version = '${{ github.ref_name }}'.TrimStart('v')
-          vipm build build\RemoteVI.vipb --version-number $version
-          if ($LASTEXITCODE -ne 0) { throw "vipm build failed ($LASTEXITCODE)" }
-          Get-ChildItem builds\*.vip | Format-Table Name, Length
-      - uses: actions/upload-artifact@v4
-        with:
-          name: vi-package
-          path: builds/*.vip
-          if-no-files-found: error
+          version="${GITHUB_REF_NAME#v}"
+          toml=$(sed -n 's/^version *= *"\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/p' vipm.toml | head -n 1)
+          if [ "$toml" != "$version" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match version = \"$toml\" in vipm.toml; set it to $version, commit, and tag that commit"
+            exit 1
+          fi
+          if [ "$LABVIEW_RUNNER" != "true" ]; then
+            echo "::error::the VI package is built on the self-hosted LabVIEW runner (docs/ci.md); set the repository variable LABVIEW_RUNNER=true"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: [tests, version]
+    uses: ./.github/workflows/package.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      build-number: ${{ github.run_number }}
 
   release:
     name: Publish the GitHub release
-    needs: [tests, package]
-    # The package job is skipped when no LabVIEW runner is configured; release the sources then.
-    if: always() && needs.tests.result == 'success' && (needs.package.result == 'success' || needs.package.result == 'skipped')
+    needs: [version, package]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Source archive
-        run: |
-          name="RemoteVI-${GITHUB_REF_NAME}"
-          git archive --format=zip --prefix="${name}/" -o "${name}-source.zip" "${GITHUB_REF_NAME}" \
-            source examples web docs README.md vipm.toml build
-      - name: VI package from the LabVIEW runner
-        if: needs.package.result == 'success'
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: vi-package
           path: dist
+      - name: Source archive
+        run: |
+          name="RemoteVI-${GITHUB_REF_NAME}"
+          git archive --format=zip --prefix="${name}/" -o "dist/${name}-source.zip" "${GITHUB_REF_NAME}"
+          ls -l dist
       - uses: softprops/action-gh-release@v2
         with:
+          name: RemoteVI ${{ needs.version.outputs.version }}
           generate_release_notes: true
+          # 0.x releases are marked as pre-releases
+          prerelease: ${{ startsWith(needs.version.outputs.version, '0.') }}
           files: |
-            RemoteVI-*-source.zip
             dist/*.vip
-          fail_on_unmatched_files: false
+            dist/*-source.zip
+          fail_on_unmatched_files: true

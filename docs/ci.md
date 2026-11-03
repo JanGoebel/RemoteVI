@@ -2,7 +2,7 @@
 
 ## Workflow
 
-* `main` is the protected default branch. Work happens on feature branches; each feature is a pull request whose commits stay visible (merge commits, no squash).
+* `main` is the protected default branch. Work happens on feature branches; each feature is a pull request whose commits stay visible (merge commits, no squash). The review flow and the branch protection rules are in [CONTRIBUTING.md](../CONTRIBUTING.md).
 * **CI** (`.github/workflows/ci.yml`) runs on every pull request and on `main`:
   * `reference` on `ubuntu-latest`: vector freshness, Caraya tests in sync with the vectors (`tests/caraya/build.py --check`), and `npm test` (reference server, web client, end-to-end).
   * `labview` on the self-hosted Windows runner: Caraya (`scripts/run-caraya.ps1`) and the LabVIEW integration suite (`scripts/run-lv-integration.ps1`). It runs only when the repository variable `LABVIEW_RUNNER` is `true`.

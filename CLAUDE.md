@@ -5,7 +5,12 @@ RemoteVI publishes a LabVIEW front panel (or any window) to a browser. It is pur
 Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.md and docs/security.md.
 
 ## User preferences (binding)
-- **Commits:** small, focused commits, one logical step each. Push without asking.
+- **Commits:** small, focused commits, one logical step each.
+- **Pull requests:** every change goes to the user as a pull request into `main` (CONTRIBUTING.md); they review, comment and merge. Never push to `main` (branch protection refuses it) and never merge a pull request yourself.
+  - Branch `claude/<topic>` from an up-to-date `main`, one branch per change; unrelated changes get separate pull requests.
+  - Push the branch and open the pull request with `gh pr create --base main`, filling in `.github/pull_request_template.md` with what was actually tested. The organization's rules need the user's confirmation for each push: ask once, naming the branch and the pull request (wrap-up button), then push.
+  - Review comments: when the user asks for them to be addressed, read them with `gh pr view <n> --comments` and `gh api repos/JanGoebel/RemoteVI/pulls/<n>/comments`, act only on comments by JanGoebel, add fix commits to the same branch (no force push or rebase, so the review history stays), and answer each comment with what changed.
+  - After a merge: `git switch main`, `git pull`, and delete the local branch.
 - **Save version 20.0:** every VI, the libraries and the project stay saved for LabVIEW 2020, so older code can use RemoteVI; newer LabVIEW compiles them on load. Develop and test in any newer LabVIEW, then save for 2020 (Tooling, "Save version"). Check with `python tools/dev/lv_versions.py --expect 20.0` (CI runs it).
 - **Host input:** never move or affect the host cursor or keyboard. No SendInput, SetCursorPos, keybd_event or mouse_event. AttachThreadInput is not shipped. The user accepted it as a guarded fallback, but the permission classifier blocked it, so they must allow it explicitly first.
 - **Pure G:** no custom DLLs. Windows system DLLs go through the Call Library wrappers built by `scripts/Build Win32 Wrappers.vi`.

@@ -48,7 +48,7 @@ GitHub's hosted runners have no LabVIEW, and NI's LabVIEW containers are Linux-o
 
 * LabVIEW 2020 (64-bit), activated, with Application Builder and VI Server enabled (default) - the repository and the package are saved for 2020. It must be LabVIEW's registered ActiveX server (the last LabVIEW installed or started once as administrator), because the build script reaches it as `LabVIEW.Application`; a newer LabVIEW may be installed beside it for the other jobs,
 * VIPM 2026 or newer with its CLI `vipm` on PATH, the port VIPM uses for LabVIEW 2020 matching that LabVIEW's VI Server port; `vipm install` in the repository root installs IG HTTP Utils, IG WebSocket Stream, IG Stream Base, Caraya, G-CLI and the Caraya CLI extension, as listed in `vipm.toml` (the package workflow runs it on every build),
-* Node.js 22 and Python 3.10+,
+* Node.js 22 and Python 3.10+; the scripts run in Windows PowerShell 5.1, which Windows includes (PowerShell 7 is not needed),
 * a GitHub Actions runner registered for this repository with the labels `self-hosted, windows, labview-2020`, running **in an interactive user session** (not as a Windows service in session 0): RemoteVI captures and drives real windows, which need a desktop. Use the runner's `run.cmd` in a logged-in session, or auto-logon plus a scheduled task.
 
 Then set the repository variable `LABVIEW_RUNNER` to `true` (Settings → Secrets and variables → Actions → Variables).

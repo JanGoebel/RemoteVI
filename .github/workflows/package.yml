@@ -26,12 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install the packages of vipm.toml for LabVIEW 2020 (64-bit)
-        shell: pwsh
+        shell: powershell
         run: |
           vipm --labview-version 2020 --labview-bitness 64 install
           if ($LASTEXITCODE -ne 0) { throw "vipm install failed ($LASTEXITCODE)" }
       - name: Build the executables and the package
-        shell: pwsh
+        shell: powershell
         run: .\scripts\build-package.ps1 -Version '${{ inputs.version }}' -BuildNumber ${{ inputs.build-number }}
       - uses: actions/upload-artifact@v4
         with:

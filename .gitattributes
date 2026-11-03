@@ -19,4 +19,7 @@
 *.xctl   -text
 *.vipb   -text
 
+# Generated with CRLF by tests/caraya/build.py; its --check compares byte for byte, also on Linux CI.
+tests/caraya/aixml/*.xml text eol=crlf
+
 tests/vectors/*.json text eol=lf linguist-generated

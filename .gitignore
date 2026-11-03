@@ -24,3 +24,7 @@ tests/fixtures/build/Complex Scaffold.vi
 __pycache__/
 # LabVIEW 2026 keeps per-user project state next to the project
 *.UserState/
+
+# example executables staged by scripts/build-package.ps1
+examples/Executables/RemoteVI Demo/
+examples/Executables/RemoteVI Server/

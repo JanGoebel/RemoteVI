@@ -6,7 +6,7 @@
 * **CI** (`.github/workflows/ci.yml`) runs on every pull request and on `main`:
   * `reference` on `ubuntu-latest`: vector freshness, Caraya tests in sync with the vectors (`tests/caraya/build.py --check`), and `npm test` (reference server, web client, end-to-end).
   * `labview` on the self-hosted Windows runner: Caraya (`scripts/run-caraya.ps1`) and the LabVIEW integration suite (`scripts/run-lv-integration.ps1`). It runs only when the repository variable `LABVIEW_RUNNER` is `true`.
-  * `package` on the self-hosted Windows runner, on every push to a branch: builds the VI package `jgoebel_lib_remotevi-X.Y.Z.N.vip` (X.Y.Z from `vipm.toml`, N the workflow run number) and keeps it as the artifact `vi-package` for 30 days, to install and test before a release. Also only with `LABVIEW_RUNNER`.
+  * `package` on the self-hosted Windows runner, for every pull request and every push to `main`: builds the VI package `jgoebel_lib_remotevi-X.Y.Z.N.vip` (X.Y.Z from `vipm.toml`, N the workflow run number) and keeps it as the artifact `vi-package` for 30 days, to install and test before a release. Also only with `LABVIEW_RUNNER`.
 * **Package** (`.github/workflows/package.yml`, reusable): `vipm install` (the packages of `vipm.toml` for LabVIEW 2020 64-bit), then `scripts/build-package.ps1` (below).
 * **Release** (`.github/workflows/release.yml`): set `version = "X.Y.Z"` in `vipm.toml` on `main`, commit, then tag that commit:
 

@@ -2,7 +2,7 @@ name: VI package
 
 # Reusable: builds jgoebel_lib_remotevi-<version>.<build>.vip with scripts/build-package.ps1 on the
 # self-hosted LabVIEW runner (docs/ci.md) and uploads it as the artifact `vi-package`.
-# Called by ci.yml (every push) and release.yml (vX.Y.Z tags).
+# Called by ci.yml (pull requests and main) and release.yml (vX.Y.Z tags).
 on:
   workflow_call:
     inputs:

@@ -47,13 +47,19 @@ def window_xml(l, t, r, b):
     return '<Cluster><Name>Window</Name><NumElts>4</NumElts>%s%s%s%s</Cluster>' % (_i('Left', l), _i('Top', t), _i('Right', r), _i('Bottom', b))
 
 
-def spec_xml(rows, tabs, window):
-    """The Spec file of Style Panel.vi: a cluster of Rows, Tabs and Window as LabVIEW XML."""
-    return '<Cluster><Name>spec</Name><NumElts>3</NumElts>%s%s%s</Cluster>' % (rows_xml(rows), tabs_xml(tabs), window_xml(*window))
+def splitters_xml(positions):
+    return '<Array><Name>Splitters</Name><Dimsize>%d</Dimsize>%s</Array>' % (len(positions), ''.join(_i('', p) for p in positions))
 
 
-def write_spec(path, rows, tabs, window):
-    open(path, 'w', encoding='utf-8', newline='\n').write(spec_xml(rows, tabs, window))
+def spec_xml(rows, tabs, window, splitters=()):
+    """The Spec file of Style Panel.vi: a cluster of Rows, Tabs, Window and Splitters (the position of
+    each splitter bar, in the order of the panel's Splitters[]) as LabVIEW XML."""
+    return '<Cluster><Name>spec</Name><NumElts>4</NumElts>%s%s%s%s</Cluster>' % (
+        rows_xml(rows), tabs_xml(tabs), window_xml(*window), splitters_xml(splitters))
+
+
+def write_spec(path, rows, tabs, window, splitters=()):
+    open(path, 'w', encoding='utf-8', newline='\n').write(spec_xml(rows, tabs, window, splitters))
 
 
 def inputs_json(vi, silver, spec_path):

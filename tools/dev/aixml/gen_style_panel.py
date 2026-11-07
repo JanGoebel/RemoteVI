@@ -66,20 +66,27 @@ def find_one(lines, uid, parent, panel, label_net, err):
     return '%s_e.element' % uid, '%s_f.error out' % uid
 
 
-w('<VI _name="Style Panel.vi" description="Build tool of the RemoteVI examples (source\\3A tools\\5Cdev\\5Caixml\\5Cgen_style_panel.py). Restyles the front panel of a composed VI in place and saves it\\3A the composer only makes generic controls. Run it once on a freshly composed VI (or on one whose controls are all still top-level)\\2C with the VI idle. Steps\\3A (1) every row with a Ctl is Replaced by that .ctl under Silver (a path relative to vi.lib\\5Csilver_ctls\\2C e.g. Numeric\\5CKnob NI_Silver.ctl)\\3B wires\\2C data type\\2C enum items and default value stay. (2) Tabs\\3A each tab control gets as many pages as Pages names (Add Page)\\2C the page labels\\2C and fixed tabs of Tab Width. (3) every row\\3A moved onto page Page of the tab control Tab (Left/Top relative to the tab control) or\\2C with Tab empty and Pane 0 or more\\2C into that pane of the panel (Left/Top in pane coordinates)\\2C otherwise placed at Left/Top\\3B Width/Height (0\\3A keep) set the size of a string and the plot area of a graph\\3B Text sets a boolean\\27s text (and centres it)\\3B Tip the tip strip\\3B Show Label and Visible. (4) Window sets the panel bounds and the origin to 0\\2C0. Controls are found anywhere on the panel by label (Find Controls). problems lists every row whose steps returned an error\\2C with the code\\3B the run goes on.">')
+w('<VI _name="Style Panel.vi" description="Build tool of the RemoteVI examples (source\\3A tools\\5Cdev\\5Caixml\\5Cgen_style_panel.py). Restyles the front panel of a composed VI in place and saves it\\3A the composer only makes generic controls. Run it once on a freshly composed VI (or on one whose controls are all still top-level)\\2C with the VI idle. Steps\\3A (1) every row with a Ctl is Replaced by that .ctl under Silver (a path relative to vi.lib\\5Csilver_ctls\\2C e.g. Numeric\\5CKnob NI_Silver.ctl)\\3B wires\\2C data type\\2C enum items and default value stay. (2) Tabs\\3A each tab control gets as many pages as Pages names (Add Page)\\2C the page labels\\2C and fixed tabs of Tab Width\\3B with Width above 0 the control - also one that is no tab control\\2C such as a subpanel - is sized through its own pane (Set Scaling Scale Single Object\\2C the window grown by the difference\\2C scaling off again). (3) every row\\3A moved onto page Page of the tab control Tab (Left/Top relative to the tab control) or\\2C with Tab empty and Pane 0 or more\\2C into that pane of the panel (Left/Top in pane coordinates)\\2C otherwise placed at Left/Top\\3B Width/Height (0\\3A keep) set the size of a string\\2C button\\2C numeric\\2C the visible area of a multicolumn listbox and the plot area of a graph\\3B Text sets a boolean\\27s text (and centres it)\\3B Tip the tip strip\\3B Show Label and Visible. (4) Window sets the panel bounds and the origin to 0\\2C0. Controls are found anywhere on the panel by label (Find Controls). problems lists every row whose steps returned an error\\2C with the code\\3B the run goes on.">')
 w('  <FreeLabel comment="Replace\\2C tabs\\2C place\\2C window\\2C save" uid="lbl" uid_parent="root"/>')
 w('  <Control _name="VI" conIdx="0" connection="required" description="The VI to restyle. Saved in place." outputs="value:vi.value" type="path" uid="vi" uid_parent="root" value=""/>')
 w('  <Control _name="Silver" conIdx="1" connection="required" description="The folder vi.lib\\5Csilver_ctls of the LabVIEW running this." outputs="value:sv.value" type="path" uid="sv" uid_parent="root" value=""/>')
 WIN = 'cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}'
 w('  <Control _name="Spec" conIdx="2" connection="required" description="LabVIEW XML file of a cluster spec{Rows\\2C Tabs\\2C Window} - written by tools\\5Caixml\\5Cstyle_rows.py. Rows\\3A one per control. Tabs\\3A pages and size of each tab control. Window\\3A panel bounds in screen coordinates\\2C all zero keeps them." outputs="value:spf.value" type="path" uid="spf" uid_parent="root" value=""/>')
 w('  <Node _name="Read from Text File" inputs="file (use dialog):spf.value,error in:ei.value" outputs="refnum out:,text:rd.text,cancelled:,error out:rd.error out" uid="rd" uid_parent="root"/>')
-w('  <Constant _name="spec type" outputs="value:spt.value" type="cluster{array{%s}.Rows,array{%s}.Tabs,%s.Window}" uid="spt" uid_parent="root" value="[[],[],[0,0,0,0]]"/>' % (ROW, TAB, WIN))
+w('  <Constant _name="spec type" outputs="value:spt.value" type="cluster{array{%s}.Rows,array{%s}.Tabs,%s.Window,array{int32}.Splitters}" uid="spt" uid_parent="root" value="[[],[],[0,0,0,0],[]]"/>' % (ROW, TAB, WIN))
 w('  <Node _name="Unflatten From XML" inputs="xml string:rd.text,type:spt.value,error in (no error):rd.error out" outputs="value:ux.value,error out:ux.error out" uid="ux" uid_parent="root"/>')
-w('  <Node _name="Unbundle By Name" fields="Rows,Tabs,Window" inputs="input cluster:ux.value" outputs="Rows:spec.Rows,Tabs:spec.Tabs,Window:spec.Window" uid="spec" uid_parent="root"/>')
+w('  <Node _name="Unbundle By Name" fields="Rows,Tabs,Window,Splitters" inputs="input cluster:ux.value" outputs="Rows:spec.Rows,Tabs:spec.Tabs,Window:spec.Window,Splitters:spec.Splitters" uid="spec" uid_parent="root"/>')
 w('  <Control _name="error in" conIdx="8" connection="recommended" description="Error chain in." outputs="value:ei.value" type="%s" uid="ei" uid_parent="root" value="%s"/>' % (ERR, E))
 w('  <Node _name="Open VI Reference" inputs="vi path:vi.value,error in (no error):ux.error out" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>')
 w('  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:,error out:fp.error out,Front Panel:fp.fp" type="{LV.VI}" uid="fp" uid_parent="root"/>')
 w('  <Node _name="Property Node" fields="read+Panes[]" inputs="reference:fp.fp,error in (no error):fp.error out" outputs="reference out:,error out:pp.error out,Panes[]:pp.panes" type="{LV.Panel}" uid="pp" uid_parent="root"/>')
+# ---- (0) Splitters: the bars of a splitter panel to their positions, in the order of Splitters[] (errors ignored)
+w('  <Node _name="Property Node" fields="read+Splitters[]" inputs="reference:fp.fp,error in (no error):pp.error out" outputs="reference out:,error out:,Splitters[]:sps.s" type="{LV.Panel}" uid="sps" uid_parent="root"/>')
+w('  <Structure _name="For Loop" count="" label="Each splitter bar to its position" maxin="" maxout="" uid="spl" uid_parent="root">')
+w('    <Tunnel _id="In1" inputs="value:sps.s" mode="index" outputs="value:spl_s.value" uid="spl_s" uid_parent="spl"/>')
+w('    <Tunnel _id="In2" inputs="value:spec.Splitters" mode="index" outputs="value:spl_p.value" uid="spl_p" uid_parent="spl"/>')
+w('    <Node _name="Property Node" fields="write+Position" inputs="reference:spl_s.value,Position:spl_p.value" outputs="reference out:,error out:" type="{LV.Splitter}" uid="spl_w" uid_parent="spl"/>')
+w('  </Structure>')
 w('  <Constant _name="no duplicate" outputs="value:nd.value" type="bool" uid="nd" uid_parent="root" value="false"/>')
 w('  <Constant _name="true" outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>')
 w('  <Constant _name="false" outputs="value:fal.value" type="bool" uid="fal" uid_parent="root" value="false"/>')
@@ -170,25 +177,35 @@ w('    </Structure>')
 # size of the tab control: it has no writable size, so it is scaled with the pane once (Scale Single Object),
 # the window grown by the missing width and height, and scaling switched off again
 w('    <Node _name="Greater Than 0?" inputs="x:t_u.W" outputs="x &gt; 0?:t_hs.x &gt; 0?" uid="t_hs" uid_parent="tl"/>')
-c = Case('t_sz', 'tl', 't_hs.x &gt; 0?', ['t_tab.ref', 't_vi.value', 't_ps.value', 't_u.W', 't_u.H', 'tn_end.value'], ['t_sz.err'], 4)
+# any control can be sized this way (a subpanel has no writable size either): the size step works on the
+# control found by label, with its own error chain, so a row that is no tab control still gets its size
+w('    <Call target="Clear Errors.vi" inputs="error in (no error):tn_end.value" outputs="error out:t_clr.error out" uid="t_clr" uid_parent="tl"/>')
+c = Case('t_sz', 'tl', 't_hs.x &gt; 0?', [ref, 't_vi.value', 't_ps.value', 't_u.W', 't_u.H', 't_clr.error out'], ['t_sz.err'], 4)
 c.frame('Keep the size', 'False', [5], lambda L, t, f: None, lambda t: [t(5)])
 
 
 def tab_size(L, t, f):
-    L.append('<Constant outputs="value:%sz.value" type="int32" uid="%sz" uid_parent="%s" value="0"/>' % (f, f, f))
-    L.append('<Node _name="Index Array" inputs="array:%s,index:%sz.value" outputs="element:%sp.element" uid="%sp" uid_parent="%s"/>' % (t(2), f, f, f, f))
+    # the pane the control is in (a splitter panel has several)
+    L.append('<Node _name="Property Node" fields="read+OwningPane" inputs="reference:%s,error in (no error):%s" outputs="OwningPane:%sp.element,reference out:,error out:%sop.error out" type="{LV.Control}" uid="%sop" uid_parent="%s"/>' % (t(0), t(5), f, f, f, f))
     L.append('<Constant outputs="value:%sm2.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="%sm2" uid_parent="%s" value="2"/>' % (f, f, f))
     L.append('<Constant outputs="value:%sm0.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="%sm0" uid_parent="%s" value="0"/>' % (f, f, f))
-    L.append('<Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:%sp.element,error in (no error):%s,ScalingMode:%sm2.value,ScalableObj:%s" outputs="reference out:,error out:%ss1.error out" uid="%ss1" uid_parent="%s"/>' % (f, t(5), f, t(0), f, f, f))
+    L.append('<Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:%sp.element,error in (no error):%s,ScalingMode:%sm2.value,ScalableObj:%s" outputs="reference out:,error out:%ss1.error out" uid="%ss1" uid_parent="%s"/>' % (f, f + 'op.error out', f, t(0), f, f, f))
     L.append('<Node _name="Property Node" fields="read+Bounds" inputs="reference:%s,error in (no error):%ss1.error out" outputs="reference out:,error out:%sb.error out,Bounds:%sb.b" type="{LV.Control}" uid="%sb" uid_parent="%s"/>' % (t(0), f, f, f, f, f))
     L.append('<Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:%sb.b" outputs="Width:%sbu.w,Height:%sbu.h" uid="%sbu" uid_parent="%s"/>' % (f, f, f, f, f))
     L.append('<Node _name="Property Node" fields="read+Front Panel Window\\3APanel Bounds" inputs="reference:%s,error in (no error):%sb.error out" outputs="reference out:,error out:%swr.error out,Front Panel Window\\3APanel Bounds:%swr.pb" type="{LV.VI}" uid="%swr" uid_parent="%s"/>' % (t(1), f, f, f, f, f))
-    L.append('<Node _name="Unbundle By Name" fields="right,bottom" inputs="input cluster:%swr.pb" outputs="right:%swu.r,bottom:%swu.b" uid="%swu" uid_parent="%s"/>' % (f, f, f, f, f))
+    # the window grows by the missing width and height; it is moved to the top left of the screen
+    # (0, 40) first, as Windows clamps a window that would reach past the bottom of the screen
+    L.append('<Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:%swr.pb" outputs="left:%swu.l,top:%swu.t,right:%swu.r,bottom:%swu.b" uid="%swu" uid_parent="%s"/>' % (f, f, f, f, f, f, f))
     L.append('<Node _name="Subtract" inputs="x:%s,y:%sbu.w" outputs="x-y:%sdw.x-y" uid="%sdw" uid_parent="%s"/>' % (t(3), f, f, f, f))
     L.append('<Node _name="Subtract" inputs="x:%s,y:%sbu.h" outputs="x-y:%sdh.x-y" uid="%sdh" uid_parent="%s"/>' % (t(4), f, f, f, f))
-    L.append('<Node _name="Add" inputs="x:%swu.r,y:%sdw.x-y" outputs="x+y:%snr.x+y" uid="%snr" uid_parent="%s"/>' % (f, f, f, f, f))
-    L.append('<Node _name="Add" inputs="x:%swu.b,y:%sdh.x-y" outputs="x+y:%snb.x+y" uid="%snb" uid_parent="%s"/>' % (f, f, f, f, f))
-    L.append('<Node _name="Bundle By Name" fields="right,bottom" inputs="input cluster:%swr.pb,right:%snr.x+y,bottom:%snb.x+y" outputs="output cluster:%snw.output cluster" uid="%snw" uid_parent="%s"/>' % (f, f, f, f, f, f))
+    L.append('<Node _name="Subtract" inputs="x:%swu.r,y:%swu.l" outputs="x-y:%sow.x-y" uid="%sow" uid_parent="%s"/>' % (f, f, f, f, f))
+    L.append('<Node _name="Subtract" inputs="x:%swu.b,y:%swu.t" outputs="x-y:%soh.x-y" uid="%soh" uid_parent="%s"/>' % (f, f, f, f, f))
+    L.append('<Node _name="Add" inputs="x:%sow.x-y,y:%sdw.x-y" outputs="x+y:%snr.x+y" uid="%snr" uid_parent="%s"/>' % (f, f, f, f, f))
+    L.append('<Constant outputs="value:%sy0.value" type="int32" uid="%sy0" uid_parent="%s" value="40"/>' % (f, f, f))
+    L.append('<Constant outputs="value:%sx0.value" type="int32" uid="%sx0" uid_parent="%s" value="0"/>' % (f, f, f))
+    L.append('<Node _name="Add" inputs="x:%soh.x-y,y:%sdh.x-y" outputs="x+y:%snh.x+y" uid="%snh" uid_parent="%s"/>' % (f, f, f, f, f))
+    L.append('<Node _name="Add" inputs="x:%snh.x+y,y:%sy0.value" outputs="x+y:%snb.x+y" uid="%snb" uid_parent="%s"/>' % (f, f, f, f, f))
+    L.append('<Node _name="Bundle By Name" fields="left,top,right,bottom" inputs="input cluster:%swr.pb,left:%sx0.value,top:%sy0.value,right:%snr.x+y,bottom:%snb.x+y" outputs="output cluster:%snw.output cluster" uid="%snw" uid_parent="%s"/>' % (f, f, f, f, f, f, f, f))
     L.append('<Node _name="Property Node" fields="write+Front Panel Window\\3APanel Bounds" inputs="reference:%s,error in (no error):%swr.error out,Front Panel Window\\3APanel Bounds:%snw.output cluster" outputs="reference out:,error out:%sww.error out" type="{LV.VI}" uid="%sww" uid_parent="%s"/>' % (t(1), f, f, f, f, f))
     L.append('<Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:%sp.element,error in (no error):%sww.error out,ScalingMode:%sm0.value,ScalableObj:%s" outputs="reference out:,error out:%ss0.error out" uid="%ss0" uid_parent="%s"/>' % (f, f, f, t(0), f, f, f))
 
@@ -197,11 +214,12 @@ c.frame('Scale the tab control with the pane once', 'True', [0, 1, 2, 3, 4, 5], 
 mark = len(o)
 c.o = o
 c.emit()
-w('    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:t_sz.err" outputs="code:t_code.code,source:t_code.source" uid="t_code" uid_parent="tl"/>')
+w('    <Node _name="Merge Errors" inputs="error in:t_sz.err,error in:tn_end.value" outputs="error out:t_mg.error out" uid="t_mg" uid_parent="tl"/>')
+w('    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:t_mg.error out" outputs="code:t_code.code,source:t_code.source" uid="t_code" uid_parent="tl"/>')
 w('    <Constant outputs="value:t_fmt.value" type="string" uid="t_fmt" uid_parent="tl" value="%s Tabs %d %s"/>')
 w('    <Node _name="Format Into String" inputs="format string:t_fmt.value,input 1:t_u.Tab,input 2:t_code.code,input 3:t_code.source" outputs="resulting string:t_msg.resulting string" uid="t_msg" uid_parent="tl"/>')
 w('    <Tunnel _id="Out1" inputs="value:t_msg.resulting string" mode="index" outputs="value:t_probs.value" uid="t_probs" uid_parent="tl"/>')
-w('    <Call target="Clear Errors.vi" inputs="error in (no error):t_sz.err" outputs="error out:t_ce.error out" uid="t_ce" uid_parent="tl"/>')
+w('    <Call target="Clear Errors.vi" inputs="error in (no error):t_mg.error out" outputs="error out:t_ce.error out" uid="t_ce" uid_parent="tl"/>')
 w('  </Structure>')
 
 # ---- (3) Place --------------------------------------------------------------------------------
@@ -215,7 +233,7 @@ ins = [('spec.Rows', 'index', 'p_row'), ('fp.fp', None, 'p_fp'), ('pp.panes', No
 for k, (src, mode, u) in enumerate(ins):
     w('    <Tunnel _id="In%d" inputs="value:%s"%s outputs="value:%s.value" uid="%s" uid_parent="pl"/>' % (k + 1, src, ' mode="index"' if mode else '', u, u))
 w('    <ShiftReg uid="p_sr" uid_parent="pl">')
-w('      <Left inputs="value:t_end.value" outputs="value:p_e.value" uid="p_srl" uid_parent="p_sr"/>')
+w('      <Left inputs="value:wc.err" outputs="value:p_e.value" uid="p_srl" uid_parent="p_sr"/>')
 w('      <Right inputs="value:p_ce.error out" outputs="value:p_end.value" uid="p_srr" uid_parent="p_sr"/>')
 w('    </ShiftReg>')
 w('    <Node _name="Unbundle By Name" fields="Label,Tab,Page,Pane,Left,Top,Width,Height,Text,Tip,Show Label,Visible" inputs="input cluster:p_row.value" outputs="Label:p_u.Label,Tab:p_u.Tab,Page:p_u.Page,Pane:p_u.Pane,Left:p_u.Left,Top:p_u.Top,Width:p_u.Width,Height:p_u.Height,Text:p_u.Text,Tip:p_u.Tip,Show Label:p_u.ShowLabel,Visible:p_u.Visible" uid="p_u" uid_parent="pl"/>')
@@ -254,8 +272,16 @@ def no_tab(L, t, f):
 
     def into_pane(L2, u, g):
         L2.append('<Node _name="Index Array" inputs="array:%s,index:%s" outputs="element:%spn.element" uid="%spn" uid_parent="%s"/>' % (u(4), u(3), g, g, g))
-        L2.append('<Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:%s,error in (no error):%s,position:%s,owner:%spn.element,duplicate:%s" outputs="reference out:,error out:%smv.error out" uid="%smv" uid_parent="%s"/>' % (u(0), u(1), u(2), g, u(5), g, g, g))
-        L2.append('<Node _name="Property Node" fields="write+Position" inputs="reference:%s,error in (no error):%smv.error out,Position:%s" outputs="reference out:,error out:%swp.error out" type="{LV.Control}" uid="%swp" uid_parent="%s"/>' % (u(0), g, u(2), g, g, g))
+        # Left/Top are relative to the visible top left of the pane: a splitter pane's origin need not be 0,0
+        # (NI's splitter example scrolls its main pane), so its Origin is added
+        L2.append('<Node _name="Property Node" fields="read+Origin" inputs="reference:%spn.element,error in (no error):%s" outputs="reference out:,error out:%sor.error out,Origin:%sor.o" type="{LV.Pane}" uid="%sor" uid_parent="%s"/>' % (g, u(1), g, g, g, g))
+        L2.append('<Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:%sor.o" outputs="Horizontal:%sou.h,Vertical:%sou.v" uid="%sou" uid_parent="%s"/>' % (g, g, g, g, g))
+        L2.append('<Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:%s" outputs="Left:%spu.l,Top:%spu.t" uid="%spu" uid_parent="%s"/>' % (u(2), g, g, g, g))
+        L2.append('<Node _name="Add" inputs="x:%spu.l,y:%sou.h" outputs="x+y:%sax.x+y" uid="%sax" uid_parent="%s"/>' % (g, g, g, g, g))
+        L2.append('<Node _name="Add" inputs="x:%spu.t,y:%sou.v" outputs="x+y:%say.x+y" uid="%say" uid_parent="%s"/>' % (g, g, g, g, g))
+        L2.append('<Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:%s,Left:%sax.x+y,Top:%say.x+y" outputs="output cluster:%sps.output cluster" uid="%sps" uid_parent="%s"/>' % (u(2), g, g, g, g, g))
+        L2.append('<Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:%s,error in (no error):%sor.error out,position:%sps.output cluster,owner:%spn.element,duplicate:%s" outputs="reference out:,error out:%smv.error out" uid="%smv" uid_parent="%s"/>' % (u(0), g, g, g, u(5), g, g, g))
+        L2.append('<Node _name="Property Node" fields="write+Position" inputs="reference:%s,error in (no error):%smv.error out,Position:%sps.output cluster" outputs="reference out:,error out:%swp.error out" type="{LV.Control}" uid="%swp" uid_parent="%s"/>' % (u(0), g, g, g, g, g))
 
     inner.frame('No pane\\3A place', 'True', [0, 1, 2], just_place, lambda u: [inner.uid + '_f0wp.error out'])
     inner.frame('Into the pane', 'False', [0, 1, 2, 3, 4, 5], into_pane, lambda u: [inner.uid + '_f1wp.error out'])
@@ -293,6 +319,11 @@ def sized(L, t, f):
         L.append('<Constant outputs="value:%sc.value" type="ref{%s}" uid="%sc" uid_parent="%s" value=""/>' % (g, cls, g, f))
         L.append('<Node _name="To More Specific Class" inputs="target class:%sc.value,reference:%s" outputs="specific class reference:%sr.ref,error out:%sr.error out" uid="%sr" uid_parent="%s"/>' % (g, t(0), g, g, g, f))
         L.append('<Node _name="Property Node" fields="write+%s" inputs="reference:%sr.ref,error in (no error):%sr.error out,%s:%s" outputs="reference out:,error out:" type="{%s}" uid="%sw" uid_parent="%s"/>' % (prop, g, g, prop, val, cls, g, f))
+    # a multicolumn listbox: the size of its visible area
+    g = f + 'ml'
+    L.append('<Constant outputs="value:%sc.value" type="ref{LV.MulticolumnListbox}" uid="%sc" uid_parent="%s" value=""/>' % (g, g, f))
+    L.append('<Node _name="To More Specific Class" inputs="target class:%sc.value,reference:%s" outputs="specific class reference:%sr.ref,error out:%sr.error out" uid="%sr" uid_parent="%s"/>' % (g, t(0), g, g, g, f))
+    L.append('<Node _name="Property Node" fields="write+Bounds\\3AArea Width,write+Bounds\\3AArea Height" inputs="reference:%sr.ref,error in (no error):%sr.error out,Bounds\\3AArea Width:%swh.w,Bounds\\3AArea Height:%swh.h" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="%sp" uid_parent="%s"/>' % (g, g, f, f, g, f))
     # a table: as many visible rows (20 px) and columns (120 px) as fit into Width x Height
     g = f + 'tb'
     L.append('<Constant outputs="value:%sc.value" type="ref{LV.Table}" uid="%sc" uid_parent="%s" value=""/>' % (g, g, f))
@@ -344,7 +375,9 @@ w('  </Structure>')
 # ---- (4) Window, save -------------------------------------------------------------------------
 w('  <Node _name="Unbundle By Name" fields="Right" inputs="input cluster:spec.Window" outputs="Right:wr.Right" uid="wr" uid_parent="root"/>')
 w('  <Node _name="Greater Than 0?" inputs="x:wr.Right" outputs="x &gt; 0?:wg.x &gt; 0?" uid="wg" uid_parent="root"/>')
-c = Case('wc', 'root', 'wg.x &gt; 0?', ['ov.vi reference', 'spec.Window', 'p_end.value'], ['wc.err'], 2)
+# (the window step runs between Tabs and Place - wc.err feeds the Place loop: a later window resize
+# moved the contents of a splitter pane that were already placed)
+c = Case('wc', 'root', 'wg.x &gt; 0?', ['ov.vi reference', 'spec.Window', 't_end.value'], ['wc.err'], 2)
 c.frame('Keep the window', 'False', [2], lambda L, t, f: None, lambda t: [t(2)])
 
 
@@ -356,7 +389,7 @@ def window(L, t, f):
 
 c.frame('Window bounds\\2C origin 0\\2C0', 'True', [0, 1, 2], window, lambda t: ['wc_f1w.error out'])
 c.emit()
-w('  <Node _name="Invoke Node" target="Default Vals.Make Curr Default" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):wc.err" outputs="reference out:,error out:mcd.error out" uid="mcd" uid_parent="root"/>')
+w('  <Node _name="Invoke Node" target="Default Vals.Make Curr Default" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):p_end.value" outputs="reference out:,error out:mcd.error out" uid="mcd" uid_parent="root"/>')
 w('  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):mcd.error out" outputs="reference out:,error out:svi.error out" uid="svi" uid_parent="root"/>')
 w('  <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):svi.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>')
 w('  <Node _name="Build Array" concat="true" inputs="array:r_probs.value,array:t_probs.value,array:p_probs.value" outputs="appended array:pa.appended array" uid="pa" uid_parent="root"/>')

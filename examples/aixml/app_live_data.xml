@@ -1,0 +1,100 @@
+<VI _name="RemoteVI App Live Data.vi" description="Screen Live Data of RemoteVI Application Example.vi\3A four simulated channels on the graph Live Data (500 samples each\2C a new block every 100 ms)\2C their maximum and minimum in Statistics. Pause holds the picture. Runs until the notifier RemoteVI Application Example fires (the main VI quits).">
+  <Constant _name="start phase" outputs="value:ph0.value" type="double" uid="ph0" uid_parent="root" value="0"/>
+  <Constant _name="no data" outputs="value:dat0.value" type="array.2{double}" uid="dat0" uid_parent="root" value="[]"/>
+  <Constant _name="no statistics" outputs="value:sts0.value" type="array.2{string}" uid="sts0" uid_parent="root" value="[]"/>
+  <FreeLabel comment="A screen of RemoteVI Application Example.vi\3A runs until the notifier RemoteVI Application Example fires" uid="lbl" uid_parent="root"/>
+  <Constant _name="notifier name" outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value="RemoteVI Application Example"/>
+  <Constant _name="notification type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:nt.value" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Screen loop\2C every 100 ms" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:l_n.value" uid="l_n" uid_parent="sl"/>
+    <ShiftReg uid="ph_sr" uid_parent="sl">
+      <Left inputs="value:ph0.value" outputs="value:ph.value" uid="ph" uid_parent="ph_sr"/>
+      <Right inputs="value:pc.phase" outputs="value:" uid="ph_r" uid_parent="ph_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="dat_sr" uid_parent="sl">
+      <Left inputs="value:dat0.value" outputs="value:dat.value" uid="dat" uid_parent="dat_sr"/>
+      <Right inputs="value:pc.data" outputs="value:" uid="dat_r" uid_parent="dat_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="sts_sr" uid_parent="sl">
+      <Left inputs="value:sts0.value" outputs="value:sts.value" uid="sts" uid_parent="sts_sr"/>
+      <Right inputs="value:pc.stats" outputs="value:" uid="sts_r" uid_parent="sts_sr"/>
+    </ShiftReg>
+    <Control _name="Pause" description="Holds the graph. Press again to continue." outputs="value:pause.value" type="bool" uid="pause" uid_parent="sl" value="false"/>
+    <Structure _name="Case Structure" selectin="pause.value" uid="pc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:ph.value" uid="pc_i1" uid_parent="pc"/>
+      <Tunnel _id="In2" inputs="value:dat.value" uid="pc_i2" uid_parent="pc"/>
+      <Tunnel _id="In3" inputs="value:sts.value" uid="pc_i3" uid_parent="pc"/>
+      <CaseFrame label="Pause\3A keep the picture" selector="True" selectout="" uid="pc_f0" uid_parent="pc">
+        <Tunnel _id="In1" outputs="value:pc_f0_t1.value" uid="pc_f0_t1" uid_parent="pc_f0"/>
+        <Tunnel _id="In2" outputs="value:pc_f0_t2.value" uid="pc_f0_t2" uid_parent="pc_f0"/>
+        <Tunnel _id="In3" outputs="value:pc_f0_t3.value" uid="pc_f0_t3" uid_parent="pc_f0"/>
+        <Tunnel _id="Out1" inputs="value:pc_f0_t1.value" uid="pc_f0_o1" uid_parent="pc_f0"/>
+        <Tunnel _id="Out2" inputs="value:pc_f0_t2.value" uid="pc_f0_o2" uid_parent="pc_f0"/>
+        <Tunnel _id="Out3" inputs="value:pc_f0_t3.value" uid="pc_f0_o3" uid_parent="pc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Next block of four channels" selector="False" selectout="" uid="pc_f1" uid_parent="pc">
+        <Tunnel _id="In1" outputs="value:pc_f1_t1.value" uid="pc_f1_t1" uid_parent="pc_f1"/>
+        <Tunnel _id="In2" outputs="value:" uid="pc_f1_t2" uid_parent="pc_f1"/>
+        <Tunnel _id="In3" outputs="value:" uid="pc_f1_t3" uid_parent="pc_f1"/>
+        <Constant outputs="value:pc_f1st.value" type="double" uid="pc_f1st" uid_parent="pc_f1" value="0.15"/>
+        <Node _name="Add" inputs="x:pc_f1_t1.value,y:pc_f1st.value" outputs="x+y:pc_f1ph.x+y" uid="pc_f1ph" uid_parent="pc_f1"/>
+        <Constant outputs="value:pc_f1n4.value" type="int32" uid="pc_f1n4" uid_parent="pc_f1" value="4"/>
+        <Structure _name="For Loop" count="pc_f1ch.value" label="Each channel" maxin="pc_f1n4.value" maxout="" uid="pc_f1ch" uid_parent="pc_f1">
+          <Tunnel _id="In1" inputs="value:pc_f1ph.x+y" outputs="value:pc_f1chp.value" uid="pc_f1chp" uid_parent="pc_f1ch"/>
+          <Node _name="To Double Precision Float" inputs="number:pc_f1ch.value" outputs="double precision float:pc_f1chcd.double precision float" uid="pc_f1chcd" uid_parent="pc_f1ch"/>
+          <Constant outputs="value:pc_f1chq.value" type="double" uid="pc_f1chq" uid_parent="pc_f1ch" value="0.25"/>
+          <Node _name="Multiply" inputs="x:pc_f1chcd.double precision float,y:pc_f1chq.value" outputs="x*y:pc_f1cha0.x*y" uid="pc_f1cha0" uid_parent="pc_f1ch"/>
+          <Constant outputs="value:pc_f1chone.value" type="double" uid="pc_f1chone" uid_parent="pc_f1ch" value="1"/>
+          <Node _name="Add" inputs="x:pc_f1cha0.x*y,y:pc_f1chone.value" outputs="x+y:pc_f1champ.x+y" uid="pc_f1champ" uid_parent="pc_f1ch"/>
+          <Node _name="Add" inputs="x:pc_f1chcd.double precision float,y:pc_f1chone.value" outputs="x+y:pc_f1chk.x+y" uid="pc_f1chk" uid_parent="pc_f1ch"/>
+          <Node _name="Add" inputs="x:pc_f1chp.value,y:pc_f1chcd.double precision float" outputs="x+y:pc_f1choff.x+y" uid="pc_f1choff" uid_parent="pc_f1ch"/>
+          <Constant outputs="value:pc_f1chn.value" type="int32" uid="pc_f1chn" uid_parent="pc_f1ch" value="500"/>
+          <Structure _name="For Loop" count="pc_f1chs.value" label="Each sample" maxin="pc_f1chn.value" maxout="" uid="pc_f1chs" uid_parent="pc_f1ch">
+            <Tunnel _id="In1" inputs="value:pc_f1champ.x+y" outputs="value:pc_f1chsa.value" uid="pc_f1chsa" uid_parent="pc_f1chs"/>
+            <Tunnel _id="In2" inputs="value:pc_f1chk.x+y" outputs="value:pc_f1chsk.value" uid="pc_f1chsk" uid_parent="pc_f1chs"/>
+            <Tunnel _id="In3" inputs="value:pc_f1choff.x+y" outputs="value:pc_f1chso.value" uid="pc_f1chso" uid_parent="pc_f1chs"/>
+            <Node _name="To Double Precision Float" inputs="number:pc_f1chs.value" outputs="double precision float:pc_f1chsj.double precision float" uid="pc_f1chsj" uid_parent="pc_f1chs"/>
+            <Constant outputs="value:pc_f1chsw.value" type="double" uid="pc_f1chsw" uid_parent="pc_f1chs" value="0.0251327412"/>
+            <Node _name="Multiply" inputs="x:pc_f1chsj.double precision float,y:pc_f1chsw.value" outputs="x*y:pc_f1chst.x*y" uid="pc_f1chst" uid_parent="pc_f1chs"/>
+            <Node _name="Multiply" inputs="x:pc_f1chst.x*y,y:pc_f1chsk.value" outputs="x*y:pc_f1chstk.x*y" uid="pc_f1chstk" uid_parent="pc_f1chs"/>
+            <Node _name="Add" inputs="x:pc_f1chstk.x*y,y:pc_f1chso.value" outputs="x+y:pc_f1chsx.x+y" uid="pc_f1chsx" uid_parent="pc_f1chs"/>
+            <Node _name="Sine" inputs="x:pc_f1chsx.x+y" outputs="sin(x):pc_f1chssn.sin(x)" uid="pc_f1chssn" uid_parent="pc_f1chs"/>
+            <Node _name="Multiply" inputs="x:pc_f1chssn.sin(x),y:pc_f1chsa.value" outputs="x*y:pc_f1chsy.x*y" uid="pc_f1chsy" uid_parent="pc_f1chs"/>
+            <Node _name="Random Number (0-1)" inputs="" outputs="number\3A 0 to 1:pc_f1chsrn.number\3A 0 to 1" uid="pc_f1chsrn" uid_parent="pc_f1chs"/>
+            <Constant outputs="value:pc_f1chsh.value" type="double" uid="pc_f1chsh" uid_parent="pc_f1chs" value="0.5"/>
+            <Node _name="Subtract" inputs="x:pc_f1chsrn.number\3A 0 to 1,y:pc_f1chsh.value" outputs="x-y:pc_f1chsr0.x-y" uid="pc_f1chsr0" uid_parent="pc_f1chs"/>
+            <Constant outputs="value:pc_f1chsnz.value" type="double" uid="pc_f1chsnz" uid_parent="pc_f1chs" value="0.06"/>
+            <Node _name="Multiply" inputs="x:pc_f1chsr0.x-y,y:pc_f1chsnz.value" outputs="x*y:pc_f1chsr1.x*y" uid="pc_f1chsr1" uid_parent="pc_f1chs"/>
+            <Node _name="Add" inputs="x:pc_f1chsy.x*y,y:pc_f1chsr1.x*y" outputs="x+y:pc_f1chsv.x+y" uid="pc_f1chsv" uid_parent="pc_f1chs"/>
+            <Tunnel _id="Out1" inputs="value:pc_f1chsv.x+y" mode="index" outputs="value:pc_f1chsrow.value" uid="pc_f1chsrow" uid_parent="pc_f1chs"/>
+          </Structure>
+          <Node _name="Array Max &amp; Min" inputs="array:pc_f1chsrow.value" outputs="max value:pc_f1chmm.max,max index (indices):,min value:pc_f1chmm.min,min index (indices):" uid="pc_f1chmm" uid_parent="pc_f1ch"/>
+          <Constant outputs="value:pc_f1chfn.value" type="string" uid="pc_f1chfn" uid_parent="pc_f1ch" value="AI%d"/>
+          <Node _name="Format Into String" inputs="format string:pc_f1chfn.value,input 1:pc_f1ch.value" outputs="resulting string:pc_f1chnm.resulting string" uid="pc_f1chnm" uid_parent="pc_f1ch"/>
+          <Constant outputs="value:pc_f1chfv.value" type="string" uid="pc_f1chfv" uid_parent="pc_f1ch" value="%.3f"/>
+          <Node _name="Format Into String" inputs="format string:pc_f1chfv.value,input 1:pc_f1chmm.max" outputs="resulting string:pc_f1chmx.resulting string" uid="pc_f1chmx" uid_parent="pc_f1ch"/>
+          <Node _name="Format Into String" inputs="format string:pc_f1chfv.value,input 1:pc_f1chmm.min" outputs="resulting string:pc_f1chmn.resulting string" uid="pc_f1chmn" uid_parent="pc_f1ch"/>
+          <Node _name="Build Array" inputs="element:pc_f1chnm.resulting string,element:pc_f1chmx.resulting string,element:pc_f1chmn.resulting string" outputs="appended array:pc_f1chsr.appended array" uid="pc_f1chsr" uid_parent="pc_f1ch"/>
+          <Tunnel _id="Out1" inputs="value:pc_f1chsrow.value" mode="index" outputs="value:pc_f1chdata.value" uid="pc_f1chdata" uid_parent="pc_f1ch"/>
+          <Tunnel _id="Out2" inputs="value:pc_f1chsr.appended array" mode="index" outputs="value:pc_f1chstat.value" uid="pc_f1chstat" uid_parent="pc_f1ch"/>
+        </Structure>
+        <Constant outputs="value:pc_f1hd.value" type="array.2{string}" uid="pc_f1hd" uid_parent="pc_f1" value="[[Channel,Max (V),Min (V)]]"/>
+        <Node _name="Build Array" inputs="array:pc_f1hd.value,array:pc_f1chstat.value" outputs="appended array:pc_f1st2.appended array" uid="pc_f1st2" uid_parent="pc_f1" concat="true"/>
+        <Tunnel _id="Out1" inputs="value:pc_f1ph.x+y" uid="pc_f1_o1" uid_parent="pc_f1"/>
+        <Tunnel _id="Out2" inputs="value:pc_f1chdata.value" uid="pc_f1_o2" uid_parent="pc_f1"/>
+        <Tunnel _id="Out3" inputs="value:pc_f1st2.appended array" uid="pc_f1_o3" uid_parent="pc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:pc.phase" uid="pc_O1" uid_parent="pc"/>
+      <Tunnel _id="Out2" outputs="value:pc.data" uid="pc_O2" uid_parent="pc"/>
+      <Tunnel _id="Out3" outputs="value:pc.stats" uid="pc_O3" uid_parent="pc"/>
+    </Structure>
+    <Indicator _name="Live Data" description="The last block of every channel (simulated)." inputs="value:pc.data" style="graph21703" type="array.2{double}" uid="graph" uid_parent="sl" value="[]"/>
+    <Indicator _name="Statistics" description="Maximum and minimum of each channel in the block shown." inputs="value:pc.stats" type="array.2{string}" uid="stat" uid_parent="sl" value="[]"/>
+    <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="sl" value="100"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:wnt..not. x?" uid="wnt" uid_parent="sl"/>
+    <Condition inputs="value:wnt..not. x?" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+</VI>

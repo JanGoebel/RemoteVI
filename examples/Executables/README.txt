@@ -1,13 +1,19 @@
 RemoteVI example executables
 ============================
 
-Two applications built with LabVIEW 2020 (64-bit). They need the LabVIEW 2020 Run-Time Engine
+Three applications built with LabVIEW 2020 (64-bit). They need the LabVIEW 2020 Run-Time Engine
 (64-bit), which LabVIEW 2020 installs and which is available from ni.com for other machines.
 
 RemoteVI Demo\RemoteVI Demo.exe
     The example VI RemoteVI Demo.vi as a built application. It shares its own front panel with
     RemoteVI Start.vi on port 8088, this computer only. The link (with its access token) is shown
     on the panel; open it in a browser.
+
+RemoteVI Application Example\RemoteVI Application Example.exe
+    The example VI RemoteVI Application Example.vi as a built application: a menu on the left
+    (split off by a splitter bar) loads the screens Live Data, Log Files, Alarms and Settings into
+    a subpanel. It shares its own window on port 8087, this computer only; the link is shown in
+    its toolbar. The data are simulated.
 
 RemoteVI Server\RemoteVI Server.exe
     Shares any window in a browser. Pick a window on the left (LabVIEW's own first, then
@@ -30,6 +36,7 @@ The batch files start them with different options:
     3 Server - share the demo, view only.bat          (port 8100)
     4 Server - share the demo with the network.bat    (port 8101, asks first)
     5 Server - share the demo, no landing page.bat    (port 8102)
+    6 Application Example - share its own window.bat  (port 8087)
 
 RemoteVI Server runs once: close it before starting it with other options.
 

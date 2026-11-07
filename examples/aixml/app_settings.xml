@@ -1,0 +1,51 @@
+<VI _name="RemoteVI App Settings.vi" description="Screen Settings of RemoteVI Application Example.vi\3A settings of the station (simulated - nothing is stored). Save confirms in a LabVIEW dialog. Runs until the notifier RemoteVI Application Example fires (the main VI quits).">
+  <Constant _name="first status" outputs="value:st0.value" type="string" uid="st0" uid_parent="root" value="Settings are not saved yet."/>
+  <FreeLabel comment="A screen of RemoteVI Application Example.vi\3A runs until the notifier RemoteVI Application Example fires" uid="lbl" uid_parent="root"/>
+  <Constant _name="notifier name" outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value="RemoteVI Application Example"/>
+  <Constant _name="notification type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:nt.value" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Screen loop\2C every 100 ms" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:l_n.value" uid="l_n" uid_parent="sl"/>
+    <ShiftReg uid="st_sr" uid_parent="sl">
+      <Left inputs="value:st0.value" outputs="value:st.value" uid="st" uid_parent="st_sr"/>
+      <Right inputs="value:sc.status" outputs="value:" uid="st_r" uid_parent="st_sr"/>
+    </ShiftReg>
+    <Control _name="Station Name" description="Shown in the log file headers." outputs="value:stn.value" type="string" uid="stn" uid_parent="sl" value="Cooling loop test bench"/>
+    <Control _name="Operator" description="Who runs the station." outputs="value:opr.value" type="string" uid="opr" uid_parent="sl" value="Shift A"/>
+    <Control _name="Units" description="Units of the displays and the log files." outputs="value:unt.value" type="uint16{SI (bar\2C degC),US (psi\2C degF)}" uid="unt" uid_parent="sl" value="0"/>
+    <Control _name="Sample Interval (ms)" description="How often the station samples its channels." outputs="value:smp.value" type="double" uid="smp" uid_parent="sl" value="100"/>
+    <Control _name="Keep Logs (days)" description="Log files older than this are removed." outputs="value:ret.value" type="double" uid="ret" uid_parent="sl" value="30"/>
+    <Control _name="Export Automatically" description="Exports every log file when it is closed." outputs="value:aex.value" type="bool" uid="aex" uid_parent="sl" value="true"/>
+    <Control _name="Export Folder" description="Where exports go." outputs="value:efd.value" type="path" uid="efd" uid_parent="sl" value="C\3A\5CData\5CExport"/>
+    <Control _name="Save" description="Saves the settings (simulated)." outputs="value:sav.value" type="bool" uid="sav" uid_parent="sl" value="false" style="latched"/>
+    <Structure _name="Case Structure" selectin="sav.value" uid="sc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:st.value" uid="sc_i1" uid_parent="sc"/>
+      <Tunnel _id="In2" inputs="value:stn.value" uid="sc_i2" uid_parent="sc"/>
+      <CaseFrame label="Not pressed" selector="False" selectout="" uid="sc_f0" uid_parent="sc">
+        <Tunnel _id="In1" outputs="value:sc_f0_t1.value" uid="sc_f0_t1" uid_parent="sc_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="sc_f0_t2" uid_parent="sc_f0"/>
+        <Tunnel _id="Out1" inputs="value:sc_f0_t1.value" uid="sc_f0_o1" uid_parent="sc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Save and confirm" selector="True" selectout="" uid="sc_f1" uid_parent="sc">
+        <Tunnel _id="In1" outputs="value:" uid="sc_f1_t1" uid_parent="sc_f1"/>
+        <Tunnel _id="In2" outputs="value:sc_f1_t2.value" uid="sc_f1_t2" uid_parent="sc_f1"/>
+        <Constant outputs="value:sc_f1fm.value" type="string" uid="sc_f1fm" uid_parent="sc_f1" value="Settings of %s saved (simulated)."/>
+        <Node _name="Format Into String" inputs="format string:sc_f1fm.value,input 1:sc_f1_t2.value" outputs="resulting string:sc_f1m.resulting string" uid="sc_f1m" uid_parent="sc_f1"/>
+        <Constant outputs="value:sc_f1ok.value" type="string" uid="sc_f1ok" uid_parent="sc_f1" value="OK"/>
+        <Node _name="One Button Dialog" inputs="message:sc_f1m.resulting string,button name (&quot;OK&quot;):sc_f1ok.value" outputs="true:" uid="sc_f1d" uid_parent="sc_f1"/>
+        <Constant outputs="value:sc_f1ws.value" type="bool" uid="sc_f1ws" uid_parent="sc_f1" value="true"/>
+        <Node _name="Get Date/Time String" inputs="want seconds? (F):sc_f1ws.value" outputs="date string:,time string:sc_f1dt.time string" uid="sc_f1dt" uid_parent="sc_f1"/>
+        <Constant outputs="value:sc_f1sm.value" type="string" uid="sc_f1sm" uid_parent="sc_f1" value="Saved at %s."/>
+        <Node _name="Format Into String" inputs="format string:sc_f1sm.value,input 1:sc_f1dt.time string" outputs="resulting string:sc_f1s.resulting string" uid="sc_f1s" uid_parent="sc_f1"/>
+        <Tunnel _id="Out1" inputs="value:sc_f1s.resulting string" uid="sc_f1_o1" uid_parent="sc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:sc.status" uid="sc_O1" uid_parent="sc"/>
+    </Structure>
+    <Indicator _name="Status" description="When the settings were saved last." inputs="value:sc.status" type="string" uid="sti" uid_parent="sl" value=""/>
+    <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="sl" value="100"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:wnt..not. x?" uid="wnt" uid_parent="sl"/>
+    <Condition inputs="value:wnt..not. x?" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+</VI>

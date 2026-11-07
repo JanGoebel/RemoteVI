@@ -40,7 +40,7 @@
 Installs:
 - Functions palette RemoteVI: Start, Stop, Start Window, Status, Status Panel, Show Status, Open Server.
 - Tools » RemoteVI » Share in Browser: share any window without code.
-- Examples (examples\RemoteVI): RemoteVI Demo.vi, and in Executables the demo and RemoteVI Server as built applications (LabVIEW 2020 64-bit Run-Time Engine) with batch files for their command-line options.
+- Examples (examples\RemoteVI): RemoteVI Demo.vi (a data logger with every common control) and RemoteVI Application Example.vi (a splitter UI whose menu loads screens into a subpanel), and in Executables both and RemoteVI Server as built applications (LabVIEW 2020 64-bit Run-Time Engine) with batch files for their command-line options.
 
 Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/JanGoebel/RemoteVI</Description>
       <Copyright>Copyright (c) 2026 Jan Goebel</Copyright>

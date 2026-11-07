@@ -28,3 +28,4 @@ __pycache__/
 # example executables staged by scripts/build-package.ps1
 examples/Executables/RemoteVI Demo/
 examples/Executables/RemoteVI Server/
+examples/Executables/RemoteVI Application Example/

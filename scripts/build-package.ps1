@@ -40,7 +40,7 @@ $project = Join-Path $root 'RemoteVI.lvproj'
 $vipb = Join-Path $root 'build\RemoteVI.vipb'
 $builds = Join-Path $root 'builds'
 $staging = Join-Path $root 'examples\Executables'
-$executables = @('RemoteVI Demo', 'RemoteVI Server')
+$executables = @('RemoteVI Demo', 'RemoteVI Application Example', 'RemoteVI Server')
 
 if (-not $Version) {
     $toml = Get-Content -Raw (Join-Path $root 'vipm.toml')
@@ -120,7 +120,9 @@ try {
 # The Tools menu shows the folders below <LabVIEW>\project as submenus: Tools >> RemoteVI >> Share in Browser
 $required = @(
     'RemoteVI.lvlib', 'API/RemoteVI Start.vi', 'API/RemoteVI Stop.vi', 'project/RemoteVI/Share in Browser.vi',
-    'RemoteVI Demo.vi', 'RemoteVI Demo/RemoteVI Demo.exe', 'RemoteVI Server/RemoteVI Server.exe', '.mnu'
+    'RemoteVI Demo.vi', 'RemoteVI Demo/RemoteVI Demo.exe', 'RemoteVI Server/RemoteVI Server.exe', '.mnu',
+    'RemoteVI Application Example.vi', 'Application Example/RemoteVI App Log Files.vi',
+    'RemoteVI Application Example/RemoteVI Application Example.exe'
 )
 $missing = @($required | Where-Object { $r = $_; -not ($entries | Where-Object { $_.EndsWith($r) }) })
 $forbidden = @($entries | Where-Object { $_ -match '(^|/)(\.git|\.github|\.claude|CLAUDE\.md|tests|tools|spikes|scripts|docs|web|aixml|node_modules|\.RemoteVI\.UserState)(/|$)|\.lvproj$|\.aliases$|\.lvlps$' })

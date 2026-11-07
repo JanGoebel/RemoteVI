@@ -1,0 +1,215 @@
+<VI _name="RemoteVI App Alarms.vi" description="Screen Alarms of RemoteVI Application Example.vi\3A active alarms of the station (simulated\3A a new one arrives every 6 s while fewer than 10 are active). Acknowledge removes the selected alarm\2C Acknowledge All every alarm. Runs until the notifier RemoteVI Application Example fires (the main VI quits).">
+  <Constant _name="times" outputs="value:at0.value" type="array{string}" uid="at0" uid_parent="root" value="[08:12:04,08:47:31]"/>
+  <Constant _name="severities" outputs="value:av0.value" type="array{string}" uid="av0" uid_parent="root" value="[Warning,Info]"/>
+  <Constant _name="sources" outputs="value:as0.value" type="array{string}" uid="as0" uid_parent="root" value="[Pump P1,Logger]"/>
+  <Constant _name="messages" outputs="value:am0.value" type="array{string}" uid="am0" uid_parent="root" value="[Motor current high,Log file split]"/>
+  <Constant _name="ticks" outputs="value:tk0.value" type="int32" uid="tk0" uid_parent="root" value="0"/>
+  <Constant _name="next template" outputs="value:nx0.value" type="int32" uid="nx0" uid_parent="root" value="0"/>
+  <Constant _name="rows to show" outputs="value:ady0.value" type="bool" uid="ady0" uid_parent="root" value="true"/>
+  <FreeLabel comment="A screen of RemoteVI Application Example.vi\3A runs until the notifier RemoteVI Application Example fires" uid="lbl" uid_parent="root"/>
+  <Constant _name="notifier name" outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value="RemoteVI Application Example"/>
+  <Constant _name="notification type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:nt.value" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Constant outputs="value:abcn.value" type="int32" uid="abcn" uid_parent="root" value="4"/>
+  <Constant outputs="value:abch.value" type="array{string}" uid="abch" uid_parent="root" value="[Time,Severity,Source,Message]"/>
+  <Constant outputs="value:abct.value" type="bool" uid="abct" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Number of Columns,write+Column Header Strings[],write+Visible Items\3AColumn Headers Visible" link="Alarms" inputs="error in (no error):,Number of Columns:abcn.value,Column Header Strings[]:abch.value,Visible Items\3AColumn Headers Visible:abct.value" outputs="error out:" type="{LV.MulticolumnListbox}" uid="abc" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Screen loop\2C every 100 ms" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:l_n.value" uid="l_n" uid_parent="sl"/>
+    <ShiftReg uid="at_sr" uid_parent="sl">
+      <Left inputs="value:at0.value" outputs="value:at.value" uid="at" uid_parent="at_sr"/>
+      <Right inputs="value:kc.t" outputs="value:" uid="at_r" uid_parent="at_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="av_sr" uid_parent="sl">
+      <Left inputs="value:av0.value" outputs="value:av.value" uid="av" uid_parent="av_sr"/>
+      <Right inputs="value:kc.v" outputs="value:" uid="av_r" uid_parent="av_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="as_sr" uid_parent="sl">
+      <Left inputs="value:as0.value" outputs="value:as.value" uid="as" uid_parent="as_sr"/>
+      <Right inputs="value:kc.s" outputs="value:" uid="as_r" uid_parent="as_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="am_sr" uid_parent="sl">
+      <Left inputs="value:am0.value" outputs="value:am.value" uid="am" uid_parent="am_sr"/>
+      <Right inputs="value:kc.m" outputs="value:" uid="am_r" uid_parent="am_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="tk_sr" uid_parent="sl">
+      <Left inputs="value:tk0.value" outputs="value:tk.value" uid="tk" uid_parent="tk_sr"/>
+      <Right inputs="value:tki.x+1" outputs="value:" uid="tk_r" uid_parent="tk_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="nx_sr" uid_parent="sl">
+      <Left inputs="value:nx0.value" outputs="value:nx.value" uid="nx" uid_parent="nx_sr"/>
+      <Right inputs="value:nc.next" outputs="value:" uid="nx_r" uid_parent="nx_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="ady_sr" uid_parent="sl">
+      <Left inputs="value:ady0.value" outputs="value:ady.value" uid="ady" uid_parent="ady_sr"/>
+      <Right inputs="value:ac.dirty" outputs="value:" uid="ady_r" uid_parent="ady_sr"/>
+    </ShiftReg>
+    <Control _name="Alarms" description="Active alarms\2C oldest first. Select one to acknowledge it." outputs="value:alst.value" type="int32" uid="alst" uid_parent="sl" value="-1" style="Listbox"/>
+    <Control _name="Acknowledge" description="Acknowledges the selected alarm." outputs="value:ack.value" type="bool" uid="ack" uid_parent="sl" value="false" style="latched"/>
+    <Control _name="Acknowledge All" description="Acknowledges every alarm." outputs="value:acka.value" type="bool" uid="acka" uid_parent="sl" value="false" style="latched"/>
+    <Node _name="Increment" inputs="x:tk.value" outputs="x+1:tki.x+1" uid="tki" uid_parent="sl"/>
+    <Constant outputs="value:six.value" type="int32" uid="six" uid_parent="sl" value="60"/>
+    <Node _name="Quotient &amp; Remainder" inputs="x:tki.x+1,y:six.value" outputs="x-y*floor(x/y):tq.r,floor(x/y):" uid="tq" uid_parent="sl"/>
+    <Node _name="Equal To 0?" inputs="x:tq.r" outputs="x = 0?:due.x = 0?" uid="due" uid_parent="sl"/>
+    <Node _name="Array Size" inputs="array:at.value" outputs="size(s):na.size(s)" uid="na" uid_parent="sl"/>
+    <Constant outputs="value:ten.value" type="int32" uid="ten" uid_parent="sl" value="10"/>
+    <Node _name="Less?" inputs="x:na.size(s),y:ten.value" outputs="x &lt; y?:room.x &lt; y?" uid="room" uid_parent="sl"/>
+    <Node _name="And" inputs="x:due.x = 0?,y:room.x &lt; y?" outputs="x .and. y?:add.x .and. y?" uid="add" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="add.x .and. y?" uid="nc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:at.value" uid="nc_i1" uid_parent="nc"/>
+      <Tunnel _id="In2" inputs="value:av.value" uid="nc_i2" uid_parent="nc"/>
+      <Tunnel _id="In3" inputs="value:as.value" uid="nc_i3" uid_parent="nc"/>
+      <Tunnel _id="In4" inputs="value:am.value" uid="nc_i4" uid_parent="nc"/>
+      <Tunnel _id="In5" inputs="value:nx.value" uid="nc_i5" uid_parent="nc"/>
+      <Tunnel _id="In6" inputs="value:ady.value" uid="nc_i6" uid_parent="nc"/>
+      <CaseFrame label="No new alarm" selector="False" selectout="" uid="nc_f0" uid_parent="nc">
+        <Tunnel _id="In1" outputs="value:nc_f0_t1.value" uid="nc_f0_t1" uid_parent="nc_f0"/>
+        <Tunnel _id="In2" outputs="value:nc_f0_t2.value" uid="nc_f0_t2" uid_parent="nc_f0"/>
+        <Tunnel _id="In3" outputs="value:nc_f0_t3.value" uid="nc_f0_t3" uid_parent="nc_f0"/>
+        <Tunnel _id="In4" outputs="value:nc_f0_t4.value" uid="nc_f0_t4" uid_parent="nc_f0"/>
+        <Tunnel _id="In5" outputs="value:nc_f0_t5.value" uid="nc_f0_t5" uid_parent="nc_f0"/>
+        <Tunnel _id="In6" outputs="value:nc_f0_t6.value" uid="nc_f0_t6" uid_parent="nc_f0"/>
+        <Tunnel _id="Out1" inputs="value:nc_f0_t1.value" uid="nc_f0_o1" uid_parent="nc_f0"/>
+        <Tunnel _id="Out2" inputs="value:nc_f0_t2.value" uid="nc_f0_o2" uid_parent="nc_f0"/>
+        <Tunnel _id="Out3" inputs="value:nc_f0_t3.value" uid="nc_f0_o3" uid_parent="nc_f0"/>
+        <Tunnel _id="Out4" inputs="value:nc_f0_t4.value" uid="nc_f0_o4" uid_parent="nc_f0"/>
+        <Tunnel _id="Out5" inputs="value:nc_f0_t5.value" uid="nc_f0_o5" uid_parent="nc_f0"/>
+        <Tunnel _id="Out6" inputs="value:nc_f0_t6.value" uid="nc_f0_o6" uid_parent="nc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="A new alarm arrives" selector="True" selectout="" uid="nc_f1" uid_parent="nc">
+        <Tunnel _id="In1" outputs="value:nc_f1_t1.value" uid="nc_f1_t1" uid_parent="nc_f1"/>
+        <Tunnel _id="In2" outputs="value:nc_f1_t2.value" uid="nc_f1_t2" uid_parent="nc_f1"/>
+        <Tunnel _id="In3" outputs="value:nc_f1_t3.value" uid="nc_f1_t3" uid_parent="nc_f1"/>
+        <Tunnel _id="In4" outputs="value:nc_f1_t4.value" uid="nc_f1_t4" uid_parent="nc_f1"/>
+        <Tunnel _id="In5" outputs="value:nc_f1_t5.value" uid="nc_f1_t5" uid_parent="nc_f1"/>
+        <Tunnel _id="In6" outputs="value:" uid="nc_f1_t6" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1ws.value" type="bool" uid="nc_f1ws" uid_parent="nc_f1" value="true"/>
+        <Node _name="Get Date/Time String" inputs="want seconds? (F):nc_f1ws.value" outputs="date string:,time string:nc_f1dt.time string" uid="nc_f1dt" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1kv.value" type="array{string}" uid="nc_f1kv" uid_parent="nc_f1" value="[Warning,Alarm,Warning,Alarm,Info]"/>
+        <Node _name="Index Array" inputs="array:nc_f1kv.value,index:nc_f1_t5.value" outputs="element:nc_f1ev.element" uid="nc_f1ev" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1ks.value" type="array{string}" uid="nc_f1ks" uid_parent="nc_f1" value="[AI0 Supply pressure,AI2 Coolant temperature,Pump P1,AI3 Flow,Logger]"/>
+        <Node _name="Index Array" inputs="array:nc_f1ks.value,index:nc_f1_t5.value" outputs="element:nc_f1es.element" uid="nc_f1es" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1km.value" type="array{string}" uid="nc_f1km" uid_parent="nc_f1" value="[Pressure above 6.0 bar,Temperature above 45 degC,Motor current high,Flow below 2 l/min,Disk space below 10 %]"/>
+        <Node _name="Index Array" inputs="array:nc_f1km.value,index:nc_f1_t5.value" outputs="element:nc_f1em.element" uid="nc_f1em" uid_parent="nc_f1"/>
+        <Node _name="Build Array" inputs="array:nc_f1_t1.value,element:nc_f1dt.time string" outputs="appended array:nc_f1bt.appended array" uid="nc_f1bt" uid_parent="nc_f1" concat="true"/>
+        <Node _name="Build Array" inputs="array:nc_f1_t2.value,element:nc_f1ev.element" outputs="appended array:nc_f1bv.appended array" uid="nc_f1bv" uid_parent="nc_f1" concat="true"/>
+        <Node _name="Build Array" inputs="array:nc_f1_t3.value,element:nc_f1es.element" outputs="appended array:nc_f1bs.appended array" uid="nc_f1bs" uid_parent="nc_f1" concat="true"/>
+        <Node _name="Build Array" inputs="array:nc_f1_t4.value,element:nc_f1em.element" outputs="appended array:nc_f1bm.appended array" uid="nc_f1bm" uid_parent="nc_f1" concat="true"/>
+        <Node _name="Increment" inputs="x:nc_f1_t5.value" outputs="x+1:nc_f1i.x+1" uid="nc_f1i" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1five.value" type="int32" uid="nc_f1five" uid_parent="nc_f1" value="5"/>
+        <Node _name="Quotient &amp; Remainder" inputs="x:nc_f1i.x+1,y:nc_f1five.value" outputs="x-y*floor(x/y):nc_f1q.r,floor(x/y):" uid="nc_f1q" uid_parent="nc_f1"/>
+        <Constant outputs="value:nc_f1y.value" type="bool" uid="nc_f1y" uid_parent="nc_f1" value="true"/>
+        <Tunnel _id="Out1" inputs="value:nc_f1bt.appended array" uid="nc_f1_o1" uid_parent="nc_f1"/>
+        <Tunnel _id="Out2" inputs="value:nc_f1bv.appended array" uid="nc_f1_o2" uid_parent="nc_f1"/>
+        <Tunnel _id="Out3" inputs="value:nc_f1bs.appended array" uid="nc_f1_o3" uid_parent="nc_f1"/>
+        <Tunnel _id="Out4" inputs="value:nc_f1bm.appended array" uid="nc_f1_o4" uid_parent="nc_f1"/>
+        <Tunnel _id="Out5" inputs="value:nc_f1q.r" uid="nc_f1_o5" uid_parent="nc_f1"/>
+        <Tunnel _id="Out6" inputs="value:nc_f1y.value" uid="nc_f1_o6" uid_parent="nc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:nc.t" uid="nc_O1" uid_parent="nc"/>
+      <Tunnel _id="Out2" outputs="value:nc.v" uid="nc_O2" uid_parent="nc"/>
+      <Tunnel _id="Out3" outputs="value:nc.s" uid="nc_O3" uid_parent="nc"/>
+      <Tunnel _id="Out4" outputs="value:nc.m" uid="nc_O4" uid_parent="nc"/>
+      <Tunnel _id="Out5" outputs="value:nc.next" uid="nc_O5" uid_parent="nc"/>
+      <Tunnel _id="Out6" outputs="value:nc.dirty" uid="nc_O6" uid_parent="nc"/>
+    </Structure>
+    <Node _name="Greater Or Equal To 0?" inputs="x:alst.value" outputs="x &gt;= 0?:a0.x &gt;= 0?" uid="a0" uid_parent="sl"/>
+    <Node _name="And" inputs="x:a0.x &gt;= 0?,y:ack.value" outputs="x .and. y?:ak.x .and. y?" uid="ak" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:ak.x .and. y?,y:acka.value" outputs="x .or. y?:anyk.x .or. y?" uid="anyk" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="anyk.x .or. y?" uid="kc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:nc.t" uid="kc_i1" uid_parent="kc"/>
+      <Tunnel _id="In2" inputs="value:nc.v" uid="kc_i2" uid_parent="kc"/>
+      <Tunnel _id="In3" inputs="value:nc.s" uid="kc_i3" uid_parent="kc"/>
+      <Tunnel _id="In4" inputs="value:nc.m" uid="kc_i4" uid_parent="kc"/>
+      <Tunnel _id="In5" inputs="value:nc.dirty" uid="kc_i5" uid_parent="kc"/>
+      <Tunnel _id="In6" inputs="value:alst.value" uid="kc_i6" uid_parent="kc"/>
+      <Tunnel _id="In7" inputs="value:acka.value" uid="kc_i7" uid_parent="kc"/>
+      <CaseFrame label="Nothing to acknowledge" selector="False" selectout="" uid="kc_f0" uid_parent="kc">
+        <Tunnel _id="In1" outputs="value:kc_f0_t1.value" uid="kc_f0_t1" uid_parent="kc_f0"/>
+        <Tunnel _id="In2" outputs="value:kc_f0_t2.value" uid="kc_f0_t2" uid_parent="kc_f0"/>
+        <Tunnel _id="In3" outputs="value:kc_f0_t3.value" uid="kc_f0_t3" uid_parent="kc_f0"/>
+        <Tunnel _id="In4" outputs="value:kc_f0_t4.value" uid="kc_f0_t4" uid_parent="kc_f0"/>
+        <Tunnel _id="In5" outputs="value:kc_f0_t5.value" uid="kc_f0_t5" uid_parent="kc_f0"/>
+        <Tunnel _id="In6" outputs="value:" uid="kc_f0_t6" uid_parent="kc_f0"/>
+        <Tunnel _id="In7" outputs="value:" uid="kc_f0_t7" uid_parent="kc_f0"/>
+        <Tunnel _id="Out1" inputs="value:kc_f0_t1.value" uid="kc_f0_o1" uid_parent="kc_f0"/>
+        <Tunnel _id="Out2" inputs="value:kc_f0_t2.value" uid="kc_f0_o2" uid_parent="kc_f0"/>
+        <Tunnel _id="Out3" inputs="value:kc_f0_t3.value" uid="kc_f0_o3" uid_parent="kc_f0"/>
+        <Tunnel _id="Out4" inputs="value:kc_f0_t4.value" uid="kc_f0_o4" uid_parent="kc_f0"/>
+        <Tunnel _id="Out5" inputs="value:kc_f0_t5.value" uid="kc_f0_o5" uid_parent="kc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Acknowledge" selector="True" selectout="" uid="kc_f1" uid_parent="kc">
+        <Tunnel _id="In1" outputs="value:kc_f1_t1.value" uid="kc_f1_t1" uid_parent="kc_f1"/>
+        <Tunnel _id="In2" outputs="value:kc_f1_t2.value" uid="kc_f1_t2" uid_parent="kc_f1"/>
+        <Tunnel _id="In3" outputs="value:kc_f1_t3.value" uid="kc_f1_t3" uid_parent="kc_f1"/>
+        <Tunnel _id="In4" outputs="value:kc_f1_t4.value" uid="kc_f1_t4" uid_parent="kc_f1"/>
+        <Tunnel _id="In5" outputs="value:" uid="kc_f1_t5" uid_parent="kc_f1"/>
+        <Tunnel _id="In6" outputs="value:kc_f1_t6.value" uid="kc_f1_t6" uid_parent="kc_f1"/>
+        <Tunnel _id="In7" outputs="value:kc_f1_t7.value" uid="kc_f1_t7" uid_parent="kc_f1"/>
+        <Constant outputs="value:kc_f1e.value" type="array{string}" uid="kc_f1e" uid_parent="kc_f1" value="[]"/>
+        <Node _name="Delete From Array" inputs="array:kc_f1_t1.value,index:kc_f1_t6.value" outputs="array w/ subset deleted:kc_f1xt.v" uid="kc_f1xt" uid_parent="kc_f1"/>
+        <Node _name="Select" inputs="t:kc_f1e.value,s:kc_f1_t7.value,f:kc_f1xt.v" outputs="s? t\3Af:kc_f1st.s? t\3Af" uid="kc_f1st" uid_parent="kc_f1"/>
+        <Node _name="Delete From Array" inputs="array:kc_f1_t2.value,index:kc_f1_t6.value" outputs="array w/ subset deleted:kc_f1xv.v" uid="kc_f1xv" uid_parent="kc_f1"/>
+        <Node _name="Select" inputs="t:kc_f1e.value,s:kc_f1_t7.value,f:kc_f1xv.v" outputs="s? t\3Af:kc_f1sv.s? t\3Af" uid="kc_f1sv" uid_parent="kc_f1"/>
+        <Node _name="Delete From Array" inputs="array:kc_f1_t3.value,index:kc_f1_t6.value" outputs="array w/ subset deleted:kc_f1xs.v" uid="kc_f1xs" uid_parent="kc_f1"/>
+        <Node _name="Select" inputs="t:kc_f1e.value,s:kc_f1_t7.value,f:kc_f1xs.v" outputs="s? t\3Af:kc_f1ss.s? t\3Af" uid="kc_f1ss" uid_parent="kc_f1"/>
+        <Node _name="Delete From Array" inputs="array:kc_f1_t4.value,index:kc_f1_t6.value" outputs="array w/ subset deleted:kc_f1xm.v" uid="kc_f1xm" uid_parent="kc_f1"/>
+        <Node _name="Select" inputs="t:kc_f1e.value,s:kc_f1_t7.value,f:kc_f1xm.v" outputs="s? t\3Af:kc_f1sm.s? t\3Af" uid="kc_f1sm" uid_parent="kc_f1"/>
+        <Constant outputs="value:kc_f1y.value" type="bool" uid="kc_f1y" uid_parent="kc_f1" value="true"/>
+        <Tunnel _id="Out1" inputs="value:kc_f1st.s? t\3Af" uid="kc_f1_o1" uid_parent="kc_f1"/>
+        <Tunnel _id="Out2" inputs="value:kc_f1sv.s? t\3Af" uid="kc_f1_o2" uid_parent="kc_f1"/>
+        <Tunnel _id="Out3" inputs="value:kc_f1ss.s? t\3Af" uid="kc_f1_o3" uid_parent="kc_f1"/>
+        <Tunnel _id="Out4" inputs="value:kc_f1sm.s? t\3Af" uid="kc_f1_o4" uid_parent="kc_f1"/>
+        <Tunnel _id="Out5" inputs="value:kc_f1y.value" uid="kc_f1_o5" uid_parent="kc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:kc.t" uid="kc_O1" uid_parent="kc"/>
+      <Tunnel _id="Out2" outputs="value:kc.v" uid="kc_O2" uid_parent="kc"/>
+      <Tunnel _id="Out3" outputs="value:kc.s" uid="kc_O3" uid_parent="kc"/>
+      <Tunnel _id="Out4" outputs="value:kc.m" uid="kc_O4" uid_parent="kc"/>
+      <Tunnel _id="Out5" outputs="value:kc.dirty0" uid="kc_O5" uid_parent="kc"/>
+    </Structure>
+    <Constant outputs="value:ac_ff.value" type="bool" uid="ac_ff" uid_parent="sl" value="false"/>
+    <Structure _name="Case Structure" selectin="kc.dirty0" uid="ac" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:kc.t" uid="ac_i1" uid_parent="ac"/>
+      <Tunnel _id="In2" inputs="value:kc.v" uid="ac_i2" uid_parent="ac"/>
+      <Tunnel _id="In3" inputs="value:kc.s" uid="ac_i3" uid_parent="ac"/>
+      <Tunnel _id="In4" inputs="value:kc.m" uid="ac_i4" uid_parent="ac"/>
+      <Tunnel _id="In5" inputs="value:ac_ff.value" uid="ac_i5" uid_parent="ac"/>
+      <CaseFrame label="Rows unchanged" selector="False" selectout="" uid="ac_f0" uid_parent="ac">
+        <Tunnel _id="In1" outputs="value:" uid="ac_f0_t1" uid_parent="ac_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="ac_f0_t2" uid_parent="ac_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="ac_f0_t3" uid_parent="ac_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="ac_f0_t4" uid_parent="ac_f0"/>
+        <Tunnel _id="In5" outputs="value:ac_f0_t5.value" uid="ac_f0_t5" uid_parent="ac_f0"/>
+        <Tunnel _id="Out1" inputs="value:ac_f0_t5.value" uid="ac_f0_o1" uid_parent="ac_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Show the rows" selector="True" selectout="" uid="ac_f1" uid_parent="ac">
+        <Tunnel _id="In1" outputs="value:ac_f1_t1.value" uid="ac_f1_t1" uid_parent="ac_f1"/>
+        <Tunnel _id="In2" outputs="value:ac_f1_t2.value" uid="ac_f1_t2" uid_parent="ac_f1"/>
+        <Tunnel _id="In3" outputs="value:ac_f1_t3.value" uid="ac_f1_t3" uid_parent="ac_f1"/>
+        <Tunnel _id="In4" outputs="value:ac_f1_t4.value" uid="ac_f1_t4" uid_parent="ac_f1"/>
+        <Tunnel _id="In5" outputs="value:ac_f1_t5.value" uid="ac_f1_t5" uid_parent="ac_f1"/>
+        <Structure _name="For Loop" count="" label="One row per file" maxin="" maxout="" uid="ac_f1r" uid_parent="ac_f1">
+          <Tunnel _id="In1" inputs="value:ac_f1_t1.value" mode="index" outputs="value:ac_f1r0.value" uid="ac_f1r0" uid_parent="ac_f1r"/>
+          <Tunnel _id="In2" inputs="value:ac_f1_t2.value" mode="index" outputs="value:ac_f1r1.value" uid="ac_f1r1" uid_parent="ac_f1r"/>
+          <Tunnel _id="In3" inputs="value:ac_f1_t3.value" mode="index" outputs="value:ac_f1r2.value" uid="ac_f1r2" uid_parent="ac_f1r"/>
+          <Tunnel _id="In4" inputs="value:ac_f1_t4.value" mode="index" outputs="value:ac_f1r3.value" uid="ac_f1r3" uid_parent="ac_f1r"/>
+          <Node _name="Build Array" inputs="element:ac_f1r0.value,element:ac_f1r1.value,element:ac_f1r2.value,element:ac_f1r3.value" outputs="appended array:ac_f1ra.appended array" uid="ac_f1ra" uid_parent="ac_f1r"/>
+          <Tunnel _id="Out1" inputs="value:ac_f1ra.appended array" mode="index" outputs="value:ac_f1items.value" uid="ac_f1items" uid_parent="ac_f1r"/>
+        </Structure>
+        <Node _name="Property Node" fields="write+Item Names" link="Alarms" inputs="error in (no error):,Item Names:ac_f1items.value" outputs="error out:" type="{LV.MulticolumnListbox}" uid="ac_f1in" uid_parent="ac_f1"/>
+        <Tunnel _id="Out1" inputs="value:ac_f1_t5.value" uid="ac_f1_o1" uid_parent="ac_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:ac.dirty" uid="ac_O1" uid_parent="ac"/>
+    </Structure>
+    <Node _name="Array Size" inputs="array:kc.t" outputs="size(s):nk.size(s)" uid="nk" uid_parent="sl"/>
+    <Indicator _name="Active Alarms" description="How many alarms are not acknowledged yet." inputs="value:nk.size(s)" type="int32" uid="nai" uid_parent="sl" value="0"/>
+    <Node _name="Greater Than 0?" inputs="x:nk.size(s)" outputs="x &gt; 0?:lit.x &gt; 0?" uid="lit" uid_parent="sl"/>
+    <Indicator _name="Alarm" description="Lit while an alarm is active." inputs="value:lit.x &gt; 0?" type="bool" uid="led" uid_parent="sl" value="false"/>
+    <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="sl" value="100"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:wnt..not. x?" uid="wnt" uid_parent="sl"/>
+    <Condition inputs="value:wnt..not. x?" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+</VI>

@@ -15,7 +15,13 @@
 		<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>
 		<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>
 		<Item Name="Examples" Type="Folder">
-			<Item Name="RemoteVI Demo Layout.vi" Type="VI" URL="../examples/RemoteVI Demo Layout.vi"/>
+			<Item Name="Application Example" Type="Folder">
+				<Item Name="RemoteVI App Alarms.vi" Type="VI" URL="../examples/Application Example/RemoteVI App Alarms.vi"/>
+				<Item Name="RemoteVI App Live Data.vi" Type="VI" URL="../examples/Application Example/RemoteVI App Live Data.vi"/>
+				<Item Name="RemoteVI App Log Files.vi" Type="VI" URL="../examples/Application Example/RemoteVI App Log Files.vi"/>
+				<Item Name="RemoteVI App Settings.vi" Type="VI" URL="../examples/Application Example/RemoteVI App Settings.vi"/>
+			</Item>
+			<Item Name="RemoteVI Application Example.vi" Type="VI" URL="../examples/RemoteVI Application Example.vi"/>
 			<Item Name="RemoteVI Demo.vi" Type="VI" URL="../examples/RemoteVI Demo.vi"/>
 		</Item>
 		<Item Name="Scripts" Type="Folder">
@@ -347,6 +353,83 @@
 				<Property Name="TgtF_productName" Type="Str">RemoteVI Demo</Property>
 				<Property Name="TgtF_targetfileGUID" Type="Str">{992BA1BE-8F8C-58E6-A301-34B4CFA9F152}</Property>
 				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Demo.exe</Property>
+				<Property Name="TgtF_versionIndependent" Type="Bool">false</Property>
+			</Item>
+			<Item Name="RemoteVI Application Example" Type="EXE">
+				<Property Name="App_copyErrors" Type="Bool">true</Property>
+				<Property Name="App_INI_aliasGUID" Type="Str">{9280FBF3-53C9-5AA2-8A47-70A4AD6A00F3}</Property>
+				<Property Name="App_INI_GUID" Type="Str">{216F369F-B495-5E25-B598-A5D16BB4EA23}</Property>
+				<Property Name="App_serverConfig.httpPort" Type="Int">8002</Property>
+				<Property Name="App_serverType" Type="Int">0</Property>
+				<Property Name="Bld_autoIncrement" Type="Bool">false</Property>
+				<Property Name="Bld_buildCacheID" Type="Str">{DC8C1132-7D55-5AD4-A92F-2400F055F117}</Property>
+				<Property Name="Bld_buildSpecName" Type="Str">RemoteVI Application Example</Property>
+				<Property Name="Bld_excludeInlineSubVIs" Type="Bool">true</Property>
+				<Property Name="Bld_excludeLibraryItems" Type="Bool">false</Property>
+				<Property Name="Bld_excludePolymorphicVIs" Type="Bool">true</Property>
+				<Property Name="Bld_localDestDir" Type="Path">../builds/RemoteVI Application Example</Property>
+				<Property Name="Bld_localDestDirType" Type="Str">relativeToProject</Property>
+				<Property Name="Bld_modifyLibraryFile" Type="Bool">true</Property>
+				<Property Name="Bld_previewCacheID" Type="Str">{00859DC2-A563-55AB-AF2D-21E21F85CCF7}</Property>
+				<Property Name="Bld_version.build" Type="Int">0</Property>
+				<Property Name="Bld_version.major" Type="Int">1</Property>
+				<Property Name="Destination[0].destName" Type="Str">RemoteVI Application Example.exe</Property>
+				<Property Name="Destination[0].path" Type="Path">../builds/RemoteVI Application Example/RemoteVI Application Example.exe</Property>
+				<Property Name="Destination[0].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="Destination[0].preserveHierarchy" Type="Bool">true</Property>
+				<Property Name="Destination[0].type" Type="Str">App</Property>
+				<Property Name="Destination[1].destName" Type="Str">Support Directory</Property>
+				<Property Name="Destination[1].path" Type="Path">../builds/RemoteVI Application Example/data</Property>
+				<Property Name="Destination[1].path.type" Type="Str">relativeToProject</Property>
+				<Property Name="DestinationCount" Type="Int">2</Property>
+				<Property Name="Source[0].itemID" Type="Str">{D799AE8F-52ED-55F5-9105-7C74C6F8EC98}</Property>
+				<Property Name="Source[0].type" Type="Str">Container</Property>
+				<Property Name="Source[1].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[1].itemID" Type="Ref">/My Computer/Examples/RemoteVI Application Example.vi</Property>
+				<Property Name="Source[1].sourceInclusion" Type="Str">TopLevel</Property>
+				<Property Name="Source[1].type" Type="Str">VI</Property>
+				<Property Name="Source[2].Library.allowMissingMembers" Type="Bool">true</Property>
+				<Property Name="Source[2].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[2].itemID" Type="Ref">/My Computer/RemoteVI.lvlib</Property>
+				<Property Name="Source[2].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[2].type" Type="Str">Library</Property>
+				<Property Name="Source[3].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[3].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/Server/RemoteVI Server Loop.vi</Property>
+				<Property Name="Source[3].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[3].type" Type="Str">VI</Property>
+				<Property Name="Source[4].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[4].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/App/RemoteVI Landing Server.vi</Property>
+				<Property Name="Source[4].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[4].type" Type="Str">VI</Property>
+				<Property Name="Source[5].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[5].itemID" Type="Ref">/My Computer/RemoteVI.lvlib/API/RemoteVI Status Panel.vi</Property>
+				<Property Name="Source[5].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[5].type" Type="Str">VI</Property>
+				<Property Name="Source[6].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[6].itemID" Type="Ref">/My Computer/Examples/Application Example/RemoteVI App Live Data.vi</Property>
+				<Property Name="Source[6].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[6].type" Type="Str">VI</Property>
+				<Property Name="Source[7].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[7].itemID" Type="Ref">/My Computer/Examples/Application Example/RemoteVI App Log Files.vi</Property>
+				<Property Name="Source[7].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[7].type" Type="Str">VI</Property>
+				<Property Name="Source[8].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[8].itemID" Type="Ref">/My Computer/Examples/Application Example/RemoteVI App Alarms.vi</Property>
+				<Property Name="Source[8].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[8].type" Type="Str">VI</Property>
+				<Property Name="Source[9].destinationIndex" Type="Int">0</Property>
+				<Property Name="Source[9].itemID" Type="Ref">/My Computer/Examples/Application Example/RemoteVI App Settings.vi</Property>
+				<Property Name="Source[9].sourceInclusion" Type="Str">Include</Property>
+				<Property Name="Source[9].type" Type="Str">VI</Property>
+				<Property Name="SourceCount" Type="Int">10</Property>
+				<Property Name="TgtF_companyName" Type="Str">Jan Goebel</Property>
+				<Property Name="TgtF_enableDebugging" Type="Bool">false</Property>
+				<Property Name="TgtF_fileDescription" Type="Str">RemoteVI Application Example - a splitter UI with screens in a subpanel, shared in a web browser</Property>
+				<Property Name="TgtF_internalName" Type="Str">RemoteVI Application Example</Property>
+				<Property Name="TgtF_legalCopyright" Type="Str">Copyright (c) 2026 Jan Goebel, MIT license</Property>
+				<Property Name="TgtF_productName" Type="Str">RemoteVI Application Example</Property>
+				<Property Name="TgtF_targetfileGUID" Type="Str">{DAD13FA5-675A-57F3-A454-2101882E19D5}</Property>
+				<Property Name="TgtF_targetfileName" Type="Str">RemoteVI Application Example.exe</Property>
 				<Property Name="TgtF_versionIndependent" Type="Bool">false</Property>
 			</Item>
 			<Item Name="RemoteVI Fixture" Type="EXE">

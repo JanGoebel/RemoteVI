@@ -1,0 +1,433 @@
+<VI _name="Style Panel.vi" description="Build tool of the RemoteVI examples (source\3A tools\5Cdev\5Caixml\5Cgen_style_panel.py). Restyles the front panel of a composed VI in place and saves it\3A the composer only makes generic controls. Run it once on a freshly composed VI (or on one whose controls are all still top-level)\2C with the VI idle. Steps\3A (1) every row with a Ctl is Replaced by that .ctl under Silver (a path relative to vi.lib\5Csilver_ctls\2C e.g. Numeric\5CKnob NI_Silver.ctl)\3B wires\2C data type\2C enum items and default value stay. (2) Tabs\3A each tab control gets as many pages as Pages names (Add Page)\2C the page labels\2C and fixed tabs of Tab Width\3B with Width above 0 the control - also one that is no tab control\2C such as a subpanel - is sized through its own pane (Set Scaling Scale Single Object\2C the window grown by the difference\2C scaling off again). (3) every row\3A moved onto page Page of the tab control Tab (Left/Top relative to the tab control) or\2C with Tab empty and Pane 0 or more\2C into that pane of the panel (Left/Top in pane coordinates)\2C otherwise placed at Left/Top\3B Width/Height (0\3A keep) set the size of a string\2C button\2C numeric\2C the visible area of a multicolumn listbox and the plot area of a graph\3B Text sets a boolean\27s text (and centres it)\3B Tip the tip strip\3B Show Label and Visible. (4) Window sets the panel bounds and the origin to 0\2C0. Controls are found anywhere on the panel by label (Find Controls). problems lists every row whose steps returned an error\2C with the code\3B the run goes on.">
+  <FreeLabel comment="Replace\2C tabs\2C place\2C window\2C save" uid="lbl" uid_parent="root"/>
+  <Control _name="VI" conIdx="0" connection="required" description="The VI to restyle. Saved in place." outputs="value:vi.value" type="path" uid="vi" uid_parent="root" value=""/>
+  <Control _name="Silver" conIdx="1" connection="required" description="The folder vi.lib\5Csilver_ctls of the LabVIEW running this." outputs="value:sv.value" type="path" uid="sv" uid_parent="root" value=""/>
+  <Control _name="Spec" conIdx="2" connection="required" description="LabVIEW XML file of a cluster spec{Rows\2C Tabs\2C Window} - written by tools\5Caixml\5Cstyle_rows.py. Rows\3A one per control. Tabs\3A pages and size of each tab control. Window\3A panel bounds in screen coordinates\2C all zero keeps them." outputs="value:spf.value" type="path" uid="spf" uid_parent="root" value=""/>
+  <Node _name="Read from Text File" inputs="file (use dialog):spf.value,error in:ei.value" outputs="refnum out:,text:rd.text,cancelled:,error out:rd.error out" uid="rd" uid_parent="root"/>
+  <Constant _name="spec type" outputs="value:spt.value" type="cluster{array{cluster{string.Label,string.Ctl,string.Tab,int32.Page,int32.Pane,int32.Left,int32.Top,int32.Width,int32.Height,string.Text,string.Tip,bool.Show Label,bool.Visible}}.Rows,array{cluster{string.Tab,array{string}.Pages,int32.Tab Width,int32.Width,int32.Height}}.Tabs,cluster{int32.Left,int32.Top,int32.Right,int32.Bottom}.Window,array{int32}.Splitters}" uid="spt" uid_parent="root" value="[[],[],[0,0,0,0],[]]"/>
+  <Node _name="Unflatten From XML" inputs="xml string:rd.text,type:spt.value,error in (no error):rd.error out" outputs="value:ux.value,error out:ux.error out" uid="ux" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Rows,Tabs,Window,Splitters" inputs="input cluster:ux.value" outputs="Rows:spec.Rows,Tabs:spec.Tabs,Window:spec.Window,Splitters:spec.Splitters" uid="spec" uid_parent="root"/>
+  <Control _name="error in" conIdx="8" connection="recommended" description="Error chain in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
+  <Node _name="Open VI Reference" inputs="vi path:vi.value,error in (no error):ux.error out" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:,error out:fp.error out,Front Panel:fp.fp" type="{LV.VI}" uid="fp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Panes[]" inputs="reference:fp.fp,error in (no error):fp.error out" outputs="reference out:,error out:pp.error out,Panes[]:pp.panes" type="{LV.Panel}" uid="pp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Splitters[]" inputs="reference:fp.fp,error in (no error):pp.error out" outputs="reference out:,error out:,Splitters[]:sps.s" type="{LV.Panel}" uid="sps" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Each splitter bar to its position" maxin="" maxout="" uid="spl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:sps.s" mode="index" outputs="value:spl_s.value" uid="spl_s" uid_parent="spl"/>
+    <Tunnel _id="In2" inputs="value:spec.Splitters" mode="index" outputs="value:spl_p.value" uid="spl_p" uid_parent="spl"/>
+    <Node _name="Property Node" fields="write+Position" inputs="reference:spl_s.value,Position:spl_p.value" outputs="reference out:,error out:" type="{LV.Splitter}" uid="spl_w" uid_parent="spl"/>
+  </Structure>
+  <Constant _name="no duplicate" outputs="value:nd.value" type="bool" uid="nd" uid_parent="root" value="false"/>
+  <Constant _name="true" outputs="value:tru.value" type="bool" uid="tru" uid_parent="root" value="true"/>
+  <Constant _name="false" outputs="value:fal.value" type="bool" uid="fal" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="" label="Replace each control that has a Ctl" maxin="" maxout="" uid="rl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:spec.Rows" mode="index" outputs="value:r_row.value" uid="r_row" uid_parent="rl"/>
+    <Tunnel _id="In2" inputs="value:fp.fp" outputs="value:r_fp.value" uid="r_fp" uid_parent="rl"/>
+    <Tunnel _id="In3" inputs="value:sv.value" outputs="value:r_sv.value" uid="r_sv" uid_parent="rl"/>
+    <ShiftReg uid="r_sr" uid_parent="rl">
+      <Left inputs="value:pp.error out" outputs="value:r_e.value" uid="r_srl" uid_parent="r_sr"/>
+      <Right inputs="value:r_ce.error out" outputs="value:r_end.value" uid="r_srr" uid_parent="r_sr"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="Label,Ctl" inputs="input cluster:r_row.value" outputs="Label:r_u.Label,Ctl:r_u.Ctl" uid="r_u" uid_parent="rl"/>
+    <Node _name="Empty String/Path?" inputs="string/path:r_u.Ctl" outputs="empty?:r_em.empty?" uid="r_em" uid_parent="rl"/>
+    <Structure _name="Case Structure" selectin="r_em.empty?" uid="r_cs" uid_parent="rl">
+      <Tunnel _id="In1" inputs="value:r_u.Label" uid="r_cs_i1" uid_parent="r_cs"/>
+      <Tunnel _id="In2" inputs="value:r_u.Ctl" uid="r_cs_i2" uid_parent="r_cs"/>
+      <Tunnel _id="In3" inputs="value:r_fp.value" uid="r_cs_i3" uid_parent="r_cs"/>
+      <Tunnel _id="In4" inputs="value:r_sv.value" uid="r_cs_i4" uid_parent="r_cs"/>
+      <Tunnel _id="In5" inputs="value:r_e.value" uid="r_cs_i5" uid_parent="r_cs"/>
+      <CaseFrame label="No Ctl\3A keep" selector="True" selectout="" uid="r_cs_f0" uid_parent="r_cs">
+        <Tunnel _id="In1" outputs="value:" uid="r_cs_f0_t1" uid_parent="r_cs_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="r_cs_f0_t2" uid_parent="r_cs_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="r_cs_f0_t3" uid_parent="r_cs_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="r_cs_f0_t4" uid_parent="r_cs_f0"/>
+        <Tunnel _id="In5" outputs="value:r_cs_f0_t5.value" uid="r_cs_f0_t5" uid_parent="r_cs_f0"/>
+        <Tunnel _id="Out1" inputs="value:r_cs_f0_t5.value" uid="r_cs_f0_o1" uid_parent="r_cs_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Replace with the .ctl" selector="False" selectout="" uid="r_cs_f1" uid_parent="r_cs">
+        <Tunnel _id="In1" outputs="value:r_cs_f1_t1.value" uid="r_cs_f1_t1" uid_parent="r_cs_f1"/>
+        <Tunnel _id="In2" outputs="value:r_cs_f1_t2.value" uid="r_cs_f1_t2" uid_parent="r_cs_f1"/>
+        <Tunnel _id="In3" outputs="value:r_cs_f1_t3.value" uid="r_cs_f1_t3" uid_parent="r_cs_f1"/>
+        <Tunnel _id="In4" outputs="value:r_cs_f1_t4.value" uid="r_cs_f1_t4" uid_parent="r_cs_f1"/>
+        <Tunnel _id="In5" outputs="value:r_cs_f1_t5.value" uid="r_cs_f1_t5" uid_parent="r_cs_f1"/>
+        <Node _name="Build Array" inputs="element:r_cs_f1_t1.value" outputs="appended array:r_cs_f1fd_l.appended array" uid="r_cs_f1fd_l" uid_parent="r_cs_f1"/>
+        <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:r_cs_f1_t3.value,labels:r_cs_f1fd_l.appended array,error in:r_cs_f1_t5.value" outputs="Controls:r_cs_f1fd_f.Controls,error out:r_cs_f1fd_f.error out" uid="r_cs_f1fd_f" uid_parent="r_cs_f1"/>
+        <Constant outputs="value:r_cs_f1fd_z.value" type="int32" uid="r_cs_f1fd_z" uid_parent="r_cs_f1" value="0"/>
+        <Node _name="Index Array" inputs="array:r_cs_f1fd_f.Controls,index:r_cs_f1fd_z.value" outputs="element:r_cs_f1fd_e.element" uid="r_cs_f1fd_e" uid_parent="r_cs_f1"/>
+        <Node _name="Build Path" inputs="base path:r_cs_f1_t4.value,name or relative path:r_cs_f1_t2.value" outputs="appended path:r_cs_f1bp.appended path" uid="r_cs_f1bp" uid_parent="r_cs_f1"/>
+        <Node _name="Property Node" fields="read+Value" inputs="reference:r_cs_f1fd_e.element" outputs="reference out:,error out:,Value:r_cs_f1v.value" type="{LV.Control}" uid="r_cs_f1v" uid_parent="r_cs_f1"/>
+        <Node _name="Invoke Node" target="Replace" type="{LV.Control}" inputs="reference:r_cs_f1fd_e.element,error in (no error):r_cs_f1fd_f.error out,Path:r_cs_f1bp.appended path" outputs="reference out:,error out:r_cs_f1rp.error out" uid="r_cs_f1rp" uid_parent="r_cs_f1"/>
+        <Node _name="Build Array" inputs="element:r_cs_f1_t1.value" outputs="appended array:r_cs_f1fn_l.appended array" uid="r_cs_f1fn_l" uid_parent="r_cs_f1"/>
+        <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:r_cs_f1_t3.value,labels:r_cs_f1fn_l.appended array,error in:r_cs_f1rp.error out" outputs="Controls:r_cs_f1fn_f.Controls,error out:r_cs_f1fn_f.error out" uid="r_cs_f1fn_f" uid_parent="r_cs_f1"/>
+        <Constant outputs="value:r_cs_f1fn_z.value" type="int32" uid="r_cs_f1fn_z" uid_parent="r_cs_f1" value="0"/>
+        <Node _name="Index Array" inputs="array:r_cs_f1fn_f.Controls,index:r_cs_f1fn_z.value" outputs="element:r_cs_f1fn_e.element" uid="r_cs_f1fn_e" uid_parent="r_cs_f1"/>
+        <Node _name="Property Node" fields="write+Value" inputs="reference:r_cs_f1fn_e.element,Value:r_cs_f1v.value" outputs="reference out:,error out:" type="{LV.Control}" uid="r_cs_f1vw" uid_parent="r_cs_f1"/>
+        <Tunnel _id="Out1" inputs="value:r_cs_f1fn_f.error out" uid="r_cs_f1_o1" uid_parent="r_cs_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:r_cs.err" uid="r_cs_O1" uid_parent="r_cs"/>
+    </Structure>
+    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:r_cs.err" outputs="code:r_code.code,source:r_code.source" uid="r_code" uid_parent="rl"/>
+    <Constant outputs="value:r_fmt.value" type="string" uid="r_fmt" uid_parent="rl" value="%s Replace %d %s"/>
+    <Node _name="Format Into String" inputs="format string:r_fmt.value,input 1:r_u.Label,input 2:r_code.code,input 3:r_code.source" outputs="resulting string:r_msg.resulting string" uid="r_msg" uid_parent="rl"/>
+    <Tunnel _id="Out1" inputs="value:r_msg.resulting string" mode="index" outputs="value:r_probs.value" uid="r_probs" uid_parent="rl"/>
+    <Call target="Clear Errors.vi" inputs="error in (no error):r_cs.err" outputs="error out:r_ce.error out" uid="r_ce" uid_parent="rl"/>
+  </Structure>
+  <Constant _name="tab class" outputs="value:tcl.value" type="ref{LV.TabControl}" uid="tcl" uid_parent="root" value=""/>
+  <Constant _name="fixed tabs" outputs="value:tfx.value" type="int32" uid="tfx" uid_parent="root" value="2"/>
+  <Structure _name="For Loop" count="" label="Pages of each tab control" maxin="" maxout="" uid="tl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:spec.Tabs" mode="index" outputs="value:t_row.value" uid="t_row" uid_parent="tl"/>
+    <Tunnel _id="In2" inputs="value:fp.fp" outputs="value:t_fp.value" uid="t_fp" uid_parent="tl"/>
+    <Tunnel _id="In3" inputs="value:tcl.value" outputs="value:t_cl.value" uid="t_cl" uid_parent="tl"/>
+    <Tunnel _id="In4" inputs="value:tfx.value" outputs="value:t_fx.value" uid="t_fx" uid_parent="tl"/>
+    <Tunnel _id="In5" inputs="value:ov.vi reference" outputs="value:t_vi.value" uid="t_vi" uid_parent="tl"/>
+    <Tunnel _id="In6" inputs="value:pp.panes" outputs="value:t_ps.value" uid="t_ps" uid_parent="tl"/>
+    <ShiftReg uid="t_sr" uid_parent="tl">
+      <Left inputs="value:r_end.value" outputs="value:t_e.value" uid="t_srl" uid_parent="t_sr"/>
+      <Right inputs="value:t_ce.error out" outputs="value:t_end.value" uid="t_srr" uid_parent="t_sr"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="Tab,Pages,Tab Width,Width,Height" inputs="input cluster:t_row.value" outputs="Tab:t_u.Tab,Pages:t_u.Pages,Tab Width:t_u.w,Width:t_u.W,Height:t_u.H" uid="t_u" uid_parent="tl"/>
+    <Node _name="Build Array" inputs="element:t_u.Tab" outputs="appended array:t_fd_l.appended array" uid="t_fd_l" uid_parent="tl"/>
+    <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:t_fp.value,labels:t_fd_l.appended array,error in:t_e.value" outputs="Controls:t_fd_f.Controls,error out:t_fd_f.error out" uid="t_fd_f" uid_parent="tl"/>
+    <Constant outputs="value:t_fd_z.value" type="int32" uid="t_fd_z" uid_parent="tl" value="0"/>
+    <Node _name="Index Array" inputs="array:t_fd_f.Controls,index:t_fd_z.value" outputs="element:t_fd_e.element" uid="t_fd_e" uid_parent="tl"/>
+    <Node _name="To More Specific Class" inputs="target class:t_cl.value,reference:t_fd_e.element,error in:t_fd_f.error out" outputs="specific class reference:t_tab.ref,error out:t_tab.error out" uid="t_tab" uid_parent="tl"/>
+    <Constant outputs="value:t_h.value" type="int32" uid="t_h" uid_parent="tl" value="24"/>
+    <Constant outputs="value:t_dim0.value" type="cluster{int32.Width,int32.Height}" uid="t_dim0" uid_parent="tl" value="[110,24]"/>
+    <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:t_dim0.value,Width:t_u.w,Height:t_h.value" outputs="output cluster:t_dim.output cluster" uid="t_dim" uid_parent="tl"/>
+    <Node _name="Property Node" fields="write+Tab Size,write+Fixed Tab Dimension,read+Pages" inputs="reference:t_tab.ref,error in (no error):t_tab.error out,Tab Size:t_fx.value,Fixed Tab Dimension:t_dim.output cluster" outputs="reference out:,error out:t_p0.error out,Pages:t_p0.pages" type="{LV.TabControl}" uid="t_p0" uid_parent="tl"/>
+    <Node _name="Array Size" inputs="array:t_u.Pages" outputs="size(s):t_nw.size" uid="t_nw" uid_parent="tl"/>
+    <Node _name="Array Size" inputs="array:t_p0.pages" outputs="size(s):t_nh.size" uid="t_nh" uid_parent="tl"/>
+    <Node _name="Subtract" inputs="x:t_nw.size,y:t_nh.size" outputs="x-y:t_add.x-y" uid="t_add" uid_parent="tl"/>
+    <Structure _name="For Loop" count="" label="Add the missing pages" maxin="t_add.x-y" maxout="" uid="ta" uid_parent="tl">
+      <Tunnel _id="In1" inputs="value:t_tab.ref" outputs="value:ta_r.value" uid="ta_r" uid_parent="ta"/>
+      <ShiftReg uid="ta_sr" uid_parent="ta">
+        <Left inputs="value:t_p0.error out" outputs="value:ta_e.value" uid="ta_srl" uid_parent="ta_sr"/>
+        <Right inputs="value:ta_ap.error out" outputs="value:ta_end.value" uid="ta_srr" uid_parent="ta_sr"/>
+      </ShiftReg>
+      <Constant outputs="value:ta_k.value" type="int32" uid="ta_k" uid_parent="ta" value="0"/>
+      <Constant outputs="value:ta_a.value" type="bool" uid="ta_a" uid_parent="ta" value="true"/>
+      <Node _name="Invoke Node" target="Add Page" type="{LV.TabControl}" inputs="reference:ta_r.value,error in (no error):ta_e.value,Page:ta_k.value,After:ta_a.value" outputs="reference out:,error out:ta_ap.error out" uid="ta_ap" uid_parent="ta"/>
+    </Structure>
+    <Node _name="Property Node" fields="read+Pages" inputs="reference:t_tab.ref,error in (no error):ta_end.value" outputs="reference out:,error out:t_p1.error out,Pages:t_p1.pages" type="{LV.TabControl}" uid="t_p1" uid_parent="tl"/>
+    <Structure _name="For Loop" count="" label="Name each page" maxin="" maxout="" uid="tn" uid_parent="tl">
+      <Tunnel _id="In1" inputs="value:t_p1.pages" mode="index" outputs="value:tn_p.value" uid="tn_p" uid_parent="tn"/>
+      <Tunnel _id="In2" inputs="value:t_u.Pages" mode="index" outputs="value:tn_n.value" uid="tn_n" uid_parent="tn"/>
+      <ShiftReg uid="tn_sr" uid_parent="tn">
+        <Left inputs="value:t_p1.error out" outputs="value:tn_e.value" uid="tn_srl" uid_parent="tn_sr"/>
+        <Right inputs="value:tn_pw.error out" outputs="value:tn_end.value" uid="tn_srr" uid_parent="tn_sr"/>
+      </ShiftReg>
+      <Node _name="Property Node" fields="write+Page Label" inputs="reference:tn_p.value,error in (no error):tn_e.value,Page Label:tn_n.value" outputs="reference out:,error out:tn_pw.error out" type="{LV.Page}" uid="tn_pw" uid_parent="tn"/>
+      <Node _name="Property Node" fields="write+Tab Caption" inputs="reference:tn_p.value,Tab Caption:tn_n.value" outputs="reference out:,error out:" type="{LV.Page}" uid="tn_pc" uid_parent="tn"/>
+    </Structure>
+    <Node _name="Greater Than 0?" inputs="x:t_u.W" outputs="x &gt; 0?:t_hs.x &gt; 0?" uid="t_hs" uid_parent="tl"/>
+    <Call target="Clear Errors.vi" inputs="error in (no error):tn_end.value" outputs="error out:t_clr.error out" uid="t_clr" uid_parent="tl"/>
+    <Structure _name="Case Structure" selectin="t_hs.x &gt; 0?" uid="t_sz" uid_parent="tl">
+      <Tunnel _id="In1" inputs="value:t_fd_e.element" uid="t_sz_i1" uid_parent="t_sz"/>
+      <Tunnel _id="In2" inputs="value:t_vi.value" uid="t_sz_i2" uid_parent="t_sz"/>
+      <Tunnel _id="In3" inputs="value:t_ps.value" uid="t_sz_i3" uid_parent="t_sz"/>
+      <Tunnel _id="In4" inputs="value:t_u.W" uid="t_sz_i4" uid_parent="t_sz"/>
+      <Tunnel _id="In5" inputs="value:t_u.H" uid="t_sz_i5" uid_parent="t_sz"/>
+      <Tunnel _id="In6" inputs="value:t_clr.error out" uid="t_sz_i6" uid_parent="t_sz"/>
+      <CaseFrame label="Keep the size" selector="False" selectout="" uid="t_sz_f0" uid_parent="t_sz">
+        <Tunnel _id="In1" outputs="value:" uid="t_sz_f0_t1" uid_parent="t_sz_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="t_sz_f0_t2" uid_parent="t_sz_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="t_sz_f0_t3" uid_parent="t_sz_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="t_sz_f0_t4" uid_parent="t_sz_f0"/>
+        <Tunnel _id="In5" outputs="value:" uid="t_sz_f0_t5" uid_parent="t_sz_f0"/>
+        <Tunnel _id="In6" outputs="value:t_sz_f0_t6.value" uid="t_sz_f0_t6" uid_parent="t_sz_f0"/>
+        <Tunnel _id="Out1" inputs="value:t_sz_f0_t6.value" uid="t_sz_f0_o1" uid_parent="t_sz_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Scale the tab control with the pane once" selector="True" selectout="" uid="t_sz_f1" uid_parent="t_sz">
+        <Tunnel _id="In1" outputs="value:t_sz_f1_t1.value" uid="t_sz_f1_t1" uid_parent="t_sz_f1"/>
+        <Tunnel _id="In2" outputs="value:t_sz_f1_t2.value" uid="t_sz_f1_t2" uid_parent="t_sz_f1"/>
+        <Tunnel _id="In3" outputs="value:t_sz_f1_t3.value" uid="t_sz_f1_t3" uid_parent="t_sz_f1"/>
+        <Tunnel _id="In4" outputs="value:t_sz_f1_t4.value" uid="t_sz_f1_t4" uid_parent="t_sz_f1"/>
+        <Tunnel _id="In5" outputs="value:t_sz_f1_t5.value" uid="t_sz_f1_t5" uid_parent="t_sz_f1"/>
+        <Tunnel _id="In6" outputs="value:t_sz_f1_t6.value" uid="t_sz_f1_t6" uid_parent="t_sz_f1"/>
+        <Node _name="Property Node" fields="read+OwningPane" inputs="reference:t_sz_f1_t1.value,error in (no error):t_sz_f1_t6.value" outputs="OwningPane:t_sz_f1p.element,reference out:,error out:t_sz_f1op.error out" type="{LV.Control}" uid="t_sz_f1op" uid_parent="t_sz_f1"/>
+        <Constant outputs="value:t_sz_f1m2.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="t_sz_f1m2" uid_parent="t_sz_f1" value="2"/>
+        <Constant outputs="value:t_sz_f1m0.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="t_sz_f1m0" uid_parent="t_sz_f1" value="0"/>
+        <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:t_sz_f1p.element,error in (no error):t_sz_f1op.error out,ScalingMode:t_sz_f1m2.value,ScalableObj:t_sz_f1_t1.value" outputs="reference out:,error out:t_sz_f1s1.error out" uid="t_sz_f1s1" uid_parent="t_sz_f1"/>
+        <Node _name="Property Node" fields="read+Bounds" inputs="reference:t_sz_f1_t1.value,error in (no error):t_sz_f1s1.error out" outputs="reference out:,error out:t_sz_f1b.error out,Bounds:t_sz_f1b.b" type="{LV.Control}" uid="t_sz_f1b" uid_parent="t_sz_f1"/>
+        <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:t_sz_f1b.b" outputs="Width:t_sz_f1bu.w,Height:t_sz_f1bu.h" uid="t_sz_f1bu" uid_parent="t_sz_f1"/>
+        <Node _name="Property Node" fields="read+Front Panel Window\3APanel Bounds" inputs="reference:t_sz_f1_t2.value,error in (no error):t_sz_f1b.error out" outputs="reference out:,error out:t_sz_f1wr.error out,Front Panel Window\3APanel Bounds:t_sz_f1wr.pb" type="{LV.VI}" uid="t_sz_f1wr" uid_parent="t_sz_f1"/>
+        <Node _name="Unbundle By Name" fields="left,top,right,bottom" inputs="input cluster:t_sz_f1wr.pb" outputs="left:t_sz_f1wu.l,top:t_sz_f1wu.t,right:t_sz_f1wu.r,bottom:t_sz_f1wu.b" uid="t_sz_f1wu" uid_parent="t_sz_f1"/>
+        <Node _name="Subtract" inputs="x:t_sz_f1_t4.value,y:t_sz_f1bu.w" outputs="x-y:t_sz_f1dw.x-y" uid="t_sz_f1dw" uid_parent="t_sz_f1"/>
+        <Node _name="Subtract" inputs="x:t_sz_f1_t5.value,y:t_sz_f1bu.h" outputs="x-y:t_sz_f1dh.x-y" uid="t_sz_f1dh" uid_parent="t_sz_f1"/>
+        <Node _name="Subtract" inputs="x:t_sz_f1wu.r,y:t_sz_f1wu.l" outputs="x-y:t_sz_f1ow.x-y" uid="t_sz_f1ow" uid_parent="t_sz_f1"/>
+        <Node _name="Subtract" inputs="x:t_sz_f1wu.b,y:t_sz_f1wu.t" outputs="x-y:t_sz_f1oh.x-y" uid="t_sz_f1oh" uid_parent="t_sz_f1"/>
+        <Node _name="Add" inputs="x:t_sz_f1ow.x-y,y:t_sz_f1dw.x-y" outputs="x+y:t_sz_f1nr.x+y" uid="t_sz_f1nr" uid_parent="t_sz_f1"/>
+        <Constant outputs="value:t_sz_f1y0.value" type="int32" uid="t_sz_f1y0" uid_parent="t_sz_f1" value="40"/>
+        <Constant outputs="value:t_sz_f1x0.value" type="int32" uid="t_sz_f1x0" uid_parent="t_sz_f1" value="0"/>
+        <Node _name="Add" inputs="x:t_sz_f1oh.x-y,y:t_sz_f1dh.x-y" outputs="x+y:t_sz_f1nh.x+y" uid="t_sz_f1nh" uid_parent="t_sz_f1"/>
+        <Node _name="Add" inputs="x:t_sz_f1nh.x+y,y:t_sz_f1y0.value" outputs="x+y:t_sz_f1nb.x+y" uid="t_sz_f1nb" uid_parent="t_sz_f1"/>
+        <Node _name="Bundle By Name" fields="left,top,right,bottom" inputs="input cluster:t_sz_f1wr.pb,left:t_sz_f1x0.value,top:t_sz_f1y0.value,right:t_sz_f1nr.x+y,bottom:t_sz_f1nb.x+y" outputs="output cluster:t_sz_f1nw.output cluster" uid="t_sz_f1nw" uid_parent="t_sz_f1"/>
+        <Node _name="Property Node" fields="write+Front Panel Window\3APanel Bounds" inputs="reference:t_sz_f1_t2.value,error in (no error):t_sz_f1wr.error out,Front Panel Window\3APanel Bounds:t_sz_f1nw.output cluster" outputs="reference out:,error out:t_sz_f1ww.error out" type="{LV.VI}" uid="t_sz_f1ww" uid_parent="t_sz_f1"/>
+        <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:t_sz_f1p.element,error in (no error):t_sz_f1ww.error out,ScalingMode:t_sz_f1m0.value,ScalableObj:t_sz_f1_t1.value" outputs="reference out:,error out:t_sz_f1s0.error out" uid="t_sz_f1s0" uid_parent="t_sz_f1"/>
+        <Tunnel _id="Out1" inputs="value:t_sz_f1s0.error out" uid="t_sz_f1_o1" uid_parent="t_sz_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:t_sz.err" uid="t_sz_O1" uid_parent="t_sz"/>
+    </Structure>
+    <Node _name="Merge Errors" inputs="error in:t_sz.err,error in:tn_end.value" outputs="error out:t_mg.error out" uid="t_mg" uid_parent="tl"/>
+    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:t_mg.error out" outputs="code:t_code.code,source:t_code.source" uid="t_code" uid_parent="tl"/>
+    <Constant outputs="value:t_fmt.value" type="string" uid="t_fmt" uid_parent="tl" value="%s Tabs %d %s"/>
+    <Node _name="Format Into String" inputs="format string:t_fmt.value,input 1:t_u.Tab,input 2:t_code.code,input 3:t_code.source" outputs="resulting string:t_msg.resulting string" uid="t_msg" uid_parent="tl"/>
+    <Tunnel _id="Out1" inputs="value:t_msg.resulting string" mode="index" outputs="value:t_probs.value" uid="t_probs" uid_parent="tl"/>
+    <Call target="Clear Errors.vi" inputs="error in (no error):t_mg.error out" outputs="error out:t_ce.error out" uid="t_ce" uid_parent="tl"/>
+  </Structure>
+  <Constant _name="string class" outputs="value:scl.value" type="ref{LV.String}" uid="scl" uid_parent="root" value=""/>
+  <Constant _name="graph class" outputs="value:gcl.value" type="ref{LV.WaveformGraph}" uid="gcl" uid_parent="root" value=""/>
+  <Constant _name="boolean class" outputs="value:bcl.value" type="ref{LV.Boolean}" uid="bcl" uid_parent="root" value=""/>
+  <Structure _name="For Loop" count="" label="Move and set each control" maxin="" maxout="" uid="pl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:spec.Rows" mode="index" outputs="value:p_row.value" uid="p_row" uid_parent="pl"/>
+    <Tunnel _id="In2" inputs="value:fp.fp" outputs="value:p_fp.value" uid="p_fp" uid_parent="pl"/>
+    <Tunnel _id="In3" inputs="value:pp.panes" outputs="value:p_ps.value" uid="p_ps" uid_parent="pl"/>
+    <Tunnel _id="In4" inputs="value:tcl.value" outputs="value:p_tcl.value" uid="p_tcl" uid_parent="pl"/>
+    <Tunnel _id="In5" inputs="value:nd.value" outputs="value:p_nd.value" uid="p_nd" uid_parent="pl"/>
+    <Tunnel _id="In6" inputs="value:scl.value" outputs="value:p_scl.value" uid="p_scl" uid_parent="pl"/>
+    <Tunnel _id="In7" inputs="value:gcl.value" outputs="value:p_gcl.value" uid="p_gcl" uid_parent="pl"/>
+    <Tunnel _id="In8" inputs="value:bcl.value" outputs="value:p_bcl.value" uid="p_bcl" uid_parent="pl"/>
+    <Tunnel _id="In9" inputs="value:tru.value" outputs="value:p_tru.value" uid="p_tru" uid_parent="pl"/>
+    <Tunnel _id="In10" inputs="value:fal.value" outputs="value:p_fal.value" uid="p_fal" uid_parent="pl"/>
+    <ShiftReg uid="p_sr" uid_parent="pl">
+      <Left inputs="value:wc.err" outputs="value:p_e.value" uid="p_srl" uid_parent="p_sr"/>
+      <Right inputs="value:p_ce.error out" outputs="value:p_end.value" uid="p_srr" uid_parent="p_sr"/>
+    </ShiftReg>
+    <Node _name="Unbundle By Name" fields="Label,Tab,Page,Pane,Left,Top,Width,Height,Text,Tip,Show Label,Visible" inputs="input cluster:p_row.value" outputs="Label:p_u.Label,Tab:p_u.Tab,Page:p_u.Page,Pane:p_u.Pane,Left:p_u.Left,Top:p_u.Top,Width:p_u.Width,Height:p_u.Height,Text:p_u.Text,Tip:p_u.Tip,Show Label:p_u.ShowLabel,Visible:p_u.Visible" uid="p_u" uid_parent="pl"/>
+    <Node _name="Build Array" inputs="element:p_u.Label" outputs="appended array:p_fd_l.appended array" uid="p_fd_l" uid_parent="pl"/>
+    <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:p_fp.value,labels:p_fd_l.appended array,error in:p_e.value" outputs="Controls:p_fd_f.Controls,error out:p_fd_f.error out" uid="p_fd_f" uid_parent="pl"/>
+    <Constant outputs="value:p_fd_z.value" type="int32" uid="p_fd_z" uid_parent="pl" value="0"/>
+    <Node _name="Index Array" inputs="array:p_fd_f.Controls,index:p_fd_z.value" outputs="element:p_fd_e.element" uid="p_fd_e" uid_parent="pl"/>
+    <Constant outputs="value:p_pos0.value" type="cluster{int32.Left,int32.Top}" uid="p_pos0" uid_parent="pl" value="[0,0]"/>
+    <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:p_pos0.value,Left:p_u.Left,Top:p_u.Top" outputs="output cluster:p_pos.output cluster" uid="p_pos" uid_parent="pl"/>
+    <Node _name="Empty String/Path?" inputs="string/path:p_u.Tab" outputs="empty?:p_nt.empty?" uid="p_nt" uid_parent="pl"/>
+    <Structure _name="Case Structure" selectin="p_nt.empty?" uid="p_cs" uid_parent="pl">
+      <Tunnel _id="In1" inputs="value:p_fd_e.element" uid="p_cs_i1" uid_parent="p_cs"/>
+      <Tunnel _id="In2" inputs="value:p_fd_f.error out" uid="p_cs_i2" uid_parent="p_cs"/>
+      <Tunnel _id="In3" inputs="value:p_pos.output cluster" uid="p_cs_i3" uid_parent="p_cs"/>
+      <Tunnel _id="In4" inputs="value:p_u.Tab" uid="p_cs_i4" uid_parent="p_cs"/>
+      <Tunnel _id="In5" inputs="value:p_u.Page" uid="p_cs_i5" uid_parent="p_cs"/>
+      <Tunnel _id="In6" inputs="value:p_u.Pane" uid="p_cs_i6" uid_parent="p_cs"/>
+      <Tunnel _id="In7" inputs="value:p_ps.value" uid="p_cs_i7" uid_parent="p_cs"/>
+      <Tunnel _id="In8" inputs="value:p_fp.value" uid="p_cs_i8" uid_parent="p_cs"/>
+      <Tunnel _id="In9" inputs="value:p_tcl.value" uid="p_cs_i9" uid_parent="p_cs"/>
+      <Tunnel _id="In10" inputs="value:p_nd.value" uid="p_cs_i10" uid_parent="p_cs"/>
+      <CaseFrame label="Tab empty\3A pane or panel" selector="True" selectout="" uid="p_cs_f0" uid_parent="p_cs">
+        <Tunnel _id="In1" outputs="value:p_cs_f0_t1.value" uid="p_cs_f0_t1" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In2" outputs="value:p_cs_f0_t2.value" uid="p_cs_f0_t2" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In3" outputs="value:p_cs_f0_t3.value" uid="p_cs_f0_t3" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="p_cs_f0_t4" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In5" outputs="value:" uid="p_cs_f0_t5" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In6" outputs="value:p_cs_f0_t6.value" uid="p_cs_f0_t6" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In7" outputs="value:p_cs_f0_t7.value" uid="p_cs_f0_t7" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In8" outputs="value:" uid="p_cs_f0_t8" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In9" outputs="value:" uid="p_cs_f0_t9" uid_parent="p_cs_f0"/>
+        <Tunnel _id="In10" outputs="value:p_cs_f0_t10.value" uid="p_cs_f0_t10" uid_parent="p_cs_f0"/>
+        <Node _name="Less Than 0?" inputs="x:p_cs_f0_t6.value" outputs="x &lt; 0?:p_cs_f0neg.x &lt; 0?" uid="p_cs_f0neg" uid_parent="p_cs_f0"/>
+        <Structure _name="Case Structure" selectin="p_cs_f0neg.x &lt; 0?" uid="p_cs_f0pc" uid_parent="p_cs_f0">
+          <Tunnel _id="In1" inputs="value:p_cs_f0_t1.value" uid="p_cs_f0pc_i1" uid_parent="p_cs_f0pc"/>
+          <Tunnel _id="In2" inputs="value:p_cs_f0_t2.value" uid="p_cs_f0pc_i2" uid_parent="p_cs_f0pc"/>
+          <Tunnel _id="In3" inputs="value:p_cs_f0_t3.value" uid="p_cs_f0pc_i3" uid_parent="p_cs_f0pc"/>
+          <Tunnel _id="In4" inputs="value:p_cs_f0_t6.value" uid="p_cs_f0pc_i4" uid_parent="p_cs_f0pc"/>
+          <Tunnel _id="In5" inputs="value:p_cs_f0_t7.value" uid="p_cs_f0pc_i5" uid_parent="p_cs_f0pc"/>
+          <Tunnel _id="In6" inputs="value:p_cs_f0_t10.value" uid="p_cs_f0pc_i6" uid_parent="p_cs_f0pc"/>
+          <CaseFrame label="No pane\3A place" selector="True" selectout="" uid="p_cs_f0pc_f0" uid_parent="p_cs_f0pc">
+            <Tunnel _id="In1" outputs="value:p_cs_f0pc_f0_t1.value" uid="p_cs_f0pc_f0_t1" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="In2" outputs="value:p_cs_f0pc_f0_t2.value" uid="p_cs_f0pc_f0_t2" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="In3" outputs="value:p_cs_f0pc_f0_t3.value" uid="p_cs_f0pc_f0_t3" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="In4" outputs="value:" uid="p_cs_f0pc_f0_t4" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="In5" outputs="value:" uid="p_cs_f0pc_f0_t5" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="In6" outputs="value:" uid="p_cs_f0pc_f0_t6" uid_parent="p_cs_f0pc_f0"/>
+            <Node _name="Property Node" fields="write+Position" inputs="reference:p_cs_f0pc_f0_t1.value,error in (no error):p_cs_f0pc_f0_t2.value,Position:p_cs_f0pc_f0_t3.value" outputs="reference out:,error out:p_cs_f0pc_f0wp.error out" type="{LV.Control}" uid="p_cs_f0pc_f0wp" uid_parent="p_cs_f0pc_f0"/>
+            <Tunnel _id="Out1" inputs="value:p_cs_f0pc_f0wp.error out" uid="p_cs_f0pc_f0_o1" uid_parent="p_cs_f0pc_f0"/>
+          </CaseFrame>
+          <CaseFrame label="Into the pane" selector="False" selectout="" uid="p_cs_f0pc_f1" uid_parent="p_cs_f0pc">
+            <Tunnel _id="In1" outputs="value:p_cs_f0pc_f1_t1.value" uid="p_cs_f0pc_f1_t1" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="In2" outputs="value:p_cs_f0pc_f1_t2.value" uid="p_cs_f0pc_f1_t2" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="In3" outputs="value:p_cs_f0pc_f1_t3.value" uid="p_cs_f0pc_f1_t3" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="In4" outputs="value:p_cs_f0pc_f1_t4.value" uid="p_cs_f0pc_f1_t4" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="In5" outputs="value:p_cs_f0pc_f1_t5.value" uid="p_cs_f0pc_f1_t5" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="In6" outputs="value:p_cs_f0pc_f1_t6.value" uid="p_cs_f0pc_f1_t6" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Index Array" inputs="array:p_cs_f0pc_f1_t5.value,index:p_cs_f0pc_f1_t4.value" outputs="element:p_cs_f0pc_f1pn.element" uid="p_cs_f0pc_f1pn" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Property Node" fields="read+Origin" inputs="reference:p_cs_f0pc_f1pn.element,error in (no error):p_cs_f0pc_f1_t2.value" outputs="reference out:,error out:p_cs_f0pc_f1or.error out,Origin:p_cs_f0pc_f1or.o" type="{LV.Pane}" uid="p_cs_f0pc_f1or" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Unbundle By Name" fields="Horizontal,Vertical" inputs="input cluster:p_cs_f0pc_f1or.o" outputs="Horizontal:p_cs_f0pc_f1ou.h,Vertical:p_cs_f0pc_f1ou.v" uid="p_cs_f0pc_f1ou" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:p_cs_f0pc_f1_t3.value" outputs="Left:p_cs_f0pc_f1pu.l,Top:p_cs_f0pc_f1pu.t" uid="p_cs_f0pc_f1pu" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Add" inputs="x:p_cs_f0pc_f1pu.l,y:p_cs_f0pc_f1ou.h" outputs="x+y:p_cs_f0pc_f1ax.x+y" uid="p_cs_f0pc_f1ax" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Add" inputs="x:p_cs_f0pc_f1pu.t,y:p_cs_f0pc_f1ou.v" outputs="x+y:p_cs_f0pc_f1ay.x+y" uid="p_cs_f0pc_f1ay" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:p_cs_f0pc_f1_t3.value,Left:p_cs_f0pc_f1ax.x+y,Top:p_cs_f0pc_f1ay.x+y" outputs="output cluster:p_cs_f0pc_f1ps.output cluster" uid="p_cs_f0pc_f1ps" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:p_cs_f0pc_f1_t1.value,error in (no error):p_cs_f0pc_f1or.error out,position:p_cs_f0pc_f1ps.output cluster,owner:p_cs_f0pc_f1pn.element,duplicate:p_cs_f0pc_f1_t6.value" outputs="reference out:,error out:p_cs_f0pc_f1mv.error out" uid="p_cs_f0pc_f1mv" uid_parent="p_cs_f0pc_f1"/>
+            <Node _name="Property Node" fields="write+Position" inputs="reference:p_cs_f0pc_f1_t1.value,error in (no error):p_cs_f0pc_f1mv.error out,Position:p_cs_f0pc_f1ps.output cluster" outputs="reference out:,error out:p_cs_f0pc_f1wp.error out" type="{LV.Control}" uid="p_cs_f0pc_f1wp" uid_parent="p_cs_f0pc_f1"/>
+            <Tunnel _id="Out1" inputs="value:p_cs_f0pc_f1wp.error out" uid="p_cs_f0pc_f1_o1" uid_parent="p_cs_f0pc_f1"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:p_cs_f0pc.err" uid="p_cs_f0pc_O1" uid_parent="p_cs_f0pc"/>
+        </Structure>
+        <Tunnel _id="Out1" inputs="value:p_cs_f0pc.err" uid="p_cs_f0_o1" uid_parent="p_cs_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Onto a page of Tab" selector="False" selectout="" uid="p_cs_f1" uid_parent="p_cs">
+        <Tunnel _id="In1" outputs="value:p_cs_f1_t1.value" uid="p_cs_f1_t1" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In2" outputs="value:p_cs_f1_t2.value" uid="p_cs_f1_t2" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In3" outputs="value:p_cs_f1_t3.value" uid="p_cs_f1_t3" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In4" outputs="value:p_cs_f1_t4.value" uid="p_cs_f1_t4" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In5" outputs="value:p_cs_f1_t5.value" uid="p_cs_f1_t5" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In6" outputs="value:" uid="p_cs_f1_t6" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In7" outputs="value:" uid="p_cs_f1_t7" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In8" outputs="value:p_cs_f1_t8.value" uid="p_cs_f1_t8" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In9" outputs="value:p_cs_f1_t9.value" uid="p_cs_f1_t9" uid_parent="p_cs_f1"/>
+        <Tunnel _id="In10" outputs="value:p_cs_f1_t10.value" uid="p_cs_f1_t10" uid_parent="p_cs_f1"/>
+        <Node _name="Build Array" inputs="element:p_cs_f1_t4.value" outputs="appended array:p_cs_f1fd_l.appended array" uid="p_cs_f1fd_l" uid_parent="p_cs_f1"/>
+        <Call target="RemoteVI Complex Fixture Find Controls.vi" inputs="Panel:p_cs_f1_t8.value,labels:p_cs_f1fd_l.appended array,error in:p_cs_f1_t2.value" outputs="Controls:p_cs_f1fd_f.Controls,error out:p_cs_f1fd_f.error out" uid="p_cs_f1fd_f" uid_parent="p_cs_f1"/>
+        <Constant outputs="value:p_cs_f1fd_z.value" type="int32" uid="p_cs_f1fd_z" uid_parent="p_cs_f1" value="0"/>
+        <Node _name="Index Array" inputs="array:p_cs_f1fd_f.Controls,index:p_cs_f1fd_z.value" outputs="element:p_cs_f1fd_e.element" uid="p_cs_f1fd_e" uid_parent="p_cs_f1"/>
+        <Node _name="To More Specific Class" inputs="target class:p_cs_f1_t9.value,reference:p_cs_f1fd_e.element,error in:p_cs_f1fd_f.error out" outputs="specific class reference:p_cs_f1tc.ref,error out:p_cs_f1tc.error out" uid="p_cs_f1tc" uid_parent="p_cs_f1"/>
+        <Node _name="Property Node" fields="read+Pages,read+Position" inputs="reference:p_cs_f1tc.ref,error in (no error):p_cs_f1tc.error out" outputs="reference out:,error out:p_cs_f1tp.error out,Pages:p_cs_f1tp.pages,Position:p_cs_f1tp.pos" type="{LV.TabControl}" uid="p_cs_f1tp" uid_parent="p_cs_f1"/>
+        <Node _name="Index Array" inputs="array:p_cs_f1tp.pages,index:p_cs_f1_t5.value" outputs="element:p_cs_f1pg.element" uid="p_cs_f1pg" uid_parent="p_cs_f1"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:p_cs_f1tp.pos" outputs="Left:p_cs_f1q.l,Top:p_cs_f1q.t" uid="p_cs_f1q" uid_parent="p_cs_f1"/>
+        <Node _name="Unbundle By Name" fields="Left,Top" inputs="input cluster:p_cs_f1_t3.value" outputs="Left:p_cs_f1r.l,Top:p_cs_f1r.t" uid="p_cs_f1r" uid_parent="p_cs_f1"/>
+        <Node _name="Add" inputs="x:p_cs_f1q.l,y:p_cs_f1r.l" outputs="x+y:p_cs_f1x.x+y" uid="p_cs_f1x" uid_parent="p_cs_f1"/>
+        <Node _name="Add" inputs="x:p_cs_f1q.t,y:p_cs_f1r.t" outputs="x+y:p_cs_f1y.x+y" uid="p_cs_f1y" uid_parent="p_cs_f1"/>
+        <Node _name="Bundle By Name" fields="Left,Top" inputs="input cluster:p_cs_f1_t3.value,Left:p_cs_f1x.x+y,Top:p_cs_f1y.x+y" outputs="output cluster:p_cs_f1b.output cluster" uid="p_cs_f1b" uid_parent="p_cs_f1"/>
+        <Node _name="Invoke Node" target="Move" type="{LV.Control}" inputs="reference:p_cs_f1_t1.value,error in (no error):p_cs_f1tp.error out,position:p_cs_f1b.output cluster,owner:p_cs_f1pg.element,duplicate:p_cs_f1_t10.value" outputs="reference out:,error out:p_cs_f1mv.error out" uid="p_cs_f1mv" uid_parent="p_cs_f1"/>
+        <Node _name="Property Node" fields="write+Position" inputs="reference:p_cs_f1_t1.value,error in (no error):p_cs_f1mv.error out,Position:p_cs_f1b.output cluster" outputs="reference out:,error out:p_cs_f1wp.error out" type="{LV.Control}" uid="p_cs_f1wp" uid_parent="p_cs_f1"/>
+        <Tunnel _id="Out1" inputs="value:p_cs_f1wp.error out" uid="p_cs_f1_o1" uid_parent="p_cs_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:p_cs.err" uid="p_cs_O1" uid_parent="p_cs"/>
+    </Structure>
+    <Node _name="Greater Than 0?" inputs="x:p_u.Width" outputs="x &gt; 0?:p_hw.x &gt; 0?" uid="p_hw" uid_parent="pl"/>
+    <Constant outputs="value:p_sz0.value" type="cluster{int32.Width,int32.Height}" uid="p_sz0" uid_parent="pl" value="[0,0]"/>
+    <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:p_sz0.value,Width:p_u.Width,Height:p_u.Height" outputs="output cluster:p_sz.output cluster" uid="p_sz" uid_parent="pl"/>
+    <Structure _name="Case Structure" selectin="p_hw.x &gt; 0?" uid="p_sc" uid_parent="pl">
+      <Tunnel _id="In1" inputs="value:p_fd_e.element" uid="p_sc_i1" uid_parent="p_sc"/>
+      <Tunnel _id="In2" inputs="value:p_sz.output cluster" uid="p_sc_i2" uid_parent="p_sc"/>
+      <Tunnel _id="In3" inputs="value:p_scl.value" uid="p_sc_i3" uid_parent="p_sc"/>
+      <Tunnel _id="In4" inputs="value:p_gcl.value" uid="p_sc_i4" uid_parent="p_sc"/>
+      <Tunnel _id="In5" inputs="value:p_cs.err" uid="p_sc_i5" uid_parent="p_sc"/>
+      <CaseFrame label="No size" selector="False" selectout="" uid="p_sc_f0" uid_parent="p_sc">
+        <Tunnel _id="In1" outputs="value:" uid="p_sc_f0_t1" uid_parent="p_sc_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="p_sc_f0_t2" uid_parent="p_sc_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="p_sc_f0_t3" uid_parent="p_sc_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="p_sc_f0_t4" uid_parent="p_sc_f0"/>
+        <Tunnel _id="In5" outputs="value:p_sc_f0_t5.value" uid="p_sc_f0_t5" uid_parent="p_sc_f0"/>
+        <Tunnel _id="Out1" inputs="value:p_sc_f0_t5.value" uid="p_sc_f0_o1" uid_parent="p_sc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Size by class" selector="True" selectout="" uid="p_sc_f1" uid_parent="p_sc">
+        <Tunnel _id="In1" outputs="value:p_sc_f1_t1.value" uid="p_sc_f1_t1" uid_parent="p_sc_f1"/>
+        <Tunnel _id="In2" outputs="value:p_sc_f1_t2.value" uid="p_sc_f1_t2" uid_parent="p_sc_f1"/>
+        <Tunnel _id="In3" outputs="value:" uid="p_sc_f1_t3" uid_parent="p_sc_f1"/>
+        <Tunnel _id="In4" outputs="value:" uid="p_sc_f1_t4" uid_parent="p_sc_f1"/>
+        <Tunnel _id="In5" outputs="value:p_sc_f1_t5.value" uid="p_sc_f1_t5" uid_parent="p_sc_f1"/>
+        <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:p_sc_f1_t2.value" outputs="Width:p_sc_f1wh.w,Height:p_sc_f1wh.h" uid="p_sc_f1wh" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1u0.value" type="cluster{uint32.Width,uint32.Height}" uid="p_sc_f1u0" uid_parent="p_sc_f1" value="[0,0]"/>
+        <Node _name="Bundle By Name" fields="Width,Height" inputs="input cluster:p_sc_f1u0.value,Width:p_sc_f1wh.w,Height:p_sc_f1wh.h" outputs="output cluster:p_sc_f1u.output cluster" uid="p_sc_f1u" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k0c.value" type="ref{LV.Boolean}" uid="p_sc_f1k0c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k0c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k0r.ref,error out:p_sc_f1k0r.error out" uid="p_sc_f1k0r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Button Size" inputs="reference:p_sc_f1k0r.ref,error in (no error):p_sc_f1k0r.error out,Button Size:p_sc_f1u.output cluster" outputs="reference out:,error out:" type="{LV.Boolean}" uid="p_sc_f1k0w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k1c.value" type="ref{LV.String}" uid="p_sc_f1k1c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k1c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k1r.ref,error out:p_sc_f1k1r.error out" uid="p_sc_f1k1r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Size" inputs="reference:p_sc_f1k1r.ref,error in (no error):p_sc_f1k1r.error out,Size:p_sc_f1u.output cluster" outputs="reference out:,error out:" type="{LV.String}" uid="p_sc_f1k1w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k2c.value" type="ref{LV.Path}" uid="p_sc_f1k2c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k2c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k2r.ref,error out:p_sc_f1k2r.error out" uid="p_sc_f1k2r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Size" inputs="reference:p_sc_f1k2r.ref,error in (no error):p_sc_f1k2r.error out,Size:p_sc_f1u.output cluster" outputs="reference out:,error out:" type="{LV.Path}" uid="p_sc_f1k2w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k3c.value" type="ref{LV.NumericWithScale}" uid="p_sc_f1k3c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k3c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k3r.ref,error out:p_sc_f1k3r.error out" uid="p_sc_f1k3r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Housing Size" inputs="reference:p_sc_f1k3r.ref,error in (no error):p_sc_f1k3r.error out,Housing Size:p_sc_f1u.output cluster" outputs="reference out:,error out:" type="{LV.NumericWithScale}" uid="p_sc_f1k3w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k4c.value" type="ref{LV.Digital}" uid="p_sc_f1k4c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k4c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k4r.ref,error out:p_sc_f1k4r.error out" uid="p_sc_f1k4r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Text Width" inputs="reference:p_sc_f1k4r.ref,error in (no error):p_sc_f1k4r.error out,Text Width:p_sc_f1wh.w" outputs="reference out:,error out:" type="{LV.Digital}" uid="p_sc_f1k4w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k5c.value" type="ref{LV.NamedNumeric}" uid="p_sc_f1k5c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k5c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k5r.ref,error out:p_sc_f1k5r.error out" uid="p_sc_f1k5r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Named Numeric Size" inputs="reference:p_sc_f1k5r.ref,error in (no error):p_sc_f1k5r.error out,Named Numeric Size:p_sc_f1u.output cluster" outputs="reference out:,error out:" type="{LV.NamedNumeric}" uid="p_sc_f1k5w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1k6c.value" type="ref{LV.WaveformGraph}" uid="p_sc_f1k6c" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1k6c.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1k6r.ref,error out:p_sc_f1k6r.error out" uid="p_sc_f1k6r" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Plot Area\3ASize" inputs="reference:p_sc_f1k6r.ref,error in (no error):p_sc_f1k6r.error out,Plot Area\3ASize:p_sc_f1_t2.value" outputs="reference out:,error out:" type="{LV.WaveformGraph}" uid="p_sc_f1k6w" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1mlc.value" type="ref{LV.MulticolumnListbox}" uid="p_sc_f1mlc" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1mlc.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1mlr.ref,error out:p_sc_f1mlr.error out" uid="p_sc_f1mlr" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Bounds\3AArea Width,write+Bounds\3AArea Height" inputs="reference:p_sc_f1mlr.ref,error in (no error):p_sc_f1mlr.error out,Bounds\3AArea Width:p_sc_f1wh.w,Bounds\3AArea Height:p_sc_f1wh.h" outputs="reference out:,error out:" type="{LV.MulticolumnListbox}" uid="p_sc_f1mlp" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1tbc.value" type="ref{LV.Table}" uid="p_sc_f1tbc" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1tbc.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1tbr.ref,error out:p_sc_f1tbr.error out" uid="p_sc_f1tbr" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1tbrh.value" type="int32" uid="p_sc_f1tbrh" uid_parent="p_sc_f1" value="20"/>
+        <Constant outputs="value:p_sc_f1tbcw.value" type="int32" uid="p_sc_f1tbcw" uid_parent="p_sc_f1" value="120"/>
+        <Node _name="Quotient &amp; Remainder" inputs="x:p_sc_f1wh.h,y:p_sc_f1tbrh.value" outputs="x-y*floor(x/y):,floor(x/y):p_sc_f1tbqr.q" uid="p_sc_f1tbqr" uid_parent="p_sc_f1"/>
+        <Node _name="Quotient &amp; Remainder" inputs="x:p_sc_f1wh.w,y:p_sc_f1tbcw.value" outputs="x-y*floor(x/y):,floor(x/y):p_sc_f1tbqc.q" uid="p_sc_f1tbqc" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Number of Rows,write+Number of Columns" inputs="reference:p_sc_f1tbr.ref,error in (no error):p_sc_f1tbr.error out,Number of Rows:p_sc_f1tbqr.q,Number of Columns:p_sc_f1tbqc.q" outputs="reference out:,error out:" type="{LV.Table}" uid="p_sc_f1tbp" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1gxc.value" type="ref{LV.WaveformGraph}" uid="p_sc_f1gxc" uid_parent="p_sc_f1" value=""/>
+        <Node _name="To More Specific Class" inputs="target class:p_sc_f1gxc.value,reference:p_sc_f1_t1.value" outputs="specific class reference:p_sc_f1gxr.ref,error out:p_sc_f1gxr.error out" uid="p_sc_f1gxr" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1gxwh.value" type="uint32" uid="p_sc_f1gxwh" uid_parent="p_sc_f1" value="2304563"/>
+        <Constant outputs="value:p_sc_f1gxgr.value" type="uint32" uid="p_sc_f1gxgr" uid_parent="p_sc_f1" value="3884370"/>
+        <Constant outputs="value:p_sc_f1gxnl.value" type="bool" uid="p_sc_f1gxnl" uid_parent="p_sc_f1" value="false"/>
+        <Node _name="Property Node" fields="write+Plot Area\3AColors\3ABG Color,write+Grid Colors\3AX Color,write+Grid Colors\3AY Color,write+Legend\3AVisible,read+X Scale,read+Y Scale" inputs="reference:p_sc_f1gxr.ref,error in (no error):p_sc_f1gxr.error out,Plot Area\3AColors\3ABG Color:p_sc_f1gxwh.value,Grid Colors\3AX Color:p_sc_f1gxgr.value,Grid Colors\3AY Color:p_sc_f1gxgr.value,Legend\3AVisible:p_sc_f1gxnl.value" outputs="reference out:,error out:p_sc_f1gxp.error out,X Scale:p_sc_f1gxp.xs,Y Scale:p_sc_f1gxp.ys" type="{LV.WaveformGraph}" uid="p_sc_f1gxp" uid_parent="p_sc_f1"/>
+        <Constant outputs="value:p_sc_f1gxfit.value" type="uint8" uid="p_sc_f1gxfit" uid_parent="p_sc_f1" value="1"/>
+        <Node _name="Property Node" fields="write+Scale Fit" inputs="reference:p_sc_f1gxp.xs,error in (no error):p_sc_f1gxp.error out,Scale Fit:p_sc_f1gxfit.value" outputs="error out:p_sc_f1gxpx.error out" type="{LV.GraphScale}" uid="p_sc_f1gxpx" uid_parent="p_sc_f1"/>
+        <Node _name="Property Node" fields="write+Scale Fit" inputs="reference:p_sc_f1gxp.ys,error in (no error):p_sc_f1gxpx.error out,Scale Fit:p_sc_f1gxfit.value" outputs="error out:" type="{LV.GraphScale}" uid="p_sc_f1gxpy" uid_parent="p_sc_f1"/>
+        <Tunnel _id="Out1" inputs="value:p_sc_f1_t5.value" uid="p_sc_f1_o1" uid_parent="p_sc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:p_sc.err" uid="p_sc_O1" uid_parent="p_sc"/>
+    </Structure>
+    <Node _name="Empty String/Path?" inputs="string/path:p_u.Text" outputs="empty?:p_nx.empty?" uid="p_nx" uid_parent="pl"/>
+    <Structure _name="Case Structure" selectin="p_nx.empty?" uid="p_bx" uid_parent="pl">
+      <Tunnel _id="In1" inputs="value:p_fd_e.element" uid="p_bx_i1" uid_parent="p_bx"/>
+      <Tunnel _id="In2" inputs="value:p_u.Text" uid="p_bx_i2" uid_parent="p_bx"/>
+      <Tunnel _id="In3" inputs="value:p_bcl.value" uid="p_bx_i3" uid_parent="p_bx"/>
+      <Tunnel _id="In4" inputs="value:p_tru.value" uid="p_bx_i4" uid_parent="p_bx"/>
+      <Tunnel _id="In5" inputs="value:p_fal.value" uid="p_bx_i5" uid_parent="p_bx"/>
+      <Tunnel _id="In6" inputs="value:p_sc.err" uid="p_bx_i6" uid_parent="p_bx"/>
+      <CaseFrame label="No text" selector="True" selectout="" uid="p_bx_f0" uid_parent="p_bx">
+        <Tunnel _id="In1" outputs="value:" uid="p_bx_f0_t1" uid_parent="p_bx_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="p_bx_f0_t2" uid_parent="p_bx_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="p_bx_f0_t3" uid_parent="p_bx_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="p_bx_f0_t4" uid_parent="p_bx_f0"/>
+        <Tunnel _id="In5" outputs="value:" uid="p_bx_f0_t5" uid_parent="p_bx_f0"/>
+        <Tunnel _id="In6" outputs="value:p_bx_f0_t6.value" uid="p_bx_f0_t6" uid_parent="p_bx_f0"/>
+        <Tunnel _id="Out1" inputs="value:p_bx_f0_t6.value" uid="p_bx_f0_o1" uid_parent="p_bx_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Boolean text" selector="False" selectout="" uid="p_bx_f1" uid_parent="p_bx">
+        <Tunnel _id="In1" outputs="value:p_bx_f1_t1.value" uid="p_bx_f1_t1" uid_parent="p_bx_f1"/>
+        <Tunnel _id="In2" outputs="value:p_bx_f1_t2.value" uid="p_bx_f1_t2" uid_parent="p_bx_f1"/>
+        <Tunnel _id="In3" outputs="value:p_bx_f1_t3.value" uid="p_bx_f1_t3" uid_parent="p_bx_f1"/>
+        <Tunnel _id="In4" outputs="value:p_bx_f1_t4.value" uid="p_bx_f1_t4" uid_parent="p_bx_f1"/>
+        <Tunnel _id="In5" outputs="value:p_bx_f1_t5.value" uid="p_bx_f1_t5" uid_parent="p_bx_f1"/>
+        <Tunnel _id="In6" outputs="value:p_bx_f1_t6.value" uid="p_bx_f1_t6" uid_parent="p_bx_f1"/>
+        <Node _name="To More Specific Class" inputs="target class:p_bx_f1_t3.value,reference:p_bx_f1_t1.value,error in:p_bx_f1_t6.value" outputs="specific class reference:p_bx_f1b.ref,error out:p_bx_f1b.error out" uid="p_bx_f1b" uid_parent="p_bx_f1"/>
+        <Node _name="Property Node" fields="write+Multiple Text String,write+Lock Boolean Text In Center,read+Boolean Text" inputs="reference:p_bx_f1b.ref,error in (no error):p_bx_f1b.error out,Multiple Text String:p_bx_f1_t5.value,Lock Boolean Text In Center:p_bx_f1_t4.value" outputs="reference out:,error out:p_bx_f1bp.error out,Boolean Text:p_bx_f1bp.bt" type="{LV.Boolean}" uid="p_bx_f1bp" uid_parent="p_bx_f1"/>
+        <Node _name="Property Node" fields="write+Text,write+Visible" inputs="reference:p_bx_f1bp.bt,error in (no error):p_bx_f1bp.error out,Text:p_bx_f1_t2.value,Visible:p_bx_f1_t4.value" outputs="reference out:,error out:p_bx_f1bt.error out" type="{LV.Text}" uid="p_bx_f1bt" uid_parent="p_bx_f1"/>
+        <Node _name="Close Reference" inputs="reference:p_bx_f1bp.bt,error in (no error):p_bx_f1bt.error out" outputs="error out:p_bx_f1bc.error out" uid="p_bx_f1bc" uid_parent="p_bx_f1"/>
+        <Tunnel _id="Out1" inputs="value:p_bx_f1bc.error out" uid="p_bx_f1_o1" uid_parent="p_bx_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:p_bx.err" uid="p_bx_O1" uid_parent="p_bx"/>
+    </Structure>
+    <Node _name="Property Node" fields="write+TipStrip,write+Label.Visible,write+Visible" inputs="reference:p_fd_e.element,error in (no error):p_bx.err,TipStrip:p_u.Tip,Label.Visible:p_u.ShowLabel,Visible:p_u.Visible" outputs="reference out:,error out:p_tip.error out" type="{LV.Control}" uid="p_tip" uid_parent="pl"/>
+    <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:p_tip.error out" outputs="code:p_code.code,source:p_code.source" uid="p_code" uid_parent="pl"/>
+    <Constant outputs="value:p_fmt.value" type="string" uid="p_fmt" uid_parent="pl" value="%s Place %d %s"/>
+    <Node _name="Format Into String" inputs="format string:p_fmt.value,input 1:p_u.Label,input 2:p_code.code,input 3:p_code.source" outputs="resulting string:p_msg.resulting string" uid="p_msg" uid_parent="pl"/>
+    <Tunnel _id="Out1" inputs="value:p_msg.resulting string" mode="index" outputs="value:p_probs.value" uid="p_probs" uid_parent="pl"/>
+    <Call target="Clear Errors.vi" inputs="error in (no error):p_tip.error out" outputs="error out:p_ce.error out" uid="p_ce" uid_parent="pl"/>
+  </Structure>
+  <Node _name="Unbundle By Name" fields="Right" inputs="input cluster:spec.Window" outputs="Right:wr.Right" uid="wr" uid_parent="root"/>
+  <Node _name="Greater Than 0?" inputs="x:wr.Right" outputs="x &gt; 0?:wg.x &gt; 0?" uid="wg" uid_parent="root"/>
+  <Structure _name="Case Structure" selectin="wg.x &gt; 0?" uid="wc" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ov.vi reference" uid="wc_i1" uid_parent="wc"/>
+    <Tunnel _id="In2" inputs="value:spec.Window" uid="wc_i2" uid_parent="wc"/>
+    <Tunnel _id="In3" inputs="value:t_end.value" uid="wc_i3" uid_parent="wc"/>
+    <CaseFrame label="Keep the window" selector="False" selectout="" uid="wc_f0" uid_parent="wc">
+      <Tunnel _id="In1" outputs="value:" uid="wc_f0_t1" uid_parent="wc_f0"/>
+      <Tunnel _id="In2" outputs="value:" uid="wc_f0_t2" uid_parent="wc_f0"/>
+      <Tunnel _id="In3" outputs="value:wc_f0_t3.value" uid="wc_f0_t3" uid_parent="wc_f0"/>
+      <Tunnel _id="Out1" inputs="value:wc_f0_t3.value" uid="wc_f0_o1" uid_parent="wc_f0"/>
+    </CaseFrame>
+    <CaseFrame label="Window bounds\2C origin 0\2C0" selector="True" selectout="" uid="wc_f1" uid_parent="wc">
+      <Tunnel _id="In1" outputs="value:wc_f1_t1.value" uid="wc_f1_t1" uid_parent="wc_f1"/>
+      <Tunnel _id="In2" outputs="value:wc_f1_t2.value" uid="wc_f1_t2" uid_parent="wc_f1"/>
+      <Tunnel _id="In3" outputs="value:wc_f1_t3.value" uid="wc_f1_t3" uid_parent="wc_f1"/>
+      <Constant outputs="value:wc_f1o.value" type="cluster{int32.Horizontal,int32.Vertical}" uid="wc_f1o" uid_parent="wc_f1" value="[0,0]"/>
+      <Constant outputs="value:wc_f1n.value" type="bool" uid="wc_f1n" uid_parent="wc_f1" value="false"/>
+      <Node _name="Property Node" fields="write+Front Panel Window\3AShow Menu Bar,write+Tool Bar\3AVisible,write+Front Panel Window\3AShow Scroll Bars,write+Front Panel Window\3APanel Bounds,write+Front Panel Window\3AOrigin" inputs="reference:wc_f1_t1.value,error in (no error):wc_f1_t3.value,Front Panel Window\3AShow Menu Bar:wc_f1n.value,Tool Bar\3AVisible:wc_f1n.value,Front Panel Window\3AShow Scroll Bars:wc_f1n.value,Front Panel Window\3APanel Bounds:wc_f1_t2.value,Front Panel Window\3AOrigin:wc_f1o.value" outputs="reference out:,error out:wc_f1w.error out" type="{LV.VI}" uid="wc_f1w" uid_parent="wc_f1"/>
+      <Tunnel _id="Out1" inputs="value:wc_f1w.error out" uid="wc_f1_o1" uid_parent="wc_f1"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:wc.err" uid="wc_O1" uid_parent="wc"/>
+  </Structure>
+  <Node _name="Invoke Node" target="Default Vals.Make Curr Default" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):p_end.value" outputs="reference out:,error out:mcd.error out" uid="mcd" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):mcd.error out" outputs="reference out:,error out:svi.error out" uid="svi" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):svi.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Node _name="Build Array" concat="true" inputs="array:r_probs.value,array:t_probs.value,array:p_probs.value" outputs="appended array:pa.appended array" uid="pa" uid_parent="root"/>
+  <Indicator _name="problems" conIdx="5" connection="recommended" description="Each step\27s label\2C step and error code\3B 0 is fine." inputs="value:pa.appended array" type="array{string}" uid="pr" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" conIdx="11" connection="recommended" description="Errors of opening\2C the window and saving." inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

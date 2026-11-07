@@ -15,7 +15,6 @@
 		<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>
 		<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>
 		<Item Name="Examples" Type="Folder">
-			<Item Name="RemoteVI Demo Layout.vi" Type="VI" URL="../examples/RemoteVI Demo Layout.vi"/>
 			<Item Name="RemoteVI Demo.vi" Type="VI" URL="../examples/RemoteVI Demo.vi"/>
 		</Item>
 		<Item Name="Scripts" Type="Folder">

@@ -158,7 +158,6 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
       <Exclusions><Path>tools</Path></Exclusions>
       <Exclusions><Path>web</Path></Exclusions>
       <Exclusions><Path>examples/aixml</Path></Exclusions>
-      <Exclusions><Path>examples/RemoteVI Demo Layout.vi</Path></Exclusions>
       <Exclusions><Path>package.json</Path></Exclusions>
       <Exclusions><Path>vipm.toml</Path></Exclusions>
       <Exclusions><Path>vipm.lock</Path></Exclusions>

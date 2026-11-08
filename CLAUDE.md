@@ -29,7 +29,8 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - the library re-add chain: `mk_lists.py` → `Add To Library Files.vi` → `fixlib.py`;
   - `start-labview.ps1 [-Version 2020]`;
   - Save For Previous, `lv_versions.py`, `lvlib_version.py` (save version);
-  - Remote Run, Remote Exec State (drive and check another LabVIEW over VI Server).
+  - Remote Run, Remote Exec State (drive and check another LabVIEW over VI Server);
+  - icons: every new VI gets a row in `icons.py`, then `Set Icons.vi` (no default LabVIEW icons).
 - **Save version:** after generating, recomposing or saving anything in a newer LabVIEW:
   1. `python tools/dev/lv_versions.py --expect 20.0` lists the VIs to convert; write their paths to a text file.
   2. Run `tools/dev/Save For Previous.vi` (items file, version 20.0) in the LabVIEW that has them in memory. It saves in place; close them without saving afterwards.

@@ -213,14 +213,13 @@ screen_end()
 save('app_live_data.xml')
 
 # ================================================================ Log Files
-FILES = [
-    ('cooling-loop_2026-11-02_0800.tdms', '2026-11-02 08:00', '8 h 00 min', '412 MB'),
-    ('cooling-loop_2026-11-03_0800.tdms', '2026-11-03 08:00', '8 h 00 min', '409 MB'),
-    ('cooling-loop_2026-11-04_0800.tdms', '2026-11-04 08:00', '7 h 42 min', '398 MB'),
-    ('pump-test_2026-11-05_1430.tdms', '2026-11-05 14:30', '1 h 15 min', '61 MB'),
-    ('pump-test_2026-11-06_0915.tdms', '2026-11-06 09:15', '2 h 05 min', '104 MB'),
-    ('cooling-loop_2026-11-07_0800.tdms', '2026-11-07 08:00', '3 h 20 min', '172 MB'),
-]
+FILES = []  # three weeks of runs: more than the list shows, so it scrolls
+for _d in range(1, 22):
+    _pump = _d % 4 == 0
+    _h = 1 + _d % 3 if _pump else 8 - (_d % 5 == 2)
+    FILES.append(('%s_2026-10-%02d_%s.tdms' % ('pump-test' if _pump else 'cooling-loop', _d + 9, '1430' if _pump else '0800'),
+                  '2026-10-%02d %s' % (_d + 9, '14:30' if _pump else '08:00'), '%d h %02d min' % (_h, (_d * 7) % 60),
+                  '%d MB' % (_h * 51 + _d)))
 cols = list(zip(*FILES))
 screen_begin('RemoteVI App Log Files.vi',
              'Screen Log Files of RemoteVI Application Example.vi\\3A the log files of the station (simulated - none exists on disk). Selecting a file in Log Files shows its preview and details. Delete asks in a LabVIEW dialog and removes the file from the list\\3B Export asks for a target in the native file dialog. Runs until the notifier RemoteVI Application Example fires (the main VI quits).',

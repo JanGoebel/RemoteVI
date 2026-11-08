@@ -22,7 +22,7 @@
   <Node _name="And" inputs="x:vo.value,y:nota.v" outputs="x .and. y?:drop.v" uid="drop" uid_parent="root"/>
   <Node _name="Select" inputs="t:knone.value,s:drop.v,f:pl.value" outputs="s? t\3Af:txt.v" uid="txt" uid_parent="root"/>
   <Call inputs="text:txt.v" outputs="kind:pi.kind,msg:pi.msg,x:pi.x,y:pi.y,wParam:pi.wParam,lParam:pi.lParam,seq:pi.seq,id:pi.id" target="RemoteVI Parse Input.vi" uid="pi" uid_parent="root"/>
-  <Call inputs="kind:pi.kind,id:pi.id,windows:wl.value" outputs="closed?:,error out:" target="RemoteVI Close Window.vi" uid="xw" uid_parent="root"/>
+  <Call inputs="kind:pi.kind,id:pi.id,windows:wl.value,main window:phw.hWnd" outputs="closed?:,error out:" target="RemoteVI Close Window.vi" uid="xw" uid_parent="root"/>
   <Node _name="To Long Integer" inputs="number:pi.kind" outputs="32bit integer:kn.32bit integer" uid="kn" uid_parent="root"/>
   <Constant _name="splitter" outputs="value:k5.value" type="int32" uid="k5" uid_parent="root" value="5"/>
   <Node _name="Equal?" inputs="x:kn.32bit integer,y:k5.value" outputs="x = y?:isSp.v" uid="isSp" uid_parent="root"/>

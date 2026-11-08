@@ -1,7 +1,8 @@
-<VI _name="RemoteVI Close Window.vi" description="Handles the client message x &lt;id&gt; (docs\5Cprotocol.md section 7)\3A when kind is close and id is a LISTED window whose closable flag is set (it has a close box\2C WS_SYSMENU)\2C WM_SYSCOMMAND (0x112) with SC_CLOSE (0xF060) is posted to it with user32 PostMessageW.vi - exactly what its title bar's close button sends\2C so the window closes the way it would locally (a native dialog cancels). A bare WM_CLOSE is NOT posted\3A measured on LabVIEW 2025\2C WM_CLOSE posted to a Two Button Dialog destroyed its window while the dialog function kept waiting for an answer\2C which hung the calling VI and LabVIEW's VI Server. Anything else does nothing\3A nothing goes to the published panel (it is not in windows) or to a window the server does not list\2C and no other message can be sent this way. closed? is TRUE when it was posted.">
-  <FreeLabel comment="Close box (SC_CLOSE) of a listed window only" uid="lbl" uid_parent="root"/>
+<VI _name="RemoteVI Close Window.vi" description="Handles the client message x &lt;id&gt; (docs\5Cprotocol.md sections 4 and 7)\3A when kind is close and id is a LISTED window whose closable flag is set (it has a close box\2C WS_SYSMENU)\2C or id is 0 and the shared window (main window) has a close box (the title bar the browser draws above the panel)\2C WM_SYSCOMMAND (0x112) with SC_CLOSE (0xF060) is posted to it with user32 PostMessageW.vi - exactly what its title bar's close button sends\2C so the window closes the way it would locally (a native dialog cancels). A bare WM_CLOSE is NOT posted\3A measured on LabVIEW 2025\2C WM_CLOSE posted to a Two Button Dialog destroyed its window while the dialog function kept waiting for an answer\2C which hung the calling VI and LabVIEW's VI Server. Anything else does nothing\3A nothing goes to the published panel (it is not in windows) or to a window the server does not list\2C and no other message can be sent this way. closed? is TRUE when it was posted.">
+  <FreeLabel comment="Close box (SC_CLOSE) of a listed window or of the shared window only" uid="lbl" uid_parent="root"/>
   <Control _name="kind" conIdx="0" connection="required" description="From RemoteVI Parse Input.vi." outputs="value:kind.value" type="uint16{invalid,mouse,key,ack,close,splitter}" uid="kind" uid_parent="root" value="0"/>
   <Control _name="id" conIdx="5" connection="required" description="From RemoteVI Parse Input.vi\3A the window to close." outputs="value:id.value" type="uint64" uid="id" uid_parent="root" value="0"/>
+  <Control _name="main window" conIdx="9" connection="recommended" description="hWnd of the shared window\3A x 0 closes it when it has a close box." outputs="value:mw.value" type="uint64" uid="mw" uid_parent="root" value="0"/>
   <Control _name="windows" conIdx="7" connection="required" description="The listed windows (RemoteVI List Windows.vi)." outputs="value:wl.value" type="array{cluster{uint64.id,string.title,int32.x,int32.y,int32.w,int32.h,bool.modal,bool.active,bool.closable,int32.sx,int32.sy,string.class}}" uid="wl" uid_parent="root" value="[]"/>
   <Control _name="error in" conIdx="11" connection="recommended" description="Standard error in." outputs="value:ei.value" type="cluster{bool.status,int32.code,string.source}" uid="ei" uid_parent="root" value="[false,0,]"/>
   <Structure _name="For Loop" count="" label="ids and close boxes" maxin="" maxout="" uid="fl" uid_parent="root">
@@ -10,16 +11,29 @@
     <Tunnel _id="Out1" inputs="value:wu.id" mode="index" outputs="value:ids.value" uid="ids" uid_parent="fl"/>
     <Tunnel _id="Out2" inputs="value:wu.closable" mode="index" outputs="value:cls.value" uid="cls" uid_parent="fl"/>
   </Structure>
+  <FreeLabel comment="x 0 is the shared window itself\3A its close box is WS_SYSMENU" uid="lbl2" uid_parent="root"/>
+  <Node _name="Equal To 0?" inputs="x:id.value" outputs="x = 0?:ism.v" uid="ism" uid_parent="root"/>
+  <Node _name="Select" inputs="t:mw.value,s:ism.v,f:id.value" outputs="s? t\3Af:tgt.v" uid="tgt" uid_parent="root"/>
+  <Constant _name="GWL_STYLE" outputs="value:kgs.value" type="int32" uid="kgs" uid_parent="root" value="-16"/>
+  <Call inputs="hWnd:mw.value,nIndex:kgs.value" outputs="return value:sty.return value,error out:" target="user32 GetWindowLongPtrW.vi" uid="sty" uid_parent="root"/>
+  <Constant _name="WS_SYSMENU" outputs="value:ksm.value" type="int64" uid="ksm" uid_parent="root" value="524288"/>
+  <Node _name="And" inputs="x:sty.return value,y:ksm.value" outputs="x .and. y?:sm.v" uid="sm" uid_parent="root"/>
+  <Constant outputs="value:k0l.value" type="int64" uid="k0l" uid_parent="root" value="0"/>
+  <Node _name="Not Equal?" inputs="x:sm.v,y:k0l.value" outputs="x != y?:msm.v" uid="msm" uid_parent="root"/>
+  <Node _name="Not Equal To 0?" inputs="x:mw.value" outputs="x != 0?:mok.v" uid="mok" uid_parent="root"/>
+  <Node _name="And" inputs="x:msm.v,y:mok.v" outputs="x .and. y?:mcl.v" uid="mcl" uid_parent="root"/>
   <Node _name="Search 1D Array" inputs="1D array:ids.value,element:id.value" outputs="index of element:ix.v" uid="ix" uid_parent="root"/>
   <Node _name="Index Array" inputs="array:cls.value,index:ix.v" outputs="element:cb.v" uid="cb" uid_parent="root"/>
   <Node _name="Greater Or Equal To 0?" inputs="x:ix.v" outputs="x &gt;= 0?:listed.v" uid="listed" uid_parent="root"/>
   <Node _name="To Long Integer" inputs="number:kind.value" outputs="32bit integer:kn.v" uid="kn" uid_parent="root"/>
   <Constant _name="close" outputs="value:k4.value" type="int32" uid="k4" uid_parent="root" value="4"/>
   <Node _name="Equal?" inputs="x:kn.v,y:k4.value" outputs="x = y?:isc.v" uid="isc" uid_parent="root"/>
-  <Node _name="Build Array" inputs="element:isc.v,element:listed.v,element:cb.v" outputs="appended array:c3.v" uid="c3" uid_parent="root"/>
-  <Node _name="And Array Elements" inputs="Boolean array:c3.v" outputs="logical AND:doit.v" uid="doit" uid_parent="root"/>
+  <Node _name="And" inputs="x:listed.v,y:cb.v" outputs="x .and. y?:lcl.v" uid="lcl" uid_parent="root"/>
+  <Node _name="And" inputs="x:ism.v,y:mcl.v" outputs="x .and. y?:mcl2.v" uid="mcl2" uid_parent="root"/>
+  <Node _name="Or" inputs="x:lcl.v,y:mcl2.v" outputs="x .or. y?:any.v" uid="any" uid_parent="root"/>
+  <Node _name="And" inputs="x:isc.v,y:any.v" outputs="x .and. y?:doit.v" uid="doit" uid_parent="root"/>
   <Structure _name="Case Structure" selectin="doit.v" uid="cs" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:id.value" uid="cs_i1" uid_parent="cs"/>
+    <Tunnel _id="In1" inputs="value:tgt.v" uid="cs_i1" uid_parent="cs"/>
     <Tunnel _id="In2" inputs="value:ei.value" uid="cs_i2" uid_parent="cs"/>
     <CaseFrame label="Post WM_SYSCOMMAND SC_CLOSE" selector="True" selectout="" uid="cst" uid_parent="cs">
       <Tunnel _id="In1" outputs="value:t_id.value" uid="t_id" uid_parent="cst"/>

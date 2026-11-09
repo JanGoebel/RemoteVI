@@ -1,6 +1,6 @@
 # RemoteVI architecture (v2)
 
-RemoteVI shows a running VI's front panel in a web browser, pixel for pixel, and lets you operate it with mouse and keyboard. It replaces LabVIEW *Remote Panels* without the browser plug-in, the Run-Time Engine on the client, or the NI Web Server. You drop two VIs into your application, and the panel is reachable at `http://host:port/`.
+RemoteVI shows a running VI's front panel in a web browser, pixel for pixel, and lets you operate it with mouse and keyboard. It's supposed to be a LabVIEW *Remote Panels* replacement. You drop two VIs into your application, and the panel is reachable at `http://host:port/`.
 
 ## Design in one paragraph
 

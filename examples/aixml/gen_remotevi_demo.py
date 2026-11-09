@@ -21,8 +21,11 @@ o = []
 w = o.append
 
 
+ROOT = []   # elements on the top-level diagram, written after the loop
+
+
 def ctl(name, typ, value, uid, parent='sl', desc='', extra=''):
-    w('    <Control _name="%s" description="%s" outputs="value:%s.value" type="%s" uid="%s" uid_parent="%s" value="%s"%s/>'
+    (ROOT.append if parent == 'root' else w)('    <Control _name="%s" description="%s" outputs="value:%s.value" type="%s" uid="%s" uid_parent="%s" value="%s"%s/>'
       % (name, desc, uid, typ, uid, parent, value, extra))
 
 
@@ -38,7 +41,11 @@ w('  <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" 
 w('  <Indicator _name="Remote Link" description="Open this link in a browser to operate the panel remotely (RemoteVI)." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>')
 w('  <Constant _name="history length" outputs="value:hl.value" type="int32" uid="hl" uid_parent="root" value="1000"/>')
 w('  <Constant _name="loop period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>')
-w('  <Constant _name="no data yet (one row per channel)" outputs="value:h0.value" type="array.2{double}" uid="h0" uid_parent="root" value="[[NaN],[NaN],[NaN],[NaN]]"/>')
+# "No data yet": one NaN per channel, built as 4 rows of [NaN] (a 2D array constant is drawn many elements wide).
+w('  <Constant _name="no data yet" outputs="value:nan.value" type="double" uid="nan" uid_parent="root" value="NaN"/>')
+w('  <Constant outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>')
+w('  <Node _name="Initialize Array" inputs="element:nan.value,dimension size:one.value" outputs="initialized array:row.initialized array" uid="row" uid_parent="root"/>')
+w('  <Node _name="Build Array" inputs="element:row.initialized array,element:row.initialized array,element:row.initialized array,element:row.initialized array" outputs="appended array:h0.value" uid="h0" uid_parent="root"/>')
 w('  <Constant _name="no samples" outputs="value:k0.value" type="double" uid="k0" uid_parent="root" value="0"/>')
 w('  <Constant _name="first status" outputs="value:s0.value" type="string" uid="s0" uid_parent="root" value="Ready. Press Acquire to start the simulated channels."/>')
 w('  <Structure _name="While Loop" count="" label="Logger loop\\2C every 50 ms" uid="sl" uid_parent="root">')
@@ -58,27 +65,29 @@ w('      <Left inputs="value:s0.value" outputs="value:stat.value" uid="sr_sl" ui
 w('      <Right inputs="value:ld.status" outputs="value:" uid="sr_sr" uid_parent="sr_s"/>')
 w('    </ShiftReg>')
 
-# --- configuration controls (read every iteration) ---
-ctl('Device', 'string', 'Dev1 (simulated)', 'dev', desc='The acquisition device. Simulated in this example.')
+# --- configuration controls: the simulation reads Sample Rate, Samples per Read, Add Noise and the channel
+# switches in the loop; the others only show one control of every common kind, so they stay outside it ---
+ROOT.append('  <FreeLabel comment="Configuration shown on the panel only\\3A the simulation does not use these" uid="cfglbl" uid_parent="root"/>')
+ctl('Device', 'string', 'Dev1 (simulated)', 'dev', parent='root', desc='The acquisition device. Simulated in this example.')
 ctl('Sample Rate (Hz)', 'double', '1000', 'rate', desc='Samples per second and channel.')
 ctl('Samples per Read', 'double', '50', 'spr', desc='Samples read per channel in each 50 ms loop (10 to 500).')
-ctl('Acquisition Mode', 'uint16{Continuous,Finite,Triggered}', '0', 'mode', desc='Continuous, a finite number of samples, or started by the trigger.')
-ctl('Duration (s)', 'double', '60', 'dur', desc='Length of a finite acquisition.')
+ctl('Acquisition Mode', 'uint16{Continuous,Finite,Triggered}', '0', 'mode', parent='root', desc='Continuous, a finite number of samples, or started by the trigger.')
+ctl('Duration (s)', 'double', '60', 'dur', parent='root', desc='Length of a finite acquisition.')
 ctl('Add Noise', 'bool', 'true', 'noise', desc='Adds random noise to the simulated signals.')
-ctl('Channels', 'array.2{string}', '[[Channel,Name,Unit,Scale],[AI0,Supply pressure,bar,0.25 bar/V],[AI1,Return pressure,bar,0.25 bar/V],[AI2,Coolant temperature,degC,10 degC/V],[AI3,Flow,l/min,2 l/min/V]]', 'chn', desc='Name\\2C unit and scale of each channel - click a cell to edit it.')
+ctl('Channels', 'array.2{string}', '[[Channel,Name,Unit,Scale],[AI0,Supply pressure,bar,0.25 bar/V],[AI1,Return pressure,bar,0.25 bar/V],[AI2,Coolant temperature,degC,10 degC/V],[AI3,Flow,l/min,2 l/min/V]]', 'chn', parent='root', desc='Name\\2C unit and scale of each channel - click a cell to edit it.')
 for c in range(4):
     ctl('CH%d' % c, 'bool', 'true' if c < 2 else 'false', 'en%d' % c, desc='Acquire and show channel AI%d.' % c)
-ctl('Input Range', 'uint16{+-1 V,+-5 V,+-10 V}', '2', 'rng', desc='Input range of all channels.')
-ctl('Trigger Source', 'int32', '0', 'tsrc', desc='What starts a triggered acquisition.', extra=' items="Immediate,Software,Analog edge" style="Ring" values="[0,1,2]"')
-ctl('Trigger Level (V)', 'double', '2.5', 'tlev', desc='Level of the analog edge trigger.')
-ctl('Trigger Slope', 'uint16{Rising,Falling}', '0', 'tslp', desc='Edge of the analog trigger.')
-ctl('Filter Cutoff (Hz)', 'double', '250', 'fcut', desc='Cutoff frequency of the anti-aliasing filter.')
-ctl('Log Folder', 'path', 'C\\3A\\5CData\\5CDatalogger', 'lf', desc='Where log files would be written (browse with the folder button).')
-ctl('File Prefix', 'string', 'cooling-loop', 'fpx', desc='Start of each log file name.')
-ctl('File Format', 'uint16{CSV,TDMS,Binary}', '1', 'ffmt', desc='Format of the log files.')
-ctl('Split Every (min)', 'double', '15', 'split', desc='Starts a new log file after this many minutes.')
-ctl('Scheduled Start', 'timestamp', '', 'tst', desc='When a scheduled acquisition starts.')
-ctl('Comment', 'string', 'Bench test of the cooling loop', 'cmt', desc='Stored in the header of every log file.')
+ctl('Input Range', 'uint16{+-1 V,+-5 V,+-10 V}', '2', 'rng', parent='root', desc='Input range of all channels.')
+ctl('Trigger Source', 'int32', '0', 'tsrc', parent='root', desc='What starts a triggered acquisition.', extra=' items="Immediate,Software,Analog edge" style="Ring" values="[0,1,2]"')
+ctl('Trigger Level (V)', 'double', '2.5', 'tlev', parent='root', desc='Level of the analog edge trigger.')
+ctl('Trigger Slope', 'uint16{Rising,Falling}', '0', 'tslp', parent='root', desc='Edge of the analog trigger.')
+ctl('Filter Cutoff (Hz)', 'double', '250', 'fcut', parent='root', desc='Cutoff frequency of the anti-aliasing filter.')
+ctl('Log Folder', 'path', 'C\\3A\\5CData\\5CDatalogger', 'lf', parent='root', desc='Where log files would be written (browse with the folder button).')
+ctl('File Prefix', 'string', 'cooling-loop', 'fpx', parent='root', desc='Start of each log file name.')
+ctl('File Format', 'uint16{CSV,TDMS,Binary}', '1', 'ffmt', parent='root', desc='Format of the log files.')
+ctl('Split Every (min)', 'double', '15', 'split', parent='root', desc='Starts a new log file after this many minutes.')
+ctl('Scheduled Start', 'timestamp', '', 'tst', parent='root', desc='When a scheduled acquisition starts.')
+ctl('Comment', 'string', 'Bench test of the cooling loop', 'cmt', parent='root', desc='Stored in the header of every log file.')
 ctl('Acquire', 'bool', 'false', 'acqb', desc='Starts and stops the acquisition.')
 ctl('Apply', 'bool', 'false', 'apb', desc='Applies the configuration (asks first in a dialog).', extra=' style="latched"')
 ctl('Load Configuration', 'bool', 'false', 'ldb', desc='Opens a configuration file (native file dialog).', extra=' style="latched"')
@@ -220,6 +229,7 @@ w('    <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs=
 w('    <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>')
 w('    <Condition inputs="value:quit.value" uid="slc" uid_parent="sl" value="stop"/>')
 w('  </Structure>')
+o.extend(ROOT)
 w('  <Call inputs="port:port.value,error in:err_end.value" outputs="error out:sp.error out" target="RemoteVI Stop.vi" uid="sp" uid_parent="root"/>')
 w('  <Indicator _name="error out" description="Errors of RemoteVI Start.vi and RemoteVI Stop.vi." inputs="value:sp.error out" type="%s" uid="eo" uid_parent="root" value="[false,0,]"/>' % ERR)
 w('</VI>')

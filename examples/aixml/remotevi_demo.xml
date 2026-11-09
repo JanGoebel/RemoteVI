@@ -5,7 +5,10 @@
   <Indicator _name="Remote Link" description="Open this link in a browser to operate the panel remotely (RemoteVI)." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
   <Constant _name="history length" outputs="value:hl.value" type="int32" uid="hl" uid_parent="root" value="1000"/>
   <Constant _name="loop period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
-  <Constant _name="no data yet (one row per channel)" outputs="value:h0.value" type="array.2{double}" uid="h0" uid_parent="root" value="[[NaN],[NaN],[NaN],[NaN]]"/>
+  <Constant _name="no data yet" outputs="value:nan.value" type="double" uid="nan" uid_parent="root" value="NaN"/>
+  <Constant outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Node _name="Initialize Array" inputs="element:nan.value,dimension size:one.value" outputs="initialized array:row.initialized array" uid="row" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:row.initialized array,element:row.initialized array,element:row.initialized array,element:row.initialized array" outputs="appended array:h0.value" uid="h0" uid_parent="root"/>
   <Constant _name="no samples" outputs="value:k0.value" type="double" uid="k0" uid_parent="root" value="0"/>
   <Constant _name="first status" outputs="value:s0.value" type="string" uid="s0" uid_parent="root" value="Ready. Press Acquire to start the simulated channels."/>
   <Structure _name="While Loop" count="" label="Logger loop\2C every 50 ms" uid="sl" uid_parent="root">
@@ -24,28 +27,13 @@
       <Left inputs="value:s0.value" outputs="value:stat.value" uid="sr_sl" uid_parent="sr_s"/>
       <Right inputs="value:ld.status" outputs="value:" uid="sr_sr" uid_parent="sr_s"/>
     </ShiftReg>
-    <Control _name="Device" description="The acquisition device. Simulated in this example." outputs="value:dev.value" type="string" uid="dev" uid_parent="sl" value="Dev1 (simulated)"/>
     <Control _name="Sample Rate (Hz)" description="Samples per second and channel." outputs="value:rate.value" type="double" uid="rate" uid_parent="sl" value="1000"/>
     <Control _name="Samples per Read" description="Samples read per channel in each 50 ms loop (10 to 500)." outputs="value:spr.value" type="double" uid="spr" uid_parent="sl" value="50"/>
-    <Control _name="Acquisition Mode" description="Continuous, a finite number of samples, or started by the trigger." outputs="value:mode.value" type="uint16{Continuous,Finite,Triggered}" uid="mode" uid_parent="sl" value="0"/>
-    <Control _name="Duration (s)" description="Length of a finite acquisition." outputs="value:dur.value" type="double" uid="dur" uid_parent="sl" value="60"/>
     <Control _name="Add Noise" description="Adds random noise to the simulated signals." outputs="value:noise.value" type="bool" uid="noise" uid_parent="sl" value="true"/>
-    <Control _name="Channels" description="Name\2C unit and scale of each channel - click a cell to edit it." outputs="value:chn.value" type="array.2{string}" uid="chn" uid_parent="sl" value="[[Channel,Name,Unit,Scale],[AI0,Supply pressure,bar,0.25 bar/V],[AI1,Return pressure,bar,0.25 bar/V],[AI2,Coolant temperature,degC,10 degC/V],[AI3,Flow,l/min,2 l/min/V]]"/>
     <Control _name="CH0" description="Acquire and show channel AI0." outputs="value:en0.value" type="bool" uid="en0" uid_parent="sl" value="true"/>
     <Control _name="CH1" description="Acquire and show channel AI1." outputs="value:en1.value" type="bool" uid="en1" uid_parent="sl" value="true"/>
     <Control _name="CH2" description="Acquire and show channel AI2." outputs="value:en2.value" type="bool" uid="en2" uid_parent="sl" value="false"/>
     <Control _name="CH3" description="Acquire and show channel AI3." outputs="value:en3.value" type="bool" uid="en3" uid_parent="sl" value="false"/>
-    <Control _name="Input Range" description="Input range of all channels." outputs="value:rng.value" type="uint16{+-1 V,+-5 V,+-10 V}" uid="rng" uid_parent="sl" value="2"/>
-    <Control _name="Trigger Source" description="What starts a triggered acquisition." outputs="value:tsrc.value" type="int32" uid="tsrc" uid_parent="sl" value="0" items="Immediate,Software,Analog edge" style="Ring" values="[0,1,2]"/>
-    <Control _name="Trigger Level (V)" description="Level of the analog edge trigger." outputs="value:tlev.value" type="double" uid="tlev" uid_parent="sl" value="2.5"/>
-    <Control _name="Trigger Slope" description="Edge of the analog trigger." outputs="value:tslp.value" type="uint16{Rising,Falling}" uid="tslp" uid_parent="sl" value="0"/>
-    <Control _name="Filter Cutoff (Hz)" description="Cutoff frequency of the anti-aliasing filter." outputs="value:fcut.value" type="double" uid="fcut" uid_parent="sl" value="250"/>
-    <Control _name="Log Folder" description="Where log files would be written (browse with the folder button)." outputs="value:lf.value" type="path" uid="lf" uid_parent="sl" value="C\3A\5CData\5CDatalogger"/>
-    <Control _name="File Prefix" description="Start of each log file name." outputs="value:fpx.value" type="string" uid="fpx" uid_parent="sl" value="cooling-loop"/>
-    <Control _name="File Format" description="Format of the log files." outputs="value:ffmt.value" type="uint16{CSV,TDMS,Binary}" uid="ffmt" uid_parent="sl" value="1"/>
-    <Control _name="Split Every (min)" description="Starts a new log file after this many minutes." outputs="value:split.value" type="double" uid="split" uid_parent="sl" value="15"/>
-    <Control _name="Scheduled Start" description="When a scheduled acquisition starts." outputs="value:tst.value" type="timestamp" uid="tst" uid_parent="sl" value=""/>
-    <Control _name="Comment" description="Stored in the header of every log file." outputs="value:cmt.value" type="string" uid="cmt" uid_parent="sl" value="Bench test of the cooling loop"/>
     <Control _name="Acquire" description="Starts and stops the acquisition." outputs="value:acqb.value" type="bool" uid="acqb" uid_parent="sl" value="false"/>
     <Control _name="Apply" description="Applies the configuration (asks first in a dialog)." outputs="value:apb.value" type="bool" uid="apb" uid_parent="sl" value="false" style="latched"/>
     <Control _name="Load Configuration" description="Opens a configuration file (native file dialog)." outputs="value:ldb.value" type="bool" uid="ldb" uid_parent="sl" value="false" style="latched"/>
@@ -212,6 +200,22 @@
     <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>
     <Condition inputs="value:quit.value" uid="slc" uid_parent="sl" value="stop"/>
   </Structure>
+  <FreeLabel comment="Configuration shown on the panel only\3A the simulation does not use these" uid="cfglbl" uid_parent="root"/>
+    <Control _name="Device" description="The acquisition device. Simulated in this example." outputs="value:dev.value" type="string" uid="dev" uid_parent="root" value="Dev1 (simulated)"/>
+    <Control _name="Acquisition Mode" description="Continuous, a finite number of samples, or started by the trigger." outputs="value:mode.value" type="uint16{Continuous,Finite,Triggered}" uid="mode" uid_parent="root" value="0"/>
+    <Control _name="Duration (s)" description="Length of a finite acquisition." outputs="value:dur.value" type="double" uid="dur" uid_parent="root" value="60"/>
+    <Control _name="Channels" description="Name\2C unit and scale of each channel - click a cell to edit it." outputs="value:chn.value" type="array.2{string}" uid="chn" uid_parent="root" value="[[Channel,Name,Unit,Scale],[AI0,Supply pressure,bar,0.25 bar/V],[AI1,Return pressure,bar,0.25 bar/V],[AI2,Coolant temperature,degC,10 degC/V],[AI3,Flow,l/min,2 l/min/V]]"/>
+    <Control _name="Input Range" description="Input range of all channels." outputs="value:rng.value" type="uint16{+-1 V,+-5 V,+-10 V}" uid="rng" uid_parent="root" value="2"/>
+    <Control _name="Trigger Source" description="What starts a triggered acquisition." outputs="value:tsrc.value" type="int32" uid="tsrc" uid_parent="root" value="0" items="Immediate,Software,Analog edge" style="Ring" values="[0,1,2]"/>
+    <Control _name="Trigger Level (V)" description="Level of the analog edge trigger." outputs="value:tlev.value" type="double" uid="tlev" uid_parent="root" value="2.5"/>
+    <Control _name="Trigger Slope" description="Edge of the analog trigger." outputs="value:tslp.value" type="uint16{Rising,Falling}" uid="tslp" uid_parent="root" value="0"/>
+    <Control _name="Filter Cutoff (Hz)" description="Cutoff frequency of the anti-aliasing filter." outputs="value:fcut.value" type="double" uid="fcut" uid_parent="root" value="250"/>
+    <Control _name="Log Folder" description="Where log files would be written (browse with the folder button)." outputs="value:lf.value" type="path" uid="lf" uid_parent="root" value="C\3A\5CData\5CDatalogger"/>
+    <Control _name="File Prefix" description="Start of each log file name." outputs="value:fpx.value" type="string" uid="fpx" uid_parent="root" value="cooling-loop"/>
+    <Control _name="File Format" description="Format of the log files." outputs="value:ffmt.value" type="uint16{CSV,TDMS,Binary}" uid="ffmt" uid_parent="root" value="1"/>
+    <Control _name="Split Every (min)" description="Starts a new log file after this many minutes." outputs="value:split.value" type="double" uid="split" uid_parent="root" value="15"/>
+    <Control _name="Scheduled Start" description="When a scheduled acquisition starts." outputs="value:tst.value" type="timestamp" uid="tst" uid_parent="root" value=""/>
+    <Control _name="Comment" description="Stored in the header of every log file." outputs="value:cmt.value" type="string" uid="cmt" uid_parent="root" value="Bench test of the cooling loop"/>
   <Call inputs="port:port.value,error in:err_end.value" outputs="error out:sp.error out" target="RemoteVI Stop.vi" uid="sp" uid_parent="root"/>
   <Indicator _name="error out" description="Errors of RemoteVI Start.vi and RemoteVI Stop.vi." inputs="value:sp.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

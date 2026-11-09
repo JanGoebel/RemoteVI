@@ -46,6 +46,8 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   3. Run `tools/dev/Add To Library Files.vi` with inputs library path, items file and callers file (both in `tools/dev/`). Check that `add code max` = 0.
   4. `python tools/dev/fixlib.py`.
   5. Repeat until mk_lists reports 0 items. Errors 1562, 56002 and 56003 mean the library or a VI is still in memory.
+- **Wide constants:** a diagram constant of a cluster holding arrays (or of a 2D array) is drawn many elements wide, and layout cannot shrink it. Use a control left off the connector pane (`connection="optional"`), or build the value. On a UI panel, also hide that control (layout row with width -1).
+- **Translate Input:** `tools/aixml/Input/translate_input.xml` does not compose to a runnable VI (Bundle By Name: cluster is invalid). Keep the committed VI; do not recompose it until that is fixed.
 - **Server Loop:** recomposing `Server/RemoteVI Server Loop.vi` loses reentrancy. Run `scripts/Set Reentrant.vi` on it, otherwise Start fails with 1096.
 - **Window handles:** a panel's window handle changes on every launch. Never hard-code it.
 - **Shares and tokens:**

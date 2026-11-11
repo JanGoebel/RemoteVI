@@ -207,9 +207,12 @@
     <Node _name="Greater Than 0?" inputs="x:nk.size(s)" outputs="x &gt; 0?:lit.x &gt; 0?" uid="lit" uid_parent="sl"/>
     <Indicator _name="Alarm" description="Lit while an alarm is active." inputs="value:lit.x &gt; 0?" type="bool" uid="led" uid_parent="sl" value="false"/>
     <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="sl" value="100"/>
-    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:won.notifier out,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
     <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:wnt..not. x?" uid="wnt" uid_parent="sl"/>
-    <Condition inputs="value:wnt..not. x?" uid="slc" uid_parent="sl" value="stop"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:won.error out" outputs="status:wer.status" uid="wer" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:wnt..not. x?,y:wer.status" outputs="x .or. y?:wst.x .or. y?" uid="wst" uid_parent="sl"/>
+    <Tunnel _id="Out1" inputs="value:won.notifier out" outputs="value:l_no.value" uid="l_no" uid_parent="sl"/>
+    <Condition inputs="value:wst.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>
   </Structure>
-  <Node _name="Release Notifier" inputs="notifier:on.notifier out" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+  <Node _name="Release Notifier" inputs="notifier:l_no.value" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
 </VI>

@@ -106,13 +106,19 @@ def screen_begin(vi, desc, regs):
 def screen_end():
     const('tmo', 'int32', str(PERIOD_MS), 'sl', ind=4)
     node('Wait on Notification', 'notifier:l_n.value,timeout in ms (-1):tmo.value',
-         'notifier out:,notification:,timed out?:won.timed out?,error out:won.error out', 'won', 'sl', ind=4)
+         'notifier out:won.notifier out,notification:,timed out?:won.timed out?,error out:won.error out', 'won', 'sl', ind=4)
     node('Not', 'x:won.timed out?', '.not. x?:wnt..not. x?', 'wnt', 'sl', ind=4)
-    # only timed out? decides: Wait on Notification also reports error 1 when it merely timed out (measured),
-    # and a destroyed notifier (the main VI ended) returns at once, not timed out
-    w('    <Condition inputs="value:wnt..not. x?" uid="slc" uid_parent="sl" value="stop"/>')
+    # stop on the notification (not timed out) and on an error: a notifier that is gone (the main VI ended)
+    # returns at once with error 1 and timed out? TRUE (measured), so without the error the loop would spin
+    w('    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:won.error out" outputs="status:wer.status" uid="wer" uid_parent="sl"/>')
+    node('Or', 'x:wnt..not. x?,y:wer.status', 'x .or. y?:wst.x .or. y?', 'wst', 'sl', ind=4)
+    # the notifier leaves the loop through a tunnel, so Release Notifier runs after the loop. Taken from Obtain
+    # Notifier directly it ran first: every wait then failed at once with error 1 and the loop never waited -
+    # four screens spinning used 85 % of a 4-core machine (measured)
+    w('    <Tunnel _id="Out1" inputs="value:won.notifier out" outputs="value:l_no.value" uid="l_no" uid_parent="sl"/>')
+    w('    <Condition inputs="value:wst.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>')
     w('  </Structure>')
-    node('Release Notifier', 'notifier:on.notifier out', 'notifier name:,last notification:,error out:', 'rn')
+    node('Release Notifier', 'notifier:l_no.value', 'notifier name:,last notification:,error out:', 'rn')
     w('</VI>')
 
 

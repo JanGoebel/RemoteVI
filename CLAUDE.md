@@ -66,6 +66,7 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - remote `CvtPaneToPanelCoords`;
   - parallel MCP calls. Never run MCP calls in parallel.
 - **Close Reference:** sequence it through the error wire, in probes and product code alike. An unwired Close Reference may run first: misleading error 66 in probes, and Read Tips and Read Splitters kept returning their last message (the flaky tip strip test over VI Server).
+- **Release Notifier, Release Queue:** the same rule: take the refnum from the loop's output tunnel, never from Obtain directly. Released before the loop, every Wait on Notification fails at once with error 1 and `timed out?` TRUE, so a loop that stops on "not timed out" never waits and never stops: the four screens of the application example used 85 % of a 4-core machine (2026-11-10). Stop such a loop on the error too, and check LabVIEW's CPU with a new example at rest (about 3 % for the application example, 1 % for the demo).
 - **Composer and For Loops:** `count` is dropped when the loop also has an indexing input tunnel. To run a loop zero times, feed it an empty array (Select) instead.
 - **References into a subpanel VI:** a VI run as top level (the hooks over VI Server, `lvai_run_vi_and_read_values`) closes the references it opened when it ends. Closing one to a subpanel's VI (`InsertedVI`) removes that VI from its subpanel.
 - **Git Bash heredocs:** they mangle backslash escapes such as `\3A` in AIXML. Write edit scripts with the Write tool.

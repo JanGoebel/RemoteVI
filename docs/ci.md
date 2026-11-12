@@ -40,6 +40,8 @@ Build it locally (LabVIEW 2020 64-bit with Application Builder, VIPM 2026 or new
 
 The script builds the build specifications `RemoteVI Demo` and `RemoteVI Server` with LabVIEW 2020 (`tools/dev/Build Spec.vi` over LabVIEW's ActiveX server; it refuses another LabVIEW version), stages them, runs `vipm build`, and checks the package: the API VIs, the palette, the Tools menu VI, the example and both executables must be in it, and none of the repository's development files (tests, tools, docs, project, AIXML). The package lands in `builds/`. Install it for testing with VIPM (double-click the `.vip`), preferably in a LabVIEW where this repository is not open: the installed `RemoteVI.lvlib` and the repository's would cross-link.
 
+The package requires IG HTTP Utils, IG WebSocket Stream and IG Stream Base, so VIPM installs them with it. VIPM takes that list from the configuration `build/RemoteVI.vipc`, which the build spec names: the `External_Dependencies` of the spec alone leave the package without requirements. When a dependency of `vipm.toml` changes, change the spec and the configuration too; the script fails if the built package does not require every dependency of `vipm.toml`.
+
 VIPM writes icons as flattened data; an icon element must hold data (`00000000` for none), as an empty element makes `vipm build` fail with error 74 in *Flattened String To Variant*.
 
 ## The self-hosted LabVIEW runner

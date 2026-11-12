@@ -11,6 +11,7 @@
 *.rtm   binary
 *.lvsc  binary
 *.mnu   binary
+*.vipc  binary
 
 # LabVIEW XML files: text, but LabVIEW rewrites them; keep its line endings.
 *.lvproj -text

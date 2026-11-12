@@ -32,7 +32,7 @@
       <Pre-Uninstall_VI/>
       <Post-Uninstall_VI/>
     </Custom_Action_VIs>
-    <VI_Package_Configuration_File/>
+    <VI_Package_Configuration_File>RemoteVI.vipc</VI_Package_Configuration_File>
     <Description>
       <One_Line_Description_Summary>Operate a LabVIEW front panel from any web browser: pixel-accurate, written in G, no NI Web Server.</One_Line_Description_Summary>
       <Description>RemoteVI replaces LabVIEW Remote Panels. Put RemoteVI Start.vi and RemoteVI Stop.vi into your application and open the link Start returns (http://127.0.0.1:8088/?t=&lt;token&gt;) in a browser. The browser shows the front panel window exactly as LabVIEW draws it, including menus, dialogs and popups, and mouse and keyboard input reaches LabVIEW as if someone were at the machine.

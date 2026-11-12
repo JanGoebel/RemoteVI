@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Refresh Geometry.vi" description="Refreshes the server loop's cached panel geometry\2C window handle and panel origin inside the frame (RemoteVI Get Panel Geometry.vi - a VI Server call) when it is due - 500 ms after the last refresh (geometry due?) or right after the last popup closed - but only while NO popup is open and not within 300 ms of a click (recent click?)\3B on an error the cached values are kept. last refresh out is now after a refresh\2C else last refresh.">
+<VI _name="RemoteVI Refresh Geometry.vi" description="Refreshes the server loop's cached panel geometry\2C window handle and panel origin inside the frame (RemoteVI Get Panel Geometry.vi - a VI Server call) when it is due - 500 ms after the last refresh (geometry due?) or right after the last popup closed - but only while NO popup is open and not within 300 ms of a click (recent click?)\3B on an error the cached values are kept\2C and the cached window handle also when the panel has none any more (a closed panel answers 0 without an error\3A the stale handle stays\2C so RemoteVI Serve Clients Step.vi sees that the window is gone and ends the share - with 0 the loop never checked the VI again\2C measured\3A the share outlived its aborted VI). last refresh out is now after a refresh\2C else last refresh.">
   <Control _name="VI" conIdx="0" connection="required" description="The published VI." outputs="value:vi.value" type="ref{LV.VI}" uid="vi" uid_parent="root" value=""/>
   <Control _name="geo" conIdx="5" connection="required" description="The cached geometry." outputs="value:geo.value" type="cluster{int32.panelX,int32.panelY,int32.clientX,int32.clientY}" uid="geo" uid_parent="root" value="[0,0,0,0]"/>
   <Control _name="hWnd" conIdx="7" connection="required" description="The cached panel window handle." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
@@ -36,7 +36,9 @@
       <Node _name="Select" inputs="t:h_org.value,s:ggs.status,f:gg.origin" outputs="s? t\3Af:norg.s? t\3Af" uid="norg" uid_parent="cgt"/>
       <Node _name="Unbundle By Name" fields="status" inputs="input cluster:gg.error out" outputs="status:ggs.status" uid="ggs" uid_parent="cgt"/>
       <Node _name="Select" inputs="t:h_geo.value,s:ggs.status,f:gg.geo" outputs="s? t\3Af:ngeo.s? t\3Af" uid="ngeo" uid_parent="cgt"/>
-      <Node _name="Select" inputs="t:h_hw.value,s:ggs.status,f:gg.hWnd" outputs="s? t\3Af:nhw.s? t\3Af" uid="nhw" uid_parent="cgt"/>
+      <Node _name="Equal To 0?" inputs="x:gg.hWnd" outputs="x = 0?:gz.x = 0?" uid="gz" uid_parent="cgt"/>
+      <Node _name="Or" inputs="x:ggs.status,y:gz.x = 0?" outputs="x .or. y?:keephw.x .or. y?" uid="keephw" uid_parent="cgt"/>
+      <Node _name="Select" inputs="t:h_hw.value,s:keephw.x .or. y?,f:gg.hWnd" outputs="s? t\3Af:nhw.s? t\3Af" uid="nhw" uid_parent="cgt"/>
       <Tunnel _id="Out1" inputs="value:ngeo.s? t\3Af" uid="h_o1" uid_parent="cgt"/>
       <Tunnel _id="Out2" inputs="value:nhw.s? t\3Af" uid="h_o2" uid_parent="cgt"/>
       <Tunnel _id="Out3" inputs="value:h_now.value" uid="h_o3" uid_parent="cgt"/>

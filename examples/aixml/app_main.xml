@@ -1,4 +1,4 @@
-<VI _name="RemoteVI Application Example.vi" description="RemoteVI example\3A a LabVIEW application with a professional UI\2C operated from a web browser. The panel has three panes - a toolbar on top\2C the navigation Menu on the left (split off by a splitter bar the remote user can drag) and the main pane with the subpanel Screen. The menu loads one of four screens into the subpanel\3A Live Data\2C Log Files\2C Alarms and Settings (VIs in the folder Application Example\2C all running from the start\3B their dialogs and the native file dialog are answered in the browser too). RemoteVI Start.vi shares the panel on port 8087 (this computer only)\3B Remote Link shows the link with its access token. Quit stops the screens (named notifier RemoteVI Application Example) and RemoteVI Stop.vi ends the share. The data are simulated\3B nothing is written to disk.">
+<VI _name="RemoteVI Application Example.vi" description="RemoteVI example\3A a LabVIEW application with a professional UI\2C operated from a web browser. The panel has three panes - a toolbar on top\2C the navigation Menu on the left (split off by a splitter bar the remote user can drag) and the main pane with the subpanel Screen. The menu loads one of four screens into the subpanel\3A Live Data\2C Log Files\2C Alarms and Settings (VIs in the folder Application Example\2C all running from the start\3B their dialogs and the native file dialog are answered in the browser too). RemoteVI Start.vi shares the panel on port 8087 (this computer only)\3B Remote Link shows the link with its access token. Quit stops the screens (named notifier RemoteVI Application Example) and RemoteVI Stop.vi ends the share\3B closing the panel does the same. The data are simulated\3B nothing is written to disk.">
   <FreeLabel comment="Share the panel\2C run the screens\2C show the one the menu selects\2C stop everything on Quit" uid="lbl" uid_parent="root"/>
   <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8087"/>
   <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>
@@ -53,6 +53,7 @@
   <Constant _name="page names" outputs="value:pg.value" type="array{string}" uid="pg" uid_parent="root" value="[Live Data,Log Files,Alarms,Settings]"/>
   <Constant _name="loop period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="100"/>
   <Constant _name="last page" outputs="value:three.value" type="int32" uid="three" uid_parent="root" value="3"/>
+  <Constant _name="panel not seen open yet" outputs="value:fo0.value" type="bool" uid="fo0" uid_parent="root" value="false"/>
   <Structure _name="While Loop" count="" label="Show the screen the menu selects" uid="sl" uid_parent="root">
     <Tunnel _id="In1" inputs="value:sp.ref" outputs="value:l_sp.value" uid="l_sp" uid_parent="sl"/>
     <Tunnel _id="In2" inputs="value:refs.value" outputs="value:l_refs.value" uid="l_refs" uid_parent="sl"/>
@@ -66,6 +67,10 @@
     <ShiftReg uid="er_sr" uid_parent="sl">
       <Left inputs="value:ins.error out" outputs="value:er.value" uid="er" uid_parent="er_sr"/>
       <Right inputs="value:swc.err" outputs="value:" uid="er_r" uid_parent="er_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="fo_sr" uid_parent="sl">
+      <Left inputs="value:fo0.value" outputs="value:fow.value" uid="fow" uid_parent="fo_sr"/>
+      <Right inputs="value:foo.x .or. y?" outputs="value:" uid="fo_r" uid_parent="fo_sr"/>
     </ShiftReg>
     <Control _name="Menu" description="The screens of the application. Select one to show it." outputs="value:menu.value" type="int32" uid="menu" uid_parent="sl" value="0" style="Listbox"/>
     <Control _name="Quit" description="Stops the application and the remote share." outputs="value:quit.value" type="bool" uid="quit" uid_parent="sl" value="false" style="latched"/>
@@ -103,7 +108,12 @@
     <Indicator _name="Page" description="The screen shown." inputs="value:pn.element" type="string" uid="page" uid_parent="sl" value=""/>
     <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>
     <Tunnel _id="Out1" inputs="value:swc.err" outputs="value:lerr.value" uid="lerr" uid_parent="sl"/>
-    <Condition inputs="value:quit.value" uid="slc" uid_parent="sl" value="stop"/>
+    <Node _name="Property Node" fields="read+Front Panel Window\3AOpen" inputs="reference:" outputs="Front Panel Window\3AOpen:fpo.open,reference out:,error out:" type="{LV.VI}" uid="fpo" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:fow.value,y:fpo.open" outputs="x .or. y?:foo.x .or. y?" uid="foo" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:fpo.open" outputs=".not. x?:fnc..not. x?" uid="fnc" uid_parent="sl"/>
+    <Node _name="And" inputs="x:fow.value,y:fnc..not. x?" outputs="x .and. y?:fcl.x .and. y?" uid="fcl" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:quit.value,y:fcl.x .and. y?" outputs="x .or. y?:stp.x .or. y?" uid="stp" uid_parent="sl"/>
+    <Condition inputs="value:stp.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>
   </Structure>
   <Node _name="Send Notification" inputs="notifier:on.notifier out,notification:tr.value,error in (no error):lerr.value" outputs="notifier out:,error out:sn2.error out" uid="sn2" uid_parent="root"/>
   <Constant _name="grace ms" outputs="value:gr.value" type="int32" uid="gr" uid_parent="root" value="500"/>

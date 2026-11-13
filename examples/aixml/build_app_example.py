@@ -18,6 +18,11 @@
   7. tools/dev/Fit To Pane.vi on the main VI, once per line of FIT (printed too): the menu and the subpanel fill
      their panes and follow them when the window or a splitter bar moves. control size must equal pane size
      (the menu's height within a row).
+     Then run steps 6 and 7 for the main VI once more: after the first pass the toolbar controls sat 17 px
+     too low (Quit and the link cut off by the bar), the second Style Panel run places them right but resets
+     the menu's fit, and the second Fit To Pane restores it (measured 2026-11-13).
+     A change to the main VI's diagram needs steps 2 to 7 again: grafting a new scaffold into the finished
+     VI fails (the subpanel has no terminal: error 1063 in the graft's clear step).
   8. tools/dev/Set Columns.vi once per line of COLUMNS (printed too): the lists get their column widths and rows
      (a multicolumn listbox has no writable size); size must be 859 wide.
   9. save for LabVIEW 2020 (CLAUDE.md, Save version).

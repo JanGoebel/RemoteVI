@@ -34,7 +34,7 @@ def ind(name, typ, net, uid, parent='sl', desc='', extra='', value=''):
       % (name, desc, net, typ, uid, parent, value, extra))
 
 
-w('<VI _name="RemoteVI Demo.vi" description="RemoteVI example\\3A a data logger operated from a web browser. RemoteVI Start.vi shares this panel on port 8088 (this computer only)\\3B Remote Link shows the link with its access token - open it in a browser. The tabs hold the logger\\27s configuration (acquisition\\2C channels\\2C trigger\\2C logging - one control of every common kind)\\2C Acquire starts and stops four simulated channels on the Live Data graph\\2C Apply asks for confirmation in a LabVIEW dialog and Load Configuration opens the native file dialog - both are answered in the browser like the panel is operated. Quit stops the logger and RemoteVI Stop.vi ends the share. The data are simulated\\3B nothing is written to disk.">')
+w('<VI _name="RemoteVI Demo.vi" description="RemoteVI example\\3A a data logger operated from a web browser. RemoteVI Start.vi shares this panel on port 8088 (this computer only)\\3B Remote Link shows the link with its access token - open it in a browser. The tabs hold the logger\\27s configuration (acquisition\\2C channels\\2C trigger\\2C logging - one control of every common kind)\\2C Acquire starts and stops four simulated channels on the Live Data graph\\2C Apply asks for confirmation in a LabVIEW dialog and Load Configuration opens the native file dialog - both are answered in the browser like the panel is operated. Quit stops the logger and RemoteVI Stop.vi ends the share\\3B closing the panel does the same. The data are simulated\\3B nothing is written to disk.">')
 w('  <FreeLabel comment="Share the panel\\2C run the logger until Quit\\2C stop sharing" uid="lbl" uid_parent="root"/>')
 w('  <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>')
 w('  <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>')
@@ -48,6 +48,7 @@ w('  <Node _name="Initialize Array" inputs="element:nan.value,dimension size:one
 w('  <Node _name="Build Array" inputs="element:row.initialized array,element:row.initialized array,element:row.initialized array,element:row.initialized array" outputs="appended array:h0.value" uid="h0" uid_parent="root"/>')
 w('  <Constant _name="no samples" outputs="value:k0.value" type="double" uid="k0" uid_parent="root" value="0"/>')
 w('  <Constant _name="first status" outputs="value:s0.value" type="string" uid="s0" uid_parent="root" value="Ready. Press Acquire to start the simulated channels."/>')
+w('  <Constant _name="panel not seen open yet" outputs="value:fo0.value" type="bool" uid="fo0" uid_parent="root" value="false"/>')
 w('  <Structure _name="While Loop" count="" label="Logger loop\\2C every 50 ms" uid="sl" uid_parent="root">')
 w('    <Tunnel _id="In1" inputs="value:hl.value" outputs="value:l_hl.value" uid="l_hl" uid_parent="sl"/>')
 w('    <Tunnel _id="In2" inputs="value:ms.value" outputs="value:l_ms.value" uid="l_ms" uid_parent="sl"/>')
@@ -63,6 +64,10 @@ w('    </ShiftReg>')
 w('    <ShiftReg uid="sr_s" uid_parent="sl">')
 w('      <Left inputs="value:s0.value" outputs="value:stat.value" uid="sr_sl" uid_parent="sr_s"/>')
 w('      <Right inputs="value:ld.status" outputs="value:" uid="sr_sr" uid_parent="sr_s"/>')
+w('    </ShiftReg>')
+w('    <ShiftReg uid="fo_sr" uid_parent="sl">')
+w('      <Left inputs="value:fo0.value" outputs="value:fow.value" uid="fow" uid_parent="fo_sr"/>')
+w('      <Right inputs="value:foo.x .or. y?" outputs="value:" uid="fo_r" uid_parent="fo_sr"/>')
 w('    </ShiftReg>')
 
 # --- configuration controls: the simulation reads Sample Rate, Samples per Read, Add Noise and the channel
@@ -227,7 +232,15 @@ ind('Status', 'string', 'ld.status', 'stati', desc='What the logger did last.')
 
 w('    <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>')
 w('    <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>')
-w('    <Condition inputs="value:quit.value" uid="slc" uid_parent="sl" value="stop"/>')
+# closing the panel quits like the Quit button: a VI started over VI Server keeps running without its panel
+# (measured), with nothing left to stop it. Only once the panel has been seen open, so a VI that is run
+# before its panel opens does not quit at once
+w('    <Node _name="Property Node" fields="read+Front Panel Window\\3AOpen" inputs="reference:" outputs="Front Panel Window\\3AOpen:fpo.open,reference out:,error out:" type="{LV.VI}" uid="fpo" uid_parent="sl"/>')
+w('    <Node _name="Or" inputs="x:fow.value,y:fpo.open" outputs="x .or. y?:foo.x .or. y?" uid="foo" uid_parent="sl"/>')
+w('    <Node _name="Not" inputs="x:fpo.open" outputs=".not. x?:fnc..not. x?" uid="fnc" uid_parent="sl"/>')
+w('    <Node _name="And" inputs="x:fow.value,y:fnc..not. x?" outputs="x .and. y?:fcl.x .and. y?" uid="fcl" uid_parent="sl"/>')
+w('    <Node _name="Or" inputs="x:quit.value,y:fcl.x .and. y?" outputs="x .or. y?:stp.x .or. y?" uid="stp" uid_parent="sl"/>')
+w('    <Condition inputs="value:stp.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>')
 w('  </Structure>')
 o.extend(ROOT)
 w('  <Call inputs="port:port.value,error in:err_end.value" outputs="error out:sp.error out" target="RemoteVI Stop.vi" uid="sp" uid_parent="root"/>')

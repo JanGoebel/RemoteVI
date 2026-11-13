@@ -500,7 +500,7 @@ save('app_settings.xml')
 # ================================================================ main VI (scaffold for the splitter panel)
 SCREENS = ['RemoteVI App Live Data.vi', 'RemoteVI App Log Files.vi', 'RemoteVI App Alarms.vi', 'RemoteVI App Settings.vi']
 PAGES = ['Live Data', 'Log Files', 'Alarms', 'Settings']
-w('<VI _name="RemoteVI Application Example.vi" description="RemoteVI example\\3A a LabVIEW application with a professional UI\\2C operated from a web browser. The panel has three panes - a toolbar on top\\2C the navigation Menu on the left (split off by a splitter bar the remote user can drag) and the main pane with the subpanel Screen. The menu loads one of four screens into the subpanel\\3A Live Data\\2C Log Files\\2C Alarms and Settings (VIs in the folder Application Example\\2C all running from the start\\3B their dialogs and the native file dialog are answered in the browser too). RemoteVI Start.vi shares the panel on port 8087 (this computer only)\\3B Remote Link shows the link with its access token. Quit stops the screens (named notifier RemoteVI Application Example) and RemoteVI Stop.vi ends the share. The data are simulated\\3B nothing is written to disk.">')
+w('<VI _name="RemoteVI Application Example.vi" description="RemoteVI example\\3A a LabVIEW application with a professional UI\\2C operated from a web browser. The panel has three panes - a toolbar on top\\2C the navigation Menu on the left (split off by a splitter bar the remote user can drag) and the main pane with the subpanel Screen. The menu loads one of four screens into the subpanel\\3A Live Data\\2C Log Files\\2C Alarms and Settings (VIs in the folder Application Example\\2C all running from the start\\3B their dialogs and the native file dialog are answered in the browser too). RemoteVI Start.vi shares the panel on port 8087 (this computer only)\\3B Remote Link shows the link with its access token. Quit stops the screens (named notifier RemoteVI Application Example) and RemoteVI Stop.vi ends the share\\3B closing the panel does the same. The data are simulated\\3B nothing is written to disk.">')
 w('  <FreeLabel comment="Share the panel\\2C run the screens\\2C show the one the menu selects\\2C stop everything on Quit" uid="lbl" uid_parent="root"/>')
 const('port', 'uint16', '8087', name='port')
 w('  <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>')
@@ -563,6 +563,7 @@ w('  <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="r
 const('pg', 'array{string}', strs(PAGES), name='page names')
 const('ms', 'int32', str(PERIOD_MS), name='loop period ms')
 const('three', 'int32', '3', name='last page')
+const('fo0', 'bool', 'false', name='panel not seen open yet')
 w('  <Structure _name="While Loop" count="" label="Show the screen the menu selects" uid="sl" uid_parent="root">')
 for k, (src, u) in enumerate([('sp.ref', 'l_sp'), ('refs.value', 'l_refs'), ('pg.value', 'l_pg'), ('ms.value', 'l_ms'), ('three.value', 'l_3')]):
     w('    <Tunnel _id="In%d" inputs="value:%s" outputs="value:%s.value" uid="%s" uid_parent="sl"/>' % (k + 1, src, u, u))
@@ -573,6 +574,10 @@ w('    </ShiftReg>')
 w('    <ShiftReg uid="er_sr" uid_parent="sl">')
 w('      <Left inputs="value:ins.error out" outputs="value:er.value" uid="er" uid_parent="er_sr"/>')
 w('      <Right inputs="value:swc.err" outputs="value:" uid="er_r" uid_parent="er_sr"/>')
+w('    </ShiftReg>')
+w('    <ShiftReg uid="fo_sr" uid_parent="sl">')
+w('      <Left inputs="value:fo0.value" outputs="value:fow.value" uid="fow" uid_parent="fo_sr"/>')
+w('      <Right inputs="value:foo.x .or. y?" outputs="value:" uid="fo_r" uid_parent="fo_sr"/>')
 w('    </ShiftReg>')
 menu = ctl('Menu', 'int32', '0', 'menu', desc='The screens of the application. Select one to show it.', extra=' style="Listbox"')
 quit_ = ctl('Quit', 'bool', 'false', 'quit', desc='Stops the application and the remote share.', extra=' style="latched"')
@@ -600,7 +605,15 @@ node('Index Array', 'array:l_pg.value,index:want.min', 'element:pn.element', 'pn
 ind_('Page', 'string', 'pn.element', 'page', desc='The screen shown.')
 w('    <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>')
 w('    <Tunnel _id="Out1" inputs="value:swc.err" outputs="value:lerr.value" uid="lerr" uid_parent="sl"/>')
-w('    <Condition inputs="value:quit.value" uid="slc" uid_parent="sl" value="stop"/>')
+# closing the panel quits like the Quit button: a VI started over VI Server keeps running without its panel
+# (measured), with nothing left to stop it. Only once the panel has been seen open, so a VI that is run
+# before its panel opens does not quit at once
+w('    <Node _name="Property Node" fields="read+Front Panel Window\\3AOpen" inputs="reference:" outputs="Front Panel Window\\3AOpen:fpo.open,reference out:,error out:" type="{LV.VI}" uid="fpo" uid_parent="sl"/>')
+node('Or', 'x:fow.value,y:fpo.open', 'x .or. y?:foo.x .or. y?', 'foo', 'sl', ind=4)
+node('Not', 'x:fpo.open', '.not. x?:fnc..not. x?', 'fnc', 'sl', ind=4)
+node('And', 'x:fow.value,y:fnc..not. x?', 'x .and. y?:fcl.x .and. y?', 'fcl', 'sl', ind=4)
+node('Or', 'x:quit.value,y:fcl.x .and. y?', 'x .or. y?:stp.x .or. y?', 'stp', 'sl', ind=4)
+w('    <Condition inputs="value:stp.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>')
 w('  </Structure>')
 # stop: notify the screens, give them a moment, take the screen out, close the references
 w('  <Node _name="Send Notification" inputs="notifier:on.notifier out,notification:tr.value,error in (no error):lerr.value" outputs="notifier out:,error out:sn2.error out" uid="sn2" uid_parent="root"/>')

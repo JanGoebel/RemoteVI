@@ -1,0 +1,28 @@
+<VI _name="RemoteVI Print Frame.vi" description="Captures one listed window (a dialog\2C native file dialog\2C subVI panel or other window of the application) for a WINDOW FRAME\3A the window draws itself with PrintWindow (RemoteVI Capture Window.vi\2C flags 0\2C WM_PRINT into a memory bitmap) and the picture is cut to its client area (RemoteVI Frame Rect.vi). Not GetDC + BitBlt like the main frame (RemoteVI Capture Frame.vi)\3A a window that has just appeared and has not painted its surface yet gives the SCREEN's pixels there - measured on the demo's native file dialog with a red window over its place\3A the first WINDOW FRAME was 450743 of 593184 pixels red\2C so a client saw whatever other window was there. PrintWindow can only give the window's own drawing. No VI Server call\2C so it works while a dialog's modal loop holds LabVIEW's UI thread. When the window cannot be drawn (PrintWindow failed\2C minimized\2C gone) the cache is kept\2C so the last picture stays.">
+  <Control _name="cache" conIdx="0" connection="required" description="The last frame image with its size and the tick count of the last frame." outputs="value:ca.value" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="ca" uid_parent="root" value="[[],0,0,0]"/>
+  <Control _name="hWnd" conIdx="5" connection="required" description="Native handle of the window." outputs="value:hw.value" type="uint64" uid="hw" uid_parent="root" value="0"/>
+  <Call inputs="hWnd:hw.value" outputs="rect:fr.rect,error out:fr.error out" target="RemoteVI Frame Rect.vi" uid="fr" uid_parent="root"/>
+  <Call inputs="hwnd:hw.value,error in:fr.error out" outputs="pixmap:pwc.pixmap,rect:pwc.rect,error out:pwc.error out" target="RemoteVI Capture Window.vi" uid="pwc" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y" inputs="input cluster:pwc.rect" outputs="x:wr.x,y:wr.y" uid="wr" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="x,y,w,h" inputs="input cluster:fr.rect" outputs="x:fu.x,y:fu.y,w:fu.w,h:fu.h" uid="fu" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:fu.x,y:wr.x" outputs="x-y:ox.x-y" uid="ox" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:fu.y,y:wr.y" outputs="x-y:oy.x-y" uid="oy" uid_parent="root"/>
+  <Node _name="Array Subset" dimensions="2" inputs="array:pwc.pixmap,index:oy.x-y,length:fu.h,index:ox.x-y,length:fu.w" outputs="subarray:crop.subarray" uid="crop" uid_parent="root"/>
+  <Constant outputs="value:k0.value" type="int32" uid="k0" uid_parent="root" value="0"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:crop.subarray,index (row):k0.value,disabled index (col):" outputs="element:row0.element" uid="row0" uid_parent="root"/>
+  <Node _name="Index Array" dimensions="2" inputs="array:crop.subarray,disabled index (row):,index (col):k0.value" outputs="element:col0.element" uid="col0" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:row0.element" outputs="size(s):cols.element" uid="cols" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:col0.element" outputs="size(s):rows.element" uid="rows" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:pwc.error out" outputs="status:pe.status" uid="pe" uid_parent="root"/>
+  <Node _name="Greater Than 0?" inputs="x:rows.element" outputs="x &gt; 0?:hr.x &gt; 0?" uid="hr" uid_parent="root"/>
+  <Node _name="Greater Than 0?" inputs="x:cols.element" outputs="x &gt; 0?:hc.x &gt; 0?" uid="hc" uid_parent="root"/>
+  <Node _name="Not" inputs="x:pe.status" outputs=".not. x?:pok..not. x?" uid="pok" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:pok..not. x?,element:hr.x &gt; 0?,element:hc.x &gt; 0?" outputs="appended array:okv.appended array" uid="okv" uid_parent="root"/>
+  <Node _name="And Array Elements" inputs="Boolean array:okv.appended array" outputs="logical AND:ok.logical AND" uid="ok" uid_parent="root"/>
+  <Node _name="Bundle By Name" fields="pixmap,width,height" inputs="pixmap:crop.subarray,width:cols.element,height:rows.element,input cluster:ca.value" outputs="output cluster:nca.output cluster" uid="nca" uid_parent="root"/>
+  <Node _name="Select" inputs="t:nca.output cluster,s:ok.logical AND,f:ca.value" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="pixmap" inputs="input cluster:sel.s? t\3Af" outputs="pixmap:selp.pixmap" uid="selp" uid_parent="root"/>
+  <FreeLabel comment="PrintWindow the window\2C cut to the frame" uid="lbl" uid_parent="root"/>
+  <Indicator _name="frame" conIdx="4" connection="recommended" description="The frame image to send\2C [row\2C column] 0x00RRGGBB." inputs="value:selp.pixmap" type="array.2{uint32}" uid="o_fr" uid_parent="root" value="[]"/>
+  <Indicator _name="cache out" conIdx="6" connection="recommended" description="The new capture with its size\2C or cache when the window could not be drawn. time is passed through." inputs="value:sel.s? t\3Af" type="cluster{array.2{uint32}.pixmap,int32.width,int32.height,uint32.time}" uid="o_ca" uid_parent="root" value="[[],0,0,0]"/>
+</VI>

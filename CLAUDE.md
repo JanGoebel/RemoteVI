@@ -29,13 +29,14 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - the library re-add chain: `mk_lists.py` → `Add To Library Files.vi` → `fixlib.py`;
   - `start-labview.ps1 [-Version 2020]`;
   - Save For Previous, `lv_versions.py`, `lvlib_version.py` (save version);
-  - Remote Run, Remote Exec State (drive and check another LabVIEW over VI Server).
+  - Remote Run, Remote Exec State (drive and check another LabVIEW over VI Server);
+  - icons: every new VI gets a row in `icons.py`, then `Set Icons.vi` (no default LabVIEW icons).
 - **Save version:** after generating, recomposing or saving anything in a newer LabVIEW:
   1. `python tools/dev/lv_versions.py --expect 20.0` lists the VIs to convert; write their paths to a text file.
   2. Run `tools/dev/Save For Previous.vi` (items file, version 20.0) in the LabVIEW that has them in memory. It saves in place; close them without saving afterwards.
   3. `python tools/dev/lvlib_version.py source/RemoteVI.lvlib "hooks/RemoteVI Hooks.lvlib"` whenever LabVIEW saved a library (the library re-add chain does). `gen-lvproj.py` writes the project as 20.0.
   4. Check in LabVIEW 2020: start it with `tools/dev/start-labview.ps1` (VI Server port 3365, next to 2026 on 3364) and run `tools/dev/Remote Exec State.vi` from the newer LabVIEW over all VIs. Broken by design: the four IsX wrapper templates and `tests/fixtures/build/Fixture Tab Panel.vi`.
-- **LabVIEW 2020 side by side:** the `LabVIEW.Application` ActiveX ProgID belongs to LabVIEW 2020 on this station and does not reach a running instance, so `tools/lv-share-url.ps1` fails. Drive 2020 with `tools/dev/Remote Run.vi` (Status.vi, result `text`; Launch Detached.vi, input `path`; Build Spec.vi). A build makes 2020 stop answering VI Server for a while: Run VI may return 1130 while the build still finishes - check the output files.
+- **LabVIEW 2020 side by side:** the `LabVIEW.Application` ActiveX ProgID does not reach a running instance, so `tools/lv-share-url.ps1` fails; since 2026-11-03 it starts LabVIEW 2026 64-bit on this station (it was 2020 before), so `scripts/build-package.ps1` refuses to build the executables here (`-SkipExecutables`). Drive 2020 with `tools/dev/Remote Run.vi` (Status.vi, result `text`; Launch Detached.vi, input `path`; Build Spec.vi). A build makes 2020 stop answering VI Server for a while: Run VI may return 1130 while the build still finishes - check the output files.
 
 ## Pitfalls that cost hours
 - **Launching:** `lvai_run_vi_as_top_level` ABORTS long-running VIs at its timeout. Start servers detached with `tools/dev/Launch Detached.vi` (input `path`).
@@ -45,6 +46,8 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   3. Run `tools/dev/Add To Library Files.vi` with inputs library path, items file and callers file (both in `tools/dev/`). Check that `add code max` = 0.
   4. `python tools/dev/fixlib.py`.
   5. Repeat until mk_lists reports 0 items. Errors 1562, 56002 and 56003 mean the library or a VI is still in memory.
+- **Wide constants:** a diagram constant of a cluster holding arrays (or of a 2D array) is drawn many elements wide, and layout cannot shrink it. Use a control left off the connector pane (`connection="optional"`), or build the value. On a UI panel, also hide that control (layout row with width -1).
+- **Translate Input:** `tools/aixml/Input/translate_input.xml` does not compose to a runnable VI (Bundle By Name: cluster is invalid). Keep the committed VI; do not recompose it until that is fixed.
 - **Server Loop:** recomposing `Server/RemoteVI Server Loop.vi` loses reentrancy. Run `scripts/Set Reentrant.vi` on it, otherwise Start fails with 1096.
 - **Window handles:** a panel's window handle changes on every launch. Never hard-code it.
 - **Shares and tokens:**
@@ -63,13 +66,15 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - remote `CvtPaneToPanelCoords`;
   - parallel MCP calls. Never run MCP calls in parallel.
 - **Close Reference:** sequence it through the error wire, in probes and product code alike. An unwired Close Reference may run first: misleading error 66 in probes, and Read Tips and Read Splitters kept returning their last message (the flaky tip strip test over VI Server).
+- **Release Notifier, Release Queue:** the same rule: take the refnum from the loop's output tunnel, never from Obtain directly. Released before the loop, every Wait on Notification fails at once with error 1 and `timed out?` TRUE, so a loop that stops on "not timed out" never waits and never stops: the four screens of the application example used 85 % of a 4-core machine (2026-11-10). Stop such a loop on the error too, and check LabVIEW's CPU with a new example at rest (about 3 % for the application example, 1 % for the demo).
 - **Composer and For Loops:** `count` is dropped when the loop also has an indexing input tunnel. To run a loop zero times, feed it an empty array (Select) instead.
 - **References into a subpanel VI:** a VI run as top level (the hooks over VI Server, `lvai_run_vi_and_read_values`) closes the references it opened when it ends. Closing one to a subpanel's VI (`InsertedVI`) removes that VI from its subpanel.
-- **Git Bash heredocs:** they mangle backslash escapes such as `\3A` in AIXML. Write edit scripts with the Write tool.
+- **Git Bash heredocs:** they mangle backslash escapes such as `\3A` in AIXML. Write edit scripts with the Write tool. `printf` does the same to Windows paths (`\e` in `\examples` became an escape character, and Save For Previous answered code 7): write list files with the Write tool too.
 - **LabVIEW 2020 compatibility:**
   - A library saved by a newer LabVIEW also carries that version in the header of its flattened icon (`NI.Lib.Icon`). LabVIEW 2020 then refuses the library (error 122) and every member VI is broken with "error of type 2000000". `lvlib_version.py` rewrites the header.
   - LabVIEW 2020's `LV Image to PNG Data.vi` has no compression input and writes uncompressed PNGs. RemoteVI calls LabVIEW's own `LVImageDataToPNGByteArray` instead (`Win32/LabVIEW LVImageDataToPNGByteArray.vi`, library `LabVIEW`, C calling convention), which takes the zlib level in every version.
   - A VI started over VI Server with Run VI has no open panel, and RemoteVI then streams a 0x0 frame. Start shared VIs through `Launch Detached.vi`, which opens the panel.
+- **Closed panel:** a VI started with `Launch Detached.vi` keeps running (Execution:State 2) when its panel is closed, also by the client's close button (`x 0`). The share then ends because the shared window is gone (`IsWindow` in `RemoteVI Serve Clients Step.vi`; `RemoteVI Refresh Geometry.vi` keeps the stale handle). A VI without Panel Close handling stays in memory without a panel: stop it with `Abort Path.vi`. The demo and the application example quit by themselves: their loops read `Front Panel Window:Open` and stop once the panel was open and is closed. A window handle of 0 in the loop state blocks the VI Stopped check (measured 2026-11-12: the share outlived its aborted VI and used half a core), so never let the handle fall back to 0.
 - **Fixture state:** relaunching a fixture that is still in memory keeps the last run's ring and tab values, while its log starts empty; the ring and tab tests then pick the current item and fail. Close the panel (`FP Close Path.vi`) before relaunching.
 - **Tip strips:** LabVIEW shows its own tip strips only while it is the foreground application. RemoteVI therefore sends tip texts itself (`tips` message).
 
@@ -94,4 +99,4 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
 - **VI Server route:** subpanel tip strips are left out (see the pitfall on references into a subpanel VI); reading them would need a hooks VI that keeps running.
 - **Modifiers:** AttachThreadInput fallback for window targets without VI Server, once the user allows it.
 - **Context menus:** the short host flash (70–120 ms) of remotely opened menus remains. An empty window region breaks keyboard-driven menus.
-- **Packaging and CI:** VIPM package (deferred by the user), main branch and PR workflow, self-hosted CI runner, cursor shape.
+- **Packaging and CI:** the VI package (`build/RemoteVI.vipb`, `scripts/build-package.ps1`, docs/ci.md) builds on this station (2026-11-11): LabVIEW 2020 starts without an activation prompt again; build each executable with `tools/dev/Remote Run.vi` → `Build Spec.vi` in LabVIEW 2020 on 3365 (about 50 s), then run `scripts/build-package.ps1 -SkipExecutables` (stages the executables, VIPM builds with the running LabVIEW 2020 in about 3 min). The package requires the three IG dependencies of `vipm.toml` since 2026-11-12: VIPM takes `Requires` from the configuration `build/RemoteVI.vipc` named in the spec, not from the spec's `External_Dependencies` (a zip of `config.xml` plus each package's `.spec` and `.bmp`; keep it in step with `vipm.toml`). The palette definition in the spec numbers rows and columns from 1: VIPM silently drops an item at row or column 0 (the 0.1.0 palette showed two of seven VIs); `build-package.ps1` now checks the generated `.mnu`. VIPM reads the spec's texts as ANSI: keep them ASCII (`»` showed as `Â»`). `scripts/run-lv-integration.ps1` calls `tests/fixtures/Launch Fixture (CLI).vi`, which does not exist. Main branch and PR workflow, self-hosted CI runner, cursor shape.

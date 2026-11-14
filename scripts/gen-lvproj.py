@@ -20,6 +20,8 @@ and five build specifications (builds/ is git-ignored, nothing built is committe
 
   RemoteVI Server           builds/RemoteVI Server/RemoteVI Server.exe - App/RemoteVI Server.vi
   RemoteVI Demo             builds/RemoteVI Demo/RemoteVI Demo.exe - examples/RemoteVI Demo.vi
+  RemoteVI Application Example  builds/RemoteVI Application Example/... - examples/RemoteVI Application Example.vi
+                            (its screens are run by path, so they are always included)
   RemoteVI Fixture          builds/RemoteVI Fixture/RemoteVI Fixture.exe - the test fixture in its own process
   RemoteVI Complex Fixture  builds/RemoteVI Complex Fixture/... - the complex fixture in its own process
 
@@ -39,6 +41,7 @@ LV_EXT = {'.vi', '.ctl', '.vit', '.lvclass', '.lvlib'}
 # (virtual folder path, disk directory, recurse into subdirectories as subfolders)
 FOLDERS = [
     ('Examples', 'examples', False),
+    ('Examples/Application Example', 'examples/Application Example', False),
     ('Tests/Fixture', 'tests/fixtures', False),
     ('Tests/Fixture/build', 'tests/fixtures/build', False),
     ('Tests/Caraya', 'tests/caraya', False),
@@ -64,6 +67,9 @@ EXES = [
      'RemoteVI Server - share any window in a web browser'),
     ('RemoteVI Demo', 'RemoteVI Demo.exe', '/My Computer/Examples/RemoteVI Demo.vi',
      'RemoteVI Demo - a built application that shares its own panel'),
+    ('RemoteVI Application Example', 'RemoteVI Application Example.exe', '/My Computer/Examples/RemoteVI Application Example.vi',
+     'RemoteVI Application Example - a splitter UI with screens in a subpanel, shared in a web browser',
+     ['/My Computer/Examples/Application Example/RemoteVI App %s.vi' % s for s in ('Live Data', 'Log Files', 'Alarms', 'Settings')]),
     ('RemoteVI Fixture', 'RemoteVI Fixture.exe', '/My Computer/Tests/Fixture/RemoteVI Fixture.vi',
      'RemoteVI Fixture - the integration-test fixture in a process of its own (cross-process tests, docs/testing.md)'),
     ('RemoteVI Complex Fixture', 'RemoteVI Complex Fixture.exe', '/My Computer/Tests/Fixture/RemoteVI Complex Fixture.vi',

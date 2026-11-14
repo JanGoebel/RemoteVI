@@ -113,6 +113,8 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI List Popups.vi" Type="VI" URL="../Server/RemoteVI List Popups.vi"/>
 		<Item Name="RemoteVI Logical Popups.vi" Type="VI" URL="../Server/RemoteVI Logical Popups.vi"/>
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
+		<Item Name="RemoteVI Loop Greeting.vi" Type="VI" URL="../Server/RemoteVI Loop Greeting.vi"/>
+		<Item Name="RemoteVI Loop Init.vi" Type="VI" URL="../Server/RemoteVI Loop Init.vi"/>
 		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
 		<Item Name="RemoteVI New Token.vi" Type="VI" URL="../Server/RemoteVI New Token.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
@@ -120,6 +122,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Other Shares.vi" Type="VI" URL="../Server/RemoteVI Other Shares.vi"/>
 		<Item Name="RemoteVI Panel Controls.vi" Type="VI" URL="../Server/RemoteVI Panel Controls.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
+		<Item Name="RemoteVI Print Frame.vi" Type="VI" URL="../Server/RemoteVI Print Frame.vi"/>
 		<Item Name="RemoteVI Publish Status.vi" Type="VI" URL="../Server/RemoteVI Publish Status.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Panel Info.vi" Type="VI" URL="../Server/RemoteVI Read Panel Info.vi"/>
@@ -139,6 +142,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Send Tips.vi" Type="VI" URL="../Server/RemoteVI Send Tips.vi"/>
 		<Item Name="RemoteVI Send Window Frame.vi" Type="VI" URL="../Server/RemoteVI Send Window Frame.vi"/>
 		<Item Name="RemoteVI Send Windows.vi" Type="VI" URL="../Server/RemoteVI Send Windows.vi"/>
+		<Item Name="RemoteVI Serve Clients Step.vi" Type="VI" URL="../Server/RemoteVI Serve Clients Step.vi"/>
 		<Item Name="RemoteVI Serve Pending Connection.vi" Type="VI" URL="../Server/RemoteVI Serve Pending Connection.vi"/>
 		<Item Name="RemoteVI Server Loop.vi" Type="VI" URL="../Server/RemoteVI Server Loop.vi"/>
 		<Item Name="RemoteVI Server Setup.vi" Type="VI" URL="../Server/RemoteVI Server Setup.vi"/>
@@ -154,6 +158,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Target Running.vi" Type="VI" URL="../Server/RemoteVI Target Running.vi"/>
 		<Item Name="RemoteVI Token Check.vi" Type="VI" URL="../Server/RemoteVI Token Check.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
+		<Item Name="RemoteVI Track Target.vi" Type="VI" URL="../Server/RemoteVI Track Target.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>
 		<Item Name="RemoteVI VI Server Request.vi" Type="VI" URL="../Server/RemoteVI VI Server Request.vi"/>
 		<Item Name="RemoteVI VI Stopped.vi" Type="VI" URL="../Server/RemoteVI VI Stopped.vi"/>

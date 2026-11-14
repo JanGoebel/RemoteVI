@@ -1,0 +1,343 @@
+<VI _name="RemoteVI App Log Files.vi" description="Screen Log Files of RemoteVI Application Example.vi\3A the log files of the station (simulated - none exists on disk). Selecting a file in Log Files shows its preview and details. Delete asks in a LabVIEW dialog and removes the file from the list\3B Export asks for a target in the native file dialog. Runs until the notifier RemoteVI Application Example fires (the main VI quits).">
+  <Constant _name="file names" outputs="value:fn0.value" type="array{string}" uid="fn0" uid_parent="root" value="[cooling-loop_2026-10-10_0800.tdms,cooling-loop_2026-10-11_0800.tdms,cooling-loop_2026-10-12_0800.tdms,pump-test_2026-10-13_1430.tdms,cooling-loop_2026-10-14_0800.tdms,cooling-loop_2026-10-15_0800.tdms,cooling-loop_2026-10-16_0800.tdms,pump-test_2026-10-17_1430.tdms,cooling-loop_2026-10-18_0800.tdms,cooling-loop_2026-10-19_0800.tdms,cooling-loop_2026-10-20_0800.tdms,pump-test_2026-10-21_1430.tdms,cooling-loop_2026-10-22_0800.tdms,cooling-loop_2026-10-23_0800.tdms,cooling-loop_2026-10-24_0800.tdms,pump-test_2026-10-25_1430.tdms,cooling-loop_2026-10-26_0800.tdms,cooling-loop_2026-10-27_0800.tdms,cooling-loop_2026-10-28_0800.tdms,pump-test_2026-10-29_1430.tdms,cooling-loop_2026-10-30_0800.tdms]"/>
+  <Constant _name="started" outputs="value:fs0.value" type="array{string}" uid="fs0" uid_parent="root" value="[2026-10-10 08:00,2026-10-11 08:00,2026-10-12 08:00,2026-10-13 14:30,2026-10-14 08:00,2026-10-15 08:00,2026-10-16 08:00,2026-10-17 14:30,2026-10-18 08:00,2026-10-19 08:00,2026-10-20 08:00,2026-10-21 14:30,2026-10-22 08:00,2026-10-23 08:00,2026-10-24 08:00,2026-10-25 14:30,2026-10-26 08:00,2026-10-27 08:00,2026-10-28 08:00,2026-10-29 14:30,2026-10-30 08:00]"/>
+  <Constant _name="durations" outputs="value:fd0.value" type="array{string}" uid="fd0" uid_parent="root" value="[8 h 07 min,7 h 14 min,8 h 21 min,2 h 28 min,8 h 35 min,8 h 42 min,7 h 49 min,3 h 56 min,8 h 03 min,8 h 10 min,8 h 17 min,1 h 24 min,8 h 31 min,8 h 38 min,8 h 45 min,2 h 52 min,7 h 59 min,8 h 06 min,8 h 13 min,3 h 20 min,8 h 27 min]"/>
+  <Constant _name="sizes" outputs="value:fz0.value" type="array{string}" uid="fz0" uid_parent="root" value="[409 MB,359 MB,411 MB,106 MB,413 MB,414 MB,364 MB,161 MB,417 MB,418 MB,419 MB,63 MB,421 MB,422 MB,423 MB,118 MB,374 MB,426 MB,427 MB,173 MB,429 MB]"/>
+  <Constant _name="rows to show" outputs="value:dty0.value" type="bool" uid="dty0" uid_parent="root" value="true"/>
+  <Constant _name="no selection yet" outputs="value:psel0.value" type="int32" uid="psel0" uid_parent="root" value="-2"/>
+  <Constant _name="no preview" outputs="value:pv0.value" type="array.2{double}" uid="pv0" uid_parent="root" value="[]"/>
+  <Constant _name="no details" outputs="value:dt0.value" type="string" uid="dt0" uid_parent="root" value="Select a log file to see its preview."/>
+  <Constant _name="no status" outputs="value:st0.value" type="string" uid="st0" uid_parent="root" value=""/>
+  <FreeLabel comment="A screen of RemoteVI Application Example.vi\3A runs until the notifier RemoteVI Application Example fires" uid="lbl" uid_parent="root"/>
+  <Constant _name="notifier name" outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value="RemoteVI Application Example"/>
+  <Constant _name="notification type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:nt.value" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Constant outputs="value:lbcn.value" type="int32" uid="lbcn" uid_parent="root" value="4"/>
+  <Constant outputs="value:lbch.value" type="array{string}" uid="lbch" uid_parent="root" value="[File,Started,Duration,Size]"/>
+  <Constant outputs="value:lbct.value" type="bool" uid="lbct" uid_parent="root" value="true"/>
+  <Node _name="Property Node" fields="write+Number of Columns,write+Column Header Strings[],write+Visible Items\3AColumn Headers Visible" link="Log Files" inputs="error in (no error):,Number of Columns:lbcn.value,Column Header Strings[]:lbch.value,Visible Items\3AColumn Headers Visible:lbct.value" outputs="error out:" type="{LV.MulticolumnListbox}" uid="lbc" uid_parent="root"/>
+  <Structure _name="While Loop" count="" label="Screen loop\2C every 100 ms" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:on.notifier out" outputs="value:l_n.value" uid="l_n" uid_parent="sl"/>
+    <ShiftReg uid="fn_sr" uid_parent="sl">
+      <Left inputs="value:fn0.value" outputs="value:fn.value" uid="fn" uid_parent="fn_sr"/>
+      <Right inputs="value:dc.names" outputs="value:" uid="fn_r" uid_parent="fn_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="fs_sr" uid_parent="sl">
+      <Left inputs="value:fs0.value" outputs="value:fs.value" uid="fs" uid_parent="fs_sr"/>
+      <Right inputs="value:dc.started" outputs="value:" uid="fs_r" uid_parent="fs_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="fd_sr" uid_parent="sl">
+      <Left inputs="value:fd0.value" outputs="value:fd.value" uid="fd" uid_parent="fd_sr"/>
+      <Right inputs="value:dc.durations" outputs="value:" uid="fd_r" uid_parent="fd_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="fz_sr" uid_parent="sl">
+      <Left inputs="value:fz0.value" outputs="value:fz.value" uid="fz" uid_parent="fz_sr"/>
+      <Right inputs="value:dc.sizes" outputs="value:" uid="fz_r" uid_parent="fz_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="dty_sr" uid_parent="sl">
+      <Left inputs="value:dty0.value" outputs="value:dty.value" uid="dty" uid_parent="dty_sr"/>
+      <Right inputs="value:dc.dirty" outputs="value:" uid="dty_r" uid_parent="dty_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="psel_sr" uid_parent="sl">
+      <Left inputs="value:psel0.value" outputs="value:psel.value" uid="psel" uid_parent="psel_sr"/>
+      <Right inputs="value:nsel.s? t\3Af" outputs="value:" uid="psel_r" uid_parent="psel_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="pv_sr" uid_parent="sl">
+      <Left inputs="value:pv0.value" outputs="value:pv.value" uid="pv" uid_parent="pv_sr"/>
+      <Right inputs="value:oc.preview" outputs="value:" uid="pv_r" uid_parent="pv_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="dt_sr" uid_parent="sl">
+      <Left inputs="value:dt0.value" outputs="value:dt.value" uid="dt" uid_parent="dt_sr"/>
+      <Right inputs="value:oc.details" outputs="value:" uid="dt_r" uid_parent="dt_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="st_sr" uid_parent="sl">
+      <Left inputs="value:st0.value" outputs="value:st.value" uid="st" uid_parent="st_sr"/>
+      <Right inputs="value:xc.status" outputs="value:" uid="st_r" uid_parent="st_sr"/>
+    </ShiftReg>
+    <Control _name="Log Files" description="The log files of the station. Select one to see its preview." outputs="value:lst.value" type="int32" uid="lst" uid_parent="sl" value="-1" style="Listbox"/>
+    <Control _name="Delete" description="Removes the selected file (asks first)." outputs="value:del.value" type="bool" uid="del" uid_parent="sl" value="false" style="latched"/>
+    <Control _name="Export" description="Exports the selected file (choose the target in the file dialog)." outputs="value:exp.value" type="bool" uid="exp" uid_parent="sl" value="false" style="latched"/>
+    <Constant outputs="value:ic_ff.value" type="bool" uid="ic_ff" uid_parent="sl" value="false"/>
+    <Structure _name="Case Structure" selectin="dty.value" uid="ic" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:fn.value" uid="ic_i1" uid_parent="ic"/>
+      <Tunnel _id="In2" inputs="value:fs.value" uid="ic_i2" uid_parent="ic"/>
+      <Tunnel _id="In3" inputs="value:fd.value" uid="ic_i3" uid_parent="ic"/>
+      <Tunnel _id="In4" inputs="value:fz.value" uid="ic_i4" uid_parent="ic"/>
+      <Tunnel _id="In5" inputs="value:ic_ff.value" uid="ic_i5" uid_parent="ic"/>
+      <CaseFrame label="Rows unchanged" selector="False" selectout="" uid="ic_f0" uid_parent="ic">
+        <Tunnel _id="In1" outputs="value:" uid="ic_f0_t1" uid_parent="ic_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="ic_f0_t2" uid_parent="ic_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="ic_f0_t3" uid_parent="ic_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="ic_f0_t4" uid_parent="ic_f0"/>
+        <Tunnel _id="In5" outputs="value:ic_f0_t5.value" uid="ic_f0_t5" uid_parent="ic_f0"/>
+        <Tunnel _id="Out1" inputs="value:ic_f0_t5.value" uid="ic_f0_o1" uid_parent="ic_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Show the rows" selector="True" selectout="" uid="ic_f1" uid_parent="ic">
+        <Tunnel _id="In1" outputs="value:ic_f1_t1.value" uid="ic_f1_t1" uid_parent="ic_f1"/>
+        <Tunnel _id="In2" outputs="value:ic_f1_t2.value" uid="ic_f1_t2" uid_parent="ic_f1"/>
+        <Tunnel _id="In3" outputs="value:ic_f1_t3.value" uid="ic_f1_t3" uid_parent="ic_f1"/>
+        <Tunnel _id="In4" outputs="value:ic_f1_t4.value" uid="ic_f1_t4" uid_parent="ic_f1"/>
+        <Tunnel _id="In5" outputs="value:ic_f1_t5.value" uid="ic_f1_t5" uid_parent="ic_f1"/>
+        <Structure _name="For Loop" count="" label="One row per file" maxin="" maxout="" uid="ic_f1r" uid_parent="ic_f1">
+          <Tunnel _id="In1" inputs="value:ic_f1_t1.value" mode="index" outputs="value:ic_f1r0.value" uid="ic_f1r0" uid_parent="ic_f1r"/>
+          <Tunnel _id="In2" inputs="value:ic_f1_t2.value" mode="index" outputs="value:ic_f1r1.value" uid="ic_f1r1" uid_parent="ic_f1r"/>
+          <Tunnel _id="In3" inputs="value:ic_f1_t3.value" mode="index" outputs="value:ic_f1r2.value" uid="ic_f1r2" uid_parent="ic_f1r"/>
+          <Tunnel _id="In4" inputs="value:ic_f1_t4.value" mode="index" outputs="value:ic_f1r3.value" uid="ic_f1r3" uid_parent="ic_f1r"/>
+          <Node _name="Build Array" inputs="element:ic_f1r0.value,element:ic_f1r1.value,element:ic_f1r2.value,element:ic_f1r3.value" outputs="appended array:ic_f1ra.appended array" uid="ic_f1ra" uid_parent="ic_f1r"/>
+          <Tunnel _id="Out1" inputs="value:ic_f1ra.appended array" mode="index" outputs="value:ic_f1items.value" uid="ic_f1items" uid_parent="ic_f1r"/>
+        </Structure>
+        <Node _name="Property Node" fields="write+Item Names" link="Log Files" inputs="error in (no error):,Item Names:ic_f1items.value" outputs="error out:" type="{LV.MulticolumnListbox}" uid="ic_f1in" uid_parent="ic_f1"/>
+        <Tunnel _id="Out1" inputs="value:ic_f1_t5.value" uid="ic_f1_o1" uid_parent="ic_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:ic.dirty" uid="ic_O1" uid_parent="ic"/>
+    </Structure>
+    <Node _name="Array Size" inputs="array:fn.value" outputs="size(s):nf.size(s)" uid="nf" uid_parent="sl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:lst.value" outputs="x &gt;= 0?:v0.x &gt;= 0?" uid="v0" uid_parent="sl"/>
+    <Node _name="Less?" inputs="x:lst.value,y:nf.size(s)" outputs="x &lt; y?:v1.x &lt; y?" uid="v1" uid_parent="sl"/>
+    <Node _name="And" inputs="x:v0.x &gt;= 0?,y:v1.x &lt; y?" outputs="x .and. y?:val.x .and. y?" uid="val" uid_parent="sl"/>
+    <Node _name="Not Equal?" inputs="x:lst.value,y:psel.value" outputs="x != y?:chg.x != y?" uid="chg" uid_parent="sl"/>
+    <Node _name="And" inputs="x:chg.x != y?,y:val.x .and. y?" outputs="x .and. y?:opn.x .and. y?" uid="opn" uid_parent="sl"/>
+    <Node _name="Index Array" inputs="array:fn.value,index:lst.value" outputs="element:xname.element" uid="xname" uid_parent="sl"/>
+    <Node _name="Index Array" inputs="array:fs.value,index:lst.value" outputs="element:xstart.element" uid="xstart" uid_parent="sl"/>
+    <Node _name="Index Array" inputs="array:fd.value,index:lst.value" outputs="element:xdur.element" uid="xdur" uid_parent="sl"/>
+    <Node _name="Index Array" inputs="array:fz.value,index:lst.value" outputs="element:xsize.element" uid="xsize" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="opn.x .and. y?" uid="oc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:pv.value" uid="oc_i1" uid_parent="oc"/>
+      <Tunnel _id="In2" inputs="value:dt.value" uid="oc_i2" uid_parent="oc"/>
+      <Tunnel _id="In3" inputs="value:lst.value" uid="oc_i3" uid_parent="oc"/>
+      <Tunnel _id="In4" inputs="value:xname.element" uid="oc_i4" uid_parent="oc"/>
+      <Tunnel _id="In5" inputs="value:xstart.element" uid="oc_i5" uid_parent="oc"/>
+      <Tunnel _id="In6" inputs="value:xdur.element" uid="oc_i6" uid_parent="oc"/>
+      <Tunnel _id="In7" inputs="value:xsize.element" uid="oc_i7" uid_parent="oc"/>
+      <Tunnel _id="In8" inputs="value:val.x .and. y?" uid="oc_i8" uid_parent="oc"/>
+      <CaseFrame label="Selection unchanged" selector="False" selectout="" uid="oc_f0" uid_parent="oc">
+        <Tunnel _id="In1" outputs="value:oc_f0_t1.value" uid="oc_f0_t1" uid_parent="oc_f0"/>
+        <Tunnel _id="In2" outputs="value:oc_f0_t2.value" uid="oc_f0_t2" uid_parent="oc_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="oc_f0_t3" uid_parent="oc_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="oc_f0_t4" uid_parent="oc_f0"/>
+        <Tunnel _id="In5" outputs="value:" uid="oc_f0_t5" uid_parent="oc_f0"/>
+        <Tunnel _id="In6" outputs="value:" uid="oc_f0_t6" uid_parent="oc_f0"/>
+        <Tunnel _id="In7" outputs="value:" uid="oc_f0_t7" uid_parent="oc_f0"/>
+        <Tunnel _id="In8" outputs="value:oc_f0_t8.value" uid="oc_f0_t8" uid_parent="oc_f0"/>
+        <Constant outputs="value:oc_f0nd.value" type="string" uid="oc_f0nd" uid_parent="oc_f0" value="Select a log file to see its preview."/>
+        <Constant outputs="value:oc_f0np.value" type="array.2{double}" uid="oc_f0np" uid_parent="oc_f0" value="[]"/>
+        <Node _name="Select" inputs="f:oc_f0np.value,s:oc_f0_t8.value,t:oc_f0_t1.value" outputs="s? t\3Af:oc_f0p.s? t\3Af" uid="oc_f0p" uid_parent="oc_f0"/>
+        <Node _name="Select" inputs="f:oc_f0nd.value,s:oc_f0_t8.value,t:oc_f0_t2.value" outputs="s? t\3Af:oc_f0d.s? t\3Af" uid="oc_f0d" uid_parent="oc_f0"/>
+        <Tunnel _id="Out1" inputs="value:oc_f0p.s? t\3Af" uid="oc_f0_o1" uid_parent="oc_f0"/>
+        <Tunnel _id="Out2" inputs="value:oc_f0d.s? t\3Af" uid="oc_f0_o2" uid_parent="oc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Show the selected file" selector="True" selectout="" uid="oc_f1" uid_parent="oc">
+        <Tunnel _id="In1" outputs="value:" uid="oc_f1_t1" uid_parent="oc_f1"/>
+        <Tunnel _id="In2" outputs="value:" uid="oc_f1_t2" uid_parent="oc_f1"/>
+        <Tunnel _id="In3" outputs="value:oc_f1_t3.value" uid="oc_f1_t3" uid_parent="oc_f1"/>
+        <Tunnel _id="In4" outputs="value:oc_f1_t4.value" uid="oc_f1_t4" uid_parent="oc_f1"/>
+        <Tunnel _id="In5" outputs="value:oc_f1_t5.value" uid="oc_f1_t5" uid_parent="oc_f1"/>
+        <Tunnel _id="In6" outputs="value:oc_f1_t6.value" uid="oc_f1_t6" uid_parent="oc_f1"/>
+        <Tunnel _id="In7" outputs="value:oc_f1_t7.value" uid="oc_f1_t7" uid_parent="oc_f1"/>
+        <Tunnel _id="In8" outputs="value:" uid="oc_f1_t8" uid_parent="oc_f1"/>
+        <Node _name="To Double Precision Float" inputs="number:oc_f1_t3.value" outputs="double precision float:oc_f1k.double precision float" uid="oc_f1k" uid_parent="oc_f1"/>
+        <Constant outputs="value:oc_f1n.value" type="int32" uid="oc_f1n" uid_parent="oc_f1" value="400"/>
+        <Structure _name="For Loop" count="oc_f1s.value" label="Preview samples" maxin="oc_f1n.value" maxout="" uid="oc_f1s" uid_parent="oc_f1">
+          <Tunnel _id="In1" inputs="value:oc_f1k.double precision float" outputs="value:oc_f1sk.value" uid="oc_f1sk" uid_parent="oc_f1s"/>
+          <Node _name="To Double Precision Float" inputs="number:oc_f1s.value" outputs="double precision float:oc_f1sj.double precision float" uid="oc_f1sj" uid_parent="oc_f1s"/>
+          <Constant outputs="value:oc_f1sa.value" type="double" uid="oc_f1sa" uid_parent="oc_f1s" value="0.015"/>
+          <Constant outputs="value:oc_f1sone.value" type="double" uid="oc_f1sone" uid_parent="oc_f1s" value="1"/>
+          <Node _name="Add" inputs="x:oc_f1sk.value,y:oc_f1sone.value" outputs="x+y:oc_f1sk1.x+y" uid="oc_f1sk1" uid_parent="oc_f1s"/>
+          <Node _name="Multiply" inputs="x:oc_f1sj.double precision float,y:oc_f1sa.value" outputs="x*y:oc_f1st.x*y" uid="oc_f1st" uid_parent="oc_f1s"/>
+          <Node _name="Multiply" inputs="x:oc_f1st.x*y,y:oc_f1sk1.x+y" outputs="x*y:oc_f1sx.x*y" uid="oc_f1sx" uid_parent="oc_f1s"/>
+          <Node _name="Sine" inputs="x:oc_f1sx.x*y" outputs="sin(x):oc_f1ss1.sin(x)" uid="oc_f1ss1" uid_parent="oc_f1s"/>
+          <Constant outputs="value:oc_f1sb.value" type="double" uid="oc_f1sb" uid_parent="oc_f1s" value="0.31"/>
+          <Node _name="Multiply" inputs="x:oc_f1sj.double precision float,y:oc_f1sb.value" outputs="x*y:oc_f1sx2.x*y" uid="oc_f1sx2" uid_parent="oc_f1s"/>
+          <Node _name="Sine" inputs="x:oc_f1sx2.x*y" outputs="sin(x):oc_f1ss2.sin(x)" uid="oc_f1ss2" uid_parent="oc_f1s"/>
+          <Constant outputs="value:oc_f1sc.value" type="double" uid="oc_f1sc" uid_parent="oc_f1s" value="0.2"/>
+          <Node _name="Multiply" inputs="x:oc_f1ss2.sin(x),y:oc_f1sc.value" outputs="x*y:oc_f1sr.x*y" uid="oc_f1sr" uid_parent="oc_f1s"/>
+          <Node _name="Add" inputs="x:oc_f1ss1.sin(x),y:oc_f1sr.x*y" outputs="x+y:oc_f1sv.x+y" uid="oc_f1sv" uid_parent="oc_f1s"/>
+          <Tunnel _id="Out1" inputs="value:oc_f1sv.x+y" mode="index" outputs="value:oc_f1srow.value" uid="oc_f1srow" uid_parent="oc_f1s"/>
+        </Structure>
+        <Node _name="Build Array" inputs="element:oc_f1srow.value" outputs="appended array:oc_f1p.appended array" uid="oc_f1p" uid_parent="oc_f1"/>
+        <Constant outputs="value:oc_f1fm.value" type="string" uid="oc_f1fm" uid_parent="oc_f1" value="%s\0AStarted %s\2C recorded for %s\2C %s.\0A4 channels (AI0 to AI3)\2C 1 kHz. Simulated - the file does not exist."/>
+        <Node _name="Format Into String" inputs="format string:oc_f1fm.value,input 1:oc_f1_t4.value,input 2:oc_f1_t5.value,input 3:oc_f1_t6.value,input 4:oc_f1_t7.value" outputs="resulting string:oc_f1d.resulting string" uid="oc_f1d" uid_parent="oc_f1"/>
+        <Tunnel _id="Out1" inputs="value:oc_f1p.appended array" uid="oc_f1_o1" uid_parent="oc_f1"/>
+        <Tunnel _id="Out2" inputs="value:oc_f1d.resulting string" uid="oc_f1_o2" uid_parent="oc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:oc.preview" uid="oc_O1" uid_parent="oc"/>
+      <Tunnel _id="Out2" outputs="value:oc.details" uid="oc_O2" uid_parent="oc"/>
+    </Structure>
+    <Constant outputs="value:dc_no.value" type="bool" uid="dc_no" uid_parent="sl" value="false"/>
+    <Structure _name="Case Structure" selectin="del.value" uid="dc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:fn.value" uid="dc_i1" uid_parent="dc"/>
+      <Tunnel _id="In2" inputs="value:fs.value" uid="dc_i2" uid_parent="dc"/>
+      <Tunnel _id="In3" inputs="value:fd.value" uid="dc_i3" uid_parent="dc"/>
+      <Tunnel _id="In4" inputs="value:fz.value" uid="dc_i4" uid_parent="dc"/>
+      <Tunnel _id="In5" inputs="value:ic.dirty" uid="dc_i5" uid_parent="dc"/>
+      <Tunnel _id="In6" inputs="value:lst.value" uid="dc_i6" uid_parent="dc"/>
+      <Tunnel _id="In7" inputs="value:xname.element" uid="dc_i7" uid_parent="dc"/>
+      <Tunnel _id="In8" inputs="value:val.x .and. y?" uid="dc_i8" uid_parent="dc"/>
+      <Tunnel _id="In9" inputs="value:st.value" uid="dc_i9" uid_parent="dc"/>
+      <Tunnel _id="In10" inputs="value:dc_no.value" uid="dc_i10" uid_parent="dc"/>
+      <CaseFrame label="Not pressed" selector="False" selectout="" uid="dc_f0" uid_parent="dc">
+        <Tunnel _id="In1" outputs="value:dc_f0_t1.value" uid="dc_f0_t1" uid_parent="dc_f0"/>
+        <Tunnel _id="In2" outputs="value:dc_f0_t2.value" uid="dc_f0_t2" uid_parent="dc_f0"/>
+        <Tunnel _id="In3" outputs="value:dc_f0_t3.value" uid="dc_f0_t3" uid_parent="dc_f0"/>
+        <Tunnel _id="In4" outputs="value:dc_f0_t4.value" uid="dc_f0_t4" uid_parent="dc_f0"/>
+        <Tunnel _id="In5" outputs="value:dc_f0_t5.value" uid="dc_f0_t5" uid_parent="dc_f0"/>
+        <Tunnel _id="In6" outputs="value:" uid="dc_f0_t6" uid_parent="dc_f0"/>
+        <Tunnel _id="In7" outputs="value:" uid="dc_f0_t7" uid_parent="dc_f0"/>
+        <Tunnel _id="In8" outputs="value:" uid="dc_f0_t8" uid_parent="dc_f0"/>
+        <Tunnel _id="In9" outputs="value:dc_f0_t9.value" uid="dc_f0_t9" uid_parent="dc_f0"/>
+        <Tunnel _id="In10" outputs="value:dc_f0_t10.value" uid="dc_f0_t10" uid_parent="dc_f0"/>
+        <Tunnel _id="Out1" inputs="value:dc_f0_t1.value" uid="dc_f0_o1" uid_parent="dc_f0"/>
+        <Tunnel _id="Out2" inputs="value:dc_f0_t2.value" uid="dc_f0_o2" uid_parent="dc_f0"/>
+        <Tunnel _id="Out3" inputs="value:dc_f0_t3.value" uid="dc_f0_o3" uid_parent="dc_f0"/>
+        <Tunnel _id="Out4" inputs="value:dc_f0_t4.value" uid="dc_f0_o4" uid_parent="dc_f0"/>
+        <Tunnel _id="Out5" inputs="value:dc_f0_t5.value" uid="dc_f0_o5" uid_parent="dc_f0"/>
+        <Tunnel _id="Out6" inputs="value:dc_f0_t10.value" uid="dc_f0_o6" uid_parent="dc_f0"/>
+        <Tunnel _id="Out7" inputs="value:dc_f0_t9.value" uid="dc_f0_o7" uid_parent="dc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Delete the selected file" selector="True" selectout="" uid="dc_f1" uid_parent="dc">
+        <Tunnel _id="In1" outputs="value:dc_f1_t1.value" uid="dc_f1_t1" uid_parent="dc_f1"/>
+        <Tunnel _id="In2" outputs="value:dc_f1_t2.value" uid="dc_f1_t2" uid_parent="dc_f1"/>
+        <Tunnel _id="In3" outputs="value:dc_f1_t3.value" uid="dc_f1_t3" uid_parent="dc_f1"/>
+        <Tunnel _id="In4" outputs="value:dc_f1_t4.value" uid="dc_f1_t4" uid_parent="dc_f1"/>
+        <Tunnel _id="In5" outputs="value:dc_f1_t5.value" uid="dc_f1_t5" uid_parent="dc_f1"/>
+        <Tunnel _id="In6" outputs="value:dc_f1_t6.value" uid="dc_f1_t6" uid_parent="dc_f1"/>
+        <Tunnel _id="In7" outputs="value:dc_f1_t7.value" uid="dc_f1_t7" uid_parent="dc_f1"/>
+        <Tunnel _id="In8" outputs="value:dc_f1_t8.value" uid="dc_f1_t8" uid_parent="dc_f1"/>
+        <Tunnel _id="In9" outputs="value:" uid="dc_f1_t9" uid_parent="dc_f1"/>
+        <Tunnel _id="In10" outputs="value:" uid="dc_f1_t10" uid_parent="dc_f1"/>
+        <Structure _name="Case Structure" selectin="dc_f1_t8.value" uid="dc_f1v" uid_parent="dc_f1">
+          <Tunnel _id="In1" inputs="value:dc_f1_t1.value" uid="dc_f1v_i1" uid_parent="dc_f1v"/>
+          <Tunnel _id="In2" inputs="value:dc_f1_t2.value" uid="dc_f1v_i2" uid_parent="dc_f1v"/>
+          <Tunnel _id="In3" inputs="value:dc_f1_t3.value" uid="dc_f1v_i3" uid_parent="dc_f1v"/>
+          <Tunnel _id="In4" inputs="value:dc_f1_t4.value" uid="dc_f1v_i4" uid_parent="dc_f1v"/>
+          <Tunnel _id="In5" inputs="value:dc_f1_t5.value" uid="dc_f1v_i5" uid_parent="dc_f1v"/>
+          <Tunnel _id="In6" inputs="value:dc_f1_t6.value" uid="dc_f1v_i6" uid_parent="dc_f1v"/>
+          <Tunnel _id="In7" inputs="value:dc_f1_t7.value" uid="dc_f1v_i7" uid_parent="dc_f1v"/>
+          <CaseFrame label="Nothing selected" selector="False" selectout="" uid="dc_f1v_f0" uid_parent="dc_f1v">
+            <Tunnel _id="In1" outputs="value:dc_f1v_f0_t1.value" uid="dc_f1v_f0_t1" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In2" outputs="value:dc_f1v_f0_t2.value" uid="dc_f1v_f0_t2" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In3" outputs="value:dc_f1v_f0_t3.value" uid="dc_f1v_f0_t3" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In4" outputs="value:dc_f1v_f0_t4.value" uid="dc_f1v_f0_t4" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In5" outputs="value:dc_f1v_f0_t5.value" uid="dc_f1v_f0_t5" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In6" outputs="value:" uid="dc_f1v_f0_t6" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="In7" outputs="value:" uid="dc_f1v_f0_t7" uid_parent="dc_f1v_f0"/>
+            <Constant outputs="value:dc_f1v_f0m.value" type="string" uid="dc_f1v_f0m" uid_parent="dc_f1v_f0" value="Select a log file first."/>
+            <Constant outputs="value:dc_f1v_f0f.value" type="bool" uid="dc_f1v_f0f" uid_parent="dc_f1v_f0" value="false"/>
+            <Tunnel _id="Out1" inputs="value:dc_f1v_f0_t1.value" uid="dc_f1v_f0_o1" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out2" inputs="value:dc_f1v_f0_t2.value" uid="dc_f1v_f0_o2" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out3" inputs="value:dc_f1v_f0_t3.value" uid="dc_f1v_f0_o3" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out4" inputs="value:dc_f1v_f0_t4.value" uid="dc_f1v_f0_o4" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out5" inputs="value:dc_f1v_f0_t5.value" uid="dc_f1v_f0_o5" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out6" inputs="value:dc_f1v_f0f.value" uid="dc_f1v_f0_o6" uid_parent="dc_f1v_f0"/>
+            <Tunnel _id="Out7" inputs="value:dc_f1v_f0m.value" uid="dc_f1v_f0_o7" uid_parent="dc_f1v_f0"/>
+          </CaseFrame>
+          <CaseFrame label="Ask the remote user" selector="True" selectout="" uid="dc_f1v_f1" uid_parent="dc_f1v">
+            <Tunnel _id="In1" outputs="value:dc_f1v_f1_t1.value" uid="dc_f1v_f1_t1" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In2" outputs="value:dc_f1v_f1_t2.value" uid="dc_f1v_f1_t2" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In3" outputs="value:dc_f1v_f1_t3.value" uid="dc_f1v_f1_t3" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In4" outputs="value:dc_f1v_f1_t4.value" uid="dc_f1v_f1_t4" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In5" outputs="value:dc_f1v_f1_t5.value" uid="dc_f1v_f1_t5" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In6" outputs="value:dc_f1v_f1_t6.value" uid="dc_f1v_f1_t6" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="In7" outputs="value:dc_f1v_f1_t7.value" uid="dc_f1v_f1_t7" uid_parent="dc_f1v_f1"/>
+            <Constant outputs="value:dc_f1v_f1fm.value" type="string" uid="dc_f1v_f1fm" uid_parent="dc_f1v_f1" value="Delete the log file %s?\0A(Simulated - nothing is deleted on disk.)"/>
+            <Node _name="Format Into String" inputs="format string:dc_f1v_f1fm.value,input 1:dc_f1v_f1_t7.value" outputs="resulting string:dc_f1v_f1q.resulting string" uid="dc_f1v_f1q" uid_parent="dc_f1v_f1"/>
+            <Constant outputs="value:dc_f1v_f1yes.value" type="string" uid="dc_f1v_f1yes" uid_parent="dc_f1v_f1" value="Delete"/>
+            <Constant outputs="value:dc_f1v_f1no.value" type="string" uid="dc_f1v_f1no" uid_parent="dc_f1v_f1" value="Keep"/>
+            <Node _name="Two Button Dialog" inputs="message:dc_f1v_f1q.resulting string,T button name (&quot;OK&quot;):dc_f1v_f1yes.value,F button name (&quot;Cancel&quot;):dc_f1v_f1no.value" outputs="T button?:dc_f1v_f1d.T button?" uid="dc_f1v_f1d" uid_parent="dc_f1v_f1"/>
+            <Node _name="Delete From Array" inputs="array:dc_f1v_f1_t1.value,index:dc_f1v_f1_t6.value" outputs="array w/ subset deleted:dc_f1v_f1xn.v" uid="dc_f1v_f1xn" uid_parent="dc_f1v_f1"/>
+            <Node _name="Select" inputs="t:dc_f1v_f1xn.v,s:dc_f1v_f1d.T button?,f:dc_f1v_f1_t1.value" outputs="s? t\3Af:dc_f1v_f1sn.s? t\3Af" uid="dc_f1v_f1sn" uid_parent="dc_f1v_f1"/>
+            <Node _name="Delete From Array" inputs="array:dc_f1v_f1_t2.value,index:dc_f1v_f1_t6.value" outputs="array w/ subset deleted:dc_f1v_f1xs.v" uid="dc_f1v_f1xs" uid_parent="dc_f1v_f1"/>
+            <Node _name="Select" inputs="t:dc_f1v_f1xs.v,s:dc_f1v_f1d.T button?,f:dc_f1v_f1_t2.value" outputs="s? t\3Af:dc_f1v_f1ss.s? t\3Af" uid="dc_f1v_f1ss" uid_parent="dc_f1v_f1"/>
+            <Node _name="Delete From Array" inputs="array:dc_f1v_f1_t3.value,index:dc_f1v_f1_t6.value" outputs="array w/ subset deleted:dc_f1v_f1xd.v" uid="dc_f1v_f1xd" uid_parent="dc_f1v_f1"/>
+            <Node _name="Select" inputs="t:dc_f1v_f1xd.v,s:dc_f1v_f1d.T button?,f:dc_f1v_f1_t3.value" outputs="s? t\3Af:dc_f1v_f1sd.s? t\3Af" uid="dc_f1v_f1sd" uid_parent="dc_f1v_f1"/>
+            <Node _name="Delete From Array" inputs="array:dc_f1v_f1_t4.value,index:dc_f1v_f1_t6.value" outputs="array w/ subset deleted:dc_f1v_f1xz.v" uid="dc_f1v_f1xz" uid_parent="dc_f1v_f1"/>
+            <Node _name="Select" inputs="t:dc_f1v_f1xz.v,s:dc_f1v_f1d.T button?,f:dc_f1v_f1_t4.value" outputs="s? t\3Af:dc_f1v_f1sz.s? t\3Af" uid="dc_f1v_f1sz" uid_parent="dc_f1v_f1"/>
+            <Node _name="Or" inputs="x:dc_f1v_f1_t5.value,y:dc_f1v_f1d.T button?" outputs="x .or. y?:dc_f1v_f1dy.x .or. y?" uid="dc_f1v_f1dy" uid_parent="dc_f1v_f1"/>
+            <Constant outputs="value:dc_f1v_f1okm.value" type="string" uid="dc_f1v_f1okm" uid_parent="dc_f1v_f1" value="Deleted %s from the list."/>
+            <Constant outputs="value:dc_f1v_f1nom.value" type="string" uid="dc_f1v_f1nom" uid_parent="dc_f1v_f1" value="Kept %s."/>
+            <Node _name="Select" inputs="t:dc_f1v_f1okm.value,s:dc_f1v_f1d.T button?,f:dc_f1v_f1nom.value" outputs="s? t\3Af:dc_f1v_f1fmt.s? t\3Af" uid="dc_f1v_f1fmt" uid_parent="dc_f1v_f1"/>
+            <Node _name="Format Into String" inputs="format string:dc_f1v_f1fmt.s? t\3Af,input 1:dc_f1v_f1_t7.value" outputs="resulting string:dc_f1v_f1m.resulting string" uid="dc_f1v_f1m" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out1" inputs="value:dc_f1v_f1sn.s? t\3Af" uid="dc_f1v_f1_o1" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out2" inputs="value:dc_f1v_f1ss.s? t\3Af" uid="dc_f1v_f1_o2" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out3" inputs="value:dc_f1v_f1sd.s? t\3Af" uid="dc_f1v_f1_o3" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out4" inputs="value:dc_f1v_f1sz.s? t\3Af" uid="dc_f1v_f1_o4" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out5" inputs="value:dc_f1v_f1dy.x .or. y?" uid="dc_f1v_f1_o5" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out6" inputs="value:dc_f1v_f1d.T button?" uid="dc_f1v_f1_o6" uid_parent="dc_f1v_f1"/>
+            <Tunnel _id="Out7" inputs="value:dc_f1v_f1m.resulting string" uid="dc_f1v_f1_o7" uid_parent="dc_f1v_f1"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:dc_f1v.n" uid="dc_f1v_O1" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out2" outputs="value:dc_f1v.s" uid="dc_f1v_O2" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out3" outputs="value:dc_f1v.d" uid="dc_f1v_O3" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out4" outputs="value:dc_f1v.z" uid="dc_f1v_O4" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out5" outputs="value:dc_f1v.y" uid="dc_f1v_O5" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out6" outputs="value:dc_f1v.del" uid="dc_f1v_O6" uid_parent="dc_f1v"/>
+          <Tunnel _id="Out7" outputs="value:dc_f1v.st" uid="dc_f1v_O7" uid_parent="dc_f1v"/>
+        </Structure>
+        <Tunnel _id="Out1" inputs="value:dc_f1v.n" uid="dc_f1_o1" uid_parent="dc_f1"/>
+        <Tunnel _id="Out2" inputs="value:dc_f1v.s" uid="dc_f1_o2" uid_parent="dc_f1"/>
+        <Tunnel _id="Out3" inputs="value:dc_f1v.d" uid="dc_f1_o3" uid_parent="dc_f1"/>
+        <Tunnel _id="Out4" inputs="value:dc_f1v.z" uid="dc_f1_o4" uid_parent="dc_f1"/>
+        <Tunnel _id="Out5" inputs="value:dc_f1v.y" uid="dc_f1_o5" uid_parent="dc_f1"/>
+        <Tunnel _id="Out6" inputs="value:dc_f1v.del" uid="dc_f1_o6" uid_parent="dc_f1"/>
+        <Tunnel _id="Out7" inputs="value:dc_f1v.st" uid="dc_f1_o7" uid_parent="dc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:dc.names" uid="dc_O1" uid_parent="dc"/>
+      <Tunnel _id="Out2" outputs="value:dc.started" uid="dc_O2" uid_parent="dc"/>
+      <Tunnel _id="Out3" outputs="value:dc.durations" uid="dc_O3" uid_parent="dc"/>
+      <Tunnel _id="Out4" outputs="value:dc.sizes" uid="dc_O4" uid_parent="dc"/>
+      <Tunnel _id="Out5" outputs="value:dc.dirty" uid="dc_O5" uid_parent="dc"/>
+      <Tunnel _id="Out6" outputs="value:dc.deleted" uid="dc_O6" uid_parent="dc"/>
+      <Tunnel _id="Out7" outputs="value:dc.status" uid="dc_O7" uid_parent="dc"/>
+    </Structure>
+    <Constant outputs="value:nsel0.value" type="int32" uid="nsel0" uid_parent="sl" value="-2"/>
+    <Node _name="Select" inputs="t:nsel0.value,s:dc.deleted,f:lst.value" outputs="s? t\3Af:nsel.s? t\3Af" uid="nsel" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="exp.value" uid="xc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:dc.status" uid="xc_i1" uid_parent="xc"/>
+      <Tunnel _id="In2" inputs="value:xname.element" uid="xc_i2" uid_parent="xc"/>
+      <Tunnel _id="In3" inputs="value:val.x .and. y?" uid="xc_i3" uid_parent="xc"/>
+      <CaseFrame label="Not pressed" selector="False" selectout="" uid="xc_f0" uid_parent="xc">
+        <Tunnel _id="In1" outputs="value:xc_f0_t1.value" uid="xc_f0_t1" uid_parent="xc_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="xc_f0_t2" uid_parent="xc_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="xc_f0_t3" uid_parent="xc_f0"/>
+        <Tunnel _id="Out1" inputs="value:xc_f0_t1.value" uid="xc_f0_o1" uid_parent="xc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Export the selected file" selector="True" selectout="" uid="xc_f1" uid_parent="xc">
+        <Tunnel _id="In1" outputs="value:" uid="xc_f1_t1" uid_parent="xc_f1"/>
+        <Tunnel _id="In2" outputs="value:xc_f1_t2.value" uid="xc_f1_t2" uid_parent="xc_f1"/>
+        <Tunnel _id="In3" outputs="value:xc_f1_t3.value" uid="xc_f1_t3" uid_parent="xc_f1"/>
+        <Structure _name="Case Structure" selectin="xc_f1_t3.value" uid="xc_f1v" uid_parent="xc_f1">
+          <Tunnel _id="In1" inputs="value:xc_f1_t2.value" uid="xc_f1v_i1" uid_parent="xc_f1v"/>
+          <CaseFrame label="Nothing selected" selector="False" selectout="" uid="xc_f1v_f0" uid_parent="xc_f1v">
+            <Tunnel _id="In1" outputs="value:" uid="xc_f1v_f0_t1" uid_parent="xc_f1v_f0"/>
+            <Constant outputs="value:xc_f1v_f0m.value" type="string" uid="xc_f1v_f0m" uid_parent="xc_f1v_f0" value="Select a log file first."/>
+            <Tunnel _id="Out1" inputs="value:xc_f1v_f0m.value" uid="xc_f1v_f0_o1" uid_parent="xc_f1v_f0"/>
+          </CaseFrame>
+          <CaseFrame label="Choose the target" selector="True" selectout="" uid="xc_f1v_f1" uid_parent="xc_f1v">
+            <Tunnel _id="In1" outputs="value:xc_f1v_f1_t1.value" uid="xc_f1v_f1_t1" uid_parent="xc_f1v_f1"/>
+            <Node _name="File Dialog" inputs="" outputs="selected path:xc_f1v_f1d.selected path,error out:" uid="xc_f1v_f1d" uid_parent="xc_f1v_f1"/>
+            <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:xc_f1v_f1d.selected path" outputs="NaN/Path/Refnum?:xc_f1v_f1c.NaN/Path/Refnum?" uid="xc_f1v_f1c" uid_parent="xc_f1v_f1"/>
+            <Constant outputs="value:xc_f1v_f1fm.value" type="string" uid="xc_f1v_f1fm" uid_parent="xc_f1v_f1" value="Exported %s to %s (simulated)."/>
+            <Node _name="Format Into String" inputs="format string:xc_f1v_f1fm.value,input 1:xc_f1v_f1_t1.value,input 2:xc_f1v_f1d.selected path" outputs="resulting string:xc_f1v_f1m.resulting string" uid="xc_f1v_f1m" uid_parent="xc_f1v_f1"/>
+            <Constant outputs="value:xc_f1v_f1x.value" type="string" uid="xc_f1v_f1x" uid_parent="xc_f1v_f1" value="Export cancelled."/>
+            <Node _name="Select" inputs="t:xc_f1v_f1x.value,s:xc_f1v_f1c.NaN/Path/Refnum?,f:xc_f1v_f1m.resulting string" outputs="s? t\3Af:xc_f1v_f1s.s? t\3Af" uid="xc_f1v_f1s" uid_parent="xc_f1v_f1"/>
+            <Tunnel _id="Out1" inputs="value:xc_f1v_f1s.s? t\3Af" uid="xc_f1v_f1_o1" uid_parent="xc_f1v_f1"/>
+          </CaseFrame>
+          <Tunnel _id="Out1" outputs="value:xc_f1v.st" uid="xc_f1v_O1" uid_parent="xc_f1v"/>
+        </Structure>
+        <Tunnel _id="Out1" inputs="value:xc_f1v.st" uid="xc_f1_o1" uid_parent="xc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:xc.status" uid="xc_O1" uid_parent="xc"/>
+    </Structure>
+    <Indicator _name="Preview" description="The first 400 samples of channel AI0 of the selected file (simulated)." inputs="value:oc.preview" style="graph21703" type="array.2{double}" uid="pvg" uid_parent="sl" value="[]"/>
+    <Indicator _name="Details" description="About the selected file." inputs="value:oc.details" type="string" uid="dti" uid_parent="sl" value=""/>
+    <Indicator _name="Status" description="What the last Delete or Export did." inputs="value:xc.status" type="string" uid="sti" uid_parent="sl" value=""/>
+    <Constant outputs="value:tmo.value" type="int32" uid="tmo" uid_parent="sl" value="100"/>
+    <Node _name="Wait on Notification" inputs="notifier:l_n.value,timeout in ms (-1):tmo.value" outputs="notifier out:won.notifier out,notification:,timed out?:won.timed out?,error out:won.error out" uid="won" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:won.timed out?" outputs=".not. x?:wnt..not. x?" uid="wnt" uid_parent="sl"/>
+    <Node _name="Unbundle By Name" fields="status" inputs="input cluster:won.error out" outputs="status:wer.status" uid="wer" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:wnt..not. x?,y:wer.status" outputs="x .or. y?:wst.x .or. y?" uid="wst" uid_parent="sl"/>
+    <Tunnel _id="Out1" inputs="value:won.notifier out" outputs="value:l_no.value" uid="l_no" uid_parent="sl"/>
+    <Condition inputs="value:wst.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Node _name="Release Notifier" inputs="notifier:l_no.value" outputs="notifier name:,last notification:,error out:" uid="rn" uid_parent="root"/>
+</VI>

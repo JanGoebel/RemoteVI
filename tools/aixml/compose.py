@@ -68,6 +68,9 @@ def number_symbols(text):
 
 
 def main(argv):
+    # --listbox: also style="Listbox" (a multicolumn listbox), through the fixtures' listbox_composer.py
+    listbox = "--listbox" in argv
+    argv = [a for a in argv if a != "--listbox"]
     src, out_vi = argv[0], os.path.abspath(argv[1])
     with open(src, encoding="utf-8") as f:
         text = number_symbols(f.read())
@@ -77,7 +80,12 @@ def main(argv):
     env = dict(os.environ)
     env["AIXML2VI_TRY_WIRES"] = "Refnum.TCPNetConn"
     # pane_parts.py: the composer plus the VI Server classes Pane and Splitter (Read Tips converts pane coordinates)
-    cmd = [PYTHON, os.path.join(os.path.dirname(os.path.abspath(__file__)), "pane_parts.py"), "compose", "--lv-version", "25", tmp, out_vi] + sum((["--search", d] for d in argv[2:]), [])
+    here = os.path.dirname(os.path.abspath(__file__))
+    if listbox:
+        wrapper = [os.path.join(os.path.dirname(os.path.dirname(here)), "tests", "fixtures", "aixml", "complex_composer.py"), COMPOSER]
+    else:
+        wrapper = [os.path.join(here, "pane_parts.py"), "compose"]
+    cmd = [PYTHON] + wrapper + ["--lv-version", "25", tmp, out_vi] + sum((["--search", d] for d in argv[2:]), [])
     rc = subprocess.call(cmd, env=env)
     if rc == 0:
         os.remove(tmp)

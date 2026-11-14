@@ -1,60 +1,231 @@
-<VI _name="RemoteVI Demo.vi" description="Demo of the RemoteVI toolkit. Publishes its own front panel with RemoteVI Start.vi (VI unwired\2C so the caller - this VI - is published on port 8088 - NI Application Web Server often holds 8080)\2C runs a 50 ms loop that draws a moving sine (amplitude Numeric) on the graph until Stop is pressed\2C then calls RemoteVI Stop.vi. Ask opens a LabVIEW Two Button Dialog and shows the answer in Answer\3B Open File opens the native file dialog and shows the chosen file's name in File - both are answered from the browser like the panel is operated (docs\5Cprotocol.md section 7). Open URL in a browser to see and operate the panel.">
-  <FreeLabel comment="Start before the loop\2C Stop after it" uid="lbl" uid_parent="root"/>
-  <Control _name="Stop" description="Ends the demo." outputs="value:stopc.value" style="latched" type="bool" uid="stopc" uid_parent="sl" value="false"/>
-  <Control _name="Numeric" description="Amplitude of the sine." outputs="value:num.value" type="double" uid="num" uid_parent="sl" value="6"/>
-  <Control _name="Mode" description="A text ring\2C to try popup menus remotely." items="Off,Slow,Fast" outputs="value:" style="Ring" type="int32" uid="mode" uid_parent="root" value="0" values="[0,1,2]"/>
-  <Control _name="Enable" description="A boolean to click remotely." outputs="value:" type="bool" uid="en" uid_parent="root" value="false"/>
-  <Control _name="Message" description="A string to type into remotely." outputs="value:" type="string" uid="msg" uid_parent="root" value="Hello from LabVIEW"/>
-  <Indicator _name="Sine" description="A moving sine (100 points\2C amplitude Numeric) - keeps the panel changing." inputs="value:wave.value" style="graph21703" type="array{double}" uid="chart" uid_parent="sl" value="[]"/>
-  <Control _name="Ask" description="Opens a LabVIEW Two Button Dialog\3B answer it in the browser." outputs="value:ask.value" style="latched" type="bool" uid="ask" uid_parent="sl" value="false"/>
-  <Control _name="Open File" description="Opens the native file dialog\3B choose a file or cancel in the browser." outputs="value:opn.value" style="latched" type="bool" uid="opn" uid_parent="sl" value="false"/>
-  <Indicator _name="URL" description="Where the panel is served." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
-
+<VI _name="RemoteVI Demo.vi" description="RemoteVI example\3A a data logger operated from a web browser. RemoteVI Start.vi shares this panel on port 8088 (this computer only)\3B Remote Link shows the link with its access token - open it in a browser. The tabs hold the logger\27s configuration (acquisition\2C channels\2C trigger\2C logging - one control of every common kind)\2C Acquire starts and stops four simulated channels on the Live Data graph\2C Apply asks for confirmation in a LabVIEW dialog and Load Configuration opens the native file dialog - both are answered in the browser like the panel is operated. Quit stops the logger and RemoteVI Stop.vi ends the share\3B closing the panel does the same. The data are simulated\3B nothing is written to disk.">
+  <FreeLabel comment="Share the panel\2C run the logger until Quit\2C stop sharing" uid="lbl" uid_parent="root"/>
   <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8088"/>
   <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>
-  <Constant outputs="value:k.value" type="double" uid="k" uid_parent="root" value="0.2"/>
-  <Constant outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
-  <Structure _name="While Loop" count="sl.value" label="Until Stop" uid="sl" uid_parent="root">
-    <Tunnel _id="In1" inputs="value:k.value" outputs="value:l_k.value" uid="l_k" uid_parent="sl"/>
+  <Indicator _name="Remote Link" description="Open this link in a browser to operate the panel remotely (RemoteVI)." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
+  <Constant _name="history length" outputs="value:hl.value" type="int32" uid="hl" uid_parent="root" value="1000"/>
+  <Constant _name="loop period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="50"/>
+  <Constant _name="no data yet" outputs="value:nan.value" type="double" uid="nan" uid_parent="root" value="NaN"/>
+  <Constant outputs="value:one.value" type="int32" uid="one" uid_parent="root" value="1"/>
+  <Node _name="Initialize Array" inputs="element:nan.value,dimension size:one.value" outputs="initialized array:row.initialized array" uid="row" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:row.initialized array,element:row.initialized array,element:row.initialized array,element:row.initialized array" outputs="appended array:h0.value" uid="h0" uid_parent="root"/>
+  <Constant _name="no samples" outputs="value:k0.value" type="double" uid="k0" uid_parent="root" value="0"/>
+  <Constant _name="first status" outputs="value:s0.value" type="string" uid="s0" uid_parent="root" value="Ready. Press Acquire to start the simulated channels."/>
+  <Constant _name="panel not seen open yet" outputs="value:fo0.value" type="bool" uid="fo0" uid_parent="root" value="false"/>
+  <Structure _name="While Loop" count="" label="Logger loop\2C every 50 ms" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:hl.value" outputs="value:l_hl.value" uid="l_hl" uid_parent="sl"/>
     <Tunnel _id="In2" inputs="value:ms.value" outputs="value:l_ms.value" uid="l_ms" uid_parent="sl"/>
     <Tunnel _id="In3" inputs="value:st.error out" outputs="value:l_err.value" uid="l_err" uid_parent="sl"/>
-    <Constant outputs="value:n100.value" type="int32" uid="n100" uid_parent="sl" value="100"/>
-    <Structure _name="For Loop" count="wl.value" label="One period of samples" maxin="n100.value" maxout="" uid="wl" uid_parent="sl">
-      <Tunnel _id="In1" inputs="value:sl.value" outputs="value:w_i.value" uid="w_i" uid_parent="wl"/>
-      <Tunnel _id="In2" inputs="value:l_k.value" outputs="value:w_k.value" uid="w_k" uid_parent="wl"/>
-      <Tunnel _id="In3" inputs="value:num.value" outputs="value:w_a.value" uid="w_a" uid_parent="wl"/>
-      <Node _name="Add" inputs="x:wl.value,y:w_i.value" outputs="x+y:ad.x+y" uid="ad" uid_parent="wl"/>
-      <Node _name="Multiply" inputs="x:ad.x+y,y:w_k.value" outputs="x*y:ph.x*y" uid="ph" uid_parent="wl"/>
-      <Node _name="Sine" inputs="x:ph.x*y" outputs="sin(x):sn.sin(x)" uid="sn" uid_parent="wl"/>
-      <Node _name="Multiply" inputs="x:sn.sin(x),y:w_a.value" outputs="x*y:mul.x*y" uid="mul" uid_parent="wl"/>
-      <Tunnel _id="Out1" inputs="value:mul.x*y" mode="index" outputs="value:wave.value" uid="wave" uid_parent="wl"/>
-    </Structure>
-    <Structure _name="Case Structure" selectin="ask.value" uid="cak" uid_parent="sl">
-      <CaseFrame label="Ask the remote user" selector="True" selectout="" uid="cakt" uid_parent="cak">
-        <Constant _name="message" outputs="value:akm.value" type="string" uid="akm" uid_parent="cakt" value="Proceed with the measurement?"/>
-        <Constant _name="yes" outputs="value:aky.value" type="string" uid="aky" uid_parent="cakt" value="Yes"/>
-        <Constant _name="no" outputs="value:akn.value" type="string" uid="akn" uid_parent="cakt" value="No"/>
-        <Node _name="Two Button Dialog" inputs="message:akm.value,T button name (&quot;OK&quot;):aky.value,F button name (&quot;Cancel&quot;):akn.value" outputs="T button?:akd.T button?" uid="akd" uid_parent="cakt"/>
-        <Node _name="Select" inputs="t:aky.value,s:akd.T button?,f:akn.value" outputs="s? t\3Af:aks.s? t\3Af" uid="aks" uid_parent="cakt"/>
-        <Indicator _name="Answer" description="What the remote user answered in the Ask dialog." inputs="value:aks.s? t\3Af" type="string" uid="ans" uid_parent="cakt" value=""/>
+    <ShiftReg uid="sr_h" uid_parent="sl">
+      <Left inputs="value:h0.value" outputs="value:hist.value" uid="sr_hl" uid_parent="sr_h"/>
+      <Right inputs="value:acq.hist" outputs="value:" uid="sr_hr" uid_parent="sr_h"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_k" uid_parent="sl">
+      <Left inputs="value:k0.value" outputs="value:kk.value" uid="sr_kl" uid_parent="sr_k"/>
+      <Right inputs="value:acq.k" outputs="value:" uid="sr_kr" uid_parent="sr_k"/>
+    </ShiftReg>
+    <ShiftReg uid="sr_s" uid_parent="sl">
+      <Left inputs="value:s0.value" outputs="value:stat.value" uid="sr_sl" uid_parent="sr_s"/>
+      <Right inputs="value:ld.status" outputs="value:" uid="sr_sr" uid_parent="sr_s"/>
+    </ShiftReg>
+    <ShiftReg uid="fo_sr" uid_parent="sl">
+      <Left inputs="value:fo0.value" outputs="value:fow.value" uid="fow" uid_parent="fo_sr"/>
+      <Right inputs="value:foo.x .or. y?" outputs="value:" uid="fo_r" uid_parent="fo_sr"/>
+    </ShiftReg>
+    <Control _name="Sample Rate (Hz)" description="Samples per second and channel." outputs="value:rate.value" type="double" uid="rate" uid_parent="sl" value="1000"/>
+    <Control _name="Samples per Read" description="Samples read per channel in each 50 ms loop (10 to 500)." outputs="value:spr.value" type="double" uid="spr" uid_parent="sl" value="50"/>
+    <Control _name="Add Noise" description="Adds random noise to the simulated signals." outputs="value:noise.value" type="bool" uid="noise" uid_parent="sl" value="true"/>
+    <Control _name="CH0" description="Acquire and show channel AI0." outputs="value:en0.value" type="bool" uid="en0" uid_parent="sl" value="true"/>
+    <Control _name="CH1" description="Acquire and show channel AI1." outputs="value:en1.value" type="bool" uid="en1" uid_parent="sl" value="true"/>
+    <Control _name="CH2" description="Acquire and show channel AI2." outputs="value:en2.value" type="bool" uid="en2" uid_parent="sl" value="false"/>
+    <Control _name="CH3" description="Acquire and show channel AI3." outputs="value:en3.value" type="bool" uid="en3" uid_parent="sl" value="false"/>
+    <Control _name="Acquire" description="Starts and stops the acquisition." outputs="value:acqb.value" type="bool" uid="acqb" uid_parent="sl" value="false"/>
+    <Control _name="Apply" description="Applies the configuration (asks first in a dialog)." outputs="value:apb.value" type="bool" uid="apb" uid_parent="sl" value="false" style="latched"/>
+    <Control _name="Load Configuration" description="Opens a configuration file (native file dialog)." outputs="value:ldb.value" type="bool" uid="ldb" uid_parent="sl" value="false" style="latched"/>
+    <Control _name="Quit" description="Stops the logger and the remote share." outputs="value:quit.value" type="bool" uid="quit" uid_parent="sl" value="false" style="latched"/>
+    <Node _name="Build Array" inputs="element:en0.value,element:en1.value,element:en2.value,element:en3.value" outputs="appended array:ens.appended array" uid="ens" uid_parent="sl"/>
+    <Constant outputs="value:c10.value" type="double" uid="c10" uid_parent="sl" value="10"/>
+    <Constant outputs="value:c500.value" type="double" uid="c500" uid_parent="sl" value="500"/>
+    <Node _name="Max &amp; Min" inputs="x:spr.value,y:c10.value" outputs="max(x\2Cy):mx1.max,min(x\2Cy):" uid="mx1" uid_parent="sl"/>
+    <Node _name="Max &amp; Min" inputs="x:mx1.max,y:c500.value" outputs="max(x\2Cy):,min(x\2Cy):mx2.min" uid="mx2" uid_parent="sl"/>
+    <Constant outputs="value:c1.value" type="double" uid="c1" uid_parent="sl" value="1"/>
+    <Node _name="Max &amp; Min" inputs="x:rate.value,y:c1.value" outputs="max(x\2Cy):mx3.max,min(x\2Cy):" uid="mx3" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="acqb.value" uid="acq" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:hist.value" uid="acq_i1" uid_parent="acq"/>
+      <Tunnel _id="In2" inputs="value:kk.value" uid="acq_i2" uid_parent="acq"/>
+      <Tunnel _id="In3" inputs="value:ens.appended array" uid="acq_i3" uid_parent="acq"/>
+      <Tunnel _id="In4" inputs="value:mx2.min" uid="acq_i4" uid_parent="acq"/>
+      <Tunnel _id="In5" inputs="value:mx3.max" uid="acq_i5" uid_parent="acq"/>
+      <Tunnel _id="In6" inputs="value:noise.value" uid="acq_i6" uid_parent="acq"/>
+      <Tunnel _id="In7" inputs="value:l_hl.value" uid="acq_i7" uid_parent="acq"/>
+      <CaseFrame label="Stopped\3A keep the data" selector="False" selectout="" uid="acq_f0" uid_parent="acq">
+        <Tunnel _id="In1" outputs="value:acq_f0_t1.value" uid="acq_f0_t1" uid_parent="acq_f0"/>
+        <Tunnel _id="In2" outputs="value:acq_f0_t2.value" uid="acq_f0_t2" uid_parent="acq_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="acq_f0_t3" uid_parent="acq_f0"/>
+        <Tunnel _id="In4" outputs="value:" uid="acq_f0_t4" uid_parent="acq_f0"/>
+        <Tunnel _id="In5" outputs="value:" uid="acq_f0_t5" uid_parent="acq_f0"/>
+        <Tunnel _id="In6" outputs="value:" uid="acq_f0_t6" uid_parent="acq_f0"/>
+        <Tunnel _id="In7" outputs="value:" uid="acq_f0_t7" uid_parent="acq_f0"/>
+        <Tunnel _id="Out1" inputs="value:acq_f0_t1.value" uid="acq_f0_o1" uid_parent="acq_f0"/>
+        <Tunnel _id="Out2" inputs="value:acq_f0_t2.value" uid="acq_f0_o2" uid_parent="acq_f0"/>
       </CaseFrame>
-      <CaseFrame label="Nothing to ask" selector="False" selectout="" uid="cakf" uid_parent="cak"/>
-    </Structure>
-    <Structure _name="Case Structure" selectin="opn.value" uid="cop" uid_parent="sl">
-      <CaseFrame label="Let the remote user choose a file" selector="True" selectout="" uid="copt" uid_parent="cop">
-        <Node _name="File Dialog" inputs="" outputs="selected path:opd.selected path,error out:" uid="opd" uid_parent="copt"/>
-        <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:opd.selected path" outputs="NaN/Path/Refnum?:opc.NaN/Path/Refnum?" uid="opc" uid_parent="copt"/>
-        <Node _name="Strip Path" inputs="path:opd.selected path" outputs="stripped path:,name:ops.string" uid="ops" uid_parent="copt"/>
-        <Constant _name="cancelled" outputs="value:opx.value" type="string" uid="opx" uid_parent="copt" value="(cancelled)"/>
-        <Node _name="Select" inputs="t:opx.value,s:opc.NaN/Path/Refnum?,f:ops.string" outputs="s? t\3Af:opv.s? t\3Af" uid="opv" uid_parent="copt"/>
-        <Indicator _name="File" description="Name of the file the remote user chose with Open File." inputs="value:opv.s? t\3Af" type="string" uid="fil" uid_parent="copt" value=""/>
+      <CaseFrame label="Acquiring\3A four simulated channels" selector="True" selectout="" uid="acq_f1" uid_parent="acq">
+        <Tunnel _id="In1" outputs="value:acq_f1_t1.value" uid="acq_f1_t1" uid_parent="acq_f1"/>
+        <Tunnel _id="In2" outputs="value:acq_f1_t2.value" uid="acq_f1_t2" uid_parent="acq_f1"/>
+        <Tunnel _id="In3" outputs="value:acq_f1_t3.value" uid="acq_f1_t3" uid_parent="acq_f1"/>
+        <Tunnel _id="In4" outputs="value:acq_f1_t4.value" uid="acq_f1_t4" uid_parent="acq_f1"/>
+        <Tunnel _id="In5" outputs="value:acq_f1_t5.value" uid="acq_f1_t5" uid_parent="acq_f1"/>
+        <Tunnel _id="In6" outputs="value:acq_f1_t6.value" uid="acq_f1_t6" uid_parent="acq_f1"/>
+        <Tunnel _id="In7" outputs="value:acq_f1_t7.value" uid="acq_f1_t7" uid_parent="acq_f1"/>
+        <Structure _name="For Loop" count="acq_f1ch.value" label="Each channel" maxin="" maxout="" uid="acq_f1ch" uid_parent="acq_f1">
+          <Tunnel _id="In1" inputs="value:acq_f1_t3.value" mode="index" outputs="value:acq_f1en.value" uid="acq_f1en" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In2" inputs="value:acq_f1_t1.value" mode="index" outputs="value:acq_f1row.subarray" uid="acq_f1row" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In3" inputs="value:acq_f1_t2.value" outputs="value:acq_f1k.value" uid="acq_f1k" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In4" inputs="value:acq_f1_t4.value" outputs="value:acq_f1n.value" uid="acq_f1n" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In5" inputs="value:acq_f1_t5.value" outputs="value:acq_f1r.value" uid="acq_f1r" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In6" inputs="value:acq_f1_t6.value" outputs="value:acq_f1z.value" uid="acq_f1z" uid_parent="acq_f1ch"/>
+          <Tunnel _id="In7" inputs="value:acq_f1_t7.value" outputs="value:acq_f1L.value" uid="acq_f1L" uid_parent="acq_f1ch"/>
+          <Node _name="To Double Precision Float" inputs="number:acq_f1ch.value" outputs="double precision float:acq_f1cd.double precision float" uid="acq_f1cd" uid_parent="acq_f1ch"/>
+          <Constant outputs="value:acq_f1a0.value" type="double" uid="acq_f1a0" uid_parent="acq_f1ch" value="0.5"/>
+          <Node _name="Multiply" inputs="x:acq_f1cd.double precision float,y:acq_f1a0.value" outputs="x*y:acq_f1a1.x*y" uid="acq_f1a1" uid_parent="acq_f1ch"/>
+          <Constant outputs="value:acq_f1a2.value" type="double" uid="acq_f1a2" uid_parent="acq_f1ch" value="1"/>
+          <Node _name="Add" inputs="x:acq_f1a1.x*y,y:acq_f1a2.value" outputs="x+y:acq_f1amp.x+y" uid="acq_f1amp" uid_parent="acq_f1ch"/>
+          <Constant outputs="value:acq_f1f0.value" type="double" uid="acq_f1f0" uid_parent="acq_f1ch" value="12.566370614359172"/>
+          <Node _name="Add" inputs="x:acq_f1cd.double precision float,y:acq_f1a2.value" outputs="x+y:acq_f1f1.x+y" uid="acq_f1f1" uid_parent="acq_f1ch"/>
+          <Node _name="Multiply" inputs="x:acq_f1f1.x+y,y:acq_f1f0.value" outputs="x*y:acq_f1w.x*y" uid="acq_f1w" uid_parent="acq_f1ch"/>
+          <Constant outputs="value:acq_f1nan.value" type="double" uid="acq_f1nan" uid_parent="acq_f1ch" value="NaN"/>
+          <Constant outputs="value:acq_f1nz.value" type="double" uid="acq_f1nz" uid_parent="acq_f1ch" value="0.3"/>
+          <Structure _name="For Loop" count="acq_f1sm.value" label="Each sample" maxin="acq_f1n.value" maxout="" uid="acq_f1sm" uid_parent="acq_f1ch">
+            <Tunnel _id="In1" inputs="value:acq_f1k.value" outputs="value:acq_f1smk.value" uid="acq_f1smk" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In2" inputs="value:acq_f1r.value" outputs="value:acq_f1smr.value" uid="acq_f1smr" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In3" inputs="value:acq_f1w.x*y" outputs="value:acq_f1smw.value" uid="acq_f1smw" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In4" inputs="value:acq_f1amp.x+y" outputs="value:acq_f1sma.value" uid="acq_f1sma" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In5" inputs="value:acq_f1z.value" outputs="value:acq_f1smz.value" uid="acq_f1smz" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In6" inputs="value:acq_f1en.value" outputs="value:acq_f1sme.value" uid="acq_f1sme" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In7" inputs="value:acq_f1nan.value" outputs="value:acq_f1smq.value" uid="acq_f1smq" uid_parent="acq_f1sm"/>
+            <Tunnel _id="In8" inputs="value:acq_f1nz.value" outputs="value:acq_f1smm.value" uid="acq_f1smm" uid_parent="acq_f1sm"/>
+            <Node _name="To Double Precision Float" inputs="number:acq_f1sm.value" outputs="double precision float:acq_f1smjd.double precision float" uid="acq_f1smjd" uid_parent="acq_f1sm"/>
+            <Node _name="Add" inputs="x:acq_f1smk.value,y:acq_f1smjd.double precision float" outputs="x+y:acq_f1smkj.x+y" uid="acq_f1smkj" uid_parent="acq_f1sm"/>
+            <Node _name="Divide" inputs="x:acq_f1smkj.x+y,y:acq_f1smr.value" outputs="x/y:acq_f1smt.x/y" uid="acq_f1smt" uid_parent="acq_f1sm"/>
+            <Node _name="Multiply" inputs="x:acq_f1smt.x/y,y:acq_f1smw.value" outputs="x*y:acq_f1smph.x*y" uid="acq_f1smph" uid_parent="acq_f1sm"/>
+            <Node _name="Sine" inputs="x:acq_f1smph.x*y" outputs="sin(x):acq_f1smsn.sin(x)" uid="acq_f1smsn" uid_parent="acq_f1sm"/>
+            <Node _name="Multiply" inputs="x:acq_f1smsn.sin(x),y:acq_f1sma.value" outputs="x*y:acq_f1smy.x*y" uid="acq_f1smy" uid_parent="acq_f1sm"/>
+            <Node _name="Random Number (0-1)" inputs="" outputs="number\3A 0 to 1:acq_f1smrn.number\3A 0 to 1" uid="acq_f1smrn" uid_parent="acq_f1sm"/>
+            <Constant outputs="value:acq_f1smh5.value" type="double" uid="acq_f1smh5" uid_parent="acq_f1sm" value="0.5"/>
+            <Node _name="Subtract" inputs="x:acq_f1smrn.number\3A 0 to 1,y:acq_f1smh5.value" outputs="x-y:acq_f1smr0.x-y" uid="acq_f1smr0" uid_parent="acq_f1sm"/>
+            <Node _name="Multiply" inputs="x:acq_f1smr0.x-y,y:acq_f1smm.value" outputs="x*y:acq_f1smr1.x*y" uid="acq_f1smr1" uid_parent="acq_f1sm"/>
+            <Constant outputs="value:acq_f1smzero.value" type="double" uid="acq_f1smzero" uid_parent="acq_f1sm" value="0"/>
+            <Node _name="Select" inputs="t:acq_f1smr1.x*y,s:acq_f1smz.value,f:acq_f1smzero.value" outputs="s? t\3Af:acq_f1smnoi.s? t\3Af" uid="acq_f1smnoi" uid_parent="acq_f1sm"/>
+            <Node _name="Add" inputs="x:acq_f1smy.x*y,y:acq_f1smnoi.s? t\3Af" outputs="x+y:acq_f1smv.x+y" uid="acq_f1smv" uid_parent="acq_f1sm"/>
+            <Node _name="Select" inputs="t:acq_f1smv.x+y,s:acq_f1sme.value,f:acq_f1smq.value" outputs="s? t\3Af:acq_f1smout.s? t\3Af" uid="acq_f1smout" uid_parent="acq_f1sm"/>
+            <Tunnel _id="Out1" inputs="value:acq_f1smout.s? t\3Af" mode="index" outputs="value:acq_f1smblk.value" uid="acq_f1smblk" uid_parent="acq_f1sm"/>
+          </Structure>
+          <Node _name="Build Array" concat="true" inputs="array:acq_f1row.subarray,array:acq_f1smblk.value" outputs="appended array:acq_f1cat.appended array" uid="acq_f1cat" uid_parent="acq_f1ch"/>
+          <Node _name="Array Size" inputs="array:acq_f1cat.appended array" outputs="size(s):acq_f1sz.size(s)" uid="acq_f1sz" uid_parent="acq_f1ch"/>
+          <Node _name="Subtract" inputs="x:acq_f1sz.size(s),y:acq_f1L.value" outputs="x-y:acq_f1st.x-y" uid="acq_f1st" uid_parent="acq_f1ch"/>
+          <Constant outputs="value:acq_f1i0.value" type="int32" uid="acq_f1i0" uid_parent="acq_f1ch" value="0"/>
+          <Node _name="Max &amp; Min" inputs="x:acq_f1st.x-y,y:acq_f1i0.value" outputs="max(x\2Cy):acq_f1st0.max,min(x\2Cy):" uid="acq_f1st0" uid_parent="acq_f1ch"/>
+          <Node _name="Array Subset" inputs="array:acq_f1cat.appended array,index:acq_f1st0.max,length:acq_f1L.value" outputs="subarray:acq_f1keep.subarray" uid="acq_f1keep" uid_parent="acq_f1ch"/>
+          <Tunnel _id="Out1" inputs="value:acq_f1keep.subarray" mode="index" outputs="value:acq_f1nh.value" uid="acq_f1nh" uid_parent="acq_f1ch"/>
+        </Structure>
+        <Node _name="To Double Precision Float" inputs="number:acq_f1_t4.value" outputs="double precision float:acq_f1nd.double precision float" uid="acq_f1nd" uid_parent="acq_f1"/>
+        <Node _name="Add" inputs="x:acq_f1_t2.value,y:acq_f1nd.double precision float" outputs="x+y:acq_f1k1.x+y" uid="acq_f1k1" uid_parent="acq_f1"/>
+        <Tunnel _id="Out1" inputs="value:acq_f1nh.value" uid="acq_f1_o1" uid_parent="acq_f1"/>
+        <Tunnel _id="Out2" inputs="value:acq_f1k1.x+y" uid="acq_f1_o2" uid_parent="acq_f1"/>
       </CaseFrame>
-      <CaseFrame label="Nothing to open" selector="False" selectout="" uid="copf" uid_parent="cop"/>
+      <Tunnel _id="Out1" outputs="value:acq.hist" uid="acq_O1" uid_parent="acq"/>
+      <Tunnel _id="Out2" outputs="value:acq.k" uid="acq_O2" uid_parent="acq"/>
     </Structure>
+    <Indicator _name="Live Data" description="The last 1000 samples of every enabled channel." inputs="value:acq.hist" style="graph21703" type="array.2{double}" uid="graph" uid_parent="sl" value="[]"/>
+    <Indicator _name="Acquiring" description="Lit while the channels are acquired." inputs="value:acqb.value" type="bool" uid="led" uid_parent="sl" value="false"/>
+    <Indicator _name="Samples Acquired" description="Samples per channel since the start." inputs="value:acq.k" type="double" uid="cnt" uid_parent="sl" value="0"/>
+    <Node _name="Array Size" inputs="array:acq.hist" outputs="size(s):hsz.size(s)" uid="hsz" uid_parent="sl"/>
+    <Node _name="Array Max &amp; Min" inputs="array:hsz.size(s)" outputs="max value:hcols.max value,max index (indices):,min value:,min index (indices):" uid="hcols" uid_parent="sl"/>
+    <Node _name="To Double Precision Float" inputs="number:hcols.max value" outputs="double precision float:hcd.double precision float" uid="hcd" uid_parent="sl"/>
+    <Constant outputs="value:pct.value" type="double" uid="pct" uid_parent="sl" value="0.1"/>
+    <Node _name="Multiply" inputs="x:hcd.double precision float,y:pct.value" outputs="x*y:buf.x*y" uid="buf" uid_parent="sl"/>
+    <Indicator _name="Buffer Usage (%)" description="How full the 1000-sample display buffer is." inputs="value:buf.x*y" type="double" uid="bufi" uid_parent="sl" value="0"/>
+    <Constant outputs="value:tsc.value" type="double" uid="tsc" uid_parent="sl" value="0.0002"/>
+    <Node _name="Multiply" inputs="x:acq.k,y:tsc.value" outputs="x*y:tph.x*y" uid="tph" uid_parent="sl"/>
+    <Node _name="Sine" inputs="x:tph.x*y" outputs="sin(x):tsn.sin(x)" uid="tsn" uid_parent="sl"/>
+    <Constant outputs="value:t3.value" type="double" uid="t3" uid_parent="sl" value="4"/>
+    <Node _name="Multiply" inputs="x:tsn.sin(x),y:t3.value" outputs="x*y:tdv.x*y" uid="tdv" uid_parent="sl"/>
+    <Constant outputs="value:t35.value" type="double" uid="t35" uid_parent="sl" value="38"/>
+    <Node _name="Add" inputs="x:tdv.x*y,y:t35.value" outputs="x+y:temp.x+y" uid="temp" uid_parent="sl"/>
+    <Indicator _name="Board (degC)" description="Temperature of the acquisition board (simulated)." inputs="value:temp.x+y" type="double" uid="tmpi" uid_parent="sl" value="0"/>
+    <Node _name="And" inputs="x:acqb.value,y:en0.value" outputs="x .and. y?:on0.x .and. y?" uid="on0" uid_parent="sl"/>
+    <Node _name="Random Number (0-1)" inputs="" outputs="number\3A 0 to 1:rr.number\3A 0 to 1" uid="rr" uid_parent="sl"/>
+    <Constant outputs="value:r02.value" type="double" uid="r02" uid_parent="sl" value="0.02"/>
+    <Node _name="Multiply" inputs="x:rr.number\3A 0 to 1,y:r02.value" outputs="x*y:rj.x*y" uid="rj" uid_parent="sl"/>
+    <Constant outputs="value:rms0.value" type="double" uid="rms0" uid_parent="sl" value="0.7071"/>
+    <Node _name="Add" inputs="x:rms0.value,y:rj.x*y" outputs="x+y:rmsv.x+y" uid="rmsv" uid_parent="sl"/>
+    <Constant outputs="value:zr.value" type="double" uid="zr" uid_parent="sl" value="0"/>
+    <Node _name="Select" inputs="t:rmsv.x+y,s:on0.x .and. y?,f:zr.value" outputs="s? t\3Af:rms.s? t\3Af" uid="rms" uid_parent="sl"/>
+    <Indicator _name="AI0 RMS (V)" description="RMS value of channel AI0." inputs="value:rms.s? t\3Af" type="double" uid="rmsi" uid_parent="sl" value="0"/>
+    <Structure _name="Case Structure" selectin="apb.value" uid="ap" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:stat.value" uid="ap_i1" uid_parent="ap"/>
+      <CaseFrame label="Nothing to apply" selector="False" selectout="" uid="ap_f0" uid_parent="ap">
+        <Tunnel _id="In1" outputs="value:ap_f0_t1.value" uid="ap_f0_t1" uid_parent="ap_f0"/>
+        <Tunnel _id="Out1" inputs="value:ap_f0_t1.value" uid="ap_f0_o1" uid_parent="ap_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Ask the remote user" selector="True" selectout="" uid="ap_f1" uid_parent="ap">
+        <Tunnel _id="In1" outputs="value:ap_f1_t1.value" uid="ap_f1_t1" uid_parent="ap_f1"/>
+        <Constant _name="message" outputs="value:ap_f1m.value" type="string" uid="ap_f1m" uid_parent="ap_f1" value="Apply this configuration to the data logger?"/>
+        <Constant _name="yes" outputs="value:ap_f1y.value" type="string" uid="ap_f1y" uid_parent="ap_f1" value="Apply"/>
+        <Constant _name="no" outputs="value:ap_f1n.value" type="string" uid="ap_f1n" uid_parent="ap_f1" value="Cancel"/>
+        <Node _name="Two Button Dialog" inputs="message:ap_f1m.value,T button name (&quot;OK&quot;):ap_f1y.value,F button name (&quot;Cancel&quot;):ap_f1n.value" outputs="T button?:ap_f1d.T button?" uid="ap_f1d" uid_parent="ap_f1"/>
+        <Constant outputs="value:ap_f1ok.value" type="string" uid="ap_f1ok" uid_parent="ap_f1" value="Configuration applied."/>
+        <Constant outputs="value:ap_f1no.value" type="string" uid="ap_f1no" uid_parent="ap_f1" value="Apply cancelled - the configuration was not changed."/>
+        <Node _name="Select" inputs="t:ap_f1ok.value,s:ap_f1d.T button?,f:ap_f1no.value" outputs="s? t\3Af:ap_f1s.s? t\3Af" uid="ap_f1s" uid_parent="ap_f1"/>
+        <Tunnel _id="Out1" inputs="value:ap_f1s.s? t\3Af" uid="ap_f1_o1" uid_parent="ap_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:ap.status" uid="ap_O1" uid_parent="ap"/>
+    </Structure>
+    <Structure _name="Case Structure" selectin="ldb.value" uid="ld" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:ap.status" uid="ld_i1" uid_parent="ld"/>
+      <CaseFrame label="Nothing to load" selector="False" selectout="" uid="ld_f0" uid_parent="ld">
+        <Tunnel _id="In1" outputs="value:ld_f0_t1.value" uid="ld_f0_t1" uid_parent="ld_f0"/>
+        <Tunnel _id="Out1" inputs="value:ld_f0_t1.value" uid="ld_f0_o1" uid_parent="ld_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Let the remote user choose a file" selector="True" selectout="" uid="ld_f1" uid_parent="ld">
+        <Tunnel _id="In1" outputs="value:ld_f1_t1.value" uid="ld_f1_t1" uid_parent="ld_f1"/>
+        <Node _name="File Dialog" inputs="" outputs="selected path:ld_f1d.selected path,error out:" uid="ld_f1d" uid_parent="ld_f1"/>
+        <Node _name="Not A Number/Path/Refnum?" inputs="number/path/refnum:ld_f1d.selected path" outputs="NaN/Path/Refnum?:ld_f1c.NaN/Path/Refnum?" uid="ld_f1c" uid_parent="ld_f1"/>
+        <Node _name="Strip Path" inputs="path:ld_f1d.selected path" outputs="stripped path:,name:ld_f1p.string" uid="ld_f1p" uid_parent="ld_f1"/>
+        <Constant outputs="value:ld_f1fm.value" type="string" uid="ld_f1fm" uid_parent="ld_f1" value="Loaded configuration %s (simulated)."/>
+        <Node _name="Format Into String" inputs="format string:ld_f1fm.value,input 1:ld_f1p.string" outputs="resulting string:ld_f1m.resulting string" uid="ld_f1m" uid_parent="ld_f1"/>
+        <Constant outputs="value:ld_f1x.value" type="string" uid="ld_f1x" uid_parent="ld_f1" value="Load cancelled."/>
+        <Node _name="Select" inputs="t:ld_f1x.value,s:ld_f1c.NaN/Path/Refnum?,f:ld_f1m.resulting string" outputs="s? t\3Af:ld_f1s.s? t\3Af" uid="ld_f1s" uid_parent="ld_f1"/>
+        <Tunnel _id="Out1" inputs="value:ld_f1s.s? t\3Af" uid="ld_f1_o1" uid_parent="ld_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:ld.status" uid="ld_O1" uid_parent="ld"/>
+    </Structure>
+    <Indicator _name="Status" description="What the logger did last." inputs="value:ld.status" type="string" uid="stati" uid_parent="sl" value=""/>
     <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>
     <Tunnel _id="Out1" inputs="value:l_err.value" outputs="value:err_end.value" uid="err_end" uid_parent="sl"/>
-    <Condition inputs="value:stopc.value" uid="slc" uid_parent="sl" value="stop"/>
+    <Node _name="Property Node" fields="read+Front Panel Window\3AOpen" inputs="reference:" outputs="Front Panel Window\3AOpen:fpo.open,reference out:,error out:" type="{LV.VI}" uid="fpo" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:fow.value,y:fpo.open" outputs="x .or. y?:foo.x .or. y?" uid="foo" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:fpo.open" outputs=".not. x?:fnc..not. x?" uid="fnc" uid_parent="sl"/>
+    <Node _name="And" inputs="x:fow.value,y:fnc..not. x?" outputs="x .and. y?:fcl.x .and. y?" uid="fcl" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:quit.value,y:fcl.x .and. y?" outputs="x .or. y?:stp.x .or. y?" uid="stp" uid_parent="sl"/>
+    <Condition inputs="value:stp.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>
   </Structure>
+  <FreeLabel comment="Configuration shown on the panel only\3A the simulation does not use these" uid="cfglbl" uid_parent="root"/>
+    <Control _name="Device" description="The acquisition device. Simulated in this example." outputs="value:dev.value" type="string" uid="dev" uid_parent="root" value="Dev1 (simulated)"/>
+    <Control _name="Acquisition Mode" description="Continuous, a finite number of samples, or started by the trigger." outputs="value:mode.value" type="uint16{Continuous,Finite,Triggered}" uid="mode" uid_parent="root" value="0"/>
+    <Control _name="Duration (s)" description="Length of a finite acquisition." outputs="value:dur.value" type="double" uid="dur" uid_parent="root" value="60"/>
+    <Control _name="Channels" description="Name\2C unit and scale of each channel - click a cell to edit it." outputs="value:chn.value" type="array.2{string}" uid="chn" uid_parent="root" value="[[Channel,Name,Unit,Scale],[AI0,Supply pressure,bar,0.25 bar/V],[AI1,Return pressure,bar,0.25 bar/V],[AI2,Coolant temperature,degC,10 degC/V],[AI3,Flow,l/min,2 l/min/V]]"/>
+    <Control _name="Input Range" description="Input range of all channels." outputs="value:rng.value" type="uint16{+-1 V,+-5 V,+-10 V}" uid="rng" uid_parent="root" value="2"/>
+    <Control _name="Trigger Source" description="What starts a triggered acquisition." outputs="value:tsrc.value" type="int32" uid="tsrc" uid_parent="root" value="0" items="Immediate,Software,Analog edge" style="Ring" values="[0,1,2]"/>
+    <Control _name="Trigger Level (V)" description="Level of the analog edge trigger." outputs="value:tlev.value" type="double" uid="tlev" uid_parent="root" value="2.5"/>
+    <Control _name="Trigger Slope" description="Edge of the analog trigger." outputs="value:tslp.value" type="uint16{Rising,Falling}" uid="tslp" uid_parent="root" value="0"/>
+    <Control _name="Filter Cutoff (Hz)" description="Cutoff frequency of the anti-aliasing filter." outputs="value:fcut.value" type="double" uid="fcut" uid_parent="root" value="250"/>
+    <Control _name="Log Folder" description="Where log files would be written (browse with the folder button)." outputs="value:lf.value" type="path" uid="lf" uid_parent="root" value="C\3A\5CData\5CDatalogger"/>
+    <Control _name="File Prefix" description="Start of each log file name." outputs="value:fpx.value" type="string" uid="fpx" uid_parent="root" value="cooling-loop"/>
+    <Control _name="File Format" description="Format of the log files." outputs="value:ffmt.value" type="uint16{CSV,TDMS,Binary}" uid="ffmt" uid_parent="root" value="1"/>
+    <Control _name="Split Every (min)" description="Starts a new log file after this many minutes." outputs="value:split.value" type="double" uid="split" uid_parent="root" value="15"/>
+    <Control _name="Scheduled Start" description="When a scheduled acquisition starts." outputs="value:tst.value" type="timestamp" uid="tst" uid_parent="root" value=""/>
+    <Control _name="Comment" description="Stored in the header of every log file." outputs="value:cmt.value" type="string" uid="cmt" uid_parent="root" value="Bench test of the cooling loop"/>
   <Call inputs="port:port.value,error in:err_end.value" outputs="error out:sp.error out" target="RemoteVI Stop.vi" uid="sp" uid_parent="root"/>
-  <Indicator _name="error out" description="Errors from RemoteVI Start.vi and RemoteVI Stop.vi." inputs="value:sp.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+  <Indicator _name="error out" description="Errors of RemoteVI Start.vi and RemoteVI Stop.vi." inputs="value:sp.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
 </VI>

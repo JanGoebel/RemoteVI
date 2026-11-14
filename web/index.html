@@ -67,6 +67,19 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
 #overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
 #overlay img { position: absolute; display: block; pointer-events: auto; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
 #overlay.pixelated img { image-rendering: pixelated; }
+/* Title bar of the shared window, drawn above its frame: the frame is the window below its title bar,
+   so the close box (x 0, docs/protocol.md 4) is offered here. */
+#frame-title {
+  display: flex; align-items: center; gap: 8px; height: 30px; margin: 0 auto; padding: 0 6px 0 10px;
+  background: var(--bar-bg); border: 1px solid var(--border); border-bottom: 0; border-radius: 8px 8px 0 0;
+  font-weight: 600; user-select: none; box-sizing: border-box;
+}
+#frame-title span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#frame-title button {
+  width: 30px; height: 24px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+#frame-title button:hover { background: var(--err); color: #fff; }
+body[data-view-only="true"] #frame-title button { display: none; }
 /* Other windows of the application (dialogs, file dialogs, subVI panels). */
 #windows { position: absolute; left: 0; top: 0; width: 0; height: 0; }
 .win {
@@ -139,6 +152,7 @@ body[data-view-only="true"] #panel { cursor: not-allowed; }
   <button type="button" id="fs-btn" title="Fullscreen">&#x26F6;</button>
 </header>
 <main id="stage" class="stage">
+  <div id="frame-title"><span id="frame-name">RemoteVI</span><button type="button" id="frame-close" title="Close the window (its close box on the host)" aria-label="Close">&#x2715;</button></div>
   <div class="panel-wrap" id="wrap">
     <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
     <div id="dim"></div>
@@ -162,6 +176,7 @@ const MSG_WINDOW_FRAME = 3;
 const OVERLAY_HEADER = 4;          // magic, type, count u16
 const WINDOW_FRAME_HEADER = 16;    // magic, type, id u32, seq u32, width u16, height u16, count u16
 const WIN_TITLE_H = 31;            // CSS px of a window's title bar (+ border)
+const FRAME_TITLE_H = 30;          // CSS px of the shared window's title bar above the frame
 const FRAME_HEADER = 12;           // magic, type, seq u32, width u16, height u16, count u16
 const RECT_HEADER = 8;             // x i16, y i16, length u32
 
@@ -231,7 +246,9 @@ function readRects(v, buf, o, count) {
     const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
     o += RECT_HEADER;
     if (o + len > buf.byteLength) throw new Error('truncated message');
-    rects.push({ x, y, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
+    // width and height from the PNG's IHDR (bytes 16..23): the overlay keeps its popups in view with them
+    const w = len >= 24 ? v.getUint32(o + 16) : 0, h = len >= 24 ? v.getUint32(o + 20) : 0;
+    rects.push({ x, y, w, h, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
     o += len;
   }
   return rects;
@@ -361,6 +378,7 @@ class RemoteViClient {
     const arg = sp < 0 ? '' : text.slice(sp + 1);
     if (cmd === 'title') {
       document.getElementById('vi-name').textContent = arg;
+      document.getElementById('frame-name').textContent = arg;
       document.title = `${arg} - RemoteVI`;
     } else if (cmd === 'viewonly') {
       document.body.dataset.viewOnly = String(arg === '1');
@@ -536,6 +554,54 @@ class RemoteViClient {
       img.draggable = false;
       return img;
     }));
+    this.keepPopupsInView(popups);
+  }
+
+  /** A menu that opens past the right or bottom edge of the view (a submenu opening to the right, a
+   *  menu near the bottom) is brought into view: the stage scrolls so the popups and the point they
+   *  open from move together, and when scrolling cannot show them whole (the view is narrower than
+   *  frame plus menu) the view zooms out until they fit. The zoom comes back when the popups close. */
+  keepPopupsInView(popups) {
+    if (!popups.length) {
+      if (this.popupZoom) {
+        const { mode, zoom } = this.popupZoom;
+        this.popupZoom = null;
+        this.mode = mode;
+        this.zoom = zoom;
+        this.applyView();
+      }
+      return;
+    }
+    const margin = 8;
+    const right = Math.max(...popups.map((p) => p.x + p.w)), bottom = Math.max(...popups.map((p) => p.y + p.h));
+    const left = Math.min(...popups.map((p) => p.x)), top = Math.min(...popups.map((p) => p.y));
+    const view = () => {
+      const s = this.stage.getBoundingClientRect(), wr = this.wrap.getBoundingClientRect(), z = this.zoom;
+      return {
+        // how far the popups reach past the visible part of the stage, in CSS px
+        dx: wr.left + right * z - (s.left + this.stage.clientWidth - margin),
+        dy: wr.top + bottom * z - (s.top + this.stage.clientHeight - margin),
+        lx: (s.left + margin) - (wr.left + left * z), ly: (s.top + margin) - (wr.top + top * z),
+        s, wr,
+      };
+    };
+    let v = view();
+    if (v.dx > 0) this.stage.scrollLeft += Math.min(v.dx, Math.max(0, -v.lx));
+    if (v.dy > 0) this.stage.scrollTop += Math.min(v.dy, Math.max(0, -v.ly));
+    v = view();
+    if (v.dx <= 1 && v.dy <= 1) return;
+    // still past the edge: zoom out so the whole width (height) from the frame's left (top) edge to the
+    // popups' far edge fits, at most down to ZOOM_MIN
+    const availW = this.stage.clientWidth - 2 * margin, availH = this.stage.clientHeight - 2 * margin;
+    const z = Math.max(ZOOM_MIN, Math.min(this.zoom, availW / right, availH / bottom));
+    if (z >= this.zoom - 0.001) return;
+    if (!this.popupZoom) this.popupZoom = { mode: this.mode, zoom: this.zoom };
+    this.mode = 'custom';
+    this.zoom = z;
+    this.applyView();
+    v = view();
+    if (v.dx > 0) this.stage.scrollLeft += v.dx;
+    if (v.dy > 0) this.stage.scrollTop += v.dy;
   }
 
   // --- other windows (docs/protocol.md 7) ------------------------------------------
@@ -663,6 +729,8 @@ class RemoteViClient {
     document.getElementById('zoom-in').addEventListener('click', () => this.stepZoom(1));
     document.getElementById('zoom-out').addEventListener('click', () => this.stepZoom(-1));
     document.getElementById('zoom-label').addEventListener('click', () => this.setMode('actual'));
+    // The shared window's close box: x 0 (the server posts SC_CLOSE when the window has one)
+    document.getElementById('frame-close').addEventListener('click', () => this.send('x 0'));
     const fs = document.getElementById('fs-btn');
     if (!document.documentElement.requestFullscreen) fs.hidden = true;
     fs.addEventListener('click', () => {
@@ -686,6 +754,7 @@ class RemoteViClient {
   }
 
   setMode(mode) {
+    this.popupZoom = null;   // the user's choice wins over a zoom taken for a menu
     this.mode = mode;
     if (mode === 'actual') this.zoom = 1;
     prefs.set('mode', mode);
@@ -700,6 +769,7 @@ class RemoteViClient {
   }
 
   setZoom(z, anchor) {
+    this.popupZoom = null;
     const old = this.zoom;
     this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
     this.mode = this.zoom === 1 ? 'actual' : 'custom';
@@ -725,7 +795,7 @@ class RemoteViClient {
     if (w <= 1 || h <= 1) return this.zoom;
     const cs = getComputedStyle(this.stage);
     const availW = this.stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-    const availH = this.stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const availH = this.stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - FRAME_TITLE_H;
     if (this.mode === 'fit') return Math.max(ZOOM_MIN, Math.min(availW / w, availH / h));
     if (this.mode === 'width') return Math.max(ZOOM_MIN, availW / w);
     if (this.mode === 'actual') return 1;
@@ -746,6 +816,7 @@ class RemoteViClient {
     this.layoutWindows();
     // Centre the frame when it is smaller than the stage (Fit), scroll when it is larger.
     this.wrap.style.width = `${w * z}px`;
+    document.getElementById('frame-title').style.width = `${w * z}px`;
     this.wrap.style.height = `${h * z}px`;
     document.getElementById('zoom-label').textContent = `${Math.round(z * 100)}%`;
     for (const b of document.querySelectorAll('[data-mode]')) {

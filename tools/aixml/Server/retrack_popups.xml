@@ -28,8 +28,8 @@
       <Tunnel _id="In7" outputs="value:t_ph.value" uid="t_ph" uid_parent="ct"/>
       <Tunnel _id="In8" outputs="value:t_hh.value" uid="t_hh" uid_parent="ct"/>
       <Constant outputs="value:kt.value" type="bool" uid="kt" uid_parent="ct" value="true"/>
-      <Constant outputs="value:kp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="kp" uid_parent="ct" value="[[],0,0]"/>
-      <Constant outputs="value:kov.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="kov" uid_parent="ct" value="[]"/>
+      <Control _name="no popups moved" connection="optional" description="Not on the connector pane\3A the default value of no popups moved (a diagram constant of this type is drawn many elements wide)." outputs="value:kp.value" type="cluster{array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h}}.windows,int32.dx,int32.dy}" uid="kp" uid_parent="ct" value="[[],0,0]"/>
+      <Control _name="no overlay popups" connection="optional" description="Not on the connector pane\3A the default value of no overlay popups (a diagram constant of this type is drawn many elements wide)." outputs="value:kov.value" type="array{cluster{uint64.hwnd,int32.x,int32.y,int32.w,int32.h,string.class}}" uid="kov" uid_parent="ct" value="[]"/>
       <Constant outputs="value:kb.value" type="bool" uid="kb" uid_parent="ct" value="false"/>
       <Constant _name="settle wait (ms)" outputs="value:kw.value" type="int32" uid="kw" uid_parent="ct" value="25"/>
       <Constant _name="at most 6 more listings" outputs="value:k6.value" type="int32" uid="k6" uid_parent="ct" value="6"/>

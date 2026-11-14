@@ -11,6 +11,7 @@
 *.rtm   binary
 *.lvsc  binary
 *.mnu   binary
+*.vipc  binary
 
 # LabVIEW XML files: text, but LabVIEW rewrites them; keep its line endings.
 *.lvproj -text
@@ -20,3 +21,7 @@
 *.vipb   -text
 
 tests/vectors/*.json text eol=lf linguist-generated
+
+# Windows batch files need CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf

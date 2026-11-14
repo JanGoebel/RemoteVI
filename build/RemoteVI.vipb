@@ -1,4 +1,4 @@
-<VI_Package_Builder_Settings Version="2020.1" Created_Date="2026-10-25 12:00:00" Modified_Date="2026-10-25 12:00:00" Creator="jgoebel" Comments="Build with: vipm build build\RemoteVI.vipb --version-number X.Y.Z (CI does this for vX.Y.Z tags)" ID="b7e3c1d2a4f5061728394a5b6c7d8e9f">
+<VI_Package_Builder_Settings Version="2020.1" Created_Date="2026-10-25 12:00:00" Modified_Date="2026-10-25 12:00:00" Creator="jgoebel" Comments="Build with scripts\build-package.ps1 (builds the example executables first, then runs vipm build); CI does this on every push and for vX.Y.Z tags" ID="b7e3c1d2a4f5061728394a5b6c7d8e9f">
   <Library_General_Settings>
     <Package_File_Name>jgoebel_lib_remotevi</Package_File_Name>
     <Library_Version>0.1.0.0</Library_Version>
@@ -6,11 +6,11 @@
     <Library_Source_Folder>..</Library_Source_Folder>
     <Library_Output_Folder>..\builds</Library_Output_Folder>
     <Company_Name>jgoebel</Company_Name>
-    <Library_Summary/>
+    <Library_Summary>Operate a LabVIEW front panel from a web browser</Library_Summary>
     <Library_License>MIT</Library_License>
     <Package_LabVIEW_Version>20.0 (64-bit)</Package_LabVIEW_Version>
     <Community_Edition>true</Community_Edition>
-    <Package_Icon/>
+    <Package_Icon>00000000</Package_Icon>
     <Product_Name>RemoteVI</Product_Name>
     <Was_Built>false</Was_Built>
     <Target>LabVIEW</Target>
@@ -32,12 +32,20 @@
       <Pre-Uninstall_VI/>
       <Post-Uninstall_VI/>
     </Custom_Action_VIs>
-    <VI_Package_Configuration_File/>
+    <VI_Package_Configuration_File>RemoteVI.vipc</VI_Package_Configuration_File>
     <Description>
-      <One_Line_Description_Summary>Operate a LabVIEW front panel from any web browser: pixel-accurate, written in G, no NI Web Server.</One_Line_Description_Summary>
-      <Description>RemoteVI replaces LabVIEW Remote Panels. Put RemoteVI Start.vi and RemoteVI Stop.vi into your application and open http://&lt;machine&gt;:8088/ in a browser. The browser shows the front panel window exactly as LabVIEW draws it, including menus, dialogs and popups, and mouse and keyboard input reaches LabVIEW as if someone were at the machine.
+      <One_Line_Description_Summary>Operate a LabVIEW front panel from a web browser, as a replacement for LabVIEW Remote Panels.</One_Line_Description_Summary>
+      <Description>RemoteVI shows a LabVIEW front panel in a web browser and lets you operate it from there. It replaces LabVIEW Remote Panels, is written in G and needs neither the NI Web Server nor a browser plug-in.
 
-Windows only (input is delivered as Win32 window messages). Details and source: https://github.com/JanGoebel/RemoteVI</Description>
+Add RemoteVI Start.vi and RemoteVI Stop.vi to your application and open the link that Start returns, for example http://127.0.0.1:8088/?t=&lt;token&gt;. The browser shows the window as LabVIEW draws it, with menus, dialogs and popups, and sends mouse and keyboard input back to LabVIEW.
+
+The package installs:
+- the RemoteVI functions palette: Start, Stop, Start Window, Status, Status Panel, Show Status and Open Server
+- the menu entry Tools &gt; RemoteVI &gt; Share in Browser, to share any window without code
+- two examples in examples\RemoteVI: RemoteVI Demo.vi, a data logger, and RemoteVI Application Example.vi, an application with a menu that loads screens into a subpanel
+- the two examples and RemoteVI Server as built applications (LabVIEW 2020 64-bit Run-Time Engine), with batch files that show their command-line options
+
+Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: https://github.com/JanGoebel/RemoteVI</Description>
       <Copyright>Copyright (c) 2026 Jan Goebel</Copyright>
       <Packager>jgoebel</Packager>
       <URL>https://github.com/JanGoebel/RemoteVI</URL>
@@ -47,7 +55,7 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Toolkit_VIs>
         <LLB>false</LLB>
         <Preserve_Hierarchy>true</Preserve_Hierarchy>
-        <Path/>
+        <Path>&lt;vi.lib&gt;\jgoebel\RemoteVI</Path>
       </Toolkit_VIs>
       <Examples>
         <LLB>false</LLB>
@@ -79,8 +87,8 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       </File_Menu>
       <Tools_Menu>
         <LLB>false</LLB>
-        <Preserve_Hierarchy>true</Preserve_Hierarchy>
-        <Path>&lt;application&gt;\project</Path>
+        <Preserve_Hierarchy>false</Preserve_Hierarchy>
+        <Path>&lt;application&gt;\project\RemoteVI</Path>
       </Tools_Menu>
       <Help_Menu>
         <LLB>false</LLB>
@@ -132,7 +140,15 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Namespace_Type>Prefix</Namespace_Type>
         <Namespace/>
       </Namespace_Overrides>
+      <Exclusions><Path>.git</Path></Exclusions>
       <Exclusions><Path>.github</Path></Exclusions>
+      <Exclusions><Path>.claude</Path></Exclusions>
+      <Exclusions><Path>.RemoteVI.UserState</Path></Exclusions>
+      <Exclusions><Path>CLAUDE.md</Path></Exclusions>
+      <Exclusions><Path>hooks</Path></Exclusions>
+      <Exclusions><Path>node_modules</Path></Exclusions>
+      <Exclusions><Path>RemoteVI.aliases</Path></Exclusions>
+      <Exclusions><Path>RemoteVI.lvlps</Path></Exclusions>
       <Exclusions><Path>.gitattributes</Path></Exclusions>
       <Exclusions><Path>.gitignore</Path></Exclusions>
       <Exclusions><Path>build</Path></Exclusions>
@@ -145,7 +161,6 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Exclusions><Path>tools</Path></Exclusions>
       <Exclusions><Path>web</Path></Exclusions>
       <Exclusions><Path>examples/aixml</Path></Exclusions>
-      <Exclusions><Path>examples/RemoteVI Demo Layout.vi</Path></Exclusions>
       <Exclusions><Path>package.json</Path></Exclusions>
       <Exclusions><Path>vipm.toml</Path></Exclusions>
       <Exclusions><Path>vipm.lock</Path></Exclusions>
@@ -177,7 +192,7 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Palette_Set_Name>Default</Palette_Set_Name>
       <Use_Custom_Category>false</Use_Custom_Category>
       <Custom_Category_Name/>
-      <Custom_Category_Icon/>
+      <Custom_Category_Icon>00000000</Custom_Category_Icon>
       <Controls_Palette_Information>
         <Virtual_Palette_Base_Path>Controls</Virtual_Palette_Base_Path>
         <Palette_Disk_Base_Path>&lt;menus&gt;\Controls</Palette_Disk_Base_Path>
@@ -204,7 +219,7 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
       <Windows_8>true</Windows_8>
       <OS_32-Bit>true</OS_32-Bit>
       <OS_64-Bit>true</OS_64-Bit>
-      <LV_32-Bit>true</LV_32-Bit>
+      <LV_32-Bit>false</LV_32-Bit>
       <LV_64-Bit>true</LV_64-Bit>
     </Install_Requirements>
     <LabVIEW>
@@ -230,13 +245,13 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Height_Row>3</Height_Row>
         <Width_Col.>3</Width_Col.>
       </Size>
-      <_256_Color_Icon/>
+      <_256_Color_Icon>00000000</_256_Color_Icon>
       <BW_Color_Icon>00000000</BW_Color_Icon>
       <Help_Info>
         <Help_Tag/>
         <Help_File_Path/>
       </Help_Info>
-      <Description>Publish a front panel to the browser</Description>
+      <Description>Share LabVIEW front panels in a web browser</Description>
       <Synchronization_Info>
         <Synchronyze_with_Directory>false</Synchronyze_with_Directory>
         <Synchronize_Directory_Path>.</Synchronize_Directory_Path>
@@ -248,10 +263,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>0</Column>
+          <Row>1</Row>
+          <Column>1</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Start.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -262,10 +277,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>1</Column>
+          <Row>1</Row>
+          <Column>2</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Stop.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -276,10 +291,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>2</Column>
+          <Row>1</Row>
+          <Column>3</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Start Window.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -290,10 +305,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>0</Column>
+          <Row>2</Row>
+          <Column>1</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Status.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -304,10 +319,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>1</Column>
+          <Row>2</Row>
+          <Column>2</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Status Panel.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -318,10 +333,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>2</Column>
+          <Row>2</Row>
+          <Column>3</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Show Status.vi</Path>
         <VI_Title/>
       </Items_Data>
@@ -332,10 +347,10 @@ Windows only (input is delivered as Win32 window messages). Details and source: 
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>2</Row>
-          <Column>0</Column>
+          <Row>3</Row>
+          <Column>1</Column>
         </Position>
-        <Icon/>
+        <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Open Server.vi</Path>
         <VI_Title/>
       </Items_Data>

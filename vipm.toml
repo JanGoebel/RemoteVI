@@ -3,7 +3,7 @@
 #   vipm build build\RemoteVI.vipb --version-number X.Y.Z   builds the VI package
 [project]
 name = "remotevi"
-version = "0.1.0"
+version = "0.1.1"
 labview-version = "2020"
 
 [dependencies]

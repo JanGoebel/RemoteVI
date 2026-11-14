@@ -16,9 +16,9 @@ RemoteVI Application Example\RemoteVI Application Example.exe
     its toolbar. The data are simulated.
 
 RemoteVI Server\RemoteVI Server.exe
-    Shares any window in a browser. Pick a window on the left (LabVIEW's own first, then
-    LabVIEW-built applications, then other programs), choose port, whole network and view only,
-    press "Share selected window". A landing page links every share (port 8088, or the next free
+    Shares any window in a browser. Pick a window in the list on the left (LabVIEW's own windows
+    first, then LabVIEW-built applications, then other programs), set port, whole network and
+    view only, and press "Share selected window". A landing page links every share (port 8088, or the next free
     port). Closing the window stops every share.
 
     Command line, after "--":
@@ -38,11 +38,13 @@ The batch files start them with different options:
     5 Server - share the demo, no landing page.bat    (port 8102)
     6 Application Example - share its own window.bat  (port 8087)
 
-RemoteVI Server runs once: close it before starting it with other options.
+Only one RemoteVI Server can run at a time: close it before you start it with other options.
 
-Security: everyone who has a share's link can operate the shared window. Give it only to who
-should, and share with the whole network only on a trusted network (the link travels as plain
-HTTP). A window of another LabVIEW-built application is shared through Win32 (picture, clicks,
-keys, menus, dialogs); Shift/Ctrl/Alt, tip strips and splitter dragging additionally need VI Server
-in that application - see the RemoteVI README ("Full features for a LabVIEW-built application")
-and its security notes before enabling it.
+Security: anyone who has a share's link can operate the shared window, so give the link only to
+the people who should use it. Share with the whole network only on a trusted network, because the
+link travels as plain HTTP.
+
+A window of another LabVIEW-built application is shared through Win32: picture, clicks, keys, menus
+and dialogs. Shift, Ctrl and Alt, tip strips and splitter bars also need VI Server in that
+application. The RemoteVI README explains how to enable it ("Full features for a LabVIEW-built
+application"); read its security notes first.

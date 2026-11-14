@@ -116,6 +116,15 @@ try {
     $entries = @($zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' })
     $reader = New-Object System.IO.StreamReader(($zip.Entries | Where-Object FullName -eq 'spec').Open())
     try { $spec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    # the palette file VIPM generated, read as Latin-1 so the VI names in it stay readable
+    $mnuEntry = $zip.Entries | Where-Object { $_.FullName -like '*.mnu' } | Select-Object -First 1
+    $mnu = ''
+    if ($mnuEntry) {
+        $ms = New-Object System.IO.MemoryStream
+        $s = $mnuEntry.Open()
+        try { $s.CopyTo($ms) } finally { $s.Dispose() }
+        $mnu = [System.Text.Encoding]::GetEncoding(28591).GetString($ms.ToArray())
+    }
 } finally { $zip.Dispose() }
 # The Tools menu shows the folders below <LabVIEW>\project as submenus: Tools >> RemoteVI >> Share in Browser
 $required = @(
@@ -130,6 +139,16 @@ if ($missing -or $forbidden) {
     $missing | ForEach-Object { Write-Warning "missing in the package: $_" }
     $forbidden | ForEach-Object { Write-Warning "development file in the package: $_" }
     throw "The package content check failed: $($vip.FullName)"
+}
+
+# Every VI of the palette definition must be in the palette file. VIPM numbers the rows and columns of
+# Library_Palette_Definition from 1 and leaves out an item at row or column 0 without a warning: the
+# palette of 0.1.0 showed only two of its seven VIs.
+$paletteVIs = @([regex]::Matches((Get-Content -Raw $vipb), '<NameSub_Menu_Name>([^<]+\.vi)</NameSub_Menu_Name>') |
+    ForEach-Object { $_.Groups[1].Value })
+$notInPalette = @($paletteVIs | Where-Object { -not $mnu.Contains($_) })
+if (-not $paletteVIs -or $notInPalette) {
+    throw "The palette of the package lacks $($notInPalette -join ', ') (rows and columns of the palette definition start at 1)."
 }
 
 # VIPM installs the packages in the spec's Requires with this one; the ones RemoteVI's VIs call are the

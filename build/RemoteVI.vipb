@@ -6,7 +6,7 @@
     <Library_Source_Folder>..</Library_Source_Folder>
     <Library_Output_Folder>..\builds</Library_Output_Folder>
     <Company_Name>jgoebel</Company_Name>
-    <Library_Summary>Operate a LabVIEW front panel from any web browser</Library_Summary>
+    <Library_Summary>Operate a LabVIEW front panel from a web browser</Library_Summary>
     <Library_License>MIT</Library_License>
     <Package_LabVIEW_Version>20.0 (64-bit)</Package_LabVIEW_Version>
     <Community_Edition>true</Community_Edition>
@@ -34,15 +34,18 @@
     </Custom_Action_VIs>
     <VI_Package_Configuration_File>RemoteVI.vipc</VI_Package_Configuration_File>
     <Description>
-      <One_Line_Description_Summary>Operate a LabVIEW front panel from any web browser: pixel-accurate, written in G, no NI Web Server.</One_Line_Description_Summary>
-      <Description>RemoteVI replaces LabVIEW Remote Panels. Put RemoteVI Start.vi and RemoteVI Stop.vi into your application and open the link Start returns (http://127.0.0.1:8088/?t=&lt;token&gt;) in a browser. The browser shows the front panel window exactly as LabVIEW draws it, including menus, dialogs and popups, and mouse and keyboard input reaches LabVIEW as if someone were at the machine.
+      <One_Line_Description_Summary>Operate a LabVIEW front panel from a web browser, as a replacement for LabVIEW Remote Panels.</One_Line_Description_Summary>
+      <Description>RemoteVI shows a LabVIEW front panel in a web browser and lets you operate it from there. It replaces LabVIEW Remote Panels, is written in G and needs neither the NI Web Server nor a browser plug-in.
 
-Installs:
-- Functions palette RemoteVI: Start, Stop, Start Window, Status, Status Panel, Show Status, Open Server.
-- Tools » RemoteVI » Share in Browser: share any window without code.
-- Examples (examples\RemoteVI): RemoteVI Demo.vi (a data logger with every common control) and RemoteVI Application Example.vi (a splitter UI whose menu loads screens into a subpanel), and in Executables both and RemoteVI Server as built applications (LabVIEW 2020 64-bit Run-Time Engine) with batch files for their command-line options.
+Add RemoteVI Start.vi and RemoteVI Stop.vi to your application and open the link that Start returns, for example http://127.0.0.1:8088/?t=&lt;token&gt;. The browser shows the window as LabVIEW draws it, with menus, dialogs and popups, and sends mouse and keyboard input back to LabVIEW.
 
-Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/JanGoebel/RemoteVI</Description>
+The package installs:
+- the RemoteVI functions palette: Start, Stop, Start Window, Status, Status Panel, Show Status and Open Server
+- the menu entry Tools &gt; RemoteVI &gt; Share in Browser, to share any window without code
+- two examples in examples\RemoteVI: RemoteVI Demo.vi, a data logger, and RemoteVI Application Example.vi, an application with a menu that loads screens into a subpanel
+- the two examples and RemoteVI Server as built applications (LabVIEW 2020 64-bit Run-Time Engine), with batch files that show their command-line options
+
+Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: https://github.com/JanGoebel/RemoteVI</Description>
       <Copyright>Copyright (c) 2026 Jan Goebel</Copyright>
       <Packager>jgoebel</Packager>
       <URL>https://github.com/JanGoebel/RemoteVI</URL>
@@ -248,7 +251,7 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Help_Tag/>
         <Help_File_Path/>
       </Help_Info>
-      <Description>Publish a front panel to the browser</Description>
+      <Description>Share LabVIEW front panels in a web browser</Description>
       <Synchronization_Info>
         <Synchronyze_with_Directory>false</Synchronyze_with_Directory>
         <Synchronize_Directory_Path>.</Synchronize_Directory_Path>
@@ -260,8 +263,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>0</Column>
+          <Row>1</Row>
+          <Column>1</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Start.vi</Path>
@@ -274,8 +277,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>1</Column>
+          <Row>1</Row>
+          <Column>2</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Stop.vi</Path>
@@ -288,8 +291,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>0</Row>
-          <Column>2</Column>
+          <Row>1</Row>
+          <Column>3</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Start Window.vi</Path>
@@ -302,8 +305,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>0</Column>
+          <Row>2</Row>
+          <Column>1</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Status.vi</Path>
@@ -316,8 +319,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>1</Column>
+          <Row>2</Row>
+          <Column>2</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Status Panel.vi</Path>
@@ -330,8 +333,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>1</Row>
-          <Column>2</Column>
+          <Row>2</Row>
+          <Column>3</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Show Status.vi</Path>
@@ -344,8 +347,8 @@ Windows, LabVIEW 2020 or newer, 64-bit. Details and source: https://github.com/J
         <Short_Name/>
         <is_Merge_VI>false</is_Merge_VI>
         <Position>
-          <Row>2</Row>
-          <Column>0</Column>
+          <Row>3</Row>
+          <Column>1</Column>
         </Position>
         <Icon>00000000</Icon>
         <Path>source\API\RemoteVI Open Server.vi</Path>

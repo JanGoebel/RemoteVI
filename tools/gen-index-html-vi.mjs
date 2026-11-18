@@ -6,14 +6,17 @@
 //
 //   1. node tools/gen-index-html-vi.mjs
 //        writes tools/aixml/Server/index_html.xml (the whole file as the constant's value)
-//   2. compose the VI from it, with LabVIEW 2025 running, either
+//   2. compose the VI from it, with LabVIEW running (the composer writes a LabVIEW 2025 VI), either
 //        - with labview-mcp:  lvai_generate_vi  aiXmlFilePath=tools\aixml\Server\index_html.xml
 //                             viPath=source\Server\RemoteVI Index HTML.vi
 //        - or directly:       node tools/gen-index-html-vi.mjs --compose
 //          (runs tools/aixml/compose.py with labview-mcp's bundled Python; close the VI in
 //           LabVIEW first, LabVIEW does not reload a VI that is changed on disk)
-//   3. check it: run the VI and compare `html` with the file (length 12778 and SHA-256 at the
-//      time of writing); `node tools/gen-index-html-vi.mjs --print-hash` prints both.
+//   3. check it: run the VI and compare `html` with the file; `node tools/gen-index-html-vi.mjs
+//      --print-hash` prints the file's length and SHA-256, `tools/check-server.mjs` compares the
+//      served client with the file.
+//   4. re-add the VI to RemoteVI.lvlib and save it for 20.0 (CLAUDE.md: library re-add chain,
+//      Save For Previous), then restore its icon (tools/dev/icons.py, Set Icons.vi).
 //
 // Escaping (docs: labview-mcp lvai_aixml_reference section 6): AIXML decodes \XX hex escapes
 // inside a value, so backslash, comma and every byte outside printable ASCII are written as

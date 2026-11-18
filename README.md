@@ -72,11 +72,11 @@ Details: [docs/architecture.md](docs/architecture.md), [docs/protocol.md](docs/p
 | Server loop, Start/Stop (`source/Server`, `source/API`) | ✅ frames copied from the window's composited surface (2-5 ms), every 16 ms right after a click or key; click-to-photon about 60 ms on the demo with LabVIEW in the background (`tools/perf.mjs`); idle connections don't stall it; Start reports errors |
 | Browser client (`source/Web/index.html`) | ✅ |
 | Tests | ✅ `npm test` (22), LabVIEW integration suites `tests/lv`: the fixture (24 of 24), a complex application UI (20 of 20, 1 skipped; see Known limits), two shares at once (3 of 3); the same suites against the fixtures built as executables in another process: over VI Server 24 of 24 and 19 of 20, window only 20 of 24 and 16 of 20 (docs/testing.md); LabVIEW in the background |
-| Caraya unit tests | ✅ 161 assertions over 20 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for the LabVIEW used (measured in LabVIEW 2020 and 2026) |
+| Caraya unit tests | ✅ 164 assertions over 20 suites pass (`tests/caraya/RemoteVI Caraya Runner.vi`, JUnit report); Caraya installed for the LabVIEW used (measured in LabVIEW 2020 and 2026) |
 | Complex panels: splitter panes, tab pages, clusters, subpanels (also swapped at run time), tree, table, slide, knob, graph cursors, path browse dialog, scrolling panes, floating windows | ✅ operated like locally (`tests/lv/complex.test.mjs`); tip strips of controls on tab pages, in clusters and in subpanel VIs |
 | Splitter dragging | ✅ the browser drags the bar itself and the server sets the splitter position through VI Server (`splitters` message, `s <id> <pos>`) |
-| Library `source/RemoteVI.lvlib` | ✅ every VI under `source/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
-| Palette, VI package (`package/RemoteVI.vipb`) | 🚧 palette RemoteVI with the API VIs, Tools menu entry, examples with the demo and RemoteVI Server as executables; built by `tools/build-package.ps1`, in CI for every pull request and attached to releases for `vX.Y.Z` tags (docs/ci.md). VIPM accepts the spec; a complete package build has not run yet (it needs an activated LabVIEW 2020) |
+| Library `source/RemoteVI.lvlib` | ✅ every VI under `source/` except `Hooks/` (a library of its own) and `Tools Menu/`, virtual folders mirror the disk, all members public (entry points: `API/`) |
+| Palette, VI package (`package/RemoteVI.vipb`) | ✅ palette RemoteVI with the API VIs, Tools menu entry, examples with the demo and RemoteVI Server as executables, MIT license shown on install; built by `tools/build-package.ps1` with VIPM and LabVIEW 2020 (0.1.1: 237 files). CI builds it for every pull request and attaches it to releases for `vX.Y.Z` tags once the self-hosted LabVIEW runner is set up (docs/ci.md) |
 
 ## Known limits
 

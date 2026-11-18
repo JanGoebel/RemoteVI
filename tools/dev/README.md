@@ -25,6 +25,7 @@ These are small VIs and scripts for working on RemoteVI with labview-mcp and Lab
 | `icon_font.py` | | Draws those icons: frame, 006699 banner and two lines in the 5x7 font of labview-mcp's `lvai_set_vi_icon`, pixel for pixel, so icons from either match. |
 | `Set Icons.vi` | VIs, Icons | Sets the icon of each VI from its PNG (both files list paths separated by semicolons), saves the VI and returns one error code per VI. Run with no project open, then save the VIs for 2020. Source: `aixml/set_icons.xml`. |
 | `Remote Exec State.vi` | machine, port, items file | Loads every VI listed in another LabVIEW and returns open code, execution state (0 broken, 1 runnable) and linker errors per VI - the check that the repository loads in LabVIEW 2020. |
+| `Relink Save.vi` | preload file, items file | Moves VIs without breaking their links: move the files first (`git mv`), list their callees in the preload file and the moved VIs (new paths) in the items file, one path per line. Opens the preloaded VIs, then opens each item from its new place, so LabVIEW links its subVIs to the VIs of the same name in memory, and saves it; returns a code per item. Run it in LabVIEW 2020 over `Remote Run.vi` so the VIs stay saved for 20.0, then check them cold with `lvai_exec_state`. Source: `aixml/relink_save.xml`. |
 
 ## Library re-add after recomposing VIs
 Close everything from RemoteVI first: `Mem.vi` with text "RemoteVI" must return nothing. Then:

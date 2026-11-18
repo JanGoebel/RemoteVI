@@ -100,6 +100,7 @@ OTHER = {
     r'tools\dev\Launch Detached.vi': ('DEV', 'LNCH', 'DTCH'), r'tools\dev\Mem.vi': ('DEV', 'MEM', ''),
     r'tools\dev\Notify Stop.vi': ('DEV', 'NTFY', 'STOP'), r'tools\dev\Set Columns.vi': ('DEV', 'SET', 'COLS'),
     r'tools\dev\Style Panel.vi': ('DEV', 'STYLE', 'PANEL'), r'tools\dev\Set Icons.vi': ('DEV', 'SET', 'ICONS'),
+    r'tools\dev\Relink Save.vi': ('DEV', 'RELNK', 'SAVE'),
     r'tools-menu\RemoteVI\Share in Browser.vi': ('RVI', 'SHARE', 'BRWSR'),
     r'tests\caraya\RemoteVI Caraya Runner.vi': ('TEST', 'RUN', 'ALL'),
     r'tests\caraya\support\RemoteVI Test Bytes To Hex.vi': ('TEST', 'BYTES', 'HEX'),

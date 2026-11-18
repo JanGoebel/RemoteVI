@@ -13,7 +13,7 @@
 		<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>
 		<Property Name="specify.custom.address" Type="Bool">false</Property>
 		<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>
-		<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>
+		<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../source/Hooks/RemoteVI Hooks.lvlib"/>
 		<Item Name="Examples" Type="Folder">
 			<Item Name="Application Example" Type="Folder">
 				<Item Name="RemoteVI App Alarms.vi" Type="VI" URL="../examples/Application Example/RemoteVI App Alarms.vi"/>
@@ -180,7 +180,7 @@
 		</Item>
 		<Item Name="Tools Menu" Type="Folder">
 			<Item Name="RemoteVI" Type="Folder">
-				<Item Name="Share in Browser.vi" Type="VI" URL="../tools-menu/RemoteVI/Share in Browser.vi"/>
+				<Item Name="Share in Browser.vi" Type="VI" URL="../source/Tools Menu/RemoteVI/Share in Browser.vi"/>
 			</Item>
 		</Item>
 		<Item Name="Dependencies" Type="Dependencies"/>

@@ -6,7 +6,7 @@ fight with the library, which already owns the toolkit VIs: they caused the "ite
 exists" / "conflict" errors when VIs were re-added to RemoteVI.lvlib. So the project lists:
 
   RemoteVI.lvlib            the toolkit (its own virtual folders mirror source/)
-  RemoteVI Hooks.lvlib      hooks/: the VI RemoteVI runs inside another LabVIEW process over VI Server
+  RemoteVI Hooks.lvlib      source/Hooks/: the VI RemoteVI runs inside another LabVIEW process over VI Server
   Examples/                 examples/*.vi
   Tests/Fixture, Tests/Caraya/...   test VIs (outside the library)
   Tools/...                 Win32 wrapper builder and templates
@@ -51,7 +51,7 @@ FOLDERS = [
     ('Tools/Win32 Wrapper Builder', 'tools/Win32 Wrapper Builder', False),
     ('Tools/Win32 Wrapper Templates', 'tools/Win32 Wrapper Templates', False),
     ('Tools/Bench', 'tools/bench', False),
-    ('Tools Menu/RemoteVI', 'tools-menu/RemoteVI', False),
+    ('Tools Menu/RemoteVI', 'source/Tools Menu/RemoteVI', False),
 ]
 
 
@@ -278,7 +278,7 @@ def main():
         '\t\t<Property Name="server.vi.propertiesEnabled" Type="Bool">true</Property>',
         '\t\t<Property Name="specify.custom.address" Type="Bool">false</Property>',
         '\t\t<Item Name="RemoteVI.lvlib" Type="Library" URL="../source/RemoteVI.lvlib"/>',
-        '\t\t<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../hooks/RemoteVI Hooks.lvlib"/>',
+        '\t\t<Item Name="RemoteVI Hooks.lvlib" Type="Library" URL="../source/Hooks/RemoteVI Hooks.lvlib"/>',
         *body,
         '\t\t<Item Name="Dependencies" Type="Dependencies"/>',
         '\t\t<Item Name="Build Specifications" Type="Build">',

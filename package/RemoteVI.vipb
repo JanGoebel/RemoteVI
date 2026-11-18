@@ -125,7 +125,7 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
         <Additional_Destination_Index>0</Additional_Destination_Index>
       </Destination_Overrides>
       <Destination_Overrides>
-        <Path>tools-menu</Path>
+        <Path>source/Tools Menu</Path>
         <Destination>7</Destination>
         <Additional_Destination>false</Additional_Destination>
         <Additional_Destination_Index>0</Additional_Destination_Index>
@@ -145,7 +145,7 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>.claude</Path></Exclusions>
       <Exclusions><Path>.RemoteVI.UserState</Path></Exclusions>
       <Exclusions><Path>CLAUDE.md</Path></Exclusions>
-      <Exclusions><Path>hooks</Path></Exclusions>
+      <Exclusions><Path>source/Hooks</Path></Exclusions>
       <Exclusions><Path>node_modules</Path></Exclusions>
       <Exclusions><Path>RemoteVI.aliases</Path></Exclusions>
       <Exclusions><Path>RemoteVI.lvlps</Path></Exclusions>
@@ -157,7 +157,7 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>reports</Path></Exclusions>
       <Exclusions><Path>tests</Path></Exclusions>
       <Exclusions><Path>tools</Path></Exclusions>
-      <Exclusions><Path>web</Path></Exclusions>
+      <Exclusions><Path>source/Web</Path></Exclusions>
       <Exclusions><Path>examples/aixml</Path></Exclusions>
       <Exclusions><Path>package.json</Path></Exclusions>
       <Exclusions><Path>vipm.toml</Path></Exclusions>

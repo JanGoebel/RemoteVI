@@ -22,7 +22,7 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - Server VIs carry TCP refnums. Build them with `<labview-mcp>\bin\pylabview\python.exe tools\aixml\compose.py <xml> <vi> [search dirs]` (it finds the newest installed labview-mcp; `LVMCP_BIN` overrides).
   - After a recompose, compare the connector pane with the old VI (`lvai_connector_pane`): the composer may pick another pattern (4833 instead of 4815) with the same conIdx, and every caller then reports "Bad linkage to subVI". Fix with pylv_apply `{"op":"conpane","pattern":4815}`.
   - Panes and splitters: `tools/aixml/pane_parts.py`.
-- **Embedded client:** after editing `web/index.html` run `node tools/gen-index-html-vi.mjs --compose`. `tools/check-server.mjs` flags a stale embedded client.
+- **Embedded client:** after editing `source/Web/index.html` run `node tools/gen-index-html-vi.mjs --compose`. `tools/check-server.mjs` flags a stale embedded client.
 - **Protocol reference:** `tools/lib/*.mjs` plus `tools/mock-server` (port 8090). Vectors are in `tests/vectors` (`npm run vectors`, `npm run vectors:check`). Keep them in sync with the G code.
 - **Helper VIs and scripts:** in `tools/dev/` (see its README):
   - Launch Detached, Abort Path, FP Close Path, Mem, Notify Stop, Build Spec;
@@ -34,7 +34,7 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
 - **Save version:** after generating, recomposing or saving anything in a newer LabVIEW:
   1. `python tools/dev/lv_versions.py --expect 20.0` lists the VIs to convert; write their paths to a text file.
   2. Run `tools/dev/Save For Previous.vi` (items file, version 20.0) in the LabVIEW that has them in memory. It saves in place; close them without saving afterwards.
-  3. `python tools/dev/lvlib_version.py source/RemoteVI.lvlib "hooks/RemoteVI Hooks.lvlib"` whenever LabVIEW saved a library (the library re-add chain does). `gen-lvproj.py` writes the project as 20.0.
+  3. `python tools/dev/lvlib_version.py source/RemoteVI.lvlib "source/Hooks/RemoteVI Hooks.lvlib"` whenever LabVIEW saved a library (the library re-add chain does). `gen-lvproj.py` writes the project as 20.0.
   4. Check in LabVIEW 2020: start it with `tools/dev/start-labview.ps1` (VI Server port 3365, next to 2026 on 3364) and run `tools/dev/Remote Exec State.vi` from the newer LabVIEW over all VIs. Broken by design: the four IsX wrapper templates and `tests/fixtures/build/Fixture Tab Panel.vi`.
 - **LabVIEW 2020 side by side:** the `LabVIEW.Application` ActiveX ProgID does not reach a running instance, so `tools/lv-share-url.ps1` fails; since 2026-11-03 it starts LabVIEW 2026 64-bit on this station (it was 2020 before), so `tools/build-package.ps1` refuses to build the executables here (`-SkipExecutables`). Drive 2020 with `tools/dev/Remote Run.vi` (Status.vi, result `text`; Launch Detached.vi, input `path`; Build Spec.vi). A build makes 2020 stop answering VI Server for a while: Run VI may return 1130 while the build still finishes - check the output files.
 

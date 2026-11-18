@@ -25,7 +25,7 @@
 |---|---|
 | `source/` (RemoteVI.lvlib) | `<vi.lib>\jgoebel\RemoteVI` |
 | Functions palette **RemoteVI**: Start, Stop, Start Window, Status, Status Panel, Show Status, Open Server | `<menus>\Categories` |
-| Tools » RemoteVI » Share in Browser (`tools-menu/`) | `<LabVIEW>\project\RemoteVI` |
+| Tools » RemoteVI » Share in Browser (`source/Tools Menu/`) | `<LabVIEW>\project\RemoteVI` |
 | `examples/RemoteVI Demo.vi`, `examples/Executables/` | `<LabVIEW>\examples\RemoteVI` |
 
 `examples/Executables/` holds the batch files and README of the example applications; the applications themselves (`RemoteVI Demo.exe`, `RemoteVI Server.exe` with their INI files) are copied there from `builds/` by the build script and are not committed. They are built by LabVIEW 2020 and need the LabVIEW 2020 Run-Time Engine (64-bit). The package requires 64-bit LabVIEW: only that is tested.

@@ -104,7 +104,8 @@ function httpVectors() {
       { name: 'path traversal is just an unknown path', head: 'GET /../../etc/passwd HTTP/1.1\r\nHost: x\r\n\r\n', path: '/../../etc/passwd', upgrade: false },
     ],
     tokenDescription: 'Server/RemoteVI Token Check.vi: query is the request target after the path (with or without its ?), '
-      + 'token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches.',
+      + 'token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches; the token * matches every query. '
+      + 'A case with its own token uses that one.',
     token: TOKEN,
     tokens: [
       { name: 'only the token', query: 't=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('t=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
@@ -120,6 +121,9 @@ function httpVectors() {
       { name: 'other key ending in t', query: 'at=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('at=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
       { name: 'uppercase key', query: 'T=3f9a0c1d2e4b5a6978879695a4b3c2d1', ok: tokenOk('T=3f9a0c1d2e4b5a6978879695a4b3c2d1', TOKEN) },
       { name: 'empty token never matches', query: 't=', emptyToken: true, ok: tokenOk('t=', '') },
+      { name: 'token * without t', query: '', token: '*', ok: tokenOk('', '*') },
+      { name: 'token * with any t', query: 't=wrong&x=1', token: '*', ok: tokenOk('t=wrong&x=1', '*') },
+      { name: 't=* is no wildcard', query: 't=*', ok: tokenOk('t=*', TOKEN) },
     ],
   };
 }

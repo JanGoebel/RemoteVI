@@ -1,7 +1,7 @@
-<VI _name="RemoteVI Token Check.vi" description="Checks the share's access token (docs\5Csecurity.md)\3A query is the request target after the path\2C with or without its leading question mark\3B every question mark counts as a parameter separator like an ampersand. The first t parameter is compared with token in constant time (the bytes are XORed and the differences ORed up\2C no early exit)\3B ok? is TRUE only when both have the same length\2C token is not empty (fail closed) and every byte matches. The value is compared as sent\2C without percent-decoding (tokens are hex). Pure function\2C cannot fail. Reference\3A tokenOk() in tools\5Clib\5Chttp.mjs\2C vectors tests\5Cvectors\5Chttp.json (tokens).">
+<VI _name="RemoteVI Token Check.vi" description="Checks the share's access token (docs\5Csecurity.md)\3A query is the request target after the path\2C with or without its leading question mark\3B every question mark counts as a parameter separator like an ampersand. The first t parameter is compared with token in constant time (the bytes are XORed and the differences ORed up\2C no early exit)\3B ok? is TRUE only when both have the same length\2C token is not empty (fail closed) and every byte matches. The value is compared as sent\2C without percent-decoding (tokens are hex). A token of * lets every request through\2C with or without a t parameter (a share without a token). Pure function\2C cannot fail. Reference\3A tokenOk() in tools\5Clib\5Chttp.mjs\2C vectors tests\5Cvectors\5Chttp.json (tokens).">
   <FreeLabel comment="First t parameter\2C compared in constant time" uid="lbl" uid_parent="root"/>
   <Control _name="query" conIdx="0" connection="required" description="The query of the request target\2C e.g. t=3f9a... or ?t=3f9a...&amp;x=1." outputs="value:q.value" type="string" uid="q" uid_parent="root" value=""/>
-  <Control _name="token" conIdx="1" connection="required" description="The share's access token. Empty never matches." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
+  <Control _name="token" conIdx="1" connection="required" description="The share's access token. Empty never matches\3B * matches every query." outputs="value:tk.value" type="string" uid="tk" uid_parent="root" value=""/>
   <Constant outputs="value:qm.value" type="string" uid="qm" uid_parent="root" value="?"/>
   <Constant outputs="value:amp.value" type="string" uid="amp" uid_parent="root" value="&amp;"/>
   <Constant outputs="value:key.value" type="string" uid="key" uid_parent="root" value="&amp;t="/>
@@ -27,6 +27,9 @@
   <Node _name="Equal?" inputs="x:sum.v,y:z32.value" outputs="x = y?:same.v" uid="same" uid_parent="root"/>
   <Node _name="And" inputs="x:found.v,y:samelen.v" outputs="x .and. y?:a1.v" uid="a1" uid_parent="root"/>
   <Node _name="And" inputs="x:a1.v,y:hastok.v" outputs="x .and. y?:a2.v" uid="a2" uid_parent="root"/>
-  <Node _name="And" inputs="x:a2.v,y:same.v" outputs="x .and. y?:ok.v" uid="ok" uid_parent="root"/>
-  <Indicator _name="ok?" conIdx="4" connection="recommended" description="TRUE when the first t parameter equals token." inputs="value:ok.v" type="bool" uid="o_ok" uid_parent="root" value="false"/>
+  <Node _name="And" inputs="x:a2.v,y:same.v" outputs="x .and. y?:match.v" uid="match" uid_parent="root"/>
+  <Constant _name="no token" outputs="value:star.value" type="string" uid="star" uid_parent="root" value="*"/>
+  <Node _name="Equal?" inputs="x:tk.value,y:star.value" outputs="x = y?:open.v" uid="open" uid_parent="root"/>
+  <Node _name="Or" inputs="x:match.v,y:open.v" outputs="x .or. y?:ok.v" uid="ok" uid_parent="root"/>
+  <Indicator _name="ok?" conIdx="4" connection="recommended" description="TRUE when the first t parameter equals token\2C or when token is *." inputs="value:ok.v" type="bool" uid="o_ok" uid_parent="root" value="false"/>
 </VI>

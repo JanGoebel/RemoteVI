@@ -65,7 +65,7 @@
    "upgrade": false
   }
  ],
- "tokenDescription": "Server/RemoteVI Token Check.vi: query is the request target after the path (with or without its ?), token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches.",
+ "tokenDescription": "Server/RemoteVI Token Check.vi: query is the request target after the path (with or without its ?), token the share token; ok is TRUE when the first t parameter equals the token. An empty token never matches; the token * matches every query. A case with its own token uses that one.",
  "token": "3f9a0c1d2e4b5a6978879695a4b3c2d1",
  "tokens": [
   {
@@ -132,6 +132,23 @@
    "name": "empty token never matches",
    "query": "t=",
    "emptyToken": true,
+   "ok": false
+  },
+  {
+   "name": "token * without t",
+   "query": "",
+   "token": "*",
+   "ok": true
+  },
+  {
+   "name": "token * with any t",
+   "query": "t=wrong&x=1",
+   "token": "*",
+   "ok": true
+  },
+  {
+   "name": "t=* is no wildcard",
+   "query": "t=*",
    "ok": false
   }
  ]

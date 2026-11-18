@@ -6,8 +6,10 @@ tools/dev/Set Icons.vi, which applies them and saves the VIs.
     open; every code must be 0), and save the VIs for 2020.
 
 Banner: RVI for the library (grey background for the palette VIs of source/API), the DLL for the Win32 wrappers,
-DEMO / APP for the examples, DEV for the tools here. Lines: the name, shortened to 5 characters each. VIs with hand
-made icons are not listed. With names, only the VIs whose path contains one of them.
+DEMO / APP for the examples, DEV for the tools here, W32B for the wrapper builder, TEST / CHECK for the Caraya tests
+and their generated support VIs, FIXT for the fixtures, BENCH / SPIKE for spikes/. Lines: the name, shortened to 5
+characters each. VIs with hand made icons are not listed. With names, only the VIs whose path contains one of them.
+tests/caraya/build.py composes the support VIs without icons: run this again after it.
 """
 import os
 import sys
@@ -98,6 +100,48 @@ OTHER = {
     r'tools\dev\Launch Detached.vi': ('DEV', 'LNCH', 'DTCH'), r'tools\dev\Mem.vi': ('DEV', 'MEM', ''),
     r'tools\dev\Notify Stop.vi': ('DEV', 'NTFY', 'STOP'), r'tools\dev\Set Columns.vi': ('DEV', 'SET', 'COLS'),
     r'tools\dev\Style Panel.vi': ('DEV', 'STYLE', 'PANEL'), r'tools\dev\Set Icons.vi': ('DEV', 'SET', 'ICONS'),
+    r'tools-menu\RemoteVI\Share in Browser.vi': ('RVI', 'SHARE', 'BRWSR'),
+    r'tests\caraya\RemoteVI Caraya Runner.vi': ('TEST', 'RUN', 'ALL'),
+    r'tests\caraya\support\RemoteVI Test Bytes To Hex.vi': ('TEST', 'BYTES', 'HEX'),
+    r'tests\caraya\support\RemoteVI Test Hex To Bytes.vi': ('TEST', 'HEX', 'BYTES'),
+    r'tests\fixtures\RemoteVI Fixture.vi': ('FIXT', 'RVI', ''),
+    r'tests\fixtures\RemoteVI Fixture Arrange.vi': ('FIXT', 'ARRNG', ''),
+    r'tests\fixtures\RemoteVI Fixture Layout.vi': ('FIXT', 'LAYOT', ''),
+    r'tests\fixtures\RemoteVI Complex Fixture All Controls.vi': ('FIXT', 'ALL', 'CTRLS'),
+    r'tests\fixtures\RemoteVI Complex Fixture Arrange.vi': ('FIXT', 'CMPLX', 'ARRNG'),
+    r'tests\fixtures\RemoteVI Complex Fixture Button Refs.vi': ('FIXT', 'BTN', 'REFS'),
+    r'tests\fixtures\RemoteVI Complex Fixture Children.vi': ('FIXT', 'CHILD', ''),
+    r'tests\fixtures\RemoteVI Complex Fixture Events.vi': ('FIXT', 'EVNTS', ''),
+    r'tests\fixtures\RemoteVI Complex Fixture Find Controls.vi': ('FIXT', 'FIND', 'CTRLS'),
+    r'tests\fixtures\RemoteVI Complex Fixture Layout.vi': ('FIXT', 'CMPLX', 'LAYOT'),
+    r'tests\fixtures\RemoteVI Complex Fixture Paste.vi': ('FIXT', 'PASTE', ''),
+    r'tests\fixtures\RemoteVI Complex Fixture Prep Panel.vi': ('FIXT', 'PREP', 'PANEL'),
+    r'tests\fixtures\RemoteVI Complex Fixture Refs.vi': ('FIXT', 'REFS', ''),
+    r'tests\fixtures\RemoteVI Complex Fixture Value Text.vi': ('FIXT', 'VALUE', 'TEXT'),
+    r'tests\fixtures\RemoteVI Complex Inspector.vi': ('FIXT', 'INSPC', ''),
+    r'tests\fixtures\RemoteVI Complex View A.vi': ('FIXT', 'VIEW', 'A'),
+    r'tests\fixtures\RemoteVI Complex View B.vi': ('FIXT', 'VIEW', 'B'),
+    r'spikes\Bench Dirty Rects.vi': ('BENCH', 'DIRTY', 'RECTS'),
+    r'spikes\Bench Encode PNG.vi': ('BENCH', 'ENC', 'PNG'),
+    r'spikes\Spike Start Errors.vi': ('SPIKE', 'START', 'ERRS'),
+    r'scripts\Build Win32 Wrappers.vi': ('W32B', 'BUILD', 'WRAPS'),
+    r'scripts\Set Reentrant.vi': ('DEV', 'SET', 'REENT'),
+    r'scripts\Win32 Wrapper Builder\W32B Create CLFN.vi': ('W32B', 'CREAT', 'CLFN'),
+    r'scripts\Win32 Wrapper Builder\W32B Parse Spec.vi': ('W32B', 'PARSE', 'SPEC'),
+}
+# Caraya subjects: tests\caraya\unit\<folder>\Test <subject>.vi (banner TEST) and its generated
+# tests\caraya\support\RemoteVI Check <subject>.vi (banner CHECK) share the two lines
+SUBJECTS = {
+    'App': {'Landing Page': ('LAND', 'PAGE'), 'Next Free Port': ('FREE', 'PORT'), 'Parse Arguments': ('PARSE', 'ARGS'),
+            'Window Rows': ('WNDW', 'ROWS')},
+    'Capture': {'Dirty Rects': ('DIRTY', 'RECTS')},
+    'Input': {'Track Modifiers': ('TRACK', 'MODS'), 'Translate Input': ('TRANS', 'INPUT')},
+    'Protocol': {'Frame Encode': ('FRAME', 'ENC'), 'JSON String': ('JSON', 'STR'), 'Overlay Encode': ('OVRLY', 'ENC'),
+                 'Parse Input': ('PARSE', 'INPUT'), 'Splitters Message': ('SPLIT', 'MSG'),
+                 'Tips Message': ('TIPS', 'MSG'), 'WS Decode Client Frame': ('WS', 'DECOD'),
+                 'WS Encode Server Frame': ('WS', 'ENCOD'), 'Window Frame Encode': ('WNDW', 'FRAME')},
+    'Server': {'Format Duration': ('FMT', 'DUR'), 'Status Convert': ('STATS', 'CONV'), 'Status Text': ('STATS', 'TEXT'),
+               'Token Check': ('TOKEN', 'CHECK')},
 }
 
 
@@ -113,6 +157,10 @@ def table():
         t[os.path.join('source', 'Win32', name + '.vi')] = lines + (WHITE,)
     for path, lines in OTHER.items():
         t[path] = lines + (WHITE,)
+    for folder, names in SUBJECTS.items():
+        for name, (l2, l3) in names.items():
+            t[os.path.join('tests', 'caraya', 'unit', folder, 'Test %s.vi' % name)] = ('TEST', l2, l3, WHITE)
+            t[os.path.join('tests', 'caraya', 'support', 'RemoteVI Check %s.vi' % name)] = ('CHECK', l2, l3, WHITE)
     return t
 
 

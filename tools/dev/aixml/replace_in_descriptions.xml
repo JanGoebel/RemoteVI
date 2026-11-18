@@ -28,10 +28,45 @@
       <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="pr" value="true"/>
       <Node _name="Search and Replace String" inputs="input string:cur.v,search string:f1.v,replace string:r1.v,replace all?:tru.value" outputs="result string:sr1.result string" uid="sr1" uid_parent="pr"/>
     </Structure>
-    <Node _name="Not Equal?" inputs="x:rd.d,y:newd.v" outputs="x != y?:chg.v" uid="chg" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):rd.err" outputs="reference out:,error out:fp.err,Front Panel:fp.p" type="{LV.VI}" uid="fp" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Controls[]" inputs="reference:fp.p,error in (no error):fp.err" outputs="reference out:,error out:pc.err,Controls[]:pc.c" type="{LV.Panel}" uid="pc" uid_parent="fl"/>
+    <Structure _name="For Loop" count="" label="Each control" maxin="" maxout="" uid="cl" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:cr1.v" uid="cr1" uid_parent="cl"/>
+      <Tunnel _id="In2" inputs="value:lf.v" outputs="value:clf.v" uid="clf" uid_parent="cl"/>
+      <Tunnel _id="In3" inputs="value:lr.v" outputs="value:clr.v" uid="clr" uid_parent="cl"/>
+      <Node _name="Property Node" fields="read+Description" inputs="reference:cr1.v" outputs="reference out:,error out:cd.err,Description:cd.d" type="{LV.Control}" uid="cd" uid_parent="cl"/>
+      <Structure _name="For Loop" count="" label="Each pair" maxin="" maxout="" uid="cpr" uid_parent="cl">
+        <Tunnel _id="In1" inputs="value:clf.v" mode="index" outputs="value:cf1.v" uid="cf1" uid_parent="cpr"/>
+        <Tunnel _id="In2" inputs="value:clr.v" mode="index" outputs="value:cr2.v" uid="cr2" uid_parent="cpr"/>
+        <ShiftReg uid="csr" uid_parent="cpr">
+          <Left inputs="value:cd.d" outputs="value:ccur.v" uid="csrl" uid_parent="csr"/>
+          <Right inputs="value:csr1.result string" outputs="value:cnew.v" uid="csrr" uid_parent="csr"/>
+        </ShiftReg>
+        <Constant outputs="value:ctru.value" type="bool" uid="ctru" uid_parent="cpr" value="true"/>
+        <Node _name="Search and Replace String" inputs="input string:ccur.v,search string:cf1.v,replace string:cr2.v,replace all?:ctru.value" outputs="result string:csr1.result string" uid="csr1" uid_parent="cpr"/>
+      </Structure>
+      <Node _name="Not Equal?" inputs="x:cd.d,y:cnew.v" outputs="x != y?:cchg.v" uid="cchg" uid_parent="cl"/>
+      <Structure _name="Case Structure" selectin="cchg.v" uid="ccs" uid_parent="cl">
+        <Tunnel _id="In1" inputs="value:cr1.v" uid="ccs_i1" uid_parent="ccs"/>
+        <Tunnel _id="In2" inputs="value:cnew.v" uid="ccs_i2" uid_parent="ccs"/>
+        <CaseFrame label="Changed\3A write it" selector="True" selectout="" uid="ccst" uid_parent="ccs">
+          <Tunnel _id="In1" outputs="value:ct_r.value" uid="ct_r" uid_parent="ccst"/>
+          <Tunnel _id="In2" outputs="value:ct_d.value" uid="ct_d" uid_parent="ccst"/>
+          <Node _name="Property Node" fields="write+Description" inputs="reference:ct_r.value,Description:ct_d.value" outputs="reference out:,error out:" type="{LV.Control}" uid="cwd" uid_parent="ccst"/>
+        </CaseFrame>
+        <CaseFrame label="Unchanged" selector="False" selectout="" uid="ccsf" uid_parent="ccs">
+          <Tunnel _id="In1" outputs="value:" uid="cf_r" uid_parent="ccsf"/>
+          <Tunnel _id="In2" outputs="value:" uid="cf_d" uid_parent="ccsf"/>
+        </CaseFrame>
+      </Structure>
+      <Tunnel _id="Out1" inputs="value:cchg.v" mode="index" outputs="value:cchgs.v" uid="cchgs" uid_parent="cl"/>
+    </Structure>
+    <Node _name="Or Array Elements" inputs="Boolean array:cchgs.v" outputs="logical OR:anyc.v" uid="anyc" uid_parent="fl"/>
+    <Node _name="Not Equal?" inputs="x:rd.d,y:newd.v" outputs="x != y?:vchg.v" uid="vchg" uid_parent="fl"/>
+    <Node _name="Or" inputs="x:vchg.v,y:anyc.v" outputs="x .or. y?:chg.v" uid="chg" uid_parent="fl"/>
     <Structure _name="Case Structure" selectin="chg.v" uid="cs" uid_parent="fl">
       <Tunnel _id="In1" inputs="value:ov.vi reference" uid="cs_i1" uid_parent="cs"/>
-      <Tunnel _id="In2" inputs="value:rd.err" uid="cs_i2" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:pc.err" uid="cs_i2" uid_parent="cs"/>
       <Tunnel _id="In3" inputs="value:newd.v" uid="cs_i3" uid_parent="cs"/>
       <CaseFrame label="Changed\3A write and save" selector="True" selectout="" uid="cst" uid_parent="cs">
         <Tunnel _id="In1" outputs="value:t_r.value" uid="t_r" uid_parent="cst"/>

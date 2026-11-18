@@ -1,41 +1,48 @@
-<#
+﻿<#
 .SYNOPSIS
   Runs the LabVIEW integration suite (tests/lv) against tests/fixtures/RemoteVI Fixture.vi.
 
 .DESCRIPTION
-  1. G-CLI runs tests/fixtures/Launch Fixture (CLI).vi, which starts the fixture detached and
-     returns once it is running. The fixture serves on port 8089 and logs to the event log.
+  1. Opens the fixture's front panel and runs it without waiting, over LabVIEW's ActiveX server
+     (like tools/dev/Launch Detached.vi; RemoteVI streams a 0x0 frame from a VI without an open
+     panel). LabVIEW.Application starts the LabVIEW registered for ActiveX when none answers.
+     The fixture shares itself on port 8089 and logs to %TEMP%\RemoteVI Fixture.log.
   2. Waits for the fixture's `ready` line, then runs `npm run test:lv` with RVI_LV=1 and writes
-     the TAP output to reports/lv-integration.tap.
+     the TAP output to reports/lv-integration.tap (the harness reads the link with its token
+     through tools/lv-share-url.ps1).
   3. Stops the fixture with its own Stop button (through the server, like a browser).
 
-  Only one RemoteVI server can run per LabVIEW instance: stop any other one first.
+  Port 8089 must be free in that LabVIEW: stop another share on it first.
 
-.PARAMETER LabVIEWVersion
-  LabVIEW year, default 2020 (the version the repository is saved for).
+.PARAMETER ReadyTimeoutSeconds
+  How long to wait for the fixture's `ready` line.
 #>
 param(
-  [string]$LabVIEWVersion = '2020',
-  [ValidateSet('32', '64')][string]$Bitness = '64',
   [int]$ReadyTimeoutSeconds = 120
 )
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $root) { $root = (Get-Location).Path }
-$gcliDir = 'C:\Program Files\G-CLI\bin'
-if (Test-Path $gcliDir) { $env:Path = "$gcliDir;$env:Path" }
 
 $log = Join-Path $env:TEMP 'RemoteVI Fixture.log'
 if (Test-Path $log) { Remove-Item $log }
 New-Item -ItemType Directory -Force (Join-Path $root 'reports') | Out-Null
 
-$launcher = Join-Path $root 'tests\fixtures\Launch Fixture (CLI).vi'
-if (-not (Test-Path $launcher)) { throw "Missing $launcher" }
+$fixture = Join-Path $root 'tests\fixtures\RemoteVI Fixture.vi'
+if (-not (Test-Path $fixture)) { throw "Missing $fixture" }
 
-Write-Host "Starting the fixture in LabVIEW $LabVIEWVersion ($Bitness-bit)..."
-& g-cli --lv-ver $LabVIEWVersion --arch $Bitness $launcher
-if ($LASTEXITCODE -ne 0) { throw "Launching the fixture failed (g-cli exit code $LASTEXITCODE)" }
+Write-Host 'Starting the fixture over LabVIEW''s ActiveX server...'
+try { $lv = [System.Runtime.InteropServices.Marshal]::GetActiveObject('LabVIEW.Application') }
+catch { $lv = New-Object -ComObject 'LabVIEW.Application' }
+# GetVIReference's arity differs between LabVIEW versions
+$vi = $null
+foreach ($a in @(@($fixture), @($fixture, ''), @($fixture, '', $false))) {
+  try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
+}
+if (-not $vi) { throw "Cannot open $fixture over LabVIEW's ActiveX server" }
+$vi.FPWinOpen = $true
+$vi.Run($true)
 
 $deadline = (Get-Date).AddSeconds($ReadyTimeoutSeconds)
 while (-not ((Test-Path $log) -and (Select-String -Path $log -Pattern '^ready' -Quiet))) {

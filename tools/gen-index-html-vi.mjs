@@ -64,9 +64,19 @@ fs.writeFileSync(outPath, xml, 'ascii');
 console.log(`wrote ${path.relative(root, outPath)} from ${bytes.length} bytes (sha256 ${hash})`);
 
 if (process.argv.includes('--compose')) {
-  const bin = process.env.LVMCP_BIN
-    ?? path.join(process.env.USERPROFILE, '.claude', 'plugins', 'cache', 'zuehlke-labview', 'labview-mcp', '2.2.0', 'bin');
+  const bin = process.env.LVMCP_BIN ?? newestLvmcpBin();
   const r = spawnSync(path.join(bin, 'pylabview', 'python.exe'),
     [path.join(root, 'tools', 'aixml', 'compose.py'), outPath, viPath], { stdio: 'inherit' });
+  if (r.error) throw r.error;
   process.exit(r.status ?? 1);
+}
+
+/** bin folder of the newest labview-mcp installed for Claude Code (as tools/aixml/compose.py finds it). */
+function newestLvmcpBin() {
+  const base = path.join(process.env.USERPROFILE, '.claude', 'plugins', 'cache', 'zuehlke-labview', 'labview-mcp');
+  const key = (v) => v.split('.').map((x) => (/^\d+$/.test(x) ? Number(x) : 0));
+  const newer = (a, b) => { const x = key(a), y = key(b); for (let i = 0; i < Math.max(x.length, y.length); i++) { if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) - (y[i] ?? 0); } return 0; };
+  const vers = fs.existsSync(base) ? fs.readdirSync(base).filter((v) => fs.existsSync(path.join(base, v, 'bin'))).sort(newer) : [];
+  if (!vers.length) throw new Error(`no labview-mcp under ${base}; set LVMCP_BIN`);
+  return path.join(base, vers[vers.length - 1], 'bin');
 }

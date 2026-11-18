@@ -151,7 +151,7 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>RemoteVI.lvlps</Path></Exclusions>
       <Exclusions><Path>.gitattributes</Path></Exclusions>
       <Exclusions><Path>.gitignore</Path></Exclusions>
-      <Exclusions><Path>build</Path></Exclusions>
+      <Exclusions><Path>package</Path></Exclusions>
       <Exclusions><Path>builds</Path></Exclusions>
       <Exclusions><Path>docs</Path></Exclusions>
       <Exclusions><Path>reports</Path></Exclusions>

@@ -9,7 +9,7 @@
        built by the version the package is saved for. -SkipExecutables reuses builds\ as it is.
     2. Copies them to examples\Executables\<name>\ (git-ignored), from where the package installs
        them with the examples.
-    3. Runs `vipm build build\RemoteVI.vipb` with the version number.
+    3. Runs `vipm build package\RemoteVI.vipb` with the version number.
     4. Checks the package: the files it must contain, and none of the repository's development files.
 
     Same script locally and in CI (.github/workflows/package.yml). Requirements: LabVIEW 2020 (64-bit)
@@ -37,7 +37,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $project = Join-Path $root 'RemoteVI.lvproj'
-$vipb = Join-Path $root 'build\RemoteVI.vipb'
+$vipb = Join-Path $root 'package\RemoteVI.vipb'
 $builds = Join-Path $root 'builds'
 $staging = Join-Path $root 'examples\Executables'
 $executables = @('RemoteVI Demo', 'RemoteVI Application Example', 'RemoteVI Server')

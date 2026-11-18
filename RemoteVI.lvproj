@@ -84,11 +84,6 @@
 			<Item Name="Build Win32 Wrappers.vi" Type="VI" URL="../scripts/Build Win32 Wrappers.vi"/>
 			<Item Name="Set Reentrant.vi" Type="VI" URL="../scripts/Set Reentrant.vi"/>
 		</Item>
-		<Item Name="Spikes" Type="Folder">
-			<Item Name="Bench Dirty Rects.vi" Type="VI" URL="../spikes/Bench Dirty Rects.vi"/>
-			<Item Name="Bench Encode PNG.vi" Type="VI" URL="../spikes/Bench Encode PNG.vi"/>
-			<Item Name="Spike Start Errors.vi" Type="VI" URL="../spikes/Spike Start Errors.vi"/>
-		</Item>
 		<Item Name="Tests" Type="Folder">
 			<Item Name="Caraya" Type="Folder">
 				<Item Name="support" Type="Folder">
@@ -177,6 +172,13 @@
 				<Item Name="RemoteVI Fixture Mouse Line.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture Mouse Line.vi"/>
 				<Item Name="RemoteVI Fixture Value Line.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture Value Line.vi"/>
 				<Item Name="RemoteVI Fixture.vi" Type="VI" URL="../tests/fixtures/RemoteVI Fixture.vi"/>
+			</Item>
+		</Item>
+		<Item Name="Tools" Type="Folder">
+			<Item Name="Bench" Type="Folder">
+				<Item Name="Bench Dirty Rects.vi" Type="VI" URL="../tools/bench/Bench Dirty Rects.vi"/>
+				<Item Name="Bench Encode PNG.vi" Type="VI" URL="../tools/bench/Bench Encode PNG.vi"/>
+				<Item Name="Spike Start Errors.vi" Type="VI" URL="../tools/bench/Spike Start Errors.vi"/>
 			</Item>
 		</Item>
 		<Item Name="Tools Menu" Type="Folder">

@@ -156,7 +156,6 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>docs</Path></Exclusions>
       <Exclusions><Path>reports</Path></Exclusions>
       <Exclusions><Path>scripts</Path></Exclusions>
-      <Exclusions><Path>spikes</Path></Exclusions>
       <Exclusions><Path>tests</Path></Exclusions>
       <Exclusions><Path>tools</Path></Exclusions>
       <Exclusions><Path>web</Path></Exclusions>

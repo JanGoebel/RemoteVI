@@ -7,7 +7,7 @@ tools/dev/Set Icons.vi, which applies them and saves the VIs.
 
 Banner: RVI for the library (grey background for the palette VIs of source/API), the DLL for the Win32 wrappers,
 DEMO / APP for the examples, DEV for the tools here, W32B for the wrapper builder, TEST / CHECK for the Caraya tests
-and their generated support VIs, FIXT for the fixtures, BENCH / SPIKE for spikes/. Lines: the name, shortened to 5
+and their generated support VIs, FIXT for the fixtures, BENCH / SPIKE for tools/bench/. Lines: the name, shortened to 5
 characters each. VIs with hand made icons are not listed. With names, only the VIs whose path contains one of them.
 tests/caraya/build.py composes the support VIs without icons: run this again after it.
 """
@@ -121,9 +121,9 @@ OTHER = {
     r'tests\fixtures\RemoteVI Complex Inspector.vi': ('FIXT', 'INSPC', ''),
     r'tests\fixtures\RemoteVI Complex View A.vi': ('FIXT', 'VIEW', 'A'),
     r'tests\fixtures\RemoteVI Complex View B.vi': ('FIXT', 'VIEW', 'B'),
-    r'spikes\Bench Dirty Rects.vi': ('BENCH', 'DIRTY', 'RECTS'),
-    r'spikes\Bench Encode PNG.vi': ('BENCH', 'ENC', 'PNG'),
-    r'spikes\Spike Start Errors.vi': ('SPIKE', 'START', 'ERRS'),
+    r'tools\bench\Bench Dirty Rects.vi': ('BENCH', 'DIRTY', 'RECTS'),
+    r'tools\bench\Bench Encode PNG.vi': ('BENCH', 'ENC', 'PNG'),
+    r'tools\bench\Spike Start Errors.vi': ('SPIKE', 'START', 'ERRS'),
     r'scripts\Build Win32 Wrappers.vi': ('W32B', 'BUILD', 'WRAPS'),
     r'scripts\Set Reentrant.vi': ('DEV', 'SET', 'REENT'),
     r'scripts\Win32 Wrapper Builder\W32B Create CLFN.vi': ('W32B', 'CREAT', 'CLFN'),

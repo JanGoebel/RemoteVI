@@ -10,7 +10,7 @@ exists" / "conflict" errors when VIs were re-added to RemoteVI.lvlib. So the pro
   Examples/                 examples/*.vi
   Tests/Fixture, Tests/Caraya/...   test VIs (outside the library)
   Scripts/...               build scripts and Win32 wrapper templates
-  Spikes/                   benchmarks
+  Tools/Bench/              benchmarks
   Tools Menu/RemoteVI       the Tools menu entry (the VIPM package installs it into <LabVIEW>/project)
 
 and five build specifications (builds/ is git-ignored, nothing built is committed):
@@ -50,7 +50,7 @@ FOLDERS = [
     ('Scripts', 'scripts', False),
     ('Scripts/Win32 Wrapper Builder', 'scripts/Win32 Wrapper Builder', False),
     ('Scripts/Win32 Wrapper Templates', 'scripts/Win32 Wrapper Templates', False),
-    ('Spikes', 'spikes', False),
+    ('Tools/Bench', 'tools/bench', False),
     ('Tools Menu/RemoteVI', 'tools-menu/RemoteVI', False),
 ]
 

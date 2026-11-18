@@ -3,7 +3,7 @@
 | Layer | Tool | What |
 |---|---|---|
 | Pure G VIs | Caraya unit tests generated from the vectors (`tests/caraya/`, see below) | Protocol (also Window Frame Encode and the `x <id>` message), Dirty Rects, Translate Input and Track Modifiers against `tests/vectors/*.json` |
-| Benchmarks | `spikes/Bench Dirty Rects.vi`, `spikes/Bench Encode PNG.vi` | diff and PNG encode timings; `spikes/Spike Start Errors.vi` checks Start's error reporting |
+| Benchmarks | `tools/bench/Bench Dirty Rects.vi`, `tools/bench/Bench Encode PNG.vi` | diff and PNG encode timings; `tools/bench/Spike Start Errors.vi` checks Start's error reporting |
 | Server acceptance | `node tools/check-server.mjs --url http://127.0.0.1:8088 [--click x,y] [--png out.png]` | black-box checks of a running server, the LabVIEW one or the reference one: HTTP surface, first frame pixel coverage, flow control, input, robustness |
 | Client and reference | `node:test` (`npm test`, Node 22+, no install) | WebSocket and HTTP parsers, end-to-end against the reference server, client file is pure ASCII and self-contained |
 | Input fidelity in LabVIEW | `RVI_LV=1 npm run test:lv` against `tests/fixtures/RemoteVI Fixture.vi` (see below) | clicks, latched buttons, typing, modifiers, hover, ring and right-click menus, tabs, wheel, double click, Shift+arrow, tip strips, run-time shortcut menu with a submenu, hover highlight in menus, submenu beside its parent, the whole window in the stream (menu bar, toolbar, scrollbars; `origin`), run-time menu bar with a submenu, scrollbar arrows, a LabVIEW dialog as a modal window with its own picture (Enter answers it, the panel behind it takes no input, a click on its No button answers it), a native file dialog (Escape cancels it) |

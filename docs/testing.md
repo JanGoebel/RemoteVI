@@ -62,7 +62,7 @@ Requirements: Caraya (`jki_lib_caraya`) installed for the LabVIEW that composes 
 Headless, with G-CLI and its Caraya tool (`lvos_lib_caraya_cli_extension`):
 
 ```
-.\scripts\run-caraya.ps1 [-Build] [-Report .\reports\caraya.xml] [-QuitLabVIEW]
+.\tools\run-caraya.ps1 [-Build] [-Report .\reports\caraya.xml] [-QuitLabVIEW]
 ```
 
 It checks that Caraya is installed for the LabVIEW version, optionally regenerates the tests, runs every VI in `tests/caraya/unit`, writes the JUnit report and prints tests and failures per suite. LabVIEW is left running unless `-QuitLabVIEW` is given.

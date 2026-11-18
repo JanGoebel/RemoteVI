@@ -1,4 +1,4 @@
-<VI_Package_Builder_Settings Version="2020.1" Created_Date="2026-10-25 12:00:00" Modified_Date="2026-10-25 12:00:00" Creator="jgoebel" Comments="Build with scripts\build-package.ps1 (builds the example executables first, then runs vipm build); CI does this on every push and for vX.Y.Z tags" ID="b7e3c1d2a4f5061728394a5b6c7d8e9f">
+<VI_Package_Builder_Settings Version="2020.1" Created_Date="2026-10-25 12:00:00" Modified_Date="2026-10-25 12:00:00" Creator="jgoebel" Comments="Build with tools\build-package.ps1 (builds the example executables first, then runs vipm build); CI does this on every push and for vX.Y.Z tags" ID="b7e3c1d2a4f5061728394a5b6c7d8e9f">
   <Library_General_Settings>
     <Package_File_Name>jgoebel_lib_remotevi</Package_File_Name>
     <Library_Version>0.1.1.0</Library_Version>
@@ -155,7 +155,6 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>builds</Path></Exclusions>
       <Exclusions><Path>docs</Path></Exclusions>
       <Exclusions><Path>reports</Path></Exclusions>
-      <Exclusions><Path>scripts</Path></Exclusions>
       <Exclusions><Path>tests</Path></Exclusions>
       <Exclusions><Path>tools</Path></Exclusions>
       <Exclusions><Path>web</Path></Exclusions>

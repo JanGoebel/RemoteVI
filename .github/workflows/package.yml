@@ -1,6 +1,6 @@
 name: VI package
 
-# Reusable: builds jgoebel_lib_remotevi-<version>.<build>.vip with scripts/build-package.ps1 on the
+# Reusable: builds jgoebel_lib_remotevi-<version>.<build>.vip with tools/build-package.ps1 on the
 # self-hosted LabVIEW runner (docs/ci.md) and uploads it as the artifact `vi-package`.
 # Called by ci.yml (pull requests and main) and release.yml (vX.Y.Z tags).
 on:
@@ -32,7 +32,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vipm install failed ($LASTEXITCODE)" }
       - name: Build the executables and the package
         shell: powershell
-        run: .\scripts\build-package.ps1 -Version '${{ inputs.version }}' -BuildNumber ${{ inputs.build-number }}
+        run: .\tools\build-package.ps1 -Version '${{ inputs.version }}' -BuildNumber ${{ inputs.build-number }}
       - uses: actions/upload-artifact@v4
         with:
           name: vi-package

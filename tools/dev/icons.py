@@ -78,7 +78,7 @@ LIB = {
         'Window Info': ('WNDW', 'INFO'),
     },
 }
-# Win32 wrappers built by scripts/Build Win32 Wrappers.vi: (banner, line 2, line 3)
+# Win32 wrappers built by tools/Build Win32 Wrappers.vi: (banner, line 2, line 3)
 WRAPPERS = {
     'bcrypt BCryptGenRandom': ('BCRYP', 'GEN', 'RAND'), 'gdi32 BitBlt': ('GDI32', 'BIT', 'BLT'),
     'gdi32 CreateRectRgn': ('GDI32', 'RECT', 'RGN'), 'kernel32 CloseHandle': ('KRNL', 'CLOSE', 'HNDL'),
@@ -101,6 +101,7 @@ OTHER = {
     r'tools\dev\Notify Stop.vi': ('DEV', 'NTFY', 'STOP'), r'tools\dev\Set Columns.vi': ('DEV', 'SET', 'COLS'),
     r'tools\dev\Style Panel.vi': ('DEV', 'STYLE', 'PANEL'), r'tools\dev\Set Icons.vi': ('DEV', 'SET', 'ICONS'),
     r'tools\dev\Relink Save.vi': ('DEV', 'RELNK', 'SAVE'),
+    r'tools\dev\Replace In Descriptions.vi': ('DEV', 'DESC', 'REPL'),
     r'tools-menu\RemoteVI\Share in Browser.vi': ('RVI', 'SHARE', 'BRWSR'),
     r'tests\caraya\RemoteVI Caraya Runner.vi': ('TEST', 'RUN', 'ALL'),
     r'tests\caraya\support\RemoteVI Test Bytes To Hex.vi': ('TEST', 'BYTES', 'HEX'),
@@ -125,10 +126,10 @@ OTHER = {
     r'tools\bench\Bench Dirty Rects.vi': ('BENCH', 'DIRTY', 'RECTS'),
     r'tools\bench\Bench Encode PNG.vi': ('BENCH', 'ENC', 'PNG'),
     r'tools\bench\Spike Start Errors.vi': ('SPIKE', 'START', 'ERRS'),
-    r'scripts\Build Win32 Wrappers.vi': ('W32B', 'BUILD', 'WRAPS'),
-    r'scripts\Set Reentrant.vi': ('DEV', 'SET', 'REENT'),
-    r'scripts\Win32 Wrapper Builder\W32B Create CLFN.vi': ('W32B', 'CREAT', 'CLFN'),
-    r'scripts\Win32 Wrapper Builder\W32B Parse Spec.vi': ('W32B', 'PARSE', 'SPEC'),
+    r'tools\Build Win32 Wrappers.vi': ('W32B', 'BUILD', 'WRAPS'),
+    r'tools\dev\Set Reentrant.vi': ('DEV', 'SET', 'REENT'),
+    r'tools\Win32 Wrapper Builder\W32B Create CLFN.vi': ('W32B', 'CREAT', 'CLFN'),
+    r'tools\Win32 Wrapper Builder\W32B Parse Spec.vi': ('W32B', 'PARSE', 'SPEC'),
 }
 # Caraya subjects: tests\caraya\unit\<folder>\Test <subject>.vi (banner TEST) and its generated
 # tests\caraya\support\RemoteVI Check <subject>.vi (banner CHECK) share the two lines

@@ -120,7 +120,7 @@ check(/img-src[^;]*blob:/.test(csp), 'CSP lets the client show popup images (img
 const body = index.slice(index.indexOf('\r\n\r\n') + 4);
 const local = fs.readFileSync(new URL('../web/index.html', import.meta.url), 'latin1');
 check(body === local, 'served client is the current web/index.html',
-  body === local ? '' : `served ${body.length} bytes, file ${local.length} - run scripts/gen-index-html-vi.mjs --compose`);
+  body === local ? '' : `served ${body.length} bytes, file ${local.length} - run tools/gen-index-html-vi.mjs --compose`);
 
 const notFound = await raw(`GET /nope HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
 check(/^HTTP\/1\.[01] 404/.test(notFound), 'GET /nope -> 404', notFound.split('\r\n')[0]);

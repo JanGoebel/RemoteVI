@@ -1,0 +1,60 @@
+<VI _name="Replace In Descriptions.vi" description="Dev helper: replaces text in the VI description of every VI listed in the items file (one path per line) and saves the VIs it changed. The pairs file holds one replacement per line, the text to find and its replacement separated by a tab; every occurrence is replaced, pairs applied in order. Run it in LabVIEW 2020 over Remote Run.vi so the VIs stay saved for 20.0. Returns per item whether the description changed and the error code.">
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Control _name="pairs file" type="path" uid="pf" uid_parent="root" value="" outputs="value:pf.value"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):pf.value,count:all.value" outputs="text:rp.text,error out:rp.err" uid="rp" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Split each pair at its tab" maxin="" maxout="" uid="sp" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rp.text" mode="index" outputs="value:pl.s" uid="pl" uid_parent="sp"/>
+    <Constant outputs="value:tab.value" type="string" uid="tab" uid_parent="sp" value="\09"/>
+    <Node _name="Match Pattern" inputs="string:pl.s,regular expression:tab.value" outputs="before substring:mp.before,after substring:mp.after" uid="mp" uid_parent="sp"/>
+    <Tunnel _id="Out1" inputs="value:mp.before" mode="index" outputs="value:finds.v" uid="finds" uid_parent="sp"/>
+    <Tunnel _id="Out2" inputs="value:mp.after" mode="index" outputs="value:reps.v" uid="reps" uid_parent="sp"/>
+  </Structure>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value,error in:rp.err" outputs="text:ri.text,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Each VI" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:finds.v" outputs="value:lf.v" uid="lf" uid_parent="fl"/>
+    <Tunnel _id="In3" inputs="value:reps.v" outputs="value:lr.v" uid="lr" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="vi path:itp.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+VI Description" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:,error out:rd.err,VI Description:rd.d" type="{LV.VI}" uid="rd" uid_parent="fl"/>
+    <Structure _name="For Loop" count="" label="Each pair" maxin="" maxout="" uid="pr" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:lf.v" mode="index" outputs="value:f1.v" uid="f1" uid_parent="pr"/>
+      <Tunnel _id="In2" inputs="value:lr.v" mode="index" outputs="value:r1.v" uid="r1" uid_parent="pr"/>
+      <ShiftReg uid="sr" uid_parent="pr">
+        <Left inputs="value:rd.d" outputs="value:cur.v" uid="srl" uid_parent="sr"/>
+        <Right inputs="value:sr1.result string" outputs="value:newd.v" uid="srr" uid_parent="sr"/>
+      </ShiftReg>
+      <Constant outputs="value:tru.value" type="bool" uid="tru" uid_parent="pr" value="true"/>
+      <Node _name="Search and Replace String" inputs="input string:cur.v,search string:f1.v,replace string:r1.v,replace all?:tru.value" outputs="result string:sr1.result string" uid="sr1" uid_parent="pr"/>
+    </Structure>
+    <Node _name="Not Equal?" inputs="x:rd.d,y:newd.v" outputs="x != y?:chg.v" uid="chg" uid_parent="fl"/>
+    <Structure _name="Case Structure" selectin="chg.v" uid="cs" uid_parent="fl">
+      <Tunnel _id="In1" inputs="value:ov.vi reference" uid="cs_i1" uid_parent="cs"/>
+      <Tunnel _id="In2" inputs="value:rd.err" uid="cs_i2" uid_parent="cs"/>
+      <Tunnel _id="In3" inputs="value:newd.v" uid="cs_i3" uid_parent="cs"/>
+      <CaseFrame label="Changed\3A write and save" selector="True" selectout="" uid="cst" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:t_r.value" uid="t_r" uid_parent="cst"/>
+        <Tunnel _id="In2" outputs="value:t_e.value" uid="t_e" uid_parent="cst"/>
+        <Tunnel _id="In3" outputs="value:t_d.value" uid="t_d" uid_parent="cst"/>
+        <Node _name="Property Node" fields="write+VI Description" inputs="reference:t_r.value,error in (no error):t_e.value,VI Description:t_d.value" outputs="reference out:,error out:wd.err" type="{LV.VI}" uid="wd" uid_parent="cst"/>
+        <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:t_r.value,error in (no error):wd.err" outputs="reference out:,error out:sv.err" uid="sv" uid_parent="cst"/>
+        <Tunnel _id="Out1" inputs="value:sv.err" uid="t_o1" uid_parent="cst"/>
+      </CaseFrame>
+      <CaseFrame label="Unchanged" selector="False" selectout="" uid="csf" uid_parent="cs">
+        <Tunnel _id="In1" outputs="value:" uid="f_r" uid_parent="csf"/>
+        <Tunnel _id="In2" outputs="value:f_e.value" uid="f_e" uid_parent="csf"/>
+        <Tunnel _id="In3" outputs="value:" uid="f_d" uid_parent="csf"/>
+        <Tunnel _id="Out1" inputs="value:f_e.value" uid="f_o1" uid_parent="csf"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:cs_o1.value" uid="cs_o1" uid_parent="cs"/>
+    </Structure>
+    <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):cs_o1.value" outputs="error out:cr.err" uid="cr" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.err" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+    <Tunnel _id="Out2" inputs="value:chg.v" mode="index" outputs="value:ch.v" uid="ch" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="changed" type="array{bool}" uid="och" uid_parent="root" value="[]" inputs="value:ch.v"/>
+  <Indicator _name="codes" type="array{int32}" uid="oc" uid_parent="root" value="[]" inputs="value:co.codes"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ri.err"/>
+</VI>

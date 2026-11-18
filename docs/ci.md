@@ -5,9 +5,9 @@
 * `main` is the protected default branch. Work happens on feature branches; each feature is a pull request whose commits stay visible (merge commits, no squash).
 * **CI** (`.github/workflows/ci.yml`) runs on every pull request and on `main`:
   * `reference` on `ubuntu-latest`: vector freshness, Caraya tests in sync with the vectors (`tests/caraya/build.py --check`), and `npm test` (reference server, web client, end-to-end).
-  * `labview` on the self-hosted Windows runner: Caraya (`scripts/run-caraya.ps1`) and the LabVIEW integration suite (`scripts/run-lv-integration.ps1`). It runs only when the repository variable `LABVIEW_RUNNER` is `true`.
+  * `labview` on the self-hosted Windows runner: Caraya (`tools/run-caraya.ps1`) and the LabVIEW integration suite (`tools/run-lv-integration.ps1`). It runs only when the repository variable `LABVIEW_RUNNER` is `true`.
   * `package` on the self-hosted Windows runner, for every pull request and every push to `main`: builds the VI package `jgoebel_lib_remotevi-X.Y.Z.N.vip` (X.Y.Z from `vipm.toml`, N the workflow run number) and keeps it as the artifact `vi-package` for 30 days, to install and test before a release. Also only with `LABVIEW_RUNNER`.
-* **Package** (`.github/workflows/package.yml`, reusable): `vipm install` (the packages of `vipm.toml` for LabVIEW 2020 64-bit), then `scripts/build-package.ps1` (below).
+* **Package** (`.github/workflows/package.yml`, reusable): `vipm install` (the packages of `vipm.toml` for LabVIEW 2020 64-bit), then `tools/build-package.ps1` (below).
 * **Release** (`.github/workflows/release.yml`): set `version = "X.Y.Z"` in `vipm.toml` on `main`, commit, then tag that commit:
 
   ```
@@ -33,9 +33,9 @@
 Build it locally (LabVIEW 2020 64-bit with Application Builder, VIPM 2026 or newer, `vipm install` done once):
 
 ```
-.\scripts\build-package.ps1                       # version from vipm.toml, build number 0
-.\scripts\build-package.ps1 -Version 1.2.3 -BuildNumber 7
-.\scripts\build-package.ps1 -SkipExecutables      # reuse the executables in builds\
+.\tools\build-package.ps1                       # version from vipm.toml, build number 0
+.\tools\build-package.ps1 -Version 1.2.3 -BuildNumber 7
+.\tools\build-package.ps1 -SkipExecutables      # reuse the executables in builds\
 ```
 
 The script builds the build specifications `RemoteVI Demo` and `RemoteVI Server` with LabVIEW 2020 (`tools/dev/Build Spec.vi` over LabVIEW's ActiveX server; it refuses another LabVIEW version), stages them, runs `vipm build`, and checks the package: the API VIs, the palette, the Tools menu VI, the example and both executables must be in it, and none of the repository's development files (tests, tools, docs, project, AIXML). The package lands in `builds/`. Install it for testing with VIPM (double-click the `.vip`), preferably in a LabVIEW where this repository is not open: the installed `RemoteVI.lvlib` and the repository's would cross-link.

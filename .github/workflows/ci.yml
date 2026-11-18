@@ -45,10 +45,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Caraya unit tests
         shell: pwsh
-        run: .\scripts\run-caraya.ps1 -Report reports\caraya.xml
+        run: .\tools\run-caraya.ps1 -Report reports\caraya.xml
       - name: LabVIEW integration suite (fixture through the real server)
         shell: pwsh
-        run: .\scripts\run-lv-integration.ps1
+        run: .\tools\run-lv-integration.ps1
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4

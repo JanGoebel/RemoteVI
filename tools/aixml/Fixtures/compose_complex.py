@@ -43,8 +43,8 @@ import subprocess
 import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
-fixtures = os.path.dirname(here)
-repo = os.path.dirname(os.path.dirname(fixtures))
+repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+fixtures = os.path.join(repo, "tests", "fixtures")
 bin_dir = sys.argv[1]
 py = os.path.join(bin_dir, "pylabview", "python.exe")
 pylv = os.path.join(bin_dir, "pylabview", "pylabview.cmd")

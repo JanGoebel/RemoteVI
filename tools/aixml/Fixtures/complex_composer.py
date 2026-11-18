@@ -9,7 +9,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(HERE))), "tools", "aixml"))
+sys.path.insert(0, os.path.dirname(HERE))  # tools/aixml
 import listbox_composer  # noqa: E402
 import pane_parts  # noqa: E402
 

@@ -181,7 +181,8 @@ source/
 ├── Tools Menu/ RemoteVI/Share in Browser.vi (the VI package installs it into <LabVIEW>/project)
 └── Web/        index.html, the browser client (embedded in Server/RemoteVI Index HTML.vi)
 tools/          build and test scripts, Build Win32 Wrappers.vi (+ Win32 Wrapper Builder/, Win32 Wrapper Templates/)
-tools/aixml/    AIXML sources of the generated VIs, for regeneration
+tools/aixml/    AIXML sources of every generated VI, for regeneration: one folder per library folder,
+                plus Examples/, Fixtures/, Caraya/ (written by tests/caraya/build.py), Dev/ and Bench/
 tools/bench/    benchmarks (Dirty Rects, PNG levels) and a Start/Stop error check; the original
                 measurement spikes are in git history (before the cleanup commit)
 tools/dev/      developer helpers (tools/dev/README.md)

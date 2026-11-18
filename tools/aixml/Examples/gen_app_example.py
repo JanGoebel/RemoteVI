@@ -13,18 +13,18 @@ Every screen is a VI of its own with its own loop; the main VI runs all four (Ru
 swaps the one shown in the subpanel. They stop when the main VI sends on the named notifier
 "RemoteVI Application Example". Nothing is written to disk: the data are simulated.
 
-Written files (examples/aixml/):
+Written files (tools/aixml/Examples/):
   app_main.xml        the main VI's diagram and controls, composed to a scaffold that is grafted into
                       NI's splitter panel (build_app_example.py has the steps)
   app_live_data.xml, app_log_files.xml, app_alarms.xml, app_settings.xml   the screens
 
-usage: python examples/aixml/gen_app_example.py
+usage: python tools/aixml/Examples/gen_app_example.py
 """
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), 'tools', 'aixml'))
+sys.path.insert(0, os.path.dirname(HERE))  # tools/aixml
 from aixml_case import Case  # noqa: E402
 
 ERR = 'cluster{bool.status,int32.code,string.source}'

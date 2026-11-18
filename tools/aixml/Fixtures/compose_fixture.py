@@ -15,8 +15,8 @@ import subprocess
 import sys
 
 here = os.path.dirname(os.path.abspath(__file__))
-fixtures = os.path.dirname(here)
-repo = os.path.dirname(os.path.dirname(fixtures))
+repo = os.path.dirname(os.path.dirname(os.path.dirname(here)))
+fixtures = os.path.join(repo, "tests", "fixtures")
 bin_dir = sys.argv[1]
 major = sys.argv[2] if len(sys.argv) > 2 else "25"
 py = os.path.join(bin_dir, "pylabview", "python.exe")

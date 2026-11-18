@@ -1,4 +1,4 @@
-"""Small helpers for Python generators of AIXML (used by examples/aixml/gen_*.py).
+"""Small helpers for Python generators of AIXML (used by tools/aixml/Examples/gen_*.py).
 
 Case writes a Case Structure whose inputs pass into every frame; each frame names the inputs it
 reads and the net it gives each output tunnel, which saves writing the tunnel boilerplate by hand.

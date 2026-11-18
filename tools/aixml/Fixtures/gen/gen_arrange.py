@@ -1,4 +1,4 @@
-# Generates tests/fixtures/aixml/RemoteVI Complex Fixture Arrange.xml
+# Generates tools/aixml/Fixtures/RemoteVI Complex Fixture Arrange.xml
 import os
 AX = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ERR = 'cluster{bool.status,int32.code,string.source}'

@@ -1,11 +1,11 @@
 """Build steps of examples/RemoteVI Application Example.vi and its screens, and the style tables of their panels.
 
-  1. python examples/aixml/gen_app_example.py
+  1. python tools/aixml/Examples/gen_app_example.py
   2. compose the screens (multicolumn listboxes need --listbox):
-       <labview-mcp>\\bin\\pylabview\\python.exe tools/aixml/compose.py --listbox examples/aixml/app_<screen>.xml
+       <labview-mcp>\\bin\\pylabview\\python.exe tools/aixml/compose.py --listbox tools/aixml/Examples/app_<screen>.xml
          "examples/Application Example/RemoteVI App <Screen>.vi"
      and the main VI's scaffold:
-       ... compose.py --listbox examples/aixml/app_main.xml "builds/app/App Scaffold.vi" source/API source/Server source/Win32
+       ... compose.py --listbox tools/aixml/Examples/app_main.xml "builds/app/App Scaffold.vi" source/API source/Server source/Win32
   3. copy <LabVIEW>\\examples\\Controls and Indicators\\Containers\\Resizable Panel with Splitter Bars.vi to
      builds/app/App Panel.vi and run tests/fixtures/RemoteVI Complex Fixture Prep Panel.vi on it (path)
   4. lvai_graft_diagram panel=builds/app/App Panel.vi scaffold=builds/app/App Scaffold.vi
@@ -13,7 +13,7 @@
   5. tests/fixtures/RemoteVI Complex Fixture Paste.vi: Fixture = the example, Donors = [<LabVIEW>\\examples\\
      Controls and Indicators\\Containers\\Multiple VIs in a Subpanel.vi], Donor Labels = [Subpanel],
      Labels = [Screen], Pane = [2]
-  6. python examples/aixml/build_app_example.py  -> writes app_<name>.spec.xml and prints the inputs of
+  6. python tools/aixml/Examples/build_app_example.py  -> writes app_<name>.spec.xml and prints the inputs of
      tools/dev/Style Panel.vi for each VI; run it once per VI. Every line of problems must end in 0.
   7. tools/dev/Fit To Pane.vi on the main VI, once per line of FIT (printed too): the menu and the subpanel fill
      their panes and follow them when the window or a splitter bar moves. control size must equal pane size
@@ -27,14 +27,14 @@
      (a multicolumn listbox has no writable size); size must be 859 wide.
   9. save for LabVIEW 2020 (CLAUDE.md, Save version).
 
-usage: python examples/aixml/build_app_example.py ["...\\vi.lib\\silver_ctls"]
+usage: python tools/aixml/Examples/build_app_example.py ["...\\vi.lib\\silver_ctls"]
 """
 import json
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(os.path.dirname(HERE))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(REPO, 'tools', 'aixml'))
 from style_rows import row, inputs_json, write_spec  # noqa: E402
 

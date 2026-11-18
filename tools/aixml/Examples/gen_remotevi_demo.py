@@ -1,4 +1,4 @@
-"""Generates examples/aixml/remotevi_demo.xml, the source of examples/RemoteVI Demo.vi.
+"""Generates tools/aixml/Examples/remotevi_demo.xml, the source of examples/RemoteVI Demo.vi.
 
 The demo is a data logger: its configuration (acquisition, channels, trigger, logging) on the
 pages of a tab control, a live graph of four simulated channels, status indicators, and buttons
@@ -7,13 +7,13 @@ own panel with RemoteVI Start.vi on port 8088. Nothing is written to disk: the d
 
 The panel is laid out afterwards by tools/dev/Style Panel.vi with build_demo.py's rows.
 
-usage: python examples/aixml/gen_remotevi_demo.py
+usage: python tools/aixml/Examples/gen_remotevi_demo.py
 """
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(HERE)), 'tools', 'aixml'))
+sys.path.insert(0, os.path.dirname(HERE))  # tools/aixml
 from aixml_case import Case  # noqa: E402
 
 ERR = 'cluster{bool.status,int32.code,string.source}'

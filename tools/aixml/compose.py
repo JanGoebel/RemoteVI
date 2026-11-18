@@ -68,7 +68,7 @@ def number_symbols(text):
 
 
 def main(argv):
-    # --listbox: also style="Listbox" (a multicolumn listbox), through the fixtures' listbox_composer.py
+    # --listbox: also style="Listbox" (a multicolumn listbox), through tools/aixml/Fixtures/listbox_composer.py
     listbox = "--listbox" in argv
     argv = [a for a in argv if a != "--listbox"]
     src, out_vi = argv[0], os.path.abspath(argv[1])
@@ -82,7 +82,7 @@ def main(argv):
     # pane_parts.py: the composer plus the VI Server classes Pane and Splitter (Read Tips converts pane coordinates)
     here = os.path.dirname(os.path.abspath(__file__))
     if listbox:
-        wrapper = [os.path.join(os.path.dirname(os.path.dirname(here)), "tests", "fixtures", "aixml", "complex_composer.py"), COMPOSER]
+        wrapper = [os.path.join(here, "Fixtures", "complex_composer.py"), COMPOSER]
     else:
         wrapper = [os.path.join(here, "pane_parts.py"), "compose"]
     cmd = [PYTHON] + wrapper + ["--lv-version", "25", tmp, out_vi] + sum((["--search", d] for d in argv[2:]), [])

@@ -18,7 +18,7 @@ Start with README.md, then docs/architecture.md, docs/protocol.md, docs/testing.
   - Never post WM_CLOSE or experiments to LabVIEW-owned dialogs. That hung LabVIEW once.
 
 ## Tooling
-- **G generation:** labview-mcp: the pylabview composer (writes LabVIEW 2025 VIs) and, on LabVIEW 2026, the gRPC backend (writes 2026 VIs). AIXML sources live in `tools/aixml/<folder>/` next to their VIs. Both write a newer version than 20.0: save the result for 2020 afterwards.
+- **G generation:** labview-mcp: the pylabview composer (writes LabVIEW 2025 VIs) and, on LabVIEW 2026, the gRPC backend (writes 2026 VIs). All AIXML sources live in `tools/aixml/`: one folder per library folder (`Server/`, `Input/`, ...), plus `Examples/`, `Fixtures/`, `Caraya/` (written by `tests/caraya/build.py`), `Dev/` (the helpers in `tools/dev/`) and `Bench/`. Both write a newer version than 20.0: save the result for 2020 afterwards.
   - Server VIs carry TCP refnums. Build them with `<labview-mcp>\bin\pylabview\python.exe tools\aixml\compose.py <xml> <vi> [search dirs]` (it finds the newest installed labview-mcp; `LVMCP_BIN` overrides).
   - After a recompose, compare the connector pane with the old VI (`lvai_connector_pane`): the composer may pick another pattern (4833 instead of 4815) with the same conIdx, and every caller then reports "Bad linkage to subVI". Fix with pylv_apply `{"op":"conpane","pattern":4815}`.
   - Panes and splitters: `tools/aixml/pane_parts.py`.

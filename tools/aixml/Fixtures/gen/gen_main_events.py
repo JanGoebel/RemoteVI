@@ -1,4 +1,4 @@
-# Generates tests/fixtures/aixml/RemoteVI Complex Fixture.xml (no event structure: lvai_graft_diagram re-registers
+# Generates tools/aixml/Fixtures/RemoteVI Complex Fixture.xml (no event structure: lvai_graft_diagram re-registers
 # static Value Change events only) and RemoteVI Complex Fixture Events.xml (the event loop, all events dynamic).
 import os
 AX = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

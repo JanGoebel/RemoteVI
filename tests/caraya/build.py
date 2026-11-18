@@ -40,7 +40,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 VEC = os.path.join(ROOT, "tests", "vectors")
-AIXML_DIR = os.path.join(HERE, "aixml")
+AIXML_DIR = os.path.join(ROOT, "tools", "aixml", "Caraya")
 SUPPORT = os.path.join(HERE, "support")
 UNIT = os.path.join(HERE, "unit")
 COMPOSE = os.path.join(ROOT, "tools", "aixml", "compose.py")

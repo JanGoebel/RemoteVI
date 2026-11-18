@@ -158,7 +158,6 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
       <Exclusions><Path>tests</Path></Exclusions>
       <Exclusions><Path>tools</Path></Exclusions>
       <Exclusions><Path>source/Web</Path></Exclusions>
-      <Exclusions><Path>examples/aixml</Path></Exclusions>
       <Exclusions><Path>package.json</Path></Exclusions>
       <Exclusions><Path>vipm.toml</Path></Exclusions>
       <Exclusions><Path>vipm.lock</Path></Exclusions>

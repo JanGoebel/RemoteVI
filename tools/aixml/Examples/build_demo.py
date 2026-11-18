@@ -1,23 +1,23 @@
 """Build steps of examples/RemoteVI Demo.vi (the data logger) and the style table of its panel.
 
-  1. python examples/aixml/gen_remotevi_demo.py
-  2. <labview-mcp>\\bin\\pylabview\\python.exe tools/aixml/compose.py examples/aixml/remotevi_demo.xml
+  1. python tools/aixml/Examples/gen_remotevi_demo.py
+  2. <labview-mcp>\\bin\\pylabview\\python.exe tools/aixml/compose.py tools/aixml/Examples/remotevi_demo.xml
        "examples/RemoteVI Demo.vi" source/API source/Server source/Win32
   3. tests/fixtures/RemoteVI Complex Fixture Paste.vi: Fixture = the demo, Donors = [tests/fixtures/build/
      Fixture Tab Panel.vi], Donor Labels = [Tab], Labels = [Configuration], Pane = [0]
      (AIXML cannot create a tab control; this pastes an empty one)
-  4. python examples/aixml/build_demo.py  -> writes remotevi_demo.spec.xml (the style table below) and
+  4. python tools/aixml/Examples/build_demo.py  -> writes remotevi_demo.spec.xml (the style table below) and
      prints the inputs of tools/dev/Style Panel.vi; run Style Panel.vi with them
      (lvai_run_vi_and_read_values inputsJson). Every line of problems must end in 0.
   5. save for LabVIEW 2020 (CLAUDE.md, Save version).
 
-usage: python examples/aixml/build_demo.py ["C:\\Program Files\\National Instruments\\LabVIEW 2026\\vi.lib\\silver_ctls"]
+usage: python tools/aixml/Examples/build_demo.py ["C:\\Program Files\\National Instruments\\LabVIEW 2026\\vi.lib\\silver_ctls"]
 """
 import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(os.path.dirname(HERE))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 sys.path.insert(0, os.path.join(REPO, 'tools', 'aixml'))
 from style_rows import row, inputs_json, write_spec  # noqa: E402
 

@@ -171,7 +171,7 @@ Requires Windows and LabVIEW 2020 or later, 64-bit. Source and documentation: ht
         <Path/>
       </Place_Folder_Contents>
     </Source_Files>
-    <License_Agreement_Filepath/>
+    <License_Agreement_Filepath>..\LICENSE</License_Agreement_Filepath>
     <Licensing_and_Activation>
       <License_LF_file_path/>
       <Licensed_library_file_path/>

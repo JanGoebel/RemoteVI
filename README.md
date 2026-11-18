@@ -117,3 +117,7 @@ npm run mock                               # reference server with a simulated p
 The repository is saved for **LabVIEW 2020 (20.0)**, so it opens in LabVIEW 2020 and every newer version, which compiles it on load (the VIs are source only). The G code was generated with labview-mcp on LabVIEW 2025 and 2026 and saved for 2020 with `tools/dev/Save For Previous.vi`; `python tools/dev/lv_versions.py --expect 20.0` checks every VI (CI runs it). The AIXML sources are in `tools/aixml/`; `python scripts/gen-lvproj.py` regenerates `RemoteVI.lvproj` (virtual folders, build specifications for RemoteVI Server.exe, the demo and the fixtures; build output goes to `builds/`, which is not committed). `scripts/Build Win32 Wrappers.vi` regenerates the Call Library wrappers, and `scripts/gen-index-html-vi.mjs` regenerates the embedded client.
 
 **VI package:** `.\scripts\build-package.ps1` builds the example executables with LabVIEW 2020, then `builds\jgoebel_lib_remotevi-X.Y.Z.N.vip` from `build/RemoteVI.vipb`. CI builds it for every pull request and on `main`, and a tag `vX.Y.Z` matching `version` in `vipm.toml` publishes it as a GitHub release ([docs/ci.md](docs/ci.md)).
+
+## License
+
+RemoteVI is open source under the [MIT License](LICENSE). The VI package shows the license when it installs and carries the file with it.

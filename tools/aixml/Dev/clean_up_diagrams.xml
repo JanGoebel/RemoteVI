@@ -1,0 +1,19 @@
+<VI _name="Clean Up Diagrams.vi" description="Dev helper: runs LabVIEW's Clean Up Diagram (BD.CleanUp, the options of Tools » Options » Block Diagram » Cleanup) on every VI listed in the items file (one path per line) and saves it for version (20.0 by default) in place, so a newer LabVIEW can run it: LabVIEW 2020's BD.CleanUp answers error 2. Close the VIs without saving afterwards. Returns the error code per item.">
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Control _name="version" type="string" uid="ver" uid_parent="root" value="20.0" outputs="value:ver.value"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value" outputs="text:ri.text,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Each VI" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:ver.value" outputs="value:tv.v" uid="tv" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="vi path:itp.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="BD.CleanUp" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:cu.ref,error out:cu.err" uid="cu" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Save.For Previous" type="{LV.VI}" inputs="reference:cu.ref,error in (no error):cu.err,Path to saved file:itp.path,Oldest compatible target version:tv.v" outputs="reference out:sv.ref,error out:sv.err,Save for previous warnings:" uid="sv" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:sv.ref,error in (no error):sv.err" outputs="error out:cr.err" uid="cr" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.err" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="codes" type="array{int32}" uid="oc" uid_parent="root" value="[]" inputs="value:co.codes"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ri.err"/>
+</VI>

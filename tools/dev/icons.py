@@ -102,6 +102,7 @@ OTHER = {
     r'tools\dev\Style Panel.vi': ('DEV', 'STYLE', 'PANEL'), r'tools\dev\Set Icons.vi': ('DEV', 'SET', 'ICONS'),
     r'tools\dev\Relink Save.vi': ('DEV', 'RELNK', 'SAVE'),
     r'tools\dev\Replace In Descriptions.vi': ('DEV', 'DESC', 'REPL'),
+    r'tools\dev\Clean Up Diagrams.vi': ('DEV', 'CLEAN', 'BD'),
     r'source\Tools Menu\RemoteVI\Share in Browser.vi': ('RVI', 'SHARE', 'BRWSR'),
     r'tests\caraya\RemoteVI Caraya Runner.vi': ('TEST', 'RUN', 'ALL'),
     r'tests\caraya\support\RemoteVI Test Bytes To Hex.vi': ('TEST', 'BYTES', 'HEX'),

@@ -99,6 +99,8 @@ $out = Join-Path $builds "jgoebel_lib_remotevi-$fullVersion.vip"
 if (Test-Path $out) { Remove-Item $out }
 $before = Get-Date
 Write-Host "Building the VI package $fullVersion with VIPM for LabVIEW $LabVIEWVersion ($Bitness-bit)..."
+# vipm gives up when VIPM Desktop is silent for 60 s, and starting LabVIEW (after -CloseLabVIEW) and loading the library take longer
+if (-not $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT) { $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT = '600' }
 & $vipm --labview-version $LabVIEWVersion --labview-bitness $Bitness build $vipb --version-number $Version --build-number $BuildNumber
 if ($LASTEXITCODE -ne 0) { throw "vipm build failed (exit code $LASTEXITCODE). If VIPM lists source VIs that must be closed, close them in LabVIEW $LabVIEWVersion (or pass -CloseLabVIEW)." }
 $vip = Get-ChildItem $builds -Filter "jgoebel_lib_remotevi-$fullVersion.vip" | Where-Object LastWriteTime -ge $before.AddSeconds(-5)

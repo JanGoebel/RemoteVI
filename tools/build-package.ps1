@@ -33,6 +33,9 @@ param(
     # Quit that LabVIEW after building the executables (CI): Application Builder keeps the built VIs in memory,
     # and VIPM does not build while source VIs are open; VIPM then starts LabVIEW again with nothing loaded
     [switch]$CloseLabVIEW,
+    # While vipm builds, list and picture the windows of VIPM and LabVIEW into builds\diag after 2 and 4.5 min
+    # (tools\window-snapshot.ps1; CI, where nobody sees the runner's desktop)
+    [switch]$WindowSnapshots,
     # Accept a package whose spec does not require the [dependencies] of vipm.toml (local test builds only:
     # such a package installs broken where those packages are missing)
     [switch]$AllowMissingDependencies
@@ -124,8 +127,22 @@ $before = Get-Date
 Write-Host "Building the VI package $fullVersion with VIPM for LabVIEW $LabVIEWVersion ($Bitness-bit)..."
 # vipm gives up when VIPM Desktop is silent for 60 s, and starting LabVIEW (after -CloseLabVIEW) and loading the library take longer
 if (-not $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT) { $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT = '300' }
+$snapshots = $null
+if ($WindowSnapshots) {
+    $snapshots = Start-Job -ArgumentList (Join-Path $PSScriptRoot 'window-snapshot.ps1'), (Join-Path $builds 'diag') -ScriptBlock {
+        param($script, $dir)
+        Start-Sleep -Seconds 120; "-- windows after 2 min:"; & $script -OutDir (Join-Path $dir '2 min') 6>&1
+        Start-Sleep -Seconds 150; "-- windows after 4.5 min:"; & $script -OutDir (Join-Path $dir '4.5 min') 6>&1
+    }
+}
 & $vipm --verbose --labview-version $LabVIEWVersion --labview-bitness $Bitness build $vipb --version-number $Version --build-number $BuildNumber
-if ($LASTEXITCODE -ne 0) { throw "vipm build failed (exit code $LASTEXITCODE). If VIPM lists source VIs that must be closed, close them in LabVIEW $LabVIEWVersion (or pass -CloseLabVIEW)." }
+$vipmExit = $LASTEXITCODE
+if ($snapshots) {
+    Stop-Job $snapshots
+    Receive-Job $snapshots | ForEach-Object { Write-Host "$_" }
+    Remove-Job $snapshots
+}
+if ($vipmExit -ne 0) { throw "vipm build failed (exit code $vipmExit). If VIPM lists source VIs that must be closed, close them in LabVIEW $LabVIEWVersion (or pass -CloseLabVIEW)." }
 $vip = Get-ChildItem $builds -Filter "jgoebel_lib_remotevi-$fullVersion.vip" | Where-Object LastWriteTime -ge $before.AddSeconds(-5)
 if (-not $vip) { throw "vipm build reported success but builds\jgoebel_lib_remotevi-$fullVersion.vip was not written." }
 

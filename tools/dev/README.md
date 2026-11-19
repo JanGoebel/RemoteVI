@@ -10,6 +10,7 @@ These are small VIs and scripts for working on RemoteVI with labview-mcp and Lab
 | `Mem.vi` | text | Lists the VIs in memory whose name contains the text, e.g. "RemoteVI". |
 | `Notify Stop.vi` | port | Stops a RemoteVI server by port without waiting. |
 | `Build Spec.vi` | project, spec | Builds a build specification through vi.lib/AppBuilder. |
+| `Build Spec CLI.vi` | command line arguments: project, spec | The same for NI's LabVIEW CLI (`RunVI`), as `tools/build-package.ps1` calls it: prints the built files, one per line (or the error source), and returns the error code as the CLI's exit code. Source: `tools/aixml/Dev/build_spec_cli.xml`. |
 | `Add To Library Files.vi` | library path, items file, callers file | Adds VIs to `RemoteVI.lvlib` and saves their callers. |
 | `mk_lists.py` | (none) | Writes `items.txt` (source VIs that lost library membership) and `callers.txt`, and drops their stale lvlib entries. |
 | `fixlib.py` | (none) | Restores the lvlib folder layout after AddItem. |

@@ -3,10 +3,11 @@
     Builds the RemoteVI VI package (jgoebel_lib_remotevi-X.Y.Z.B.vip) into builds\.
 
 .DESCRIPTION
-    1. Builds the example executables with LabVIEW 2020 (build specifications "RemoteVI Demo" and
-       "RemoteVI Server" in RemoteVI.lvproj), through tools\dev\Build Spec.vi over LabVIEW's ActiveX
-       server. The run-time engine of the LabVIEW that builds them is what they need, so they are
-       built by the version the package is saved for. -SkipExecutables reuses builds\ as it is.
+    1. Builds the example executables with LabVIEW 2020 (build specifications "RemoteVI Demo",
+       "RemoteVI Application Example" and "RemoteVI Server" in RemoteVI.lvproj), with NI's LabVIEW CLI (RunVI on tools\dev\Build Spec CLI.vi, over VI
+       Server TCP; tools\labview-cli.ps1). The run-time engine of the LabVIEW that builds them is what they need, so they are
+       built by the version the package is saved for. -SkipExecutables reuses builds\ as it is. The built VIs
+       stay in memory, and VIPM does not build while they are open: -CloseLabVIEW (CI) quits LabVIEW afterwards.
     2. Copies them to examples\Executables\<name>\ (git-ignored), from where the package installs
        them with the examples.
     3. Runs `vipm build package\RemoteVI.vipb` with the version number.
@@ -29,6 +30,9 @@ param(
     [string]$LabVIEWVersion = '2020',
     [ValidateSet('64')][string]$Bitness = '64',
     [switch]$SkipExecutables,
+    # Quit that LabVIEW after building the executables (CI): Application Builder keeps the built VIs in memory,
+    # and VIPM does not build while source VIs are open; VIPM then starts LabVIEW again with nothing loaded
+    [switch]$CloseLabVIEW,
     # Accept a package whose spec does not require the [dependencies] of vipm.toml (local test builds only:
     # such a package installs broken where those packages are missing)
     [switch]$AllowMissingDependencies
@@ -36,13 +40,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-function ActiveXFacts {
-    # What decides whether LabVIEW.Application gives a working LabVIEW: the registered exe, this process's Windows session, running LabVIEWs
-    $clsid = (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\LabVIEW.Application\CLSID' -ErrorAction SilentlyContinue).'(default)'
-    $server = if ($clsid) { (Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\CLSID\$clsid\LocalServer32" -ErrorAction SilentlyContinue).'(default)' }
-    $procs = (Get-Process LabVIEW -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Path) (session $($_.SessionId))" }) -join '; '
-    "registered: '$server'; this process: session $([Diagnostics.Process]::GetCurrentProcess().SessionId), user $env:USERNAME; LabVIEW processes: '$procs'"
-}
+. (Join-Path $PSScriptRoot 'labview-cli.ps1')
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $project = Join-Path $root 'RemoteVI.lvproj'
 $vipb = Join-Path $root 'package\RemoteVI.vipb'
@@ -66,39 +64,22 @@ if (-not $vipm) {
 }
 
 function Invoke-BuildSpec([string]$Spec) {
-    # LabVIEW.Application is the LabVIEW registered last as ActiveX server; refuse any other version,
-    # because the executables would then need another run-time engine than the package states.
-    try { $lv = [System.Runtime.InteropServices.Marshal]::GetActiveObject('LabVIEW.Application') }
-    catch {
-        # A LabVIEW started without ActiveX (by VIPM or G-CLI) is not reachable here, and a new one cannot start beside it
-        if (Get-Process LabVIEW -ErrorAction SilentlyContinue) { throw "LabVIEW runs but is not reachable over ActiveX (started by VIPM, G-CLI or by hand). Quit it and run this again." }
-        $lv = New-Object -ComObject 'LabVIEW.Application'
-    }
-    # A LabVIEW that COM has just started answers with empty values until it has loaded
-    $deadline = (Get-Date).AddSeconds(60)
-    do { $lvVersion = [string]$lv.Version; if (-not $lvVersion) { Start-Sleep -Seconds 2 } } until ($lvVersion -or (Get-Date) -gt $deadline)
-    if (-not $lvVersion.StartsWith(($LabVIEWVersion -replace '^20', '') + '.')) {
-        throw "LabVIEW's ActiveX server is LabVIEW $lvVersion, not $LabVIEWVersion. Register LabVIEW $LabVIEWVersion (run it once as administrator) or close the other version. $(ActiveXFacts)"
-    }
-    $helper = Join-Path $root 'tools\dev\Build Spec.vi'
-    $vi = $null
-    # GetVIReference's arity differs between LabVIEW versions
-    foreach ($a in @(@($helper), @($helper, ''), @($helper, '', $false))) {
-        try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
-    }
-    if (-not $vi) { throw "Cannot open $helper over LabVIEW's ActiveX server. $(ActiveXFacts)" }
-    $vi.SetControlValue('project', $project)
-    $vi.SetControlValue('spec', $Spec)
-    Write-Host "Building '$Spec' with LabVIEW $lvVersion..."
-    $vi.Run($false)
-    $err = $vi.GetControlValue('error out')
-    if ($err[0]) { throw "Building '$Spec' failed: error $($err[1]) $($err[2])" }
-    foreach ($f in $vi.GetControlValue('files')) { Write-Host "  $f" }
+    # The executables need the run-time engine of the LabVIEW that builds them: the version the package is saved for
+    Write-Host "Building '$Spec' with LabVIEW $LabVIEWVersion..."
+    # RunVI with tools\dev\Build Spec CLI.vi: the CLI's own ExecuteBuildSpec, installed with a newer LabVIEW, does not load in LabVIEW 2020
+    $r = Invoke-LabVIEWCli $LabVIEWVersion @('-OperationName', 'RunVI', '-VIPath', (Join-Path $root 'tools\dev\Build Spec CLI.vi'), $project, $Spec)
+    $r.Output | ForEach-Object { Write-Host "  $_" }
+    if ($r.ExitCode -ne 0) { throw "Building '$Spec' failed (LabVIEW CLI exit code $($r.ExitCode))." }
 }
 
 # 1. Executables
 if (-not $SkipExecutables) {
     foreach ($spec in $executables) { Invoke-BuildSpec $spec }
+    if ($CloseLabVIEW) {
+        Write-Host "Closing LabVIEW $LabVIEWVersion (it keeps the built VIs in memory)..."
+        $r = Invoke-LabVIEWCli $LabVIEWVersion @('-OperationName', 'CloseLabVIEW')
+        if ($r.ExitCode -ne 0) { throw "Closing LabVIEW failed (LabVIEW CLI exit code $($r.ExitCode)): $($r.Output -join ' | ')" }
+    }
 }
 
 # 2. Stage them next to the examples
@@ -119,7 +100,7 @@ if (Test-Path $out) { Remove-Item $out }
 $before = Get-Date
 Write-Host "Building the VI package $fullVersion with VIPM for LabVIEW $LabVIEWVersion ($Bitness-bit)..."
 & $vipm --labview-version $LabVIEWVersion --labview-bitness $Bitness build $vipb --version-number $Version --build-number $BuildNumber
-if ($LASTEXITCODE -ne 0) { throw "vipm build failed (exit code $LASTEXITCODE)." }
+if ($LASTEXITCODE -ne 0) { throw "vipm build failed (exit code $LASTEXITCODE). If VIPM lists source VIs that must be closed, close them in LabVIEW $LabVIEWVersion (or pass -CloseLabVIEW)." }
 $vip = Get-ChildItem $builds -Filter "jgoebel_lib_remotevi-$fullVersion.vip" | Where-Object LastWriteTime -ge $before.AddSeconds(-5)
 if (-not $vip) { throw "vipm build reported success but builds\jgoebel_lib_remotevi-$fullVersion.vip was not written." }
 

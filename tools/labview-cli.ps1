@@ -29,3 +29,15 @@ function Invoke-LabVIEWCli([string]$Version, [string[]]$Arguments) {
     $out = & $cli @Arguments -LabVIEWPath $exe -PortNumber $port -LogToConsole true 2>&1 | ForEach-Object { "$_" }
     [pscustomobject]@{ ExitCode = $LASTEXITCODE; Output = @($out) }
 }
+
+function Close-LabVIEW([string]$Version, [int]$TimeoutSeconds = 120) {
+    # CloseLabVIEW answers before the process has gone; a tool that starts LabVIEW meanwhile (VIPM) attaches to the dying one
+    $r = Invoke-LabVIEWCli $Version @('-OperationName', 'CloseLabVIEW')
+    if ($r.ExitCode -ne 0) { throw "Closing LabVIEW $Version failed (LabVIEW CLI exit code $($r.ExitCode)): $($r.Output -join ' | ')" }
+    $exe = Get-LabVIEWExe $Version
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while (Get-Process LabVIEW -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe }) {
+        if ((Get-Date) -gt $deadline) { throw "LabVIEW $Version did not exit within $TimeoutSeconds s of CloseLabVIEW." }
+        Start-Sleep -Seconds 1
+    }
+}

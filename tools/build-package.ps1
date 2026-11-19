@@ -99,6 +99,9 @@ if (-not $SkipExecutables) {
     if ($CloseLabVIEW) {
         Write-Host "Closing LabVIEW $LabVIEWVersion (it keeps the built VIs in memory)..."
         Close-LabVIEW $LabVIEWVersion
+        # VIPM attaches to a running LabVIEW reliably; starting one itself, it hung on the CI runner
+        Write-Host "Starting LabVIEW $LabVIEWVersion again with nothing loaded..."
+        Start-LabVIEW $LabVIEWVersion
     }
 }
 

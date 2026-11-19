@@ -41,3 +41,17 @@ function Close-LabVIEW([string]$Version, [int]$TimeoutSeconds = 120) {
         Start-Sleep -Seconds 1
     }
 }
+
+function Start-LabVIEW([string]$Version, [int]$TimeoutSeconds = 180) {
+    # Starts that LabVIEW unless it runs, and waits until its VI Server answers, so that a tool expecting it (VIPM) finds it ready
+    $exe = Get-LabVIEWExe $Version
+    $port = Get-VIServerPort $exe
+    if (-not (Get-Process LabVIEW -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe })) { Start-Process $exe | Out-Null }
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ($true) {
+        $client = New-Object Net.Sockets.TcpClient
+        try { $client.Connect('127.0.0.1', $port); return } catch { } finally { $client.Close() }
+        if ((Get-Date) -gt $deadline) { throw "LabVIEW $Version did not open VI Server port $port within $TimeoutSeconds s." }
+        Start-Sleep -Seconds 1
+    }
+}

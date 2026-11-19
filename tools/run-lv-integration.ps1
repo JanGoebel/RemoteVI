@@ -22,6 +22,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+function ActiveXFacts {
+  # What decides whether LabVIEW.Application gives a working LabVIEW: the registered exe, this process's Windows session, running LabVIEWs
+  $clsid = (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\LabVIEW.Application\CLSID' -ErrorAction SilentlyContinue).'(default)'
+  $server = if ($clsid) { (Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\CLSID\$clsid\LocalServer32" -ErrorAction SilentlyContinue).'(default)' }
+  $procs = (Get-Process LabVIEW -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Path) (session $($_.SessionId))" }) -join '; '
+  "registered: '$server'; this process: session $([Diagnostics.Process]::GetCurrentProcess().SessionId), user $env:USERNAME; LabVIEW processes: '$procs'"
+}
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $root) { $root = (Get-Location).Path }
 
@@ -44,7 +52,7 @@ $vi = $null
 foreach ($a in @(@($fixture), @($fixture, ''), @($fixture, '', $false))) {
   try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
 }
-if (-not $vi) { throw "Cannot open $fixture over LabVIEW's ActiveX server" }
+if (-not $vi) { throw "Cannot open $fixture over LabVIEW's ActiveX server. $(ActiveXFacts)" }
 $vi.FPWinOpen = $true
 $vi.Run($true)
 

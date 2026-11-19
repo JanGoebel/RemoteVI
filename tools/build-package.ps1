@@ -35,6 +35,14 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+function ActiveXFacts {
+    # What decides whether LabVIEW.Application gives a working LabVIEW: the registered exe, this process's Windows session, running LabVIEWs
+    $clsid = (Get-ItemProperty 'Registry::HKEY_CLASSES_ROOT\LabVIEW.Application\CLSID' -ErrorAction SilentlyContinue).'(default)'
+    $server = if ($clsid) { (Get-ItemProperty "Registry::HKEY_CLASSES_ROOT\CLSID\$clsid\LocalServer32" -ErrorAction SilentlyContinue).'(default)' }
+    $procs = (Get-Process LabVIEW -ErrorAction SilentlyContinue | ForEach-Object { "$($_.Path) (session $($_.SessionId))" }) -join '; '
+    "registered: '$server'; this process: session $([Diagnostics.Process]::GetCurrentProcess().SessionId), user $env:USERNAME; LabVIEW processes: '$procs'"
+}
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $project = Join-Path $root 'RemoteVI.lvproj'
 $vipb = Join-Path $root 'package\RemoteVI.vipb'
@@ -68,7 +76,7 @@ function Invoke-BuildSpec([string]$Spec) {
     }
     $lvVersion = [string]$lv.Version
     if (-not $lvVersion.StartsWith(($LabVIEWVersion -replace '^20', '') + '.')) {
-        throw "LabVIEW's ActiveX server is LabVIEW $lvVersion, not $LabVIEWVersion. Register LabVIEW $LabVIEWVersion (run it once as administrator) or close the other version."
+        throw "LabVIEW's ActiveX server is LabVIEW $lvVersion, not $LabVIEWVersion. Register LabVIEW $LabVIEWVersion (run it once as administrator) or close the other version. $(ActiveXFacts)"
     }
     $helper = Join-Path $root 'tools\dev\Build Spec.vi'
     $vi = $null
@@ -76,7 +84,7 @@ function Invoke-BuildSpec([string]$Spec) {
     foreach ($a in @(@($helper), @($helper, ''), @($helper, '', $false))) {
         try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
     }
-    if (-not $vi) { throw "Cannot open $helper over LabVIEW's ActiveX server." }
+    if (-not $vi) { throw "Cannot open $helper over LabVIEW's ActiveX server. $(ActiveXFacts)" }
     $vi.SetControlValue('project', $project)
     $vi.SetControlValue('spec', $Spec)
     Write-Host "Building '$Spec' with LabVIEW $lvVersion..."

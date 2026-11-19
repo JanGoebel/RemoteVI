@@ -88,6 +88,8 @@
 				<Item Name="build" Type="Folder">
 					<Item Name="Fixture Tab Panel.vi" Type="VI" URL="../tests/fixtures/build/Fixture Tab Panel.vi"/>
 				</Item>
+				<Item Name="Close Fixture.vi" Type="VI" URL="../tests/fixtures/Close Fixture.vi"/>
+				<Item Name="Launch Fixture.vi" Type="VI" URL="../tests/fixtures/Launch Fixture.vi"/>
 				<Item Name="RemoteVI Complex Fixture All Controls.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture All Controls.vi"/>
 				<Item Name="RemoteVI Complex Fixture Arrange.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Arrange.vi"/>
 				<Item Name="RemoteVI Complex Fixture Button Refs.vi" Type="VI" URL="../tests/fixtures/RemoteVI Complex Fixture Button Refs.vi"/>

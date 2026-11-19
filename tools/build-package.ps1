@@ -72,6 +72,27 @@ function Invoke-BuildSpec([string]$Spec) {
     if ($r.ExitCode -ne 0) { throw "Building '$Spec' failed (LabVIEW CLI exit code $($r.ExitCode))." }
 }
 
+function Assert-VipmPort([string]$Exe, [int]$Port) {
+    # VIPM starts LabVIEW and then waits on the VI Server port it has stored for that LabVIEW: with another port in
+    # LabVIEW.ini, `vipm build` only ends at the liveliness timeout ("VIPM Desktop may be stuck")
+    $ini = Join-Path $env:ProgramData 'JKI\VIPM\Settings.ini'
+    if (-not (Test-Path $ini)) { return }
+    $targets = [regex]::Match((Get-Content -Raw $ini), '(?ms)^\[Targets\]\s*$(.*?)(?=^\[|\z)').Groups[1].Value
+    $location = '/' + ($Exe -replace ':', '' -replace '\\', '/')
+    $index = $null
+    foreach ($m in [regex]::Matches($targets, '(?m)^Locations (\d+)="([^"]*)"')) {
+        if ($m.Groups[2].Value -ieq $location) { $index = [int]$m.Groups[1].Value }
+    }
+    $ports = [regex]::Match($targets, '(?m)^Ports="<size\(s\)=\d+>\s*([^"]*)"')
+    if ($null -eq $index -or -not $ports.Success) { Write-Warning "VIPM ($ini) lists no VI Server port for $Exe."; return }
+    $list = @($ports.Groups[1].Value.Trim() -split '\s+')
+    if ($index -lt $list.Count -and [int]$list[$index] -ne $Port) {
+        throw "VIPM connects to $Exe on port $($list[$index]), but that LabVIEW's VI Server listens on $Port (LabVIEW.ini). Set the port in VIPM (Tools > Options > LabVIEW) to $Port."
+    }
+}
+$lvExe = Get-LabVIEWExe $LabVIEWVersion
+Assert-VipmPort $lvExe (Get-VIServerPort $lvExe)
+
 # 1. Executables
 if (-not $SkipExecutables) {
     foreach ($spec in $executables) { Invoke-BuildSpec $spec }

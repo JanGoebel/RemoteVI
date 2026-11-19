@@ -61,7 +61,11 @@ function Invoke-BuildSpec([string]$Spec) {
     # LabVIEW.Application is the LabVIEW registered last as ActiveX server; refuse any other version,
     # because the executables would then need another run-time engine than the package states.
     try { $lv = [System.Runtime.InteropServices.Marshal]::GetActiveObject('LabVIEW.Application') }
-    catch { $lv = New-Object -ComObject 'LabVIEW.Application' }
+    catch {
+        # A LabVIEW started without ActiveX (by VIPM or G-CLI) is not reachable here, and a new one cannot start beside it
+        if (Get-Process LabVIEW -ErrorAction SilentlyContinue) { throw "LabVIEW runs but is not reachable over ActiveX (started by VIPM, G-CLI or by hand). Quit it and run this again." }
+        $lv = New-Object -ComObject 'LabVIEW.Application'
+    }
     $lvVersion = [string]$lv.Version
     if (-not $lvVersion.StartsWith(($LabVIEWVersion -replace '^20', '') + '.')) {
         throw "LabVIEW's ActiveX server is LabVIEW $lvVersion, not $LabVIEWVersion. Register LabVIEW $LabVIEWVersion (run it once as administrator) or close the other version."

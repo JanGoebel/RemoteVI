@@ -53,7 +53,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "vipm install failed ($LASTEXITCODE)" }
       - name: Caraya unit tests
         shell: powershell
-        run: .\tools\run-caraya.ps1 -Report reports\caraya.xml
+        run: .\tools\run-caraya.ps1 -Report reports\caraya.xml -QuitLabVIEW
       - name: LabVIEW integration suite (fixture through the real server)
         shell: powershell
         run: .\tools\run-lv-integration.ps1

@@ -44,6 +44,9 @@ if ($Build) {
     if ($LASTEXITCODE -ne 0) { throw "tests\caraya\build.py failed (exit code $LASTEXITCODE)." }
 }
 
+# G-CLI's installer puts g-cli on PATH, which a process started before the install (a CI runner) does not see.
+$gcliDir = 'C:\Program Files\G-CLI\bin'
+if (Test-Path $gcliDir) { $env:Path = "$gcliDir;$env:Path" }
 if (-not (Get-Command g-cli -ErrorAction SilentlyContinue)) {
     throw 'g-cli not found. Install G-CLI from VIPM (wiresmith_technology_lib_g_cli) and the Caraya CLI extension (lvos_lib_caraya_cli_extension), and make sure g-cli is on PATH.'
 }

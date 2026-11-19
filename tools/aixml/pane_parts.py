@@ -14,7 +14,7 @@ The parts in EXTRA are harvested from NI's own VIs with
     <labview-mcp>\\bin\\pylabview\\python.exe tools\\aixml\\pane_parts.py harvest
 
 so nothing in them is hand-made. tools/aixml/compose.py composes every source VI through
-`pane_parts.py compose <aixml2vi args>`, the fixtures through tests/fixtures/aixml/complex_composer.py.
+`pane_parts.py compose <aixml2vi args>`, the fixtures through tools/aixml/Fixtures/complex_composer.py.
 """
 import json
 import os
@@ -104,7 +104,7 @@ def compose(argv):
     spec.loader.exec_module(a2v)
     patch_composer(a2v)
     # style="Listbox" (a multicolumn listbox, RemoteVI Server's lists): the fixtures' composer patch
-    lb = os.path.join(os.path.dirname(os.path.dirname(HERE)), "tests", "fixtures", "aixml", "listbox_composer.py")
+    lb = os.path.join(HERE, "Fixtures", "listbox_composer.py")
     lspec = importlib.util.spec_from_file_location("listbox_composer", lb)
     lmod = importlib.util.module_from_spec(lspec)
     lspec.loader.exec_module(lmod)

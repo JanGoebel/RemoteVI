@@ -1,0 +1,1097 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RemoteVI</title>
+<!--
+  RemoteVI browser client, protocol v2 (docs/protocol.md).
+  Self-contained on purpose: the LabVIEW toolkit embeds this one file as a string
+  constant and serves it for GET /, so a built EXE needs no support files.
+  Keep it pure ASCII (use \u escapes and HTML entities) so the G string constant
+  holds exactly these bytes. After editing, regenerate the embedded copy:
+  node tools/gen-index-html-vi.mjs --compose
+-->
+<style>
+:root {
+  --bg: #e9ebee; --bar-bg: #fff; --bar-fg: #1d2330; --muted: #667085;
+  --accent: #1f6feb; --ok: #1a7f37; --warn: #bf8700; --err: #cf222e; --border: #d0d7de;
+  --btn-hover: rgb(0 0 0 / 0.06);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #15181e; --bar-bg: #1e232b; --bar-fg: #e6edf3; --muted: #8d96a0; --border: #30363d; --btn-hover: rgb(255 255 255 / 0.08); }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: flex; flex-direction: column; background: var(--bg); color: var(--bar-fg);
+  font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.bar {
+  display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+  padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right));
+  background: var(--bar-bg); border-bottom: 1px solid var(--border); flex-wrap: nowrap; min-height: 40px;
+}
+.title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.title strong { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status { color: var(--muted); white-space: nowrap; }
+.spacer { flex: 1; }
+.stats { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.group button + button { border-left: 1px solid var(--border); }
+.bar button {
+  font: inherit; min-width: 32px; height: 28px; padding: 0 9px; border: 0; background: transparent;
+  color: inherit; cursor: pointer; white-space: nowrap;
+}
+.bar > button { border: 1px solid var(--border); border-radius: 6px; }
+.bar button:hover { background: var(--btn-hover); }
+.bar button[aria-pressed="true"] { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+#zoom-label { min-width: 48px; text-align: center; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dot { width: 9px; height: 9px; flex: none; border-radius: 50%; background: var(--warn); }
+body[data-state="online"] .dot { background: var(--ok); }
+body[data-state="offline"] .dot { background: var(--err); }
+#kbd-btn { display: none; }
+body[data-touch="true"] #kbd-btn { display: inline-block; }
+
+/* The stage scrolls; the wrapper is sized to the scaled frame so scrollbars match. */
+.stage { flex: 1; overflow: auto; padding: 16px; overscroll-behavior: contain; }
+.panel-wrap {
+  position: relative; margin: 0 auto; box-shadow: 0 1px 6px rgb(0 0 0 / 0.25);
+  touch-action: none; transform-origin: 0 0;
+}
+#panel { display: block; outline: none; cursor: default; touch-action: none; }
+#panel.pixelated { image-rendering: pixelated; }
+body[data-view-only="true"] #panel { cursor: not-allowed; }
+/* LabVIEW popups (menus, dropdowns, palette popups); may extend past the panel. */
+#overlay { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+#overlay img { position: absolute; display: block; pointer-events: auto; box-shadow: 2px 2px 6px rgb(0 0 0 / 0.35); }
+#overlay.pixelated img { image-rendering: pixelated; }
+/* Title bar of the shared window, drawn above its frame: the frame is the window below its title bar,
+   so the close box (x 0, docs/protocol.md 4) is offered here. */
+#frame-title {
+  display: flex; align-items: center; gap: 8px; height: 30px; margin: 0 auto; padding: 0 6px 0 10px;
+  background: var(--bar-bg); border: 1px solid var(--border); border-bottom: 0; border-radius: 8px 8px 0 0;
+  font-weight: 600; user-select: none; box-sizing: border-box;
+}
+#frame-title span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#frame-title button {
+  width: 30px; height: 24px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+#frame-title button:hover { background: var(--err); color: #fff; }
+body[data-view-only="true"] #frame-title button { display: none; }
+/* Other windows of the application (dialogs, file dialogs, subVI panels). */
+#windows { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.win {
+  position: absolute; display: flex; flex-direction: column; background: var(--bar-bg);
+  border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.35), 0 1px 4px rgb(0 0 0 / 0.2);
+}
+.win.active { border-color: var(--accent); }
+.win-title {
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px 0 10px; flex: none;
+  font-weight: 600; cursor: move; user-select: none; touch-action: none; border-bottom: 1px solid var(--border);
+}
+.win.active .win-title { background: color-mix(in srgb, var(--accent) 10%, var(--bar-bg)); }
+.win-title span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.win-title button {
+  width: 26px; height: 22px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.win-title button:hover { background: var(--err); color: #fff; }
+.win canvas { display: block; touch-action: none; }
+.win canvas.pixelated { image-rendering: pixelated; }
+/* While a modal window is up the panel is disabled, as on the host. */
+#dim { position: absolute; inset: 0; background: rgb(0 0 0 / 0.28); display: none; }
+.panel-wrap.modal #dim { display: block; }
+#win-list { max-width: 180px; height: 28px; font: inherit; border: 1px solid var(--border); border-radius: 6px; background: var(--bar-bg); color: inherit; }
+#win-list[hidden] { display: none; }
+/* Tip strip of the control under the pointer, drawn like LabVIEW's own (tips message). */
+#tip {
+  position: fixed; z-index: 1000; display: none; max-width: 400px; padding: 2px 5px;
+  background: #ffffe1; color: #000; border: 1px solid #767676; box-shadow: 1px 2px 4px rgb(0 0 0 / 0.3);
+  font: 12px/1.35 "Segoe UI", Tahoma, sans-serif; white-space: pre-wrap; pointer-events: none;
+}
+#tip.show { display: block; }
+/* Splitter bars (splitters message): the client drags them itself and shows this line meanwhile. */
+#ghost { position: absolute; display: none; pointer-events: none; background: rgb(0 0 0 / 0.45); outline: 1px dashed #fff; }
+#ghost.show { display: block; }
+.panel-wrap.split-v, .panel-wrap.split-v #panel { cursor: col-resize; }
+.panel-wrap.split-h, .panel-wrap.split-h #panel { cursor: row-resize; }
+/* Hidden input that brings up the on-screen keyboard on touch devices. */
+#kbd { position: fixed; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; border: 0; padding: 0; font-size: 16px; }
+.toast {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 6px 12px; border-radius: 6px;
+  background: rgb(0 0 0 / 0.75); color: #fff; font-size: 12px; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+}
+.toast.show { opacity: 1; }
+@media (max-width: 720px) {
+  .stats, #status, #zoom-label { display: none; }
+  .bar { gap: 6px; padding-top: 4px; padding-bottom: 4px; }
+  .stage { padding: 8px; }
+}
+</style>
+</head>
+<body data-state="connecting" data-touch="false">
+<header class="bar">
+  <span class="title"><span class="dot" aria-hidden="true"></span><strong id="vi-name">RemoteVI</strong></span>
+  <span id="status" role="status">Connecting&hellip;</span>
+  <span class="spacer"></span>
+  <span id="stats" class="stats"></span>
+  <span class="group" role="group" aria-label="Scaling">
+    <button type="button" data-mode="actual" title="Actual size: one LabVIEW pixel per screen pixel (1)">1:1</button>
+    <button type="button" data-mode="fit" title="Fit the whole window into the view (F)">Fit</button>
+    <button type="button" data-mode="width" title="Fit the width, scroll vertically (W)">Width</button>
+  </span>
+  <span class="group" role="group" aria-label="Zoom">
+    <button type="button" id="zoom-out" title="Zoom out (-)">&minus;</button>
+    <button type="button" id="zoom-label" title="Back to actual size">100%</button>
+    <button type="button" id="zoom-in" title="Zoom in (+)">+</button>
+  </span>
+  <select id="win-list" title="Open windows" hidden></select>
+  <button type="button" id="kbd-btn" title="Show the on-screen keyboard">&#x2328;</button>
+  <button type="button" id="fs-btn" title="Fullscreen">&#x26F6;</button>
+</header>
+<main id="stage" class="stage">
+  <div id="frame-title"><span id="frame-name">RemoteVI</span><button type="button" id="frame-close" title="Close the window (its close box on the host)" aria-label="Close">&#x2715;</button></div>
+  <div class="panel-wrap" id="wrap">
+    <canvas id="panel" tabindex="0" width="1" height="1" aria-label="Remote front panel"></canvas>
+    <div id="dim"></div>
+    <div id="windows"></div>
+    <div id="overlay"></div>
+    <div id="ghost"></div>
+  </div>
+</main>
+<input id="kbd" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Keyboard input">
+<div id="toast" class="toast" role="status"></div>
+<div id="tip" role="tooltip"></div>
+<script>
+'use strict';
+
+// --- protocol v2 constants (docs/protocol.md) --------------------------------
+
+const FRAME_MAGIC = 0x52;          // 'R'
+const MSG_FRAME = 1;
+const MSG_OVERLAY = 2;
+const MSG_WINDOW_FRAME = 3;
+const OVERLAY_HEADER = 4;          // magic, type, count u16
+const WINDOW_FRAME_HEADER = 16;    // magic, type, id u32, seq u32, width u16, height u16, count u16
+const WIN_TITLE_H = 31;            // CSS px of a window's title bar (+ border)
+const FRAME_TITLE_H = 30;          // CSS px of the shared window's title bar above the frame
+const FRAME_HEADER = 12;           // magic, type, seq u32, width u16, height u16, count u16
+const RECT_HEADER = 8;             // x i16, y i16, length u32
+
+// Win32 message numbers. The server posts them to the panel window, so these
+// values ARE the protocol.
+const WM = {
+  KEYDOWN: 0x0100, KEYUP: 0x0101, CHAR: 0x0102,
+  MOUSEMOVE: 0x0200,
+  LBUTTONDOWN: 0x0201, LBUTTONUP: 0x0202, LBUTTONDBLCLK: 0x0203,
+  RBUTTONDOWN: 0x0204, RBUTTONUP: 0x0205, RBUTTONDBLCLK: 0x0206,
+  MBUTTONDOWN: 0x0207, MBUTTONUP: 0x0208, MBUTTONDBLCLK: 0x0209,
+  MOUSEWHEEL: 0x020A,
+};
+const MK = { LBUTTON: 0x01, RBUTTON: 0x02, SHIFT: 0x04, CONTROL: 0x08, MBUTTON: 0x10 };
+const WHEEL_DELTA = 120;
+
+// Browser button index (0 left, 1 middle, 2 right) -> [down, up, dblclk].
+const BUTTON_MSGS = {
+  0: [WM.LBUTTONDOWN, WM.LBUTTONUP, WM.LBUTTONDBLCLK],
+  1: [WM.MBUTTONDOWN, WM.MBUTTONUP, WM.MBUTTONDBLCLK],
+  2: [WM.RBUTTONDOWN, WM.RBUTTONUP, WM.RBUTTONDBLCLK],
+};
+
+// KeyboardEvent.code -> [virtual-key code, extended-key flag]. Printable
+// characters are not listed: they travel as WM_CHAR so the remote side does not
+// depend on the host's keyboard layout.
+const VK = {
+  Backspace: [0x08, 0], Tab: [0x09, 0], Enter: [0x0D, 0], NumpadEnter: [0x0D, 1],
+  ShiftLeft: [0x10, 0], ShiftRight: [0x10, 0], ControlLeft: [0x11, 0], ControlRight: [0x11, 1],
+  Escape: [0x1B, 0], PageUp: [0x21, 1], PageDown: [0x22, 1], End: [0x23, 1], Home: [0x24, 1],
+  ArrowLeft: [0x25, 1], ArrowUp: [0x26, 1], ArrowRight: [0x27, 1], ArrowDown: [0x28, 1],
+  Insert: [0x2D, 1], Delete: [0x2E, 1],
+  F1: [0x70, 0], F2: [0x71, 0], F3: [0x72, 0], F4: [0x73, 0], F5: [0x74, 0], F6: [0x75, 0],
+  F7: [0x76, 0], F8: [0x77, 0], F9: [0x78, 0], F10: [0x79, 0], F11: [0x7A, 0], F12: [0x7B, 0],
+};
+
+const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 0.9, 1, 1.25, 1.5, 2, 2.5, 3, 4];
+const ZOOM_MIN = 0.1;
+const ZOOM_MAX = 4;
+const LONG_PRESS_MS = 550;      // touch: hold this long without moving = right click
+const TAP_SLOP_PX = 8;          // touch: moving further than this starts a drag
+const TIP_DELAY_MS = 500;       // hover this long on a control to see its tip strip
+
+function mouseFlags(e) {
+  let w = 0;
+  if (e.buttons & 1) w |= MK.LBUTTON;
+  if (e.buttons & 2) w |= MK.RBUTTON;
+  if (e.buttons & 4) w |= MK.MBUTTON;
+  if (e.shiftKey) w |= MK.SHIFT;
+  if (e.ctrlKey) w |= MK.CONTROL;
+  return w;
+}
+
+// lParam for WM_KEYDOWN / WM_KEYUP: repeat count 1, extended bit 24, and for
+// key-up the previous-state and transition bits. Sent as an unsigned decimal.
+function keyLParam(extended, up) {
+  let l = 1;
+  if (extended) l += 0x01000000;
+  if (up) l += 0xC0000000;
+  return l;
+}
+
+function readRects(v, buf, o, count) {
+  const rects = [];
+  for (let i = 0; i < count; i++) {
+    if (o + RECT_HEADER > buf.byteLength) throw new Error('truncated message');
+    const x = v.getInt16(o), y = v.getInt16(o + 2), len = v.getUint32(o + 4);
+    o += RECT_HEADER;
+    if (o + len > buf.byteLength) throw new Error('truncated message');
+    // width and height from the PNG's IHDR (bytes 16..23): the overlay keeps its popups in view with them
+    const w = len >= 24 ? v.getUint32(o + 16) : 0, h = len >= 24 ? v.getUint32(o + 20) : 0;
+    rects.push({ x, y, w, h, png: new Blob([new Uint8Array(buf, o, len)], { type: 'image/png' }) });
+    o += len;
+  }
+  return rects;
+}
+
+function decodeOverlay(buf) {
+  const v = new DataView(buf);
+  return readRects(v, buf, OVERLAY_HEADER, v.getUint16(2));
+}
+
+function decodeWindowFrame(buf) {
+  const v = new DataView(buf);
+  if (buf.byteLength < WINDOW_FRAME_HEADER) throw new Error('truncated window frame');
+  return {
+    id: v.getUint32(2), seq: v.getUint32(6), width: v.getUint16(10), height: v.getUint16(12),
+    rects: readRects(v, buf, WINDOW_FRAME_HEADER, v.getUint16(14)),
+  };
+}
+
+function decodeFrame(buf) {
+  const v = new DataView(buf);
+  if (buf.byteLength < FRAME_HEADER || v.getUint8(0) !== FRAME_MAGIC || v.getUint8(1) !== MSG_FRAME) {
+    throw new Error('not a RemoteVI frame');
+  }
+  return {
+    seq: v.getUint32(2), width: v.getUint16(6), height: v.getUint16(8),
+    rects: readRects(v, buf, FRAME_HEADER, v.getUint16(10)),
+  };
+}
+
+// Per-viewer preference; storage can be unavailable (private mode, blocked site data).
+const prefs = {
+  get(key, fallback) {
+    try { return localStorage.getItem(`remotevi.${key}`) ?? fallback; } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(`remotevi.${key}`, value); } catch { /* not persisted */ }
+  },
+};
+
+// --- client -------------------------------------------------------------------
+
+class RemoteViClient {
+  constructor() {
+    this.canvas = document.getElementById('panel');
+    this.wrap = document.getElementById('wrap');
+    this.overlay = document.getElementById('overlay');
+    this.ctx = this.canvas.getContext('2d', { alpha: false });
+    this.stage = document.getElementById('stage');
+    this.statusEl = document.getElementById('status');
+    this.statsEl = document.getElementById('stats');
+    this.kbd = document.getElementById('kbd');
+    this.ws = null;
+    this.backoff = 250;
+    this.queue = Promise.resolve();   // frames are painted strictly in order
+    this.pendingMove = null;
+    this.stats = { frames: 0, bytes: 0, since: performance.now() };
+    this.origin = { x: 0, y: 0 };     // where the panel starts inside the frame
+    this.touches = new Map();         // pointerId -> {x, y} for touch gestures
+    this.touch = null;                // single-finger state (tap / long press / drag)
+    this.pinch = null;                // two-finger state
+    this.windows = new Map();         // id -> {info, el, canvas, ctx, dx, dy} (docs/protocol.md 7)
+    this.windowsLayer = document.getElementById('windows');
+    this.winList = document.getElementById('win-list');
+    this.pressWin = null;             // window a mouse press started in (keeps a drag on it)
+    this.tips = [];                   // tip strips {x, y, w, h, text} in frame coordinates (tips message)
+    this.tipEl = document.getElementById('tip');
+    this.tip = { at: null, timer: 0, quiet: null };  // control hovered, dwell timer, tip silenced by a click
+    this.splitters = [];              // draggable splitter bars {id, x, y, w, h, vertical, min, max} (splitters message)
+    this.split = null;                // splitter drag in progress {bar, pos, pointerId}
+    this.ghost = document.getElementById('ghost');
+
+    const coarse = matchMedia('(pointer: coarse)').matches;
+    document.body.dataset.touch = String(coarse);
+    this.mode = prefs.get('mode', coarse ? 'width' : 'actual');
+    this.zoom = Number(prefs.get('zoom', '1')) || 1;
+
+    this.bindView();
+    this.bindInput();
+    this.bindKeyboard();
+    this.winList.addEventListener('change', () => {
+      const w = this.windows.get(Number(this.winList.value));
+      if (w) { this.raise(w); w.el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); }
+    });
+    setInterval(() => this.showStats(), 1000);
+    this.applyView();
+    this.connect();
+  }
+
+  // --- connection ----------------------------------------------------------------
+
+  connect() {
+    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    // The share's access token travels in the page URL (?t=...) and is required for the WebSocket too.
+    const token = new URLSearchParams(location.search).get('t') ?? '';
+    const ws = new WebSocket(`${scheme}://${location.host}/ws?t=${encodeURIComponent(token)}`);
+    ws.binaryType = 'arraybuffer';
+    this.ws = ws;
+    this.setStatus('connecting', 'Connecting...');
+    let opened = false;
+    ws.onopen = () => { opened = true; this.backoff = 250; this.setStatus('online', 'Connected'); };
+    ws.onmessage = (ev) => {
+      if (typeof ev.data === 'string') this.onText(ev.data);
+      else this.onFrame(ev.data);
+    };
+    ws.onclose = () => {
+      if (this.ws !== ws) return;
+      const retry = `retrying in ${(this.backoff / 1000).toFixed(1)} s`;
+      // The server answers a missing or wrong token with 403, which a browser reports as a plain close.
+      const why = opened ? 'Disconnected'
+        : !token ? 'This link has no access token (?t=...): open the full link of the share'
+          : 'Not connected: the access token is wrong, or the share has stopped';
+      this.setStatus('offline', `${why}, ${retry}`);
+      setTimeout(() => this.connect(), this.backoff);
+      this.backoff = Math.min(this.backoff * 2, 5000);
+    };
+  }
+
+  send(line) {
+    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(line);
+  }
+
+  onText(text) {
+    // Server text messages (docs/protocol.md 3.3). Unknown ones are ignored.
+    const sp = text.indexOf(' ');
+    const cmd = sp < 0 ? text : text.slice(0, sp);
+    const arg = sp < 0 ? '' : text.slice(sp + 1);
+    if (cmd === 'title') {
+      document.getElementById('vi-name').textContent = arg;
+      document.getElementById('frame-name').textContent = arg;
+      document.title = `${arg} - RemoteVI`;
+    } else if (cmd === 'viewonly') {
+      document.body.dataset.viewOnly = String(arg === '1');
+    } else if (cmd === 'windows') {
+      let list;
+      try { list = JSON.parse(arg); } catch { return; }
+      if (Array.isArray(list)) this.updateWindows(list);
+    } else if (cmd === 'origin') {
+      const [x, y] = arg.split(' ').map(Number);
+      if (Number.isFinite(x) && Number.isFinite(y)) this.origin = { x, y };
+    } else if (cmd === 'tips') {
+      let list;
+      try { list = JSON.parse(arg); } catch { return; }
+      if (!Array.isArray(list)) return;
+      this.tips = list.filter((t) => t && typeof t.text === 'string'
+        && [t.x, t.y, t.w, t.h].every(Number.isFinite));
+      this.hideTip();
+    } else if (cmd === 'splitters') {
+      let list;
+      try { list = JSON.parse(arg); } catch { return; }
+      if (!Array.isArray(list)) return;
+      this.splitters = list.filter((b) => b && Number.isInteger(b.id)
+        && [b.x, b.y, b.w, b.h, b.min, b.max].every(Number.isFinite));
+    }
+  }
+
+  // --- splitter bars (docs/protocol.md 3.3, 4) ----------------------------------------
+  // LabVIEW moves a splitter bar only while it tracks the real mouse, so the client drags
+  // the bar itself (a line follows the pointer) and sends `s <id> <pos>` on release; the
+  // server sets the splitter's position through VI Server.
+
+  /** The draggable bar under a client point, or null (not over a popup, a window or while modal). */
+  splitterAt(clientX, clientY) {
+    if (!this.splitters.length || this.overlay.childElementCount || this.wrap.classList.contains('modal')
+        || this.windowAt(clientX, clientY)) return null;
+    const { x, y } = this.framePoint(clientX, clientY, null);
+    // A thin bar is easier to hit with a few pixels of slack across it.
+    return this.splitters.find((b) => {
+      const sx = b.vertical ? 3 : 0, sy = b.vertical ? 0 : 3;
+      return x >= b.x - sx && x < b.x + b.w + sx && y >= b.y - sy && y < b.y + b.h + sy;
+    }) ?? null;
+  }
+
+  /** Cursor hint over a bar. */
+  splitterHover(clientX, clientY) {
+    const b = this.split?.bar ?? this.splitterAt(clientX, clientY);
+    this.wrap.classList.toggle('split-v', !!b?.vertical);
+    this.wrap.classList.toggle('split-h', !!b && !b.vertical);
+  }
+
+  splitStart(bar, e) {
+    this.hideTip(true);
+    this.split = { bar, pos: bar.vertical ? bar.x : bar.y, pointerId: e.pointerId, moved: false };
+    this.wrap.setPointerCapture(e.pointerId);
+    this.splitMove(e);
+  }
+
+  splitMove(e) {
+    const s = this.split;
+    const b = s.bar;
+    const { x, y } = this.framePoint(e.clientX, e.clientY, null);
+    const at = Math.round((b.vertical ? x - b.w / 2 : y - b.h / 2));
+    const pos = Math.max(b.min, Math.min(b.max, at));
+    if (pos !== s.pos) s.moved = true;
+    s.pos = pos;
+    const z = this.zoom;
+    const g = this.ghost.style;
+    g.left = `${(b.vertical ? pos : b.x) * z}px`;
+    g.top = `${(b.vertical ? b.y : pos) * z}px`;
+    g.width = `${Math.max(2, b.w * z)}px`;
+    g.height = `${Math.max(2, b.h * z)}px`;
+    this.ghost.classList.add('show');
+  }
+
+  splitEnd(cancel) {
+    const s = this.split;
+    this.split = null;
+    this.ghost.classList.remove('show');
+    if (!s || cancel || !s.moved) return;
+    const b = s.bar;
+    this.send(`s ${b.id} ${s.pos}`);
+  }
+
+  // --- tip strips (docs/protocol.md 3.3) ----------------------------------------------
+  // LabVIEW shows tip strips only while it is the foreground application, so the
+  // server sends the texts and the client shows them itself after a hover dwell.
+
+  /** Pointer at a client point (mouse, no button held): start, keep or hide the tip. */
+  hoverTip(clientX, clientY) {
+    let hit = null;
+    if (!this.overlay.childElementCount && !this.wrap.classList.contains('modal')
+        && !this.windowAt(clientX, clientY)) {
+      const { x, y } = this.framePoint(clientX, clientY, null);
+      hit = this.tips.find((t) => x >= t.x && y >= t.y && x < t.x + t.w && y < t.y + t.h) ?? null;
+    }
+    this.tip.pos = { x: clientX, y: clientY };
+    if (hit === this.tip.at) return;
+    this.hideTip();
+    this.tip.at = hit;
+    if (this.tip.quiet && hit !== this.tip.quiet) this.tip.quiet = null;
+    if (hit && hit !== this.tip.quiet) this.tip.timer = setTimeout(() => this.showTip(hit), TIP_DELAY_MS);
+  }
+
+  showTip(t) {
+    const el = this.tipEl;
+    el.textContent = t.text;
+    el.classList.add('show');
+    // Below and right of the pointer, as Windows places tooltips; kept inside the view.
+    const { x, y } = this.tip.pos;
+    const r = el.getBoundingClientRect();
+    el.style.left = `${Math.max(0, Math.min(x + 2, innerWidth - r.width - 2))}px`;
+    el.style.top = `${y + 22 + r.height > innerHeight ? Math.max(0, y - r.height - 4) : y + 22}px`;
+  }
+
+  /** Hide the tip; with silence, it stays hidden until the pointer leaves that control (a click). */
+  hideTip(silence = false) {
+    clearTimeout(this.tip.timer);
+    if (silence && this.tip.at) this.tip.quiet = this.tip.at;
+    if (!silence) this.tip.at = null;
+    this.tipEl.classList.remove('show');
+  }
+
+  onFrame(buf) {
+    if (buf.byteLength >= 2 && new DataView(buf).getUint8(1) === MSG_WINDOW_FRAME) {
+      let wf;
+      try { wf = decodeWindowFrame(buf); } catch (err) { console.error(err); return; }
+      this.stats.bytes += buf.byteLength;
+      this.queue = this.queue.then(() => this.paintWindow(wf)).catch((err) => console.error(err));
+      return;
+    }
+    if (buf.byteLength >= 2 && new DataView(buf).getUint8(1) === MSG_OVERLAY) {
+      let popups;
+      try { popups = decodeOverlay(buf); } catch (err) { console.error(err); return; }
+      this.queue = this.queue.then(() => this.showOverlay(popups));
+      return;
+    }
+    let frame;
+    try {
+      frame = decodeFrame(buf);
+    } catch (err) {
+      console.error(err);
+      return;
+    }
+    this.stats.frames++;
+    this.stats.bytes += buf.byteLength;
+    this.queue = this.queue.then(() => this.paint(frame)).catch((err) => console.error(err));
+  }
+
+  async paint(frame) {
+    const bitmaps = await Promise.all(frame.rects.map((r) => createImageBitmap(r.png)));
+    if (frame.width !== this.canvas.width || frame.height !== this.canvas.height) {
+      this.canvas.width = frame.width;
+      this.canvas.height = frame.height;
+      this.applyView();
+    }
+    frame.rects.forEach((r, i) => {
+      this.ctx.drawImage(bitmaps[i], r.x, r.y);
+      bitmaps[i].close();
+    });
+    // Ack after painting: the server keeps at most two frames in flight, so a
+    // slow client gets fresher frames instead of a growing backlog.
+    this.send(`a ${frame.seq}`);
+  }
+
+  showOverlay(popups) {
+    if (popups.length) this.hideTip(true);
+    for (const img of this.overlay.querySelectorAll('img')) URL.revokeObjectURL(img.src);
+    this.overlay.replaceChildren(...popups.map((p) => {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(p.png);
+      img.style.left = `${p.x}px`;
+      img.style.top = `${p.y}px`;
+      img.draggable = false;
+      return img;
+    }));
+    this.keepPopupsInView(popups);
+  }
+
+  /** A menu that opens past the right or bottom edge of the view (a submenu opening to the right, a
+   *  menu near the bottom) is brought into view: the stage scrolls so the popups and the point they
+   *  open from move together, and when scrolling cannot show them whole (the view is narrower than
+   *  frame plus menu) the view zooms out until they fit. The zoom comes back when the popups close. */
+  keepPopupsInView(popups) {
+    if (!popups.length) {
+      if (this.popupZoom) {
+        const { mode, zoom } = this.popupZoom;
+        this.popupZoom = null;
+        this.mode = mode;
+        this.zoom = zoom;
+        this.applyView();
+      }
+      return;
+    }
+    const margin = 8;
+    const right = Math.max(...popups.map((p) => p.x + p.w)), bottom = Math.max(...popups.map((p) => p.y + p.h));
+    const left = Math.min(...popups.map((p) => p.x)), top = Math.min(...popups.map((p) => p.y));
+    const view = () => {
+      const s = this.stage.getBoundingClientRect(), wr = this.wrap.getBoundingClientRect(), z = this.zoom;
+      return {
+        // how far the popups reach past the visible part of the stage, in CSS px
+        dx: wr.left + right * z - (s.left + this.stage.clientWidth - margin),
+        dy: wr.top + bottom * z - (s.top + this.stage.clientHeight - margin),
+        lx: (s.left + margin) - (wr.left + left * z), ly: (s.top + margin) - (wr.top + top * z),
+        s, wr,
+      };
+    };
+    let v = view();
+    if (v.dx > 0) this.stage.scrollLeft += Math.min(v.dx, Math.max(0, -v.lx));
+    if (v.dy > 0) this.stage.scrollTop += Math.min(v.dy, Math.max(0, -v.ly));
+    v = view();
+    if (v.dx <= 1 && v.dy <= 1) return;
+    // still past the edge: zoom out so the whole width (height) from the frame's left (top) edge to the
+    // popups' far edge fits, at most down to ZOOM_MIN
+    const availW = this.stage.clientWidth - 2 * margin, availH = this.stage.clientHeight - 2 * margin;
+    const z = Math.max(ZOOM_MIN, Math.min(this.zoom, availW / right, availH / bottom));
+    if (z >= this.zoom - 0.001) return;
+    if (!this.popupZoom) this.popupZoom = { mode: this.mode, zoom: this.zoom };
+    this.mode = 'custom';
+    this.zoom = z;
+    this.applyView();
+    v = view();
+    if (v.dx > 0) this.stage.scrollLeft += v.dx;
+    if (v.dy > 0) this.stage.scrollTop += v.dy;
+  }
+
+  // --- other windows (docs/protocol.md 7) ------------------------------------------
+
+  updateWindows(list) {
+    const seen = new Set();
+    list.forEach((info, i) => {
+      seen.add(info.id);
+      let w = this.windows.get(info.id);
+      if (!w) {
+        w = this.createWindow(info);
+        this.windows.set(info.id, w);
+      }
+      w.info = info;
+      w.el.querySelector('.win-title span').textContent = info.title || 'Window';
+      w.el.querySelector('.win-title button').hidden = !info.closable;
+      w.el.classList.toggle('active', !!info.active);
+      w.el.style.zIndex = String(100 + list.length - i); // the list is front-most first
+    });
+    for (const [id, w] of this.windows) {
+      if (!seen.has(id)) { w.el.remove(); this.windows.delete(id); }
+    }
+    this.wrap.classList.toggle('modal', list.some((w) => w.modal));
+    this.winList.hidden = list.length === 0;
+    this.winList.replaceChildren(...list.map((w) => new Option(w.title || 'Window', String(w.id))));
+    this.layoutWindows();
+  }
+
+  createWindow(info) {
+    const el = document.createElement('div');
+    el.className = 'win';
+    el.innerHTML = '<div class="win-title"><span></span><button type="button" title="Close">&#x2715;</button></div>';
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, info.w);
+    canvas.height = Math.max(1, info.h);
+    el.append(canvas);
+    const w = { info, el, canvas, ctx: canvas.getContext('2d', { alpha: false }), dx: 0, dy: 0 };
+    // Narrow screens: open the window centred in the visible area.
+    if (innerWidth < 720) {
+      const z = this.zoom, r = this.stage.getBoundingClientRect(), wr = this.wrap.getBoundingClientRect();
+      w.dx = ((r.left + r.width / 2 - wr.left) / z) - (info.x + info.w / 2);
+      w.dy = ((r.top + r.height / 2 - wr.top) / z) - (info.y + info.h / 2);
+    }
+    const title = el.querySelector('.win-title');
+    title.querySelector('button').addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.send(`x ${w.info.id}`);
+    });
+    title.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+      this.raise(w);
+      try { title.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      const start = { x: e.clientX, y: e.clientY, dx: w.dx, dy: w.dy };
+      const move = (ev) => {
+        w.dx = start.dx + (ev.clientX - start.x) / this.zoom;
+        w.dy = start.dy + (ev.clientY - start.y) / this.zoom;
+        this.layoutWindows();
+      };
+      const end = () => {
+        title.removeEventListener('pointermove', move);
+        title.removeEventListener('pointerup', end);
+      };
+      title.addEventListener('pointermove', move);
+      title.addEventListener('pointerup', end);
+    });
+    for (const t of ['pointermove', 'pointerup', 'wheel', 'contextmenu']) title.addEventListener(t, (e) => e.stopPropagation());
+    this.windowsLayer.append(el);
+    return w;
+  }
+
+  raise(w) {
+    let top = 100;
+    for (const o of this.windows.values()) top = Math.max(top, Number(o.el.style.zIndex) || 0);
+    w.el.style.zIndex = String(top + 1);
+  }
+
+  layoutWindows() {
+    const z = this.zoom;
+    const crisp = Math.abs(z - Math.round(z)) < 0.001 && z >= 1;
+    for (const w of this.windows.values()) {
+      const { x, y } = w.info;
+      w.el.style.left = `${(x + w.dx) * z}px`;
+      w.el.style.top = `${(y + w.dy) * z - WIN_TITLE_H}px`;
+      w.canvas.style.width = `${w.canvas.width * z}px`;
+      w.canvas.style.height = `${w.canvas.height * z}px`;
+      w.canvas.classList.toggle('pixelated', crisp);
+    }
+  }
+
+  async paintWindow(f) {
+    const w = this.windows.get(f.id);
+    const bitmaps = await Promise.all(f.rects.map((r) => createImageBitmap(r.png)));
+    if (w) {
+      if (f.width !== w.canvas.width || f.height !== w.canvas.height) {
+        w.canvas.width = f.width;
+        w.canvas.height = f.height;
+        this.layoutWindows();
+      }
+      f.rects.forEach((r, i) => w.ctx.drawImage(bitmaps[i], r.x, r.y));
+    }
+    bitmaps.forEach((b) => b.close());
+    this.send(`a ${f.seq}`);
+  }
+
+  /** The window whose picture (not title bar) contains the client point, front-most first. */
+  windowAt(clientX, clientY) {
+    let best = null;
+    for (const w of this.windows.values()) {
+      const r = w.canvas.getBoundingClientRect();
+      if (clientX >= r.left && clientX < r.right && clientY >= r.top && clientY < r.bottom) {
+        if (!best || Number(w.el.style.zIndex) > Number(best.el.style.zIndex)) best = w;
+      }
+    }
+    return best;
+  }
+
+  // --- view: scaling modes, zoom, fullscreen -------------------------------------
+
+  bindView() {
+    for (const b of document.querySelectorAll('[data-mode]')) {
+      b.addEventListener('click', () => this.setMode(b.dataset.mode));
+    }
+    document.getElementById('zoom-in').addEventListener('click', () => this.stepZoom(1));
+    document.getElementById('zoom-out').addEventListener('click', () => this.stepZoom(-1));
+    document.getElementById('zoom-label').addEventListener('click', () => this.setMode('actual'));
+    // The shared window's close box: x 0 (the server posts SC_CLOSE when the window has one)
+    document.getElementById('frame-close').addEventListener('click', () => this.send('x 0'));
+    const fs = document.getElementById('fs-btn');
+    if (!document.documentElement.requestFullscreen) fs.hidden = true;
+    fs.addEventListener('click', () => {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(() => this.toast('Fullscreen not available'));
+    });
+    document.addEventListener('fullscreenchange', () => {
+      fs.setAttribute('aria-pressed', String(!!document.fullscreenElement));
+      this.applyView();
+    });
+    new ResizeObserver(() => this.applyView()).observe(this.stage);
+    // View shortcuts work when the panel does NOT have the keyboard focus.
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement === this.canvas || document.activeElement === this.kbd) return;
+      if (e.key === '1') this.setMode('actual');
+      else if (e.key === 'f' || e.key === 'F') this.setMode('fit');
+      else if (e.key === 'w' || e.key === 'W') this.setMode('width');
+      else if (e.key === '+' || e.key === '=') this.stepZoom(1);
+      else if (e.key === '-') this.stepZoom(-1);
+    });
+  }
+
+  setMode(mode) {
+    this.popupZoom = null;   // the user's choice wins over a zoom taken for a menu
+    this.mode = mode;
+    if (mode === 'actual') this.zoom = 1;
+    prefs.set('mode', mode);
+    this.applyView();
+  }
+
+  stepZoom(dir) {
+    const z = this.zoom;
+    const next = dir > 0 ? ZOOM_STEPS.find((s) => s > z + 0.001) ?? ZOOM_MAX
+      : [...ZOOM_STEPS].reverse().find((s) => s < z - 0.001) ?? ZOOM_STEPS[0];
+    this.setZoom(next);
+  }
+
+  setZoom(z, anchor) {
+    this.popupZoom = null;
+    const old = this.zoom;
+    this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z));
+    this.mode = this.zoom === 1 ? 'actual' : 'custom';
+    prefs.set('mode', this.mode);
+    prefs.set('zoom', String(this.zoom));
+    // Keep the point under the anchor (pinch midpoint) where it is.
+    let keep = null;
+    if (anchor) {
+      const r = this.wrap.getBoundingClientRect();
+      keep = { px: (anchor.x - r.left) / old, py: (anchor.y - r.top) / old, ax: anchor.x, ay: anchor.y };
+    }
+    this.applyView();
+    if (keep) {
+      const r = this.wrap.getBoundingClientRect();
+      this.stage.scrollLeft += r.left + keep.px * this.zoom - keep.ax;
+      this.stage.scrollTop += r.top + keep.py * this.zoom - keep.ay;
+    }
+  }
+
+  /** The zoom a mode implies for the current stage size. */
+  modeZoom() {
+    const w = this.canvas.width, h = this.canvas.height;
+    if (w <= 1 || h <= 1) return this.zoom;
+    const cs = getComputedStyle(this.stage);
+    const availW = this.stage.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const availH = this.stage.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - FRAME_TITLE_H;
+    if (this.mode === 'fit') return Math.max(ZOOM_MIN, Math.min(availW / w, availH / h));
+    if (this.mode === 'width') return Math.max(ZOOM_MIN, availW / w);
+    if (this.mode === 'actual') return 1;
+    return this.zoom;
+  }
+
+  applyView() {
+    if (this.mode !== 'custom') this.zoom = this.modeZoom();
+    const z = this.zoom;
+    const w = this.canvas.width, h = this.canvas.height;
+    this.canvas.style.width = `${w * z}px`;
+    this.canvas.style.height = `${h * z}px`;
+    // Pixel-exact at integer zoom; smooth when scaled down or by odd factors.
+    const crisp = Math.abs(z - Math.round(z)) < 0.001 && z >= 1;
+    this.canvas.classList.toggle('pixelated', crisp);
+    this.overlay.classList.toggle('pixelated', crisp);
+    this.overlay.style.transform = `scale(${z})`;
+    this.layoutWindows();
+    // Centre the frame when it is smaller than the stage (Fit), scroll when it is larger.
+    this.wrap.style.width = `${w * z}px`;
+    document.getElementById('frame-title').style.width = `${w * z}px`;
+    this.wrap.style.height = `${h * z}px`;
+    document.getElementById('zoom-label').textContent = `${Math.round(z * 100)}%`;
+    for (const b of document.querySelectorAll('[data-mode]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === this.mode));
+    }
+  }
+
+  // --- input -----------------------------------------------------------------------
+
+  // Frame pixel under a client point. Not clamped: popups may extend past the frame.
+  // A point over another window maps to host-layout coordinates (its x, y without the
+  // client-side drag offset), so the server always sees the layout of the host.
+  framePoint(clientX, clientY, win = this.windowAt(clientX, clientY)) {
+    if (win) {
+      const r = win.canvas.getBoundingClientRect();
+      return {
+        x: Math.floor((clientX - r.left) * (win.canvas.width / r.width)) + win.info.x,
+        y: Math.floor((clientY - r.top) * (win.canvas.height / r.height)) + win.info.y,
+      };
+    }
+    const r = this.canvas.getBoundingClientRect();
+    return {
+      x: Math.floor((clientX - r.left) * (this.canvas.width / r.width)),
+      y: Math.floor((clientY - r.top) * (this.canvas.height / r.height)),
+    };
+  }
+
+  mouseAt(msg, clientX, clientY, wParam) {
+    // A press keeps its window until the release, even when the pointer leaves it.
+    const win = this.pressWin ?? this.windowAt(clientX, clientY);
+    const { x, y } = this.framePoint(clientX, clientY, win);
+    this.send(`m ${msg} ${x} ${y} ${wParam >>> 0}`);
+  }
+
+  mouse(msg, e, wParam = mouseFlags(e)) {
+    this.mouseAt(msg, e.clientX, e.clientY, wParam);
+  }
+
+  bindInput() {
+    const c = this.canvas;
+    const w = this.wrap;
+    w.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    w.addEventListener('pointerdown', (e) => {
+      if (this.split) return;
+      // A splitter bar is dragged by the client, by mouse or by one finger.
+      const bar = e.button === 0 && e.isPrimary && !(e.pointerType === 'touch' && this.touches.size)
+        ? this.splitterAt(e.clientX, e.clientY) : null;
+      if (bar && document.body.dataset.viewOnly !== 'true') { e.preventDefault(); this.splitStart(bar, e); return; }
+      if (e.pointerType === 'touch') { this.touchDown(e); return; }
+      const msgs = BUTTON_MSGS[e.button];
+      if (!msgs) return;
+      e.preventDefault();
+      this.hideTip(true);
+      c.focus({ preventScroll: true });
+      w.setPointerCapture(e.pointerId);
+      this.flushMove();
+      this.pressWin = this.windowAt(e.clientX, e.clientY);
+      if (this.pressWin) this.raise(this.pressWin);
+      // Windows reports the second press of a double click as *BUTTONDBLCLK.
+      this.mouse(e.detail === 2 ? msgs[2] : msgs[0], e);
+    });
+
+    const up = (e) => {
+      if (this.split?.pointerId === e.pointerId) { this.splitEnd(e.type === 'pointercancel'); this.splitterHover(e.clientX, e.clientY); return; }
+      if (e.pointerType === 'touch') { this.touchUp(e); return; }
+      const msgs = BUTTON_MSGS[e.button];
+      if (!msgs) return;
+      this.flushMove();
+      this.mouse(msgs[1], e);
+      this.pressWin = null;
+    };
+    w.addEventListener('pointerup', up);
+    w.addEventListener('pointercancel', up);
+
+    // Moves are coalesced to one per animation frame: only the latest position matters.
+    w.addEventListener('pointermove', (e) => {
+      if (this.split?.pointerId === e.pointerId) { this.splitMove(e); return; }
+      if (e.pointerType !== 'touch' && !e.buttons) this.splitterHover(e.clientX, e.clientY);
+      if (e.pointerType === 'touch') { this.touchMove(e); return; }
+      if (e.buttons) this.hideTip(true); else this.hoverTip(e.clientX, e.clientY);
+      const first = this.pendingMove === null;
+      this.pendingMove = e;
+      if (first) requestAnimationFrame(() => this.flushMove());
+    });
+
+    w.addEventListener('pointerleave', () => { this.hideTip(); this.tip.quiet = null; });
+
+    w.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      this.hideTip(true);
+      if (e.ctrlKey) {
+        // Ctrl+wheel and trackpad pinch zoom the view, as in any browser page.
+        this.setZoom(this.zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1), { x: e.clientX, y: e.clientY });
+        return;
+      }
+      const notches = e.deltaMode === 0 ? -e.deltaY / 100 : -e.deltaY / 3;
+      const delta = Math.round(Math.max(-3, Math.min(3, notches || -Math.sign(e.deltaY))) * WHEEL_DELTA);
+      if (!delta) return;
+      // The wheel delta is the signed high word of wParam.
+      this.mouse(WM.MOUSEWHEEL, e, (delta & 0xFFFF) * 0x10000 + mouseFlags(e));
+    }, { passive: false });
+
+    c.addEventListener('keydown', (e) => this.keyDown(e));
+    c.addEventListener('keyup', (e) => this.keyUp(e));
+  }
+
+  flushMove() {
+    const e = this.pendingMove;
+    this.pendingMove = null;
+    if (e) this.mouse(WM.MOUSEMOVE, e);
+  }
+
+  // Touch: one finger is the mouse (tap = click, hold = right click, slide = drag);
+  // two fingers zoom and pan the view.
+  touchDown(e) {
+    e.preventDefault();
+    try { this.wrap.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.touches.size === 2) {
+      this.cancelTouch();
+      const [a, b] = [...this.touches.values()];
+      this.pinch = {
+        dist: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: this.zoom,
+        mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      };
+      return;
+    }
+    if (this.touches.size > 2) return;
+    const t = { id: e.pointerId, x: e.clientX, y: e.clientY, dragging: false, done: false };
+    t.timer = setTimeout(() => {
+      // Long press: right click at the start point.
+      t.done = true;
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.RBUTTONDOWN, t.x, t.y, MK.RBUTTON);
+      this.mouseAt(WM.RBUTTONUP, t.x, t.y, 0);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, LONG_PRESS_MS);
+    this.touch = t;
+  }
+
+  touchMove(e) {
+    if (!this.touches.has(e.pointerId)) return;
+    this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinch && this.touches.size === 2) {
+      const [a, b] = [...this.touches.values()];
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      this.stage.scrollLeft -= mid.x - this.pinch.mid.x;
+      this.stage.scrollTop -= mid.y - this.pinch.mid.y;
+      this.pinch.mid = mid;
+      this.setZoom(this.pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / this.pinch.dist, mid);
+      return;
+    }
+    const t = this.touch;
+    if (!t || t.id !== e.pointerId || t.done) return;
+    if (!t.dragging && Math.hypot(e.clientX - t.x, e.clientY - t.y) > TAP_SLOP_PX) {
+      clearTimeout(t.timer);
+      t.dragging = true;
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.LBUTTONDOWN, t.x, t.y, MK.LBUTTON);
+    }
+    if (t.dragging) this.mouseAt(WM.MOUSEMOVE, e.clientX, e.clientY, MK.LBUTTON);
+  }
+
+  touchUp(e) {
+    this.touches.delete(e.pointerId);
+    if (this.pinch) {
+      if (this.touches.size < 2) this.pinch = null;
+      return;
+    }
+    const t = this.touch;
+    if (!t || t.id !== e.pointerId) return;
+    clearTimeout(t.timer);
+    this.touch = null;
+    if (t.done) return;
+    if (!t.dragging) {
+      // Tap: a complete click at the touch point.
+      this.mouseAt(WM.MOUSEMOVE, t.x, t.y, 0);
+      this.mouseAt(WM.LBUTTONDOWN, t.x, t.y, MK.LBUTTON);
+    }
+    this.mouseAt(WM.LBUTTONUP, e.clientX, e.clientY, 0);
+    this.canvas.focus({ preventScroll: true });
+  }
+
+  cancelTouch() {
+    const t = this.touch;
+    if (!t) return;
+    clearTimeout(t.timer);
+    // A drag that turns into a pinch is released where it is.
+    if (t.dragging) this.mouseAt(WM.LBUTTONUP, t.x, t.y, 0);
+    this.touch = null;
+  }
+
+  // --- keyboard ----------------------------------------------------------------------
+
+  keyDown(e) {
+    this.hideTip(true);
+    if (this.split && e.code === 'Escape') { e.preventDefault(); this.splitEnd(true); return; }
+    const vk = VK[e.code];
+    if (vk) {
+      e.preventDefault();
+      this.send(`k ${WM.KEYDOWN} ${vk[0]} ${keyLParam(vk[1], false)}`);
+    } else if (e.key.length === 1 && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      if (e.ctrlKey) {
+        // Ctrl+letter shortcuts: control characters 1..26 are what Windows sends as WM_CHAR.
+        const code = e.key.toUpperCase().charCodeAt(0);
+        if (code >= 65 && code <= 90) this.send(`k ${WM.CHAR} ${code - 64} 1`);
+      } else {
+        this.send(`k ${WM.CHAR} ${e.key.charCodeAt(0)} 1`);
+      }
+    }
+  }
+
+  keyUp(e) {
+    const vk = VK[e.code];
+    if (vk) {
+      e.preventDefault();
+      this.send(`k ${WM.KEYUP} ${vk[0]} ${keyLParam(vk[1], true)}`);
+    }
+  }
+
+  // On-screen keyboard (touch devices): a hidden input collects what is typed.
+  // Soft keyboards often report key 'Unidentified' (keyCode 229), so text comes
+  // from input events and only named keys from keydown.
+  bindKeyboard() {
+    const k = this.kbd;
+    document.getElementById('kbd-btn').addEventListener('click', () => {
+      k.value = '';
+      k.focus();
+    });
+    k.addEventListener('keydown', (e) => {
+      if (VK[e.code]) this.keyDown(e);
+    });
+    k.addEventListener('keyup', (e) => {
+      if (VK[e.code]) this.keyUp(e);
+    });
+    k.addEventListener('beforeinput', (e) => {
+      e.preventDefault();
+      if (e.inputType === 'deleteContentBackward') {
+        this.send(`k ${WM.KEYDOWN} 8 ${keyLParam(0, false)}`);
+        this.send(`k ${WM.KEYUP} 8 ${keyLParam(0, true)}`);
+      } else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') {
+        this.send(`k ${WM.KEYDOWN} 13 ${keyLParam(0, false)}`);
+        this.send(`k ${WM.KEYUP} 13 ${keyLParam(0, true)}`);
+      } else if (typeof e.data === 'string') {
+        for (const ch of e.data) this.send(`k ${WM.CHAR} ${ch.codePointAt(0)} 1`);
+      }
+    });
+  }
+
+  // --- status ------------------------------------------------------------------------
+
+  setStatus(state, text) {
+    document.body.dataset.state = state;
+    this.statusEl.textContent = text;
+  }
+
+  toast(text) {
+    const el = document.getElementById('toast');
+    el.textContent = text;
+    el.classList.add('show');
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+  }
+
+  showStats() {
+    const secs = (performance.now() - this.stats.since) / 1000;
+    this.statsEl.textContent =
+      `${(this.stats.frames / secs).toFixed(0)} fps | ${(this.stats.bytes / 1024 / secs).toFixed(0)} KiB/s`;
+    this.stats = { frames: 0, bytes: 0, since: performance.now() };
+  }
+}
+
+new RemoteViClient();
+</script>
+</body>
+</html>

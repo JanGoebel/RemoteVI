@@ -32,7 +32,8 @@ def has_libn(vi):
     return bool(re.search(r'<LIBN>', s))
 
 
-vis = sorted(glob.glob(os.path.join(src, '*', '*.vi')))
+# Hooks/ is a library of its own
+vis = sorted(v for v in glob.glob(os.path.join(src, '*', '*.vi')) if os.path.basename(os.path.dirname(v)) != 'Hooks')
 items = [v for v in vis if not has_libn(v)]
 callers = [v for v in vis if v not in items] + sys.argv[1:]
 open(os.path.join(d, 'items.txt'), 'w').write('\n'.join(items))

@@ -1,0 +1,134 @@
+<VI _name="RemoteVI Application Example.vi" description="RemoteVI example\3A a LabVIEW application with a professional UI\2C operated from a web browser. The panel has three panes - a toolbar on top\2C the navigation Menu on the left (split off by a splitter bar the remote user can drag) and the main pane with the subpanel Screen. The menu loads one of four screens into the subpanel\3A Live Data\2C Log Files\2C Alarms and Settings (VIs in the folder Application Example\2C all running from the start\3B their dialogs and the native file dialog are answered in the browser too). RemoteVI Start.vi shares the panel on port 8087 (this computer only)\3B Remote Link shows the link with its access token. Quit stops the screens (named notifier RemoteVI Application Example) and RemoteVI Stop.vi ends the share\3B closing the panel does the same. The data are simulated\3B nothing is written to disk.">
+  <FreeLabel comment="Share the panel\2C run the screens\2C show the one the menu selects\2C stop everything on Quit" uid="lbl" uid_parent="root"/>
+  <Constant _name="port" outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8087"/>
+  <Call inputs="port:port.value" outputs="URL:st.URL,error out:st.error out" target="RemoteVI Start.vi" uid="st" uid_parent="root"/>
+  <Indicator _name="Remote Link" description="Open this link in a browser to operate the application remotely (RemoteVI)." inputs="value:st.URL" type="string" uid="url" uid_parent="root" value=""/>
+  <Constant _name="notifier name" outputs="value:nn.value" type="string" uid="nn" uid_parent="root" value="RemoteVI Application Example"/>
+  <Constant _name="notification type" outputs="value:nt.value" type="bool" uid="nt" uid_parent="root" value="false"/>
+  <Node _name="Obtain Notifier" inputs="name (unnamed):nn.value,notification data type:nt.value,error in (no error):st.error out" outputs="notifier out:on.notifier out,created new?:,error out:on.error out" uid="on" uid_parent="root"/>
+  <Constant _name="menu items" outputs="value:mi.value" type="array.2{string}" uid="mi" uid_parent="root" value="[[Live Data],[Log Files],[Alarms],[Settings]]"/>
+  <Constant _name="one column" outputs="value:m1.value" type="int32" uid="m1" uid_parent="root" value="1"/>
+  <Constant _name="no headers" outputs="value:mf.value" type="bool" uid="mf" uid_parent="root" value="false"/>
+  <Node _name="Property Node" fields="write+Item Names,write+Number of Columns,write+Visible Items\3AColumn Headers Visible,write+Visible Items\3AHorizontal Scrollbar Visible" link="Menu" inputs="error in (no error):on.error out,Item Names:mi.value,Number of Columns:m1.value,Visible Items\3AColumn Headers Visible:mf.value,Visible Items\3AHorizontal Scrollbar Visible:mf.value" outputs="error out:mp.error out" type="{LV.MulticolumnListbox}" uid="mp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:,error in (no error):mp.error out" outputs="Front Panel:vp.fp,reference out:,error out:vp.error out" type="{LV.VI}" uid="vp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:vp.fp,error in (no error):vp.error out" outputs="Controls[]:pc.c,reference out:,error out:pc.error out" type="{LV.Panel}" uid="pc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Which control is Screen" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:fc.value" uid="fc" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:fc.value" outputs="Label.Text:lt.text,reference out:,error out:" type="{LV.Control}" uid="lt" uid_parent="fl"/>
+    <Constant outputs="value:sn.value" type="string" uid="sn" uid_parent="fl" value="Screen"/>
+    <Node _name="Equal?" inputs="x:lt.text,y:sn.value" outputs="x = y?:eq.x = y?" uid="eq" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:eq.x = y?" mode="index" outputs="value:isS.value" uid="isS" uid_parent="fl"/>
+  </Structure>
+  <Constant _name="true" outputs="value:tr.value" type="bool" uid="tr" uid_parent="root" value="true"/>
+  <Node _name="Search 1D Array" inputs="1D array:isS.value,element:tr.value" outputs="index of element:si.index of element" uid="si" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pc.c,index:si.index of element" outputs="element:sc.element" uid="sc" uid_parent="root"/>
+  <Constant _name="subpanel class" outputs="value:spc.value" type="ref{LV.SubPanel}" uid="spc" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:spc.value,reference:sc.element,error in:pc.error out" outputs="specific class reference:sp.ref,error out:sp.error out" uid="sp" uid_parent="root"/>
+  <Node _name="Current VI's Path" inputs="" outputs="path:cvp.path" uid="cvp" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:cvp.path" outputs="stripped path:dir.stripped path,name:" uid="dir" uid_parent="root"/>
+  <Constant _name="screens folder" outputs="value:fold.value" type="string" uid="fold" uid_parent="root" value="Application Example"/>
+  <Node _name="Build Path" inputs="base path:dir.stripped path,name or relative path:fold.value" outputs="appended path:sdir.appended path" uid="sdir" uid_parent="root"/>
+  <Constant _name="screens" outputs="value:scr.value" type="array{string}" uid="scr" uid_parent="root" value="[RemoteVI App Live Data.vi,RemoteVI App Log Files.vi,RemoteVI App Alarms.vi,RemoteVI App Settings.vi]"/>
+  <Constant _name="no wait" outputs="value:nw.value" type="bool" uid="nw" uid_parent="root" value="false"/>
+  <Structure _name="For Loop" count="" label="Open and run each screen" maxin="" maxout="" uid="rl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:scr.value" mode="index" outputs="value:rn.value" uid="rn" uid_parent="rl"/>
+    <Tunnel _id="In2" inputs="value:sdir.appended path" outputs="value:rd.value" uid="rd" uid_parent="rl"/>
+    <Tunnel _id="In3" inputs="value:nw.value" outputs="value:rw.value" uid="rw" uid_parent="rl"/>
+    <Tunnel _id="In4" inputs="value:sp.ref" outputs="value:rsp.value" uid="rsp" uid_parent="rl"/>
+    <ShiftReg uid="re_sr" uid_parent="rl">
+      <Left inputs="value:sp.error out" outputs="value:re.value" uid="re" uid_parent="re_sr"/>
+      <Right inputs="value:run.error out" outputs="value:" uid="re_r" uid_parent="re_sr"/>
+    </ShiftReg>
+    <Node _name="Build Path" inputs="base path:rd.value,name or relative path:rn.value" outputs="appended path:rp.appended path" uid="rp" uid_parent="rl"/>
+    <Node _name="Open VI Reference" inputs="vi path:rp.appended path,error in (no error):re.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="rl"/>
+    <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:rsp.value,error in (no error):ov.error out,VI Ref:ov.vi reference" outputs="reference out:,error out:rins.error out" uid="rins" uid_parent="rl"/>
+    <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):rins.error out,Wait until done:rw.value,Auto Dispose Ref:rw.value" outputs="reference out:,error out:run0.error out" uid="run0" uid_parent="rl"/>
+    <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:rsp.value,error in (no error):run0.error out" outputs="reference out:,error out:run.error out" uid="run" uid_parent="rl"/>
+    <Tunnel _id="Out1" inputs="value:ov.vi reference" mode="index" outputs="value:refs.value" uid="refs" uid_parent="rl"/>
+    <Tunnel _id="Out2" inputs="value:run.error out" outputs="value:rerr.value" uid="rerr" uid_parent="rl"/>
+  </Structure>
+  <Constant _name="first screen" outputs="value:z.value" type="int32" uid="z" uid_parent="root" value="0"/>
+  <Node _name="Index Array" inputs="array:refs.value,index:z.value" outputs="element:r0.element" uid="r0" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:sp.ref,error in (no error):rerr.value,VI Ref:r0.element" outputs="reference out:,error out:ins.error out" uid="ins" uid_parent="root"/>
+  <Constant _name="page names" outputs="value:pg.value" type="array{string}" uid="pg" uid_parent="root" value="[Live Data,Log Files,Alarms,Settings]"/>
+  <Constant _name="loop period ms" outputs="value:ms.value" type="int32" uid="ms" uid_parent="root" value="100"/>
+  <Constant _name="last page" outputs="value:three.value" type="int32" uid="three" uid_parent="root" value="3"/>
+  <Constant _name="panel not seen open yet" outputs="value:fo0.value" type="bool" uid="fo0" uid_parent="root" value="false"/>
+  <Structure _name="While Loop" count="" label="Show the screen the menu selects" uid="sl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:sp.ref" outputs="value:l_sp.value" uid="l_sp" uid_parent="sl"/>
+    <Tunnel _id="In2" inputs="value:refs.value" outputs="value:l_refs.value" uid="l_refs" uid_parent="sl"/>
+    <Tunnel _id="In3" inputs="value:pg.value" outputs="value:l_pg.value" uid="l_pg" uid_parent="sl"/>
+    <Tunnel _id="In4" inputs="value:ms.value" outputs="value:l_ms.value" uid="l_ms" uid_parent="sl"/>
+    <Tunnel _id="In5" inputs="value:three.value" outputs="value:l_3.value" uid="l_3" uid_parent="sl"/>
+    <ShiftReg uid="cur_sr" uid_parent="sl">
+      <Left inputs="value:z.value" outputs="value:cur.value" uid="cur" uid_parent="cur_sr"/>
+      <Right inputs="value:want.min" outputs="value:" uid="cur_r" uid_parent="cur_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="er_sr" uid_parent="sl">
+      <Left inputs="value:ins.error out" outputs="value:er.value" uid="er" uid_parent="er_sr"/>
+      <Right inputs="value:swc.err" outputs="value:" uid="er_r" uid_parent="er_sr"/>
+    </ShiftReg>
+    <ShiftReg uid="fo_sr" uid_parent="sl">
+      <Left inputs="value:fo0.value" outputs="value:fow.value" uid="fow" uid_parent="fo_sr"/>
+      <Right inputs="value:foo.x .or. y?" outputs="value:" uid="fo_r" uid_parent="fo_sr"/>
+    </ShiftReg>
+    <Control _name="Menu" description="The screens of the application. Select one to show it." outputs="value:menu.value" type="int32" uid="menu" uid_parent="sl" value="0" style="Listbox"/>
+    <Control _name="Quit" description="Stops the application and the remote share." outputs="value:quit.value" type="bool" uid="quit" uid_parent="sl" value="false" style="latched"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:menu.value" outputs="x &gt;= 0?:mv.x &gt;= 0?" uid="mv" uid_parent="sl"/>
+    <Node _name="Select" inputs="t:menu.value,s:mv.x &gt;= 0?,f:cur.value" outputs="s? t\3Af:sel.s? t\3Af" uid="sel" uid_parent="sl"/>
+    <Node _name="Max &amp; Min" inputs="x:sel.s? t\3Af,y:l_3.value" outputs="max(x\2Cy):,min(x\2Cy):want.min" uid="want" uid_parent="sl"/>
+    <Node _name="Not Equal?" inputs="x:want.min,y:cur.value" outputs="x != y?:chg.x != y?" uid="chg" uid_parent="sl"/>
+    <Structure _name="Case Structure" selectin="chg.x != y?" uid="swc" uid_parent="sl">
+      <Tunnel _id="In1" inputs="value:l_sp.value" uid="swc_i1" uid_parent="swc"/>
+      <Tunnel _id="In2" inputs="value:l_refs.value" uid="swc_i2" uid_parent="swc"/>
+      <Tunnel _id="In3" inputs="value:want.min" uid="swc_i3" uid_parent="swc"/>
+      <Tunnel _id="In4" inputs="value:er.value" uid="swc_i4" uid_parent="swc"/>
+      <CaseFrame label="Same screen" selector="False" selectout="" uid="swc_f0" uid_parent="swc">
+        <Tunnel _id="In1" outputs="value:" uid="swc_f0_t1" uid_parent="swc_f0"/>
+        <Tunnel _id="In2" outputs="value:" uid="swc_f0_t2" uid_parent="swc_f0"/>
+        <Tunnel _id="In3" outputs="value:" uid="swc_f0_t3" uid_parent="swc_f0"/>
+        <Tunnel _id="In4" outputs="value:swc_f0_t4.value" uid="swc_f0_t4" uid_parent="swc_f0"/>
+        <Tunnel _id="Out1" inputs="value:swc_f0_t4.value" uid="swc_f0_o1" uid_parent="swc_f0"/>
+      </CaseFrame>
+      <CaseFrame label="Show the selected screen" selector="True" selectout="" uid="swc_f1" uid_parent="swc">
+        <Tunnel _id="In1" outputs="value:swc_f1_t1.value" uid="swc_f1_t1" uid_parent="swc_f1"/>
+        <Tunnel _id="In2" outputs="value:swc_f1_t2.value" uid="swc_f1_t2" uid_parent="swc_f1"/>
+        <Tunnel _id="In3" outputs="value:swc_f1_t3.value" uid="swc_f1_t3" uid_parent="swc_f1"/>
+        <Tunnel _id="In4" outputs="value:swc_f1_t4.value" uid="swc_f1_t4" uid_parent="swc_f1"/>
+        <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:swc_f1_t1.value,error in (no error):swc_f1_t4.value" outputs="reference out:,error out:swc_f1rm.error out" uid="swc_f1rm" uid_parent="swc_f1"/>
+        <Node _name="Index Array" inputs="array:swc_f1_t2.value,index:swc_f1_t3.value" outputs="element:swc_f1r.element" uid="swc_f1r" uid_parent="swc_f1"/>
+        <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:swc_f1_t1.value,error in (no error):swc_f1rm.error out,VI Ref:swc_f1r.element" outputs="reference out:,error out:swc_f1i1.error out" uid="swc_f1i1" uid_parent="swc_f1"/>
+        <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:swc_f1_t1.value,error in (no error):swc_f1i1.error out" outputs="reference out:,error out:swc_f1rm2.error out" uid="swc_f1rm2" uid_parent="swc_f1"/>
+        <Node _name="Invoke Node" target="Insert VI" type="{LV.SubPanel}" inputs="reference:swc_f1_t1.value,error in (no error):swc_f1rm2.error out,VI Ref:swc_f1r.element" outputs="reference out:,error out:swc_f1in.error out" uid="swc_f1in" uid_parent="swc_f1"/>
+        <Tunnel _id="Out1" inputs="value:swc_f1in.error out" uid="swc_f1_o1" uid_parent="swc_f1"/>
+      </CaseFrame>
+      <Tunnel _id="Out1" outputs="value:swc.err" uid="swc_O1" uid_parent="swc"/>
+    </Structure>
+    <Node _name="Index Array" inputs="array:l_pg.value,index:want.min" outputs="element:pn.element" uid="pn" uid_parent="sl"/>
+    <Indicator _name="Page" description="The screen shown." inputs="value:pn.element" type="string" uid="page" uid_parent="sl" value=""/>
+    <Node _name="Wait (ms)" inputs="milliseconds to wait:l_ms.value" outputs="" uid="wt" uid_parent="sl"/>
+    <Tunnel _id="Out1" inputs="value:swc.err" outputs="value:lerr.value" uid="lerr" uid_parent="sl"/>
+    <Node _name="Property Node" fields="read+Front Panel Window\3AOpen" inputs="reference:" outputs="Front Panel Window\3AOpen:fpo.open,reference out:,error out:" type="{LV.VI}" uid="fpo" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:fow.value,y:fpo.open" outputs="x .or. y?:foo.x .or. y?" uid="foo" uid_parent="sl"/>
+    <Node _name="Not" inputs="x:fpo.open" outputs=".not. x?:fnc..not. x?" uid="fnc" uid_parent="sl"/>
+    <Node _name="And" inputs="x:fow.value,y:fnc..not. x?" outputs="x .and. y?:fcl.x .and. y?" uid="fcl" uid_parent="sl"/>
+    <Node _name="Or" inputs="x:quit.value,y:fcl.x .and. y?" outputs="x .or. y?:stp.x .or. y?" uid="stp" uid_parent="sl"/>
+    <Condition inputs="value:stp.x .or. y?" uid="slc" uid_parent="sl" value="stop"/>
+  </Structure>
+  <Node _name="Send Notification" inputs="notifier:on.notifier out,notification:tr.value,error in (no error):lerr.value" outputs="notifier out:,error out:sn2.error out" uid="sn2" uid_parent="root"/>
+  <Constant _name="grace ms" outputs="value:gr.value" type="int32" uid="gr" uid_parent="root" value="500"/>
+  <Node _name="Wait (ms)" inputs="milliseconds to wait:gr.value" outputs="" uid="wg" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Remove VI" type="{LV.SubPanel}" inputs="reference:sp.ref,error in (no error):sn2.error out" outputs="reference out:,error out:rmv.error out" uid="rmv" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Close each screen reference" maxin="" maxout="" uid="cl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:refs.value" mode="index" outputs="value:cr.value" uid="cr" uid_parent="cl"/>
+    <ShiftReg uid="ce_sr" uid_parent="cl">
+      <Left inputs="value:rmv.error out" outputs="value:ce.value" uid="ce" uid_parent="ce_sr"/>
+      <Right inputs="value:cref.error out" outputs="value:" uid="ce_r" uid_parent="ce_sr"/>
+    </ShiftReg>
+    <Node _name="Close Reference" inputs="reference:cr.value,error in (no error):ce.value" outputs="error out:cref.error out" uid="cref" uid_parent="cl"/>
+    <Tunnel _id="Out1" inputs="value:cref.error out" outputs="value:cerr.value" uid="cerr" uid_parent="cl"/>
+  </Structure>
+  <Node _name="Release Notifier" inputs="notifier:on.notifier out,force destroy? (F):tr.value,error in (no error):cerr.value" outputs="notifier name:,last notification:,error out:rln.error out" uid="rln" uid_parent="root"/>
+  <Call inputs="port:port.value,error in:rln.error out" outputs="error out:spe.error out" target="RemoteVI Stop.vi" uid="spe" uid_parent="root"/>
+  <Indicator _name="error out" description="Errors of the share\2C the screens and the subpanel." inputs="value:spe.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

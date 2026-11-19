@@ -37,7 +37,7 @@ const MAX_CLIENTS = 8;
 export function startServer(opts = {}) {
   const cfg = {
     port: 8090, host: '127.0.0.1', fps: 30, viewOnly: false, log: console.log, token: crypto.randomBytes(16).toString('hex'),
-    indexPath: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/index.html'),
+    indexPath: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../source/Web/index.html'),
     ...opts,
   };
   // The toolkit embeds index.html as a string constant; read it once, like that.

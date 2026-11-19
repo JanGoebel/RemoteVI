@@ -1,8 +1,8 @@
 ﻿<?xml version='1.0' encoding='UTF-8'?>
 <Library LVVersion="20008000">
-	<Property Name="NI.Lib.Description" Type="Str">RemoteVI - publish a LabVIEW front panel to a web browser, pixel-accurate and interactive.
+	<Property Name="NI.Lib.Description" Type="Str">RemoteVI - operate a LabVIEW front panel from a web browser, pixel-accurate and interactive.
 
-Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/RemoteVI Stop.vi to stop publishing it. Everything else (Server, Capture, Protocol, Input, Win32) is internal implementation; it is public only so the tests, fixtures and benchmarks can call it directly, and it may change without notice.</Property>
+Public API (folder API, functions palette RemoteVI): RemoteVI Start.vi shares a VI's front panel, RemoteVI Start Window.vi any window, RemoteVI Stop.vi ends a share; RemoteVI Status.vi, RemoteVI Status Panel.vi and RemoteVI Show Status.vi report the running shares; RemoteVI Open Server.vi opens RemoteVI Server. Everything else (App, Server, Capture, Protocol, Input, Win32) is internal implementation; it is public only so the tests, fixtures and benchmarks can call it directly, and it may change without notice.</Property>
 	<Property Name="NI.Lib.Icon" Type="Bin">)!#!!!!!!!)!"1!&amp;!!!-!%!!!@````]!!!!"!!%!!!)]!!!*Q(C=\:3R51."$%5`$!'J9R,',;A&amp;N_!7V))$%I&gt;O12GR7\A'#.4#T:!T=S8Y?,=HQ!-'*T!1M'O&gt;VV^;[&gt;XO?K87LK5LD?@;QZ@NR4`FYTG.WFDP`&lt;0H&gt;@2B`DH`5@\4]Y^^*`/`F@CU@NE*`M`@8V_W@`_``X@^:RIRW\."0^SECU;+*2;99^&lt;?&lt;ETU2%`U2%`U2!`U1!`U1!`U1(&gt;U2X&gt;U2X&gt;U2T&gt;U1T&gt;U1T&gt;U1W]&gt;8?B#&amp;TKLEB20#C6*EQ2*-#B+(AF0QJ0Q*$T]6-+4]#1]#5`#1YA3HI1HY5FY%B[G+?&amp;*?"+?B#@B)65DS&gt;&lt;2Y5FY3+_!*_!*?!+?A)?3#HA#A+"9E$B)!I9#:T!)?!+?A)?B!J[!*_!*?!)?X!JY!J[!*_!*?*D36C5;T&gt;42Y3'.("[(R_&amp;R?"Q?5MPB=8A=(I@(Y;'=("[(RY&amp;Q#DL*1:!TS1FQ@DA]$A^@=HA=(I@(Y8&amp;Y=,5&gt;]L9S%]X5U?%R?!Q?A]@A-8B))90(Y$&amp;Y$"[$B\1S?!Q?A]@A-8AI*90(Y$&amp;Y$"#D+/6F*$-G'E''90$Q;;@&amp;WCZ&amp;)\(7[[]Z(V46!61&gt;,.7"52U%V1;L.E[V);K&amp;6CWA;G&amp;5,[R[%27AKL!KI3J1!]]?[\!^NM-WW"J&lt;95NM-5X^ZM"B'.4XP&lt;KOUX[`VW[XUW;TU8K^VGKVUH+ZV'+R?,WN&lt;OFTOTC_FQYX^_0BK:PN"OOQ`GY]$)`.PS8_OWW_F`\#X;B,D5@80'PU$-W\Q59!!!!!</Property>
 	<Property Name="NI.Lib.SourceVersion" Type="Int">536903680</Property>
 	<Property Name="NI.Lib.Version" Type="Str">1.0.0.0</Property>
@@ -113,6 +113,8 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI List Popups.vi" Type="VI" URL="../Server/RemoteVI List Popups.vi"/>
 		<Item Name="RemoteVI Logical Popups.vi" Type="VI" URL="../Server/RemoteVI Logical Popups.vi"/>
 		<Item Name="RemoteVI Loop Flags.vi" Type="VI" URL="../Server/RemoteVI Loop Flags.vi"/>
+		<Item Name="RemoteVI Loop Greeting.vi" Type="VI" URL="../Server/RemoteVI Loop Greeting.vi"/>
+		<Item Name="RemoteVI Loop Init.vi" Type="VI" URL="../Server/RemoteVI Loop Init.vi"/>
 		<Item Name="RemoteVI Menu Hover.vi" Type="VI" URL="../Server/RemoteVI Menu Hover.vi"/>
 		<Item Name="RemoteVI New Token.vi" Type="VI" URL="../Server/RemoteVI New Token.vi"/>
 		<Item Name="RemoteVI Open Server Loop.vi" Type="VI" URL="../Server/RemoteVI Open Server Loop.vi"/>
@@ -120,6 +122,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Other Shares.vi" Type="VI" URL="../Server/RemoteVI Other Shares.vi"/>
 		<Item Name="RemoteVI Panel Controls.vi" Type="VI" URL="../Server/RemoteVI Panel Controls.vi"/>
 		<Item Name="RemoteVI Post Client Input.vi" Type="VI" URL="../Server/RemoteVI Post Client Input.vi"/>
+		<Item Name="RemoteVI Print Frame.vi" Type="VI" URL="../Server/RemoteVI Print Frame.vi"/>
 		<Item Name="RemoteVI Publish Status.vi" Type="VI" URL="../Server/RemoteVI Publish Status.vi"/>
 		<Item Name="RemoteVI Read Client Bytes.vi" Type="VI" URL="../Server/RemoteVI Read Client Bytes.vi"/>
 		<Item Name="RemoteVI Read Panel Info.vi" Type="VI" URL="../Server/RemoteVI Read Panel Info.vi"/>
@@ -139,6 +142,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Send Tips.vi" Type="VI" URL="../Server/RemoteVI Send Tips.vi"/>
 		<Item Name="RemoteVI Send Window Frame.vi" Type="VI" URL="../Server/RemoteVI Send Window Frame.vi"/>
 		<Item Name="RemoteVI Send Windows.vi" Type="VI" URL="../Server/RemoteVI Send Windows.vi"/>
+		<Item Name="RemoteVI Serve Clients Step.vi" Type="VI" URL="../Server/RemoteVI Serve Clients Step.vi"/>
 		<Item Name="RemoteVI Serve Pending Connection.vi" Type="VI" URL="../Server/RemoteVI Serve Pending Connection.vi"/>
 		<Item Name="RemoteVI Server Loop.vi" Type="VI" URL="../Server/RemoteVI Server Loop.vi"/>
 		<Item Name="RemoteVI Server Setup.vi" Type="VI" URL="../Server/RemoteVI Server Setup.vi"/>
@@ -154,6 +158,7 @@ Public API: use API/RemoteVI Start.vi to publish a VI's front panel and API/Remo
 		<Item Name="RemoteVI Target Running.vi" Type="VI" URL="../Server/RemoteVI Target Running.vi"/>
 		<Item Name="RemoteVI Token Check.vi" Type="VI" URL="../Server/RemoteVI Token Check.vi"/>
 		<Item Name="RemoteVI Track Popups.vi" Type="VI" URL="../Server/RemoteVI Track Popups.vi"/>
+		<Item Name="RemoteVI Track Target.vi" Type="VI" URL="../Server/RemoteVI Track Target.vi"/>
 		<Item Name="RemoteVI Track Windows.vi" Type="VI" URL="../Server/RemoteVI Track Windows.vi"/>
 		<Item Name="RemoteVI VI Server Request.vi" Type="VI" URL="../Server/RemoteVI VI Server Request.vi"/>
 		<Item Name="RemoteVI VI Stopped.vi" Type="VI" URL="../Server/RemoteVI VI Stopped.vi"/>

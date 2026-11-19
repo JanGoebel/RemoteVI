@@ -1,0 +1,26 @@
+<VI _name="Set Icons.vi" description="Development tool\3A sets the icons of many VIs at once and saves each one. VIs and Icons are text files with the paths of the VIs and of their 32x32 PNGs\2C in the same order\2C separated by semicolons (written by tools/dev/icons.py). Opens each VI\2C sets its icon from the file\2C saves it and closes the reference\3B codes has one error code per VI (0 = done). Run it with no project open\3B a VI that is running or has unsaved changes cannot be saved.">
+  <Control _name="VIs" description="Text file\3A the paths of the VIs\2C separated by semicolons." outputs="value:it.value" type="path" uid="it" uid_parent="root" value=""/>
+  <Control _name="Icons" description="Text file\3A the paths of their 32x32 PNGs in the same order\2C separated by semicolons." outputs="value:ip.value" type="path" uid="ip" uid_parent="root" value=""/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" inputs="file (use dialog):it.value,count:all.value,error in:,prompt (Open existing file):" outputs="refnum out:,text:rf.text,cancelled:,error out:rf.err" uid="rf" uid_parent="root"/>
+  <Node _name="Read from Text File" inputs="file (use dialog):ip.value,count:all.value,error in:rf.err,prompt (Open existing file):" outputs="refnum out:,text:rg.text,cancelled:,error out:rg.err" uid="rg" uid_parent="root"/>
+  <Constant outputs="value:fm.value" type="string" uid="fm" uid_parent="root" value="%s"/>
+  <Constant outputs="value:t1.value" type="array{string}" uid="t1" uid_parent="root" value="[]"/>
+  <Constant outputs="value:sc.value" type="string" uid="sc" uid_parent="root" value="\3B"/>
+  <Node _name="Spreadsheet String To Array" inputs="format string:fm.value,spreadsheet string:rf.text,array type (2D Dbl):t1.value,delimiter (Tab):sc.value" outputs="array:sa.vis" uid="sa" uid_parent="root"/>
+  <Node _name="Spreadsheet String To Array" inputs="format string:fm.value,spreadsheet string:rg.text,array type (2D Dbl):t1.value,delimiter (Tab):sc.value" outputs="array:sb.pngs" uid="sb" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One VI each" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:sa.vis" mode="index" outputs="value:a0.value" uid="a0" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:sb.pngs" mode="index" outputs="value:a1.value" uid="a1" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:a0.value" outputs="path:p0.path" uid="p0" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:a1.value" outputs="path:p1.path" uid="p1" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="vi path:p0.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Set VI Icon from File" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out,Image File:p1.path" outputs="reference out:si.reference out,error out:si.error out" uid="si" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Save\3AInstrument" type="{LV.VI}" inputs="reference:si.reference out,error in (no error):si.error out" outputs="reference out:sv.reference out,error out:sv.error out" uid="sv" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:sv.reference out,error in (no error):sv.error out" outputs="error out:cr.error out" uid="cr" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.error out" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.value" uid="co" uid_parent="fl"/>
+  </Structure>
+  <Indicator _name="codes" description="Error code of each VI\3B 0 = icon set and VI saved." inputs="value:co.value" type="array{int32}" uid="o1" uid_parent="root" value="[]"/>
+  <Indicator _name="error out" description="Error reading the two files." inputs="value:rg.err" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

@@ -1,0 +1,41 @@
+<VI _name="Set Columns.vi" description="Development tool\3A sizes a multicolumn listbox by its columns and rows\2C which LabVIEW does not let Bounds do (a multicolumn listbox has no writable size). Sets the width of each column (Widths\2C one per column) and then the number of visible columns (as many as Widths) and the number of visible rows\2C then saves the VI. The listbox is then as wide as its columns plus its frame (and its vertical scroll bar). A VI that writes Number of Columns at run time keeps these widths. Run it on a VI that is not running.">
+  <Control _name="VI" description="The VI with the listbox." outputs="value:vi.value" type="path" uid="vi" uid_parent="root" value=""/>
+  <Control _name="Label" description="Label of the multicolumn listbox." outputs="value:cl.value" type="string" uid="cl" uid_parent="root" value=""/>
+  <Control _name="Widths" description="Width of each column\2C left to right." outputs="value:ws.value" type="array{int32}" uid="ws" uid_parent="root" value="[]"/>
+  <Control _name="Rows" description="Number of visible rows." outputs="value:nr.value" type="int32" uid="nr" uid_parent="root" value="10"/>
+  <Node _name="Open VI Reference" inputs="vi path:vi.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:,error out:fp.error out,Front Panel:fp.fp" type="{LV.VI}" uid="fp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[]" inputs="reference:fp.fp,error in (no error):fp.error out" outputs="reference out:,error out:pc.error out,Controls[]:pc.c" type="{LV.Panel}" uid="pc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Labels" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value" outputs="reference out:,error out:,Label.Text:lt.t" type="{LV.Control}" uid="lt" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:lt.t" mode="index" outputs="value:la.value" uid="la" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:la.value,element:cl.value" outputs="index of element:sa.index of element" uid="sa" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pc.c,index 0:sa.index of element" outputs="element:ic.element" uid="ic" uid_parent="root"/>
+  <Constant outputs="value:mcl.value" type="ref{LV.MulticolumnListbox}" uid="mcl" uid_parent="root" value=""/>
+  <Node _name="To More Specific Class" inputs="target class:mcl.value,reference:ic.element,error in:pc.error out" outputs="specific class reference:ms.ref,error out:ms.error out" uid="ms" uid_parent="root"/>
+  <Node _name="Array Size" inputs="array:ws.value" outputs="size(s):n.size" uid="n" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Number of Columns,write+Number of Rows" inputs="reference:ms.ref,error in (no error):ce.value,Number of Columns:n.size,Number of Rows:nr.value" outputs="reference out:,error out:nc.error out" type="{LV.MulticolumnListbox}" uid="nc" uid_parent="root"/>
+  <Structure _name="For Loop" count="cwi.value" label="Width of each column" maxin="" maxout="" uid="cw" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ws.value" mode="index" outputs="value:w.value" uid="w" uid_parent="cw"/>
+    <Tunnel _id="In2" inputs="value:ms.ref" outputs="value:r.value" uid="r" uid_parent="cw"/>
+    <ShiftReg uid="sr" uid_parent="cw">
+      <Left inputs="value:ms.error out" outputs="value:e.value" uid="srl" uid_parent="sr"/>
+      <Right inputs="value:cz.error out" outputs="value:" uid="srr" uid_parent="sr"/>
+    </ShiftReg>
+    <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="cw" value="-2"/>
+    <Constant outputs="value:h0.value" type="int32" uid="h0" uid_parent="cw" value="18"/>
+    <Node _name="Bundle" inputs="element 0:all.value,element 1:cwi.value" outputs="output cluster:ac.output cluster" uid="ac" uid_parent="cw"/>
+    <Node _name="Bundle" inputs="element 0:w.value,element 1:h0.value" outputs="output cluster:bz.output cluster" uid="bz" uid_parent="cw"/>
+    <Node _name="Property Node" fields="write+Active Cell\3AActive Cell,write+Active Cell\3ACell Size" inputs="reference:r.value,error in (no error):e.value,Active Cell\3AActive Cell:ac.output cluster,Active Cell\3ACell Size:bz.output cluster" outputs="reference out:,error out:cz.error out" type="{LV.MulticolumnListbox}" uid="cz" uid_parent="cw"/>
+    <Tunnel _id="Out1" inputs="value:cz.error out" outputs="value:ce.value" uid="ce" uid_parent="cw"/>
+  </Structure>
+  <Node _name="Property Node" fields="read+Bounds" inputs="reference:ic.element,error in (no error):nc.error out" outputs="reference out:,error out:fb.error out,Bounds:fb.b" type="{LV.Control}" uid="fb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:fb.b" outputs="Width:fbu.w,Height:fbu.h" uid="fbu" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:fbu.w,element:fbu.h" outputs="appended array:fba.array" uid="fba" uid_parent="root"/>
+  <Indicator _name="size" description="Width and height of the listbox afterwards." inputs="value:fba.array" type="array{int32}" uid="o1" uid_parent="root" value="[]"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):fb.error out" outputs="reference out:,error out:svi.error out" uid="svi" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):svi.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

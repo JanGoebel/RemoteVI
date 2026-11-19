@@ -1,0 +1,203 @@
+<#
+.SYNOPSIS
+    Builds the RemoteVI VI package (jgoebel_lib_remotevi-X.Y.Z.B.vip) into builds\.
+
+.DESCRIPTION
+    1. Builds the example executables with LabVIEW 2020 (build specifications "RemoteVI Demo",
+       "RemoteVI Application Example" and "RemoteVI Server" in RemoteVI.lvproj), with NI's LabVIEW CLI (RunVI on tools\dev\Build Spec CLI.vi, over VI
+       Server TCP; tools\labview-cli.ps1). The run-time engine of the LabVIEW that builds them is what they need, so they are
+       built by the version the package is saved for. -SkipExecutables reuses builds\ as it is. The built VIs
+       stay in memory, and VIPM does not build while they are open: -CloseLabVIEW (CI) quits LabVIEW afterwards.
+    2. Copies them to examples\Executables\<name>\ (git-ignored), from where the package installs
+       them with the examples.
+    3. Runs `vipm build package\RemoteVI.vipb` with the version number.
+    4. Checks the package: the files it must contain, and none of the repository's development files.
+
+    Same script locally and in CI (.github/workflows/package.yml). Requirements: LabVIEW 2020 (64-bit)
+    with Application Builder, VIPM 2026 or newer (CLI `vipm`), and the packages of vipm.toml
+    installed for LabVIEW 2020 (`vipm install`).
+
+.EXAMPLE
+    .\tools\build-package.ps1
+    .\tools\build-package.ps1 -Version 1.2.3 -BuildNumber 42
+    .\tools\build-package.ps1 -SkipExecutables
+#>
+[CmdletBinding()]
+param(
+    # X.Y.Z; default: [project] version in vipm.toml
+    [string]$Version,
+    [int]$BuildNumber = 0,
+    [string]$LabVIEWVersion = '2020',
+    [ValidateSet('64')][string]$Bitness = '64',
+    [switch]$SkipExecutables,
+    # Quit that LabVIEW after building the executables (CI): Application Builder keeps the built VIs in memory,
+    # and VIPM does not build while source VIs are open; VIPM then starts LabVIEW again with nothing loaded
+    [switch]$CloseLabVIEW,
+    # While vipm builds, list and picture the windows of VIPM and LabVIEW into builds\diag after 2 and 4.5 min
+    # (tools\window-snapshot.ps1; CI, where nobody sees the runner's desktop)
+    [switch]$WindowSnapshots,
+    # Accept a package whose spec does not require the [dependencies] of vipm.toml (local test builds only:
+    # such a package installs broken where those packages are missing)
+    [switch]$AllowMissingDependencies
+)
+
+$ErrorActionPreference = 'Stop'
+
+. (Join-Path $PSScriptRoot 'labview-cli.ps1')
+$root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
+$project = Join-Path $root 'RemoteVI.lvproj'
+$vipb = Join-Path $root 'package\RemoteVI.vipb'
+$builds = Join-Path $root 'builds'
+$staging = Join-Path $root 'examples\Executables'
+$executables = @('RemoteVI Demo', 'RemoteVI Application Example', 'RemoteVI Server')
+
+if (-not $Version) {
+    $toml = Get-Content -Raw (Join-Path $root 'vipm.toml')
+    $m = [regex]::Match($toml, '(?m)^\s*version\s*=\s*"([^"]+)"')
+    if (-not $m.Success) { throw 'No [project] version in vipm.toml; pass -Version.' }
+    $Version = $m.Groups[1].Value
+}
+if ($Version -notmatch '^\d+\.\d+\.\d+$') { throw "Version must be X.Y.Z, not '$Version'." }
+$fullVersion = "$Version.$BuildNumber"
+
+$vipm = (Get-Command vipm -ErrorAction SilentlyContinue).Source
+if (-not $vipm) {
+    $vipm = Join-Path $env:ProgramFiles 'JKI\VI Package Manager\support\vipm.exe'
+    if (-not (Test-Path $vipm)) { throw 'vipm not found: install VIPM 2026 or newer, or put its CLI on PATH.' }
+}
+
+function Invoke-BuildSpec([string]$Spec) {
+    # The executables need the run-time engine of the LabVIEW that builds them: the version the package is saved for
+    Write-Host "Building '$Spec' with LabVIEW $LabVIEWVersion..."
+    # RunVI with tools\dev\Build Spec CLI.vi: the CLI's own ExecuteBuildSpec, installed with a newer LabVIEW, does not load in LabVIEW 2020
+    $r = Invoke-LabVIEWCli $LabVIEWVersion @('-OperationName', 'RunVI', '-VIPath', (Join-Path $root 'tools\dev\Build Spec CLI.vi'), $project, $Spec)
+    $r.Output | ForEach-Object { Write-Host "  $_" }
+    if ($r.ExitCode -ne 0) { throw "Building '$Spec' failed (LabVIEW CLI exit code $($r.ExitCode))." }
+}
+
+function Assert-VipmPort([string]$Exe, [int]$Port) {
+    # VIPM starts LabVIEW and then waits on the VI Server port it has stored for that LabVIEW: with another port in
+    # LabVIEW.ini, `vipm build` only ends at the liveliness timeout ("VIPM Desktop may be stuck")
+    $ini = Join-Path $env:ProgramData 'JKI\VIPM\Settings.ini'
+    if (-not (Test-Path $ini)) { return }
+    $targets = [regex]::Match((Get-Content -Raw $ini), '(?ms)^\[Targets\]\s*$(.*?)(?=^\[|\z)').Groups[1].Value
+    $location = '/' + ($Exe -replace ':', '' -replace '\\', '/')
+    $index = $null
+    foreach ($m in [regex]::Matches($targets, '(?m)^Locations (\d+)="([^"]*)"')) {
+        if ($m.Groups[2].Value -ieq $location) { $index = [int]$m.Groups[1].Value }
+    }
+    $ports = [regex]::Match($targets, '(?m)^Ports="<size\(s\)=\d+>\s*([^"]*)"')
+    if ($null -eq $index -or -not $ports.Success) { Write-Warning "VIPM ($ini) lists no VI Server port for $Exe."; return }
+    $list = @($ports.Groups[1].Value.Trim() -split '\s+')
+    if ($index -lt $list.Count -and [int]$list[$index] -ne $Port) {
+        throw "VIPM connects to $Exe on port $($list[$index]), but that LabVIEW's VI Server listens on $Port (LabVIEW.ini). Set the port in VIPM (Tools > Options > LabVIEW) to $Port."
+    }
+}
+$lvExe = Get-LabVIEWExe $LabVIEWVersion
+Assert-VipmPort $lvExe (Get-VIServerPort $lvExe)
+
+# 1. Executables
+if (-not $SkipExecutables) {
+    foreach ($spec in $executables) { Invoke-BuildSpec $spec }
+    if ($CloseLabVIEW) {
+        Write-Host "Closing LabVIEW $LabVIEWVersion (it keeps the built VIs in memory)..."
+        Close-LabVIEW $LabVIEWVersion
+        # VIPM attaches to a running LabVIEW reliably; starting one itself, it hung on the CI runner
+        Write-Host "Starting LabVIEW $LabVIEWVersion again with nothing loaded..."
+        Start-LabVIEW $LabVIEWVersion
+    }
+}
+
+# 2. Stage them next to the examples
+foreach ($spec in $executables) {
+    $src = Join-Path $builds $spec
+    $exe = Join-Path $src "$spec.exe"
+    if (-not (Test-Path $exe)) { throw "$exe is missing; build without -SkipExecutables." }
+    $dst = Join-Path $staging $spec
+    if (Test-Path $dst) { Remove-Item -Recurse -Force $dst }
+    New-Item -ItemType Directory -Force $dst | Out-Null
+    Copy-Item $exe, (Join-Path $src "$spec.ini") $dst
+    Write-Host ("Staged {0} ({1:yyyy-MM-dd HH:mm})" -f $exe, (Get-Item $exe).LastWriteTime)
+}
+
+# 3. Package (VIPM refuses to overwrite a package file)
+$out = Join-Path $builds "jgoebel_lib_remotevi-$fullVersion.vip"
+if (Test-Path $out) { Remove-Item $out }
+$before = Get-Date
+Write-Host "Building the VI package $fullVersion with VIPM for LabVIEW $LabVIEWVersion ($Bitness-bit)..."
+# vipm gives up when VIPM Desktop is silent for 60 s, and starting LabVIEW (after -CloseLabVIEW) and loading the library take longer
+if (-not $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT) { $env:VIPM_DESKTOP_LIVELINESS_TIMEOUT = '300' }
+$snapshots = $null
+if ($WindowSnapshots) {
+    $snapshots = Start-Job -ArgumentList (Join-Path $PSScriptRoot 'window-snapshot.ps1'), (Join-Path $builds 'diag') -ScriptBlock {
+        param($script, $dir)
+        Start-Sleep -Seconds 120; "-- windows after 2 min:"; & $script -OutDir (Join-Path $dir '2 min') 6>&1
+        Start-Sleep -Seconds 150; "-- windows after 4.5 min:"; & $script -OutDir (Join-Path $dir '4.5 min') 6>&1
+    }
+}
+& $vipm --verbose --labview-version $LabVIEWVersion --labview-bitness $Bitness build $vipb --version-number $Version --build-number $BuildNumber
+$vipmExit = $LASTEXITCODE
+if ($snapshots) {
+    Stop-Job $snapshots
+    Receive-Job $snapshots | ForEach-Object { Write-Host "$_" }
+    Remove-Job $snapshots
+}
+if ($vipmExit -ne 0) { throw "vipm build failed (exit code $vipmExit). If VIPM lists source VIs that must be closed, close them in LabVIEW $LabVIEWVersion (or pass -CloseLabVIEW)." }
+$vip = Get-ChildItem $builds -Filter "jgoebel_lib_remotevi-$fullVersion.vip" | Where-Object LastWriteTime -ge $before.AddSeconds(-5)
+if (-not $vip) { throw "vipm build reported success but builds\jgoebel_lib_remotevi-$fullVersion.vip was not written." }
+
+# 4. Check what the package carries
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = [System.IO.Compression.ZipFile]::OpenRead($vip.FullName)
+try {
+    $entries = @($zip.Entries | ForEach-Object { $_.FullName -replace '\\', '/' })
+    $reader = New-Object System.IO.StreamReader(($zip.Entries | Where-Object FullName -eq 'spec').Open())
+    try { $spec = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    # the palette file VIPM generated, read as Latin-1 so the VI names in it stay readable
+    $mnuEntry = $zip.Entries | Where-Object { $_.FullName -like '*.mnu' } | Select-Object -First 1
+    $mnu = ''
+    if ($mnuEntry) {
+        $ms = New-Object System.IO.MemoryStream
+        $s = $mnuEntry.Open()
+        try { $s.CopyTo($ms) } finally { $s.Dispose() }
+        $mnu = [System.Text.Encoding]::GetEncoding(28591).GetString($ms.ToArray())
+    }
+} finally { $zip.Dispose() }
+# The Tools menu shows the folders below <LabVIEW>\project as submenus: Tools >> RemoteVI >> Share in Browser
+$required = @(
+    'RemoteVI.lvlib', 'API/RemoteVI Start.vi', 'API/RemoteVI Stop.vi', 'project/RemoteVI/Share in Browser.vi',
+    'RemoteVI Demo.vi', 'RemoteVI Demo/RemoteVI Demo.exe', 'RemoteVI Server/RemoteVI Server.exe', '.mnu',
+    'RemoteVI Application Example.vi', 'Application Example/RemoteVI App Log Files.vi',
+    'RemoteVI Application Example/RemoteVI Application Example.exe'
+)
+$missing = @($required | Where-Object { $r = $_; -not ($entries | Where-Object { $_.EndsWith($r) }) })
+$forbidden = @($entries | Where-Object { $_ -match '(^|/)(\.git|\.github|\.claude|CLAUDE\.md|tests|tools|spikes|scripts|docs|web|aixml|node_modules|\.RemoteVI\.UserState)(/|$)|\.lvproj$|\.aliases$|\.lvlps$' })
+if ($missing -or $forbidden) {
+    $missing | ForEach-Object { Write-Warning "missing in the package: $_" }
+    $forbidden | ForEach-Object { Write-Warning "development file in the package: $_" }
+    throw "The package content check failed: $($vip.FullName)"
+}
+
+# Every VI of the palette definition must be in the palette file. VIPM numbers the rows and columns of
+# Library_Palette_Definition from 1 and leaves out an item at row or column 0 without a warning: the
+# palette of 0.1.0 showed only two of its seven VIs.
+$paletteVIs = @([regex]::Matches((Get-Content -Raw $vipb), '<NameSub_Menu_Name>([^<]+\.vi)</NameSub_Menu_Name>') |
+    ForEach-Object { $_.Groups[1].Value })
+$notInPalette = @($paletteVIs | Where-Object { -not $mnu.Contains($_) })
+if (-not $paletteVIs -or $notInPalette) {
+    throw "The palette of the package lacks $($notInPalette -join ', ') (rows and columns of the palette definition start at 1)."
+}
+
+# VIPM installs the packages in the spec's Requires with this one; the ones RemoteVI's VIs call are the
+# [dependencies] of vipm.toml
+$toml = Get-Content -Raw (Join-Path $root 'vipm.toml')
+$deps = @([regex]::Match($toml, '(?ms)^\[dependencies\]\s*$(.*?)(?=^\[|\z)').Groups[1].Value -split '\r?\n' |
+    ForEach-Object { if ($_ -match '^\s*([A-Za-z0-9_&]+)\s*=') { $Matches[1] } })
+$requires = [regex]::Match($spec, '(?m)^Requires="([^"]*)"').Groups[1].Value
+$undeclared = @($deps | Where-Object { $requires -notmatch ('(^|,)' + [regex]::Escape($_) + '(>|<|=|,|$)') })
+if ($undeclared) {
+    $msg = "The package does not require $($undeclared -join ', ') (spec Requires=""$requires""): it installs broken where they are missing."
+    if ($AllowMissingDependencies) { Write-Warning $msg } else { throw "$msg Pass -AllowMissingDependencies for a local test build." }
+}
+Write-Host ("Built {0} ({1:N0} kB, {2} files)" -f $vip.FullName, ($vip.Length / 1kB), $entries.Count)
+$vip.FullName

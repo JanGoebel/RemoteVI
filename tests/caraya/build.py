@@ -40,7 +40,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 VEC = os.path.join(ROOT, "tests", "vectors")
-AIXML_DIR = os.path.join(HERE, "aixml")
+AIXML_DIR = os.path.join(ROOT, "tools", "aixml", "Caraya")
 SUPPORT = os.path.join(HERE, "support")
 UNIT = os.path.join(HERE, "unit")
 COMPOSE = os.path.join(ROOT, "tools", "aixml", "compose.py")
@@ -595,10 +595,10 @@ def check_splitters_message():
 
 def check_token_check():
     vec = json.load(open(os.path.join(VEC, "http.json")))
-    cases = [(c["name"], c["query"], "" if c.get("emptyToken") else vec["token"], "T" if c["ok"] else "F")
+    cases = [(c["name"], c["query"], c.get("token", "" if c.get("emptyToken") else vec["token"]), "T" if c["ok"] else "F")
              for c in vec["tokens"]]
     d = check_doc("Token Check", "http.json (tokens)", "query and token as in the vector (the vector's token, or "
-                  "empty for emptyToken); ok? is rendered T or F.")
+                  "empty for emptyToken, or the case's own token); ok? is rendered T or F.")
     f = cases_loop(d, "string.name,string.query,string.token,string.expect", cases, ["name", "query", "token", "expect"],
                    "One vector")
     d.call("sut", "RemoteVI Token Check.vi", [("query", f["query"]), ("token", f["token"])], [("ok?", "sut.v")], "L")

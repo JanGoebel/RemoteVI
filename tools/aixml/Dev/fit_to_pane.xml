@@ -1,0 +1,102 @@
+<VI _name="Fit To Pane.vi" description="Development tool\3A makes a control fill its pane of a splitter panel and keep filling it (what Fit Control to Pane does by hand). The pane is scrolled to 0\2C0 and the control moved there\3B with scaling off\2C the pane is shrunk to the control's size by moving the two splitter bars that bound it (the window is not resized\3A writing Panel Bounds answered error 1 once a second pane scaled an object)\3B Scale Single Object is switched on for the control and the bars are put back\2C so the control grows with the pane and fills it exactly. Works for controls without a writable size (subpanels\2C multicolumn listboxes). Cell Width > 0 first sizes a multicolumn listbox\3A the first column's width\2C one visible column\2C the number of visible rows\2C no column headers and no vertical scroll bar\3B the bars then only make up the last pixels (a bar that would make a pane smaller than its minimum answers error 1358). Height Bar -1\3A no bar sets the pane's height (a pane beside a vertical bar that runs the full height of the window). Run it on a VI that is not running\3B it saves the VI (closing the last reference would unload it and drop the changes).">
+  <Control _name="VI" description="The VI whose control is fitted (open in memory)." outputs="value:vi.value" type="path" uid="vi" uid_parent="root" value=""/>
+  <Control _name="Label" description="Label of the control." outputs="value:cl.value" type="string" uid="cl" uid_parent="root" value=""/>
+  <Control _name="Width Bar" description="Index in Splitters[] of the vertical bar beside the pane." outputs="value:wbi.value" type="int32" uid="wbi" uid_parent="root" value="0"/>
+  <Control _name="Pane Left Of Bar" description="True\3A the bar is the pane's right edge (a left pane)\3B false\3A its left edge." outputs="value:plb.value" type="bool" uid="plb" uid_parent="root" value="false"/>
+  <Control _name="Height Bar" description="Index in Splitters[] of the horizontal bar above the pane\3B -1\3A no bar sets the pane's height (the height stays as it is)." outputs="value:hbi.value" type="int32" uid="hbi" uid_parent="root" value="1"/>
+  <Control _name="Cell Width" description="Multicolumn listbox\3A width of the first column (0 keeps it)." outputs="value:cw.value" type="int32" uid="cw" uid_parent="root" value="0"/>
+  <Control _name="Row Height" description="Multicolumn listbox\3A height of every row (with Cell Width)." outputs="value:rh.value" type="int32" uid="rh" uid_parent="root" value="0"/>
+  <Control _name="Rows" description="Multicolumn listbox\3A number of visible rows (with Cell Width)\3B with the cell size it brings the listbox close to the pane's size first\2C so the bars move only a few pixels (a bar that would make a pane smaller than its minimum answers error 1358)." outputs="value:nr.value" type="int32" uid="nr" uid_parent="root" value="0"/>
+  <Node _name="Open VI Reference" inputs="vi path:vi.value" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Front Panel" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:,error out:fp.error out,Front Panel:fp.fp" type="{LV.VI}" uid="fp" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Controls[],read+Splitters[]" inputs="reference:fp.fp,error in (no error):fp.error out" outputs="reference out:,error out:pc.error out,Controls[]:pc.c,Splitters[]:pc.s" type="{LV.Panel}" uid="pc" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Labels" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:pc.c" mode="index" outputs="value:c.value" uid="c" uid_parent="fl"/>
+    <Node _name="Property Node" fields="read+Label.Text" inputs="reference:c.value" outputs="reference out:,error out:,Label.Text:lt.t" type="{LV.Control}" uid="lt" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:lt.t" mode="index" outputs="value:la.value" uid="la" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Search 1D Array" inputs="1D array:la.value,element:cl.value" outputs="index of element:sa.index of element" uid="sa" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pc.c,index 0:sa.index of element" outputs="element:ic.element" uid="ic" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+OwningPane" inputs="reference:ic.element,error in (no error):pc.error out" outputs="OwningPane:op.p,reference out:,error out:op.error out" type="{LV.Control}" uid="op" uid_parent="root"/>
+  <Constant outputs="value:org.value" type="cluster{int16.Horizontal,int16.Vertical}" uid="org" uid_parent="root" value="[0,0]"/>
+  <Node _name="Property Node" fields="write+Origin" inputs="reference:op.p,error in (no error):op.error out,Origin:org.value" outputs="reference out:,error out:wo.error out" type="{LV.Pane}" uid="wo" uid_parent="root"/>
+  <Constant outputs="value:p0.value" type="cluster{int32.Left,int32.Top}" uid="p0" uid_parent="root" value="[0,0]"/>
+  <Node _name="Property Node" fields="write+Position" inputs="reference:ic.element,error in (no error):wo.error out,Position:p0.value" outputs="reference out:,error out:wp.error out" type="{LV.Control}" uid="wp" uid_parent="root"/>
+  <Constant outputs="value:m0.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="m0" uid_parent="root" value="0"/>
+  <Constant outputs="value:m2.value" type="uint16{No Scaling,Scale All Objects,Scale Single Object}" uid="m2" uid_parent="root" value="2"/>
+  <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:op.p,error in (no error):wp.error out,ScalingMode:m0.value,ScalableObj:ic.element" outputs="reference out:,error out:s0.error out" uid="s0" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Bounds" inputs="reference:op.p,error in (no error):cs_e.value" outputs="reference out:,error out:pb.error out,Bounds:pb.b" type="{LV.Pane}" uid="pb" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Bounds" inputs="reference:ic.element,error in (no error):pb.error out" outputs="reference out:,error out:cb.error out,Bounds:cb.b" type="{LV.Control}" uid="cb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:pb.b" outputs="Width:pu.w,Height:pu.h" uid="pu" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:cb.b" outputs="Width:cu.w,Height:cu.h" uid="cu" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:pu.w" outputs="32bit integer:pwi.i" uid="pwi" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:pu.h" outputs="32bit integer:phi.i" uid="phi" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:cu.w" outputs="32bit integer:cwi.i" uid="cwi" uid_parent="root"/>
+  <Node _name="To Long Integer" inputs="number:cu.h" outputs="32bit integer:chi.i" uid="chi" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:pwi.i,y:cwi.i" outputs="x-y:dx.element" uid="dx" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:phi.i,y:chi.i" outputs="x-y:dy.element" uid="dy" uid_parent="root"/>
+  <Node _name="Subtract" inputs="x:cwi.i,y:pwi.i" outputs="x-y:ndx.-x" uid="ndx" uid_parent="root"/>
+  <Node _name="Select" inputs="t:ndx.-x,s:plb.value,f:dx.element" outputs="s? t\3Af:mvx.s? t\3Af" uid="mvx" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pc.s,index 0:wbi.value" outputs="element:bw.element" uid="bw" uid_parent="root"/>
+  <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Node _name="Less Than 0?" inputs="x:hbi.value" outputs="x &lt; 0?:nhb.x &lt; 0?" uid="nhb" uid_parent="root"/>
+  <Node _name="Select" inputs="t:i0.value,s:nhb.x &lt; 0?,f:dy.element" outputs="s? t\3Af:dye.s? t\3Af" uid="dye" uid_parent="root"/>
+  <Node _name="Max &amp; Min" inputs="x:hbi.value,y:i0.value" outputs="max(x\2Cy):hbx.max,min(x\2Cy):" uid="hbx" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:pc.s,index 0:hbx.max" outputs="element:bh.element" uid="bh" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Position" inputs="reference:bw.element,error in (no error):cb.error out" outputs="reference out:,error out:rw.error out,Position:rw.pos" type="{LV.Splitter}" uid="rw" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Position" inputs="reference:bh.element,error in (no error):rw.error out" outputs="reference out:,error out:rh2.error out,Position:rh2.pos" type="{LV.Splitter}" uid="rh2" uid_parent="root"/>
+  <Node _name="Add" inputs="x:rw.pos,y:mvx.s? t\3Af" outputs="x+y:nw.x+y" uid="nw" uid_parent="root"/>
+  <Node _name="Add" inputs="x:rh2.pos,y:dye.s? t\3Af" outputs="x+y:nh.x+y" uid="nh" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Position" inputs="reference:bw.element,error in (no error):rh2.error out,Position:nw.x+y" outputs="reference out:,error out:mw.error out" type="{LV.Splitter}" uid="mw" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Position" inputs="reference:bh.element,error in (no error):mw.error out,Position:nh.x+y" outputs="reference out:,error out:mh.error out" type="{LV.Splitter}" uid="mh" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Set Scaling" type="{LV.Pane}" inputs="reference:op.p,error in (no error):mh.error out,ScalingMode:m2.value,ScalableObj:ic.element" outputs="reference out:,error out:s2.error out" uid="s2" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Position" inputs="reference:bw.element,error in (no error):s2.error out,Position:rw.pos" outputs="reference out:,error out:bw2.error out" type="{LV.Splitter}" uid="bw2" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Position" inputs="reference:bh.element,error in (no error):bw2.error out,Position:rh2.pos" outputs="reference out:,error out:wb.error out" type="{LV.Splitter}" uid="wb" uid_parent="root"/>
+  <Node _name="Greater Than 0?" inputs="x:cw.value" outputs="x &gt; 0?:hc.x &gt; 0?" uid="hc" uid_parent="root"/>
+  <Constant outputs="value:mcl.value" type="ref{LV.MulticolumnListbox}" uid="mcl" uid_parent="root" value=""/>
+  <Structure _name="Case Structure" selectin="hc.x &gt; 0?" uid="cs" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:s0.error out" uid="csi1" uid_parent="cs"/>
+    <Tunnel _id="In2" inputs="value:ic.element" uid="csi2" uid_parent="cs"/>
+    <Tunnel _id="In3" inputs="value:mcl.value" uid="csi3" uid_parent="cs"/>
+    <Tunnel _id="In4" inputs="value:cw.value" uid="csi4" uid_parent="cs"/>
+    <Tunnel _id="In5" inputs="value:rh.value" uid="csi5" uid_parent="cs"/>
+    <Tunnel _id="In6" inputs="value:nr.value" uid="csi6" uid_parent="cs"/>
+    <CaseFrame label="Set the column width and the row height" selector="True" selectout="" uid="cst" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:t_e.value" uid="t_e" uid_parent="cst"/>
+      <Tunnel _id="In2" outputs="value:t_c.value" uid="t_c" uid_parent="cst"/>
+      <Tunnel _id="In3" outputs="value:t_k.value" uid="t_k" uid_parent="cst"/>
+      <Tunnel _id="In4" outputs="value:t_w.value" uid="t_w" uid_parent="cst"/>
+      <Tunnel _id="In5" outputs="value:t_h.value" uid="t_h" uid_parent="cst"/>
+      <Tunnel _id="In6" outputs="value:t_n.value" uid="t_n" uid_parent="cst"/>
+      <Node _name="To More Specific Class" inputs="target class:t_k.value,reference:t_c.value,error in:t_e.value" outputs="specific class reference:ms.ref,error out:ms.error out" uid="ms" uid_parent="cst"/>
+      <Constant outputs="value:ac.value" type="cluster{int32.Row,int32.Column}" uid="ac" uid_parent="cst" value="[-2,0]"/>
+      <Node _name="Bundle" inputs="element 0:t_w.value,element 1:t_h.value" outputs="output cluster:bz.output cluster" uid="bz" uid_parent="cst"/>
+      <Node _name="Property Node" fields="write+Active Cell\3AActive Cell,write+Active Cell\3ACell Size" inputs="reference:ms.ref,error in (no error):ms.error out,Active Cell\3AActive Cell:ac.value,Active Cell\3ACell Size:bz.output cluster" outputs="reference out:,error out:cz.error out" type="{LV.MulticolumnListbox}" uid="cz" uid_parent="cst"/>
+      <Constant outputs="value:nv.value" type="bool" uid="nv" uid_parent="cst" value="false"/>
+      <Constant outputs="value:n1.value" type="int32" uid="n1" uid_parent="cst" value="1"/>
+      <Node _name="Property Node" fields="write+Visible Items\3AColumn Headers Visible,write+Number of Columns,write+Number of Rows,write+Visible Items\3AVertical Scrollbar Visible" inputs="reference:ms.ref,error in (no error):cz.error out,Visible Items\3AColumn Headers Visible:nv.value,Number of Columns:n1.value,Number of Rows:t_n.value,Visible Items\3AVertical Scrollbar Visible:nv.value" outputs="reference out:,error out:nz.error out" type="{LV.MulticolumnListbox}" uid="nz" uid_parent="cst"/>
+      <Tunnel _id="Out1" inputs="value:nz.error out" uid="cst_o1" uid_parent="cst"/>
+    </CaseFrame>
+    <CaseFrame label="Keep them" selector="False" selectout="" uid="csf" uid_parent="cs">
+      <Tunnel _id="In1" outputs="value:f_e.value" uid="f_e" uid_parent="csf"/>
+      <Tunnel _id="In2" outputs="value:" uid="f_c" uid_parent="csf"/>
+      <Tunnel _id="In3" outputs="value:" uid="f_k" uid_parent="csf"/>
+      <Tunnel _id="In4" outputs="value:" uid="f_w" uid_parent="csf"/>
+      <Tunnel _id="In5" outputs="value:" uid="f_h" uid_parent="csf"/>
+      <Tunnel _id="In6" outputs="value:" uid="f_n" uid_parent="csf"/>
+      <Tunnel _id="Out1" inputs="value:f_e.value" uid="csf_o1" uid_parent="csf"/>
+    </CaseFrame>
+    <Tunnel _id="Out1" outputs="value:cs_e.value" uid="cs_e" uid_parent="cs"/>
+  </Structure>
+  <Node _name="Property Node" fields="read+Bounds" inputs="reference:ic.element,error in (no error):wb.error out" outputs="reference out:,error out:fb.error out,Bounds:fb.b" type="{LV.Control}" uid="fb" uid_parent="root"/>
+  <Node _name="Property Node" fields="read+Bounds" inputs="reference:op.p,error in (no error):fb.error out" outputs="reference out:,error out:fpb.error out,Bounds:fpb.b" type="{LV.Pane}" uid="fpb" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:fb.b" outputs="Width:fbu.w,Height:fbu.h" uid="fbu" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="Width,Height" inputs="input cluster:fpb.b" outputs="Width:fpu.w,Height:fpu.h" uid="fpu" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:fbu.w,element:fbu.h" outputs="appended array:fba.array" uid="fba" uid_parent="root"/>
+  <Node _name="Build Array" inputs="element:fpu.w,element:fpu.h" outputs="appended array:fpa.array" uid="fpa" uid_parent="root"/>
+  <Indicator _name="control size" description="Width and height of the control afterwards." inputs="value:fba.array" type="array{int32}" uid="o1" uid_parent="root" value="[]"/>
+  <Indicator _name="pane size" description="Width and height of its pane (the same when it fits)." inputs="value:fpa.array" type="array{int32}" uid="o2" uid_parent="root" value="[]"/>
+  <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):fpb.error out" outputs="reference out:,error out:svi.error out" uid="svi" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:ov.vi reference,error in (no error):svi.error out" outputs="error out:cr.error out" uid="cr" uid_parent="root"/>
+  <Indicator _name="error out" inputs="value:cr.error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]"/>
+</VI>

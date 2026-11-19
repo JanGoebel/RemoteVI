@@ -18,9 +18,14 @@ Thumbs.db
 *.swp
 tests/caraya/RemoteVI Caraya Report.xml
 
-# intermediate files of the complex fixture build (tests/fixtures/aixml/compose_complex.py)
+# intermediate files of the complex fixture build (tools/aixml/Fixtures/compose_complex.py)
 tests/fixtures/build/Complex Panel.vi
 tests/fixtures/build/Complex Scaffold.vi
 __pycache__/
 # LabVIEW 2026 keeps per-user project state next to the project
 *.UserState/
+
+# example executables staged by tools/build-package.ps1
+examples/Executables/RemoteVI Demo/
+examples/Executables/RemoteVI Server/
+examples/Executables/RemoteVI Application Example/

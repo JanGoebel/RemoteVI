@@ -1,0 +1,16 @@
+<VI _name="Close Fixture.vi" description="Closes the front panel of tests\5Cfixtures\5CRemoteVI Fixture.vi (next to this VI) after aborting it if it still runs\2C so the fixture and the RemoteVI VIs it calls leave memory: VIPM refuses to build the package while source VIs are open\2C and a fixture kept in memory keeps its last values. Its connector pane is the one NI's LabVIEW CLI expects from RunVI (pattern 4815\2C Command line args at 11\2C Output at 2\2C Return code at 3)\3B tools\5Crun-lv-integration.ps1 runs it after the suite. Return code is the error code of closing the panel.">
+  <Control _name="Command line args" conIdx="11" connection="recommended" description="Not used." outputs="value:args.value" type="array{string}" uid="args" uid_parent="root" value="[]"/>
+  <FreeLabel comment="Abort the fixture if it still runs (an error here only means it is idle)\2C then close its panel" uid="lbl1" uid_parent="root"/>
+  <Node _name="Current VI's Path" outputs="path:cp.path" uid="cp" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:cp.path" outputs="stripped path:sp.sp,name:" uid="sp" uid_parent="root"/>
+  <Constant outputs="value:fn.value" type="string" uid="fn" uid_parent="root" value="RemoteVI Fixture.vi"/>
+  <Node _name="Build Path" inputs="name or relative path:fn.value,base path:sp.sp" outputs="appended path:bp.p" uid="bp" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:bp.p" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Abort VI" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:ab.ref,error out:ab.err" uid="ab" uid_parent="root"/>
+  <Call target="Clear Errors.vi" inputs="error in (no error):ab.err" outputs="error out:ce.error out" uid="ce" uid_parent="root"/>
+  <Node _name="Invoke Node" target="FP.Close" type="{LV.VI}" inputs="reference:ab.ref,error in (no error):ce.error out" outputs="reference out:fc.ref,error out:fc.err" uid="fc" uid_parent="root"/>
+  <Node _name="Close Reference" inputs="reference:fc.ref,error in (no error):fc.err" outputs="error out:cr.err" uid="cr" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="code,source" inputs="input cluster:cr.err" outputs="code:ub.code,source:ub.source" uid="ub" uid_parent="root"/>
+  <Indicator _name="Output" conIdx="2" connection="recommended" description="Empty\2C or the source of the error." inputs="value:ub.source" type="string" uid="o_out" uid_parent="root" value=""/>
+  <Indicator _name="Return code" conIdx="3" connection="recommended" description="0 when the panel is closed\2C else the error code." inputs="value:ub.code" type="int32" uid="o_rc" uid_parent="root" value="0"/>
+</VI>

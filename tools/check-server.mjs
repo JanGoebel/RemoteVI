@@ -5,7 +5,8 @@
 //   node tools/check-server.mjs [--url http://127.0.0.1:8088/?t=<token>] [--png first.png]
 //        [--click x,y]   also click at panel pixel (x,y) and expect a changed frame
 //
-// The URL is the share's full link: its ?t=<token> is the access token (docs/security.md).
+// The URL is the share's full link: its ?t=<token> is the access token (docs/security.md). A link
+// without t is an open share (token *): then requests without or with a wrong token must be let in.
 // Exit code 0 when every check passes. Prints one line per check.
 
 import net from 'node:net';
@@ -24,6 +25,9 @@ const base = new URL(values.url);
 const host = base.hostname;
 const port = Number(base.port || 80);
 const token = base.searchParams.get('t') ?? '';
+const open = !base.searchParams.has('t');
+const denied = open ? /^HTTP\/1\.[01] 200/ : /^HTTP\/1\.[01] 403/;
+const deniedText = open ? '200 (open share)' : '403';
 const q = `?t=${encodeURIComponent(token)}`;
 let failures = 0;
 
@@ -104,23 +108,24 @@ function decodeFrame(buf) {
 // --- checks ------------------------------------------------------------------
 
 const noToken = await raw(`GET / HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
-check(/^HTTP\/1\.[01] 403/.test(noToken), 'GET / without the access token -> 403', noToken.split('\r\n')[0]);
+check(denied.test(noToken), `GET / without the access token -> ${deniedText}`, noToken.split('\r\n')[0]);
 const wrong = await raw(`GET /?t=${token}x HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
-check(/^HTTP\/1\.[01] 403/.test(wrong), 'GET / with a wrong token -> 403', wrong.split('\r\n')[0]);
+check(denied.test(wrong), `GET / with a wrong token -> ${deniedText}`, wrong.split('\r\n')[0]);
 const wsNoToken = await raw(`GET /ws HTTP/1.1\r\nHost: ${host}:${port}\r\nUpgrade: websocket\r\n`
   + 'Connection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n\r\n');
-check(/^HTTP\/1\.[01] 403/.test(wsNoToken), 'WebSocket upgrade without the token -> 403', wsNoToken.split('\r\n')[0]);
+check((open ? /^HTTP\/1\.[01] 101/ : /^HTTP\/1\.[01] 403/).test(wsNoToken), `WebSocket upgrade without the token -> ${open ? '101 (open share)' : '403'}`,
+  wsNoToken.split('\r\n')[0]);
 const index = await raw(`GET /${q} HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
 check(/^HTTP\/1\.[01] 200/.test(index), 'GET / -> 200', index.split('\r\n')[0]);
 check(/<canvas id="panel"/.test(index), 'GET / serves the web client');
 check(/content-security-policy:/i.test(index) && /x-content-type-options: nosniff/i.test(index), 'security headers present');
 const csp = /content-security-policy: ([^\r\n]*)/i.exec(index)?.[1] ?? '';
 check(/img-src[^;]*blob:/.test(csp), 'CSP lets the client show popup images (img-src blob:)', csp);
-// The toolkit serves an EMBEDDED copy of web/index.html; it must be regenerated when the file changes.
+// The toolkit serves an EMBEDDED copy of source/Web/index.html; it must be regenerated when the file changes.
 const body = index.slice(index.indexOf('\r\n\r\n') + 4);
-const local = fs.readFileSync(new URL('../web/index.html', import.meta.url), 'latin1');
-check(body === local, 'served client is the current web/index.html',
-  body === local ? '' : `served ${body.length} bytes, file ${local.length} - run scripts/gen-index-html-vi.mjs --compose`);
+const local = fs.readFileSync(new URL('../source/Web/index.html', import.meta.url), 'latin1');
+check(body === local, 'served client is the current source/Web/index.html',
+  body === local ? '' : `served ${body.length} bytes, file ${local.length} - run tools/gen-index-html-vi.mjs --compose`);
 
 const notFound = await raw(`GET /nope HTTP/1.1\r\nHost: ${host}:${port}\r\n\r\n`);
 check(/^HTTP\/1\.[01] 404/.test(notFound), 'GET /nope -> 404', notFound.split('\r\n')[0]);

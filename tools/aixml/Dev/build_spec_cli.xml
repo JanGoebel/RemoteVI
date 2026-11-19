@@ -1,0 +1,22 @@
+<VI _name="Build Spec CLI.vi" description="Builds one build specification of a project for NI's LabVIEW CLI (RunVI): Command line args holds the project path and the build specification's name (target My Computer). Output lists the generated files, one per line, or the error\3B Return code is 0 on success\2C else the error code. tools\5Cbuild-package.ps1 runs it with LabVIEWCLI -OperationName RunVI because the CLI's own ExecuteBuildSpec operation\2C installed with a newer LabVIEW\2C does not load in LabVIEW 2020 (error 1498). Its connector pane is the one RunVI expects (pattern 4815\2C Command line args at 11\2C Output at 2\2C Return code at 3).">
+  <Control _name="Command line args" conIdx="11" connection="recommended" description="Project path\2C build specification name." outputs="value:args.value" type="array{string}" uid="args" uid_parent="root" value="[]"/>
+  <Constant outputs="value:i0.value" type="int32" uid="i0" uid_parent="root" value="0"/>
+  <Constant outputs="value:i1.value" type="int32" uid="i1" uid_parent="root" value="1"/>
+  <Node _name="Index Array" inputs="array:args.value,index 0:i0.value" outputs="element:a0.e" uid="a0" uid_parent="root"/>
+  <Node _name="Index Array" inputs="array:args.value,index 0:i1.value" outputs="element:a1.e" uid="a1" uid_parent="root"/>
+  <Node _name="String To Path" inputs="string:a0.e" outputs="path:pp.path" uid="pp" uid_parent="root"/>
+  <Constant outputs="value:t.value" type="string" uid="t" uid_parent="root" value="My Computer"/>
+  <Call inputs="Path to project:pp.path,Name of build specification (if empty\3A build all):a1.e,Name of target (My Computer):t.value" outputs="Generated files:b.files,error out:b.err" target="BuildTargetBuildSpecification.vi" uid="b" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="One generated file per line" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:b.files" mode="index" outputs="value:f1.value" uid="f1" uid_parent="fl"/>
+    <Node _name="Path To String" inputs="path:f1.value" outputs="string:ps.s" uid="ps" uid_parent="fl"/>
+    <Constant outputs="value:nl.value" type="string" uid="nl" uid_parent="fl" value="\0D\0A"/>
+    <Node _name="Concatenate Strings" inputs="string:ps.s,string:nl.value" outputs="concatenated string:ln.s" uid="ln" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ln.s" mode="index" outputs="value:lines.v" uid="lines" uid_parent="fl"/>
+  </Structure>
+  <Node _name="Concatenate Strings" inputs="string:lines.v" outputs="concatenated string:cs.s" uid="cs" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status,code,source" inputs="input cluster:b.err" outputs="status:ub.status,code:ub.code,source:ub.source" uid="ub" uid_parent="root"/>
+  <Node _name="Select" inputs="t:ub.source,s:ub.status,f:cs.s" outputs="s? t\3Af:out.v" uid="out" uid_parent="root"/>
+  <Indicator _name="Output" conIdx="2" connection="recommended" description="The generated files\2C or the error's source." inputs="value:out.v" type="string" uid="o_out" uid_parent="root" value=""/>
+  <Indicator _name="Return code" conIdx="3" connection="recommended" description="0 on success\2C else the error code." inputs="value:ub.code" type="int32" uid="o_rc" uid_parent="root" value="0"/>
+</VI>

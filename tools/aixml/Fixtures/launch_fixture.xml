@@ -1,0 +1,47 @@
+<VI _name="Launch Fixture.vi" description="Starts tests\5Cfixtures\5CRemoteVI Fixture.vi (next to this VI) with its values reset to default (a fixture still in memory would keep the last run's) and its front panel open\2C without waiting for it\2C then asks RemoteVI Status.vi every 500 ms until the fixture shares port 8089 and returns that share's link with its access token in Output (Return code 0)\3B after 60 s Return code is 1. Its connector pane is the one NI's LabVIEW CLI expects from RunVI (pattern 4815\2C Command line args at 11\2C Output at 2\2C Return code at 3)\2C so tools\5Crun-lv-integration.ps1 starts the fixture with LabVIEWCLI -OperationName RunVI and reads the link from its output - no ActiveX.">
+  <Control _name="Command line args" conIdx="11" connection="recommended" description="Not used." outputs="value:args.value" type="array{string}" uid="args" uid_parent="root" value="[]"/>
+  <FreeLabel comment="Start the fixture next to this VI\2C panel open" uid="lbl1" uid_parent="root"/>
+  <Node _name="Current VI's Path" outputs="path:cp.path" uid="cp" uid_parent="root"/>
+  <Node _name="Strip Path" inputs="path:cp.path" outputs="stripped path:sp.sp,name:" uid="sp" uid_parent="root"/>
+  <Constant outputs="value:fn.value" type="string" uid="fn" uid_parent="root" value="RemoteVI Fixture.vi"/>
+  <Node _name="Build Path" inputs="name or relative path:fn.value,base path:sp.sp" outputs="appended path:bp.p" uid="bp" uid_parent="root"/>
+  <Node _name="Open VI Reference" inputs="vi path:bp.p" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="root"/>
+  <Constant outputs="value:t.value" type="bool" uid="t" uid_parent="root" value="true"/>
+  <Constant outputs="value:f.value" type="bool" uid="f" uid_parent="root" value="false"/>
+  <Node _name="Invoke Node" target="Default Vals.Reinit All" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:ri.ref,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Node _name="Property Node" fields="write+Front Panel Window\3AOpen" inputs="reference:ri.ref,error in (no error):ri.err,Front Panel Window\3AOpen:t.value" outputs="reference out:pn.reference out,error out:pn.error out" type="{LV.VI}" uid="pn" uid_parent="root"/>
+  <Node _name="Invoke Node" target="Run VI" type="{LV.VI}" inputs="reference:pn.reference out,error in (no error):pn.error out,Wait until done:f.value,Auto Dispose Ref:t.value" outputs="reference out:,error out:run.error out" uid="run" uid_parent="root"/>
+  <Node _name="Unbundle By Name" fields="status" inputs="input cluster:run.error out" outputs="status:rs.status" uid="rs" uid_parent="root"/>
+  <Constant outputs="value:port.value" type="uint16" uid="port" uid_parent="root" value="8089"/>
+  <Constant outputs="value:last.value" type="int32" uid="last" uid_parent="root" value="119"/>
+  <Structure _name="While Loop" count="wl.value" label="Until the fixture shares port 8089 (at most 60 s)" uid="wl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:port.value" outputs="value:l_port.value" uid="l_port" uid_parent="wl"/>
+    <Tunnel _id="In2" inputs="value:last.value" outputs="value:l_last.value" uid="l_last" uid_parent="wl"/>
+    <Tunnel _id="In3" inputs="value:rs.status" outputs="value:l_err.value" uid="l_err" uid_parent="wl"/>
+    <Constant outputs="value:ms.value" type="uint32" uid="ms" uid_parent="wl" value="500"/>
+    <Node _name="Wait (ms)" inputs="milliseconds to wait:ms.value" outputs="millisecond timer value:" uid="wt" uid_parent="wl"/>
+    <Call outputs="servers:st.servers" target="RemoteVI Status.vi" uid="st" uid_parent="wl"/>
+    <Structure _name="For Loop" count="" label="Port and link of each share" maxin="" maxout="" uid="fl" uid_parent="wl">
+      <Tunnel _id="In1" inputs="value:st.servers" mode="index" outputs="value:sv.value" uid="sv" uid_parent="fl"/>
+      <Node _name="Unbundle By Name" fields="port,url" inputs="input cluster:sv.value" outputs="port:ub.port,url:ub.url" uid="ub" uid_parent="fl"/>
+      <Tunnel _id="Out1" inputs="value:ub.port" mode="index" outputs="value:ports.v" uid="ports" uid_parent="fl"/>
+      <Tunnel _id="Out2" inputs="value:ub.url" mode="index" outputs="value:urls.v" uid="urls" uid_parent="fl"/>
+    </Structure>
+    <Node _name="Search 1D Array" inputs="1D array:ports.v,element:l_port.value" outputs="index of element:sa.i" uid="sa" uid_parent="wl"/>
+    <Node _name="Index Array" inputs="array:urls.v,index 0:sa.i" outputs="element:ia.e" uid="ia" uid_parent="wl"/>
+    <Node _name="Greater Or Equal To 0?" inputs="x:sa.i" outputs="x &gt;= 0?:found.v" uid="found" uid_parent="wl"/>
+    <Node _name="Greater Or Equal?" inputs="x:wl.value,y:l_last.value" outputs="x &gt;= y?:late.v" uid="late" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:found.v,y:late.v" outputs="x .or. y?:o1.v" uid="o1" uid_parent="wl"/>
+    <Node _name="Or" inputs="x:o1.v,y:l_err.value" outputs="x .or. y?:stop.v" uid="stop" uid_parent="wl"/>
+    <Condition inputs="value:stop.v" uid="wlc" uid_parent="wl" value="stop"/>
+    <Tunnel _id="Out1" inputs="value:ia.e" outputs="value:link.value" uid="link" uid_parent="wl"/>
+    <Tunnel _id="Out2" inputs="value:found.v" outputs="value:ok.value" uid="ok" uid_parent="wl"/>
+  </Structure>
+  <Constant outputs="value:msg.value" type="string" uid="msg" uid_parent="root" value="RemoteVI Fixture.vi did not share port 8089 within 60 s"/>
+  <Node _name="Select" inputs="t:link.value,s:ok.value,f:msg.value" outputs="s? t\3Af:out.v" uid="out" uid_parent="root"/>
+  <Constant outputs="value:c0.value" type="int32" uid="c0" uid_parent="root" value="0"/>
+  <Constant outputs="value:c1.value" type="int32" uid="c1" uid_parent="root" value="1"/>
+  <Node _name="Select" inputs="t:c0.value,s:ok.value,f:c1.value" outputs="s? t\3Af:rc.v" uid="rc" uid_parent="root"/>
+  <Indicator _name="Output" conIdx="2" connection="recommended" description="The fixture's link with its access token\2C or why it is missing." inputs="value:out.v" type="string" uid="o_out" uid_parent="root" value=""/>
+  <Indicator _name="Return code" conIdx="3" connection="recommended" description="0 when the fixture shares port 8089\2C else 1." inputs="value:rc.v" type="int32" uid="o_rc" uid_parent="root" value="0"/>
+</VI>

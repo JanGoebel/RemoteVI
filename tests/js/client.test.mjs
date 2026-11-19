@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const html = fs.readFileSync(new URL('../../web/index.html', import.meta.url));
+const html = fs.readFileSync(new URL('../../source/Web/index.html', import.meta.url));
 
 test('web client is pure ASCII, so the G string constant holds exactly these bytes', () => {
   const offending = [...html.entries()].filter(([, b]) => b > 0x7f).map(([i]) => i);

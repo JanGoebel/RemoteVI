@@ -109,7 +109,7 @@ function paintRects(data, o, n, fb, w) {
   }
 }
 
-/** A protocol-v2 client like web/index.html: acks frames, keeps the latest overlay. With { fb: true } it also
+/** A protocol-v2 client like source/Web/index.html: acks frames, keeps the latest overlay. With { fb: true } it also
  *  keeps the picture: c.fb (frame, 0xRRGGBB per pixel, c.width wide) and c.wfb (window id -> {w, h, fb}). */
 export async function connect({ fb = false } = {}) {
   const ws = new WebSocket(wsUrl());
@@ -242,7 +242,7 @@ export function splitters(c, { y, x }) {
   return { vertical: vs, horizontal: hs };
 }
 
-/** Drag splitter bar `bar` (an entry of the splitters message) as web/index.html does: the client moves
+/** Drag splitter bar `bar` (an entry of the splitters message) as source/Web/index.html does: the client moves
  *  the bar itself and sends `s <id> <pos>` with the new left (vertical) or top (horizontal) edge. */
 export async function dragSplitter(c, bar, delta, { settle = 1200 } = {}) {
   const pos = Math.max(bar.min, Math.min(bar.max, (bar.vertical ? bar.x : bar.y) + delta));

@@ -1,0 +1,33 @@
+﻿<VI _name="Relink Save.vi" description="Dev helper for moving VIs: opens every VI listed in the preload file (one path per line) and keeps it in memory, then opens every VI in the items file from its NEW location and saves it, so LabVIEW links its subVIs to the preloaded VIs of the same name and stores the new relative paths. Move the files first (git mv), list their callees as preload. Returns the error code per item; closes everything at the end.">
+  <Control _name="preload file" type="path" uid="pf" uid_parent="root" value="" outputs="value:pf.value"/>
+  <Control _name="items file" type="path" uid="if" uid_parent="root" value="" outputs="value:if.value"/>
+  <Constant outputs="value:all.value" type="int32" uid="all" uid_parent="root" value="-1"/>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):pf.value,count:all.value" outputs="text:rp.text,error out:rp.err" uid="rp" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Preload" maxin="" maxout="" uid="pl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:rp.text" mode="index" outputs="value:ps.s" uid="ps" uid_parent="pl"/>
+    <Node _name="String To Path" inputs="string:ps.s" outputs="path:pp.path" uid="pp" uid_parent="pl"/>
+    <Node _name="Open VI Reference" inputs="vi path:pp.path" outputs="vi reference:po.vi reference,error out:po.error out" uid="po" uid_parent="pl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:po.error out" outputs="code:pu.code" uid="pu" uid_parent="pl"/>
+    <Tunnel _id="Out1" inputs="value:po.vi reference" mode="index" outputs="value:prefs.v" uid="prefs" uid_parent="pl"/>
+    <Tunnel _id="Out2" inputs="value:pu.code" mode="index" outputs="value:pcodes.v" uid="pcodes" uid_parent="pl"/>
+  </Structure>
+  <Node _name="Read from Text File" readLines="true" inputs="file (use dialog):if.value,count:all.value,error in:rp.err" outputs="text:ri.text,error out:ri.err" uid="ri" uid_parent="root"/>
+  <Structure _name="For Loop" count="" label="Open from the new place and save" maxin="" maxout="" uid="fl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:ri.text" mode="index" outputs="value:it.s" uid="it" uid_parent="fl"/>
+    <Tunnel _id="In2" inputs="value:pcodes.v" outputs="value:" uid="seq1" uid_parent="fl"/>
+    <Node _name="String To Path" inputs="string:it.s" outputs="path:itp.path" uid="itp" uid_parent="fl"/>
+    <Node _name="Open VI Reference" inputs="vi path:itp.path" outputs="vi reference:ov.vi reference,error out:ov.error out" uid="ov" uid_parent="fl"/>
+    <Node _name="Invoke Node" target="Save.Instrument" type="{LV.VI}" inputs="reference:ov.vi reference,error in (no error):ov.error out" outputs="reference out:sv.ref,error out:sv.err" uid="sv" uid_parent="fl"/>
+    <Node _name="Close Reference" inputs="reference:sv.ref,error in (no error):sv.err" outputs="error out:cr.err" uid="cr" uid_parent="fl"/>
+    <Node _name="Unbundle By Name" fields="code" inputs="input cluster:cr.err" outputs="code:ub.code" uid="ub" uid_parent="fl"/>
+    <Tunnel _id="Out1" inputs="value:ub.code" mode="index" outputs="value:co.codes" uid="co" uid_parent="fl"/>
+  </Structure>
+  <Structure _name="For Loop" count="" label="Close the preloaded VIs" maxin="" maxout="" uid="cl" uid_parent="root">
+    <Tunnel _id="In1" inputs="value:prefs.v" mode="index" outputs="value:cr2r.v" uid="cr2r" uid_parent="cl"/>
+    <Tunnel _id="In2" inputs="value:co.codes" outputs="value:" uid="seq2" uid_parent="cl"/>
+    <Node _name="Close Reference" inputs="reference:cr2r.v" outputs="error out:" uid="cr2" uid_parent="cl"/>
+  </Structure>
+  <Indicator _name="preload codes" type="array{int32}" uid="opc" uid_parent="root" value="[]" inputs="value:pcodes.v"/>
+  <Indicator _name="codes" type="array{int32}" uid="oc" uid_parent="root" value="[]" inputs="value:co.codes"/>
+  <Indicator _name="error out" type="cluster{bool.status,int32.code,string.source}" uid="eo" uid_parent="root" value="[false,0,]" inputs="value:ri.err"/>
+</VI>

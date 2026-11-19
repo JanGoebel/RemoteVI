@@ -137,7 +137,7 @@ export function encodeOverlay(popups) {
  *   "m <msg> <x> <y> <wParam>"   mouse message at panel coordinates
  *   "k <msg> <wParam> <lParam>"  keyboard message
  *   "a <seq>"                    frame acknowledged
- *   "x <id>"                     close window id (docs/protocol.md 7)
+ *   "x <id>"                     close window id (docs/protocol.md 7); 0 = the shared window
  *   "s <id> <pos>"               move splitter bar id so its left (vertical bar) or top
  *                                (horizontal bar) edge is at frame coordinate pos (3.3)
  * Returns null for anything malformed; the server ignores those.

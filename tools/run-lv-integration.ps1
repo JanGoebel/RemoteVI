@@ -48,9 +48,14 @@ catch {
   $lv = New-Object -ComObject 'LabVIEW.Application'
 }
 # GetVIReference's arity differs between LabVIEW versions
+# A LabVIEW that COM has just started does not open VIs until it has loaded
 $vi = $null
-foreach ($a in @(@($fixture), @($fixture, ''), @($fixture, '', $false))) {
-  try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
+$deadline = (Get-Date).AddSeconds(60)
+while (-not $vi -and (Get-Date) -lt $deadline) {
+  foreach ($a in @(@($fixture), @($fixture, ''), @($fixture, '', $false))) {
+    try { $vi = $lv.GetVIReference.Invoke($a); if ($vi) { break } } catch { }
+  }
+  if (-not $vi) { Start-Sleep -Seconds 2 }
 }
 if (-not $vi) { throw "Cannot open $fixture over LabVIEW's ActiveX server. $(ActiveXFacts)" }
 $vi.FPWinOpen = $true

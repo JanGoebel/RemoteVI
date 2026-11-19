@@ -74,7 +74,9 @@ function Invoke-BuildSpec([string]$Spec) {
         if (Get-Process LabVIEW -ErrorAction SilentlyContinue) { throw "LabVIEW runs but is not reachable over ActiveX (started by VIPM, G-CLI or by hand). Quit it and run this again." }
         $lv = New-Object -ComObject 'LabVIEW.Application'
     }
-    $lvVersion = [string]$lv.Version
+    # A LabVIEW that COM has just started answers with empty values until it has loaded
+    $deadline = (Get-Date).AddSeconds(60)
+    do { $lvVersion = [string]$lv.Version; if (-not $lvVersion) { Start-Sleep -Seconds 2 } } until ($lvVersion -or (Get-Date) -gt $deadline)
     if (-not $lvVersion.StartsWith(($LabVIEWVersion -replace '^20', '') + '.')) {
         throw "LabVIEW's ActiveX server is LabVIEW $lvVersion, not $LabVIEWVersion. Register LabVIEW $LabVIEWVersion (run it once as administrator) or close the other version. $(ActiveXFacts)"
     }
